@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Conometer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400&display=swap');
+
+  :root{
+    --gold:#b8903f;
+    --gold-lo:#7a5f28;
+    --paper:#f1ead9;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+    background:#100c07;
+    color:#e2d6bb;
+    font-family:'Jost', sans-serif;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+    overflow:hidden;
+  }
+  #stage{
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:2.5vh 3vw;
+    gap:1.6vh;
+  }
+
+  #scene-wrap{
+    position:relative;
+    width:min(86vw, 1100px);
+    aspect-ratio:1376/768;
+    border-radius:8px;
+    overflow:hidden;
+    box-shadow:0 26px 60px rgba(0,0,0,.55);
+  }
+  #scene-wrap img{ -webkit-user-drag:none; pointer-events:none; }
+  #bg-img{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+  }
+  .cone-sprite{
+    position:absolute;
+    height:43%;
+    width:auto;
+    bottom:22%;
+    left:50%;
+    transform:translateX(-50%);
+    transition:opacity .6s ease;
+    filter:drop-shadow(0 14px 18px rgba(0,0,0,.4));
+    pointer-events:none;
+  }
+  #scene-wrap .cone-sprite.hoverable{ pointer-events:auto; }
+
+  #tooltip{
+    position:fixed;
+    pointer-events:none;
+    background:rgba(24,18,10,.92);
+    color:var(--paper);
+    border:1px solid var(--gold);
+    border-radius:8px;
+    padding:7px 12px;
+    font-family:'Cormorant Garamond', serif;
+    font-size:16px;
+    letter-spacing:.02em;
+    opacity:0;
+    transform:translate(-50%, calc(-100% - 12px));
+    transition:opacity .15s ease;
+    z-index:50;
+    white-space:nowrap;
+  }
+  #tooltip.show{ opacity:1; }
+
+  #controls{
+    width:min(86vw, 1100px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:28px;
+    flex-wrap:wrap;
+  }
+  .toggle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    cursor:pointer;
+    font-family:'Cormorant Garamond', serif;
+    font-size:16px;
+    color:#e2d6bb;
+    letter-spacing:.02em;
+  }
+  .toggle input{
+    appearance:none;
+    width:16px; height:16px;
+    border:1.5px solid #f1ead9;
+    border-radius:3px;
+    background:transparent;
+    position:relative;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .toggle input:checked{ background:#f1ead9; }
+  .toggle input:checked::after{
+    content:'';
+    position:absolute;
+    left:4px; top:1px;
+    width:4px; height:8px;
+    border:solid #1a140c;
+    border-width:0 2px 2px 0;
+    transform:rotate(40deg);
+  }
+  .humidity-icon{
+    color:#f1ead9;
+    flex-shrink:0;
+    transition:color .25s ease;
+  }
+  .toggle input:not(:checked) ~ .humidity-icon{
+    color:#8f8a7d;
+  }
+
+  #slider-wrap{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex:1;
+    min-width:220px;
+    max-width:480px;
+    transition:opacity .3s ease;
+  }
+  #slider-wrap.disabled{ opacity:.35; pointer-events:none; }
+  #humidity-slider{
+    -webkit-appearance:none;
+    flex:1;
+    height:6px;
+    border-radius:4px;
+    background:linear-gradient(90deg, rgba(241,234,217,.1), rgba(241,234,217,.28));
+    cursor:pointer;
+  }
+  #humidity-slider::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:18px; height:18px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ffffff, #d8d2c4);
+    box-shadow:0 2px 6px rgba(0,0,0,.5);
+    cursor:pointer;
+  }
+  #slider-label{
+    font-family:'Cormorant Garamond', serif;
+    font-size:15px;
+    color:#f1ead9;
+    min-width:40px;
+    text-align:right;
+  }
+
+  @media (max-width:700px){
+    #controls{ flex-direction:column; align-items:stretch; gap:16px; }
+    #slider-wrap{ max-width:none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="scene-wrap">
+    <img id="bg-img" src="conometer-background.png" alt="">
+    <img class="cone-sprite" id="cone-a" src="cone-01.png" alt="">
+    <img class="cone-sprite" id="cone-b" src="cone-01.png" alt="" style="opacity:0;">
+  </div>
+
+  <div id="controls">
+    <label class="toggle">
+      <input type="checkbox" id="chk-live" checked>
+      <svg class="humidity-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="M12 2.6 C 12 2.6, 5.2 11.4, 5.2 15.6 A 6.8 6.8 0 0 0 18.8 15.6 C 18.8 11.4, 12 2.6, 12 2.6 Z"
+              fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="12" y="16.6" font-family="'Jost', sans-serif" font-size="6.4" font-weight="400"
+              text-anchor="middle" fill="currentColor">%</text>
+      </svg>
+    </label>
+    <div id="slider-wrap" class="disabled">
+      <input type="range" id="humidity-slider" min="0" max="100" value="50" step="0.5">
+      <span id="slider-label">50%</span>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const N_FRAMES = 9;
+  const els = {
+    sceneWrap: document.getElementById('scene-wrap'),
+    coneA: document.getElementById('cone-a'),
+    coneB: document.getElementById('cone-b'),
+    chkLive: document.getElementById('chk-live'),
+    sliderWrap: document.getElementById('slider-wrap'),
+    slider: document.getElementById('humidity-slider'),
+    sliderLabel: document.getElementById('slider-label'),
+    tooltip: document.getElementById('tooltip'),
+  };
+
+  let lat = 55.19, lon = -1.56; // fallback: north-east England
+  if (navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos => { lat = pos.coords.latitude; lon = pos.coords.longitude; fetchHumidity(); },
+      () => { fetchHumidity(); }, { timeout: 5000 }
+    );
+  }
+
+  let liveHumidity = null;   // last fetched real humidity (0-100), null until first fetch succeeds
+  let manualHumidity = 50;   // slider value when not live
+
+  function currentHumidity(){
+    if (els.chkLive.checked){
+      return liveHumidity != null ? liveHumidity : manualHumidity;
+    }
+    return manualHumidity;
+  }
+
+  let shownFrame = null; // the frame currently fully visible at rest
+
+  function frameUrl(n){ return `cone-${String(n).padStart(2,'0')}.png`; }
+
+  function renderCone(){
+    const h = Math.max(0, Math.min(100, currentHumidity()));
+    // humidity 0 (dry) -> frame 1 (open); humidity 100 (wet) -> frame N (closed)
+    const pos = 1 + (h/100) * (N_FRAMES - 1);
+    const nearest = Math.max(1, Math.min(N_FRAMES, Math.round(pos)));
+
+    if (shownFrame === null){
+      // first render: settle directly on the right frame, no transition
+      els.coneA.src = frameUrl(nearest);
+      els.coneA.style.opacity = 1;
+      els.coneA.classList.add('hoverable');
+      els.coneB.style.opacity = 0;
+      els.coneB.classList.remove('hoverable');
+      shownFrame = nearest;
+      return;
+    }
+
+    if (nearest !== shownFrame){
+      // crossfade from the currently-shown frame to the new one, then settle
+      els.coneB.src = frameUrl(nearest);
+      els.coneB.style.opacity = 1;
+      els.coneB.classList.add('hoverable');
+      els.coneA.style.opacity = 0;
+      els.coneA.classList.remove('hoverable');
+      shownFrame = nearest;
+      window.clearTimeout(renderCone._settleTimer);
+      renderCone._settleTimer = window.setTimeout(() => {
+        els.coneA.src = frameUrl(nearest);
+        els.coneA.style.opacity = 1;
+        els.coneA.classList.add('hoverable');
+        els.coneB.style.opacity = 0;
+        els.coneB.classList.remove('hoverable');
+      }, 650); // matches the CSS opacity transition duration
+    }
+  }
+
+  function updateSliderVisual(){
+    els.slider.value = manualHumidity;
+    els.sliderLabel.textContent = Math.round(manualHumidity) + '%';
+  }
+
+  function setLive(isLive){
+    els.chkLive.checked = isLive;
+    els.sliderWrap.classList.toggle('disabled', isLive);
+    renderCone();
+  }
+
+  els.chkLive.addEventListener('change', () => setLive(els.chkLive.checked));
+
+  els.slider.addEventListener('input', () => {
+    manualHumidity = parseFloat(els.slider.value);
+    els.sliderLabel.textContent = Math.round(manualHumidity) + '%';
+    if (!els.chkLive.checked) renderCone();
+  });
+
+  /* clicking the slider directly switches out of live mode naturally via its own input,
+     but also allow clicking the scene to drop into manual mode at the current apparent value */
+  els.sliderWrap.addEventListener('pointerdown', () => {
+    if (els.chkLive.checked) setLive(false);
+  });
+
+  async function fetchHumidity(){
+    try{
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=relative_humidity_2m`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data && data.current && typeof data.current.relative_humidity_2m === 'number'){
+        liveHumidity = data.current.relative_humidity_2m;
+        if (els.chkLive.checked) renderCone();
+      }
+    } catch(e){ /* keep last known value silently */ }
+  }
+
+  /* ---- tooltip ---- */
+  const HUMIDITY_ICON_SVG = `<svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-2px;margin-left:4px" aria-hidden="true">
+    <path d="M12 2.6 C 12 2.6, 5.2 11.4, 5.2 15.6 A 6.8 6.8 0 0 0 18.8 15.6 C 18.8 11.4, 12 2.6, 12 2.6 Z"
+          fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="12" y="16.6" font-family="'Jost', sans-serif" font-size="6.4" font-weight="400"
+          text-anchor="middle" fill="currentColor">%</text>
+  </svg>`;
+  function showTooltip(evt){
+    const val = Math.round(currentHumidity());
+    els.tooltip.innerHTML = `${val}${HUMIDITY_ICON_SVG}`;
+    els.tooltip.style.left = evt.clientX + 'px';
+    els.tooltip.style.top = evt.clientY + 'px';
+    els.tooltip.classList.add('show');
+  }
+  function hideTooltip(){ els.tooltip.classList.remove('show'); }
+  els.coneA.addEventListener('pointerenter', showTooltip);
+  els.coneA.addEventListener('pointermove', showTooltip);
+  els.coneA.addEventListener('pointerleave', hideTooltip);
+  els.coneB.addEventListener('pointerenter', showTooltip);
+  els.coneB.addEventListener('pointermove', showTooltip);
+  els.coneB.addEventListener('pointerleave', hideTooltip);
+
+  updateSliderVisual();
+  renderCone();
+  fetchHumidity();
+  setInterval(() => { if (els.chkLive.checked) fetchHumidity(); }, 10*60*1000);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sagne Candle</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  :root {
+    --bg: #191320;
+    --bg-vignette: #0d0a12;
+    --wax: #f5dfa0;
+    --wax-shadow: #c49a48;
+    --wax-edge: #e8cb84;
+    --wick: #2a2118;
+    --flame-white: #fff6d9;
+    --flame-mid: #ffb548;
+    --flame-outer: #e4622a;
+    --flame-glow: rgba(255, 160, 70, 0.5);
+    --brass: #b78c56;
+    --brass-light: #d9b57e;
+    --panel: rgba(30, 24, 36, 0.72);
+    --ink: #e9dfc8;
+    --ink-dim: #8d8296;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: radial-gradient(ellipse at 50% 30%, var(--bg) 0%, var(--bg-vignette) 100%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 16px 20px;
+  }
+
+  .candle-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 0;
+  }
+
+  svg#scene {
+    width: min(380px, 70vw);
+    height: 100%;
+    max-height: 56vh;
+    overflow: visible;
+  }
+
+  .panel {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    background: var(--panel);
+    border: 1px solid rgba(183, 140, 86, 0.25);
+    border-radius: 999px;
+    padding: 10px 22px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+    /* on a narrow phone screen the full row of controls can be wider
+       than the viewport — let it scroll sideways instead of hiding
+       the rightmost buttons with no way to reach them */
+    max-width: 94vw;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .panel::-webkit-scrollbar { display: none; }
+
+  .ctrl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ctrl .icon {
+    font-size: 17px;
+    line-height: 1;
+    filter: grayscale(0) drop-shadow(0 0 2px rgba(0,0,0,0.4));
+    opacity: 0.9;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 84px;
+    height: 4px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--brass) 0%, var(--brass) var(--fill, 50%), rgba(255,255,255,0.15) var(--fill, 50%));
+    outline: none;
+    transition: opacity 0.3s ease;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--brass-light);
+    border: 2px solid #3a2e20;
+    cursor: pointer;
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--brass-light);
+    border: 2px solid #3a2e20;
+    cursor: pointer;
+  }
+  input[type=range]:disabled {
+    opacity: 0.25;
+    pointer-events: none;
+  }
+
+  input[type=checkbox] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 1.5px solid rgba(183, 140, 86, 0.6);
+    background: rgba(0,0,0,0.25);
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+    transition: all 0.15s ease;
+  }
+  input[type=checkbox]:checked {
+    background: var(--brass);
+    border-color: var(--brass-light);
+  }
+  input[type=checkbox]:checked::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: #1a1420;
+  }
+  input[type=checkbox]:disabled { opacity: 0.25; pointer-events: none; }
+
+  .divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(183, 140, 86, 0.25);
+    flex-shrink: 0;
+  }
+
+  .ctrl { flex-shrink: 0; }
+
+  /* narrow phone screens: packed tight enough that every control fits
+     on screen at once — no sideways scrolling needed to find anything */
+  @media (max-width: 480px) {
+    .panel { gap: 8px; padding: 8px 10px; }
+    .ctrl { gap: 4px; }
+    .ctrl .icon { font-size: 14px; }
+    input[type=range] { width: 46px; }
+    input[type=checkbox] { width: 18px; height: 18px; }
+    .divider { display: none; }
+    /* the candle itself: same proportions (SVG's own aspect-ratio
+       scaling keeps it exact), just sized up so the wax nearly
+       touches the phone's left and right edges */
+    svg#scene { width: 96vw; max-height: 88vh; }
+  }
+
+  #repeatCtrl { transition: opacity 0.25s ease, width 0.25s ease; }
+  #repeatCtrl.hidden { opacity: 0; width: 0; overflow: hidden; pointer-events: none; margin: 0 -11px; }
+
+  .readout {
+    margin-top: 10px;
+    min-height: 14px;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--ink-dim);
+    text-align: center;
+  }
+
+  .panel-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .icon-btn {
+    font-size: 17px;
+    line-height: 1;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    filter: grayscale(0) drop-shadow(0 0 2px rgba(0,0,0,0.4));
+    opacity: 0.9;
+    color: inherit;
+  }
+  .icon-btn:disabled { opacity: 0.25; pointer-events: none; }
+  .add-pin-btn { font-size: 16px; font-weight: 700; }
+
+  .stage-time {
+    font-size: 11px;
+    color: var(--ink-dim);
+    min-width: 30px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .icon-popup {
+    position: fixed;
+    left: 0;
+    top: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 9px;
+    background: var(--panel);
+    border: 1px solid rgba(183, 140, 86, 0.35);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(6px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 40;
+  }
+  .icon-popup.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .icon-option {
+    font-size: 24px;
+    line-height: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 9px 11px;
+    cursor: pointer;
+  }
+  .icon-option:hover {
+    background: rgba(183, 140, 86, 0.25);
+    border-color: rgba(183, 140, 86, 0.5);
+  }
+
+  .pin-list {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 360px;
+  }
+  .pin-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(183, 140, 86, 0.25);
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    color: var(--ink-dim);
+    white-space: nowrap;
+  }
+  .pin-chip.fallen { opacity: 0.45; text-decoration: line-through; }
+  .pin-chip button {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0;
+    line-height: 1;
+    opacity: 0.7;
+  }
+  .pin-chip button:hover { opacity: 1; }
+
+  .pin-tooltip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, calc(-100% - 10px));
+    background: var(--panel);
+    border: 1px solid rgba(183, 140, 86, 0.4);
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 14px;
+    color: var(--ink);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    z-index: 30;
+  }
+  .pin-tooltip.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<a href="index.html" style="position:fixed; top:18px; left:22px; z-index:50; color:var(--wax); opacity:.5; text-decoration:none; font-size:14px; letter-spacing:.04em; font-family: Georgia, serif; transition:opacity .3s ease;" onmouseover="this.style.opacity=.9" onmouseout="this.style.opacity=.5">← sagne</a>
+
+<div class="stage">
+  <div class="candle-wrap">
+    <svg id="scene" viewBox="0 0 380 520" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="var(--flame-glow)"/>
+          <stop offset="40%" stop-color="var(--flame-glow)"/>
+          <stop offset="75%" stop-color="rgba(255,150,60,0.12)"/>
+          <stop offset="100%" stop-color="rgba(255,150,60,0)"/>
+        </radialGradient>
+        <linearGradient id="flameGrad" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#fffaf0"/>
+          <stop offset="20%" stop-color="var(--flame-white)"/>
+          <stop offset="45%" stop-color="var(--flame-mid)"/>
+          <stop offset="75%" stop-color="var(--flame-outer)"/>
+          <stop offset="100%" stop-color="#8f2c10"/>
+        </linearGradient>
+        <radialGradient id="flameHalo" cx="50%" cy="70%" r="55%">
+          <stop offset="0%" stop-color="#ffdb8a" stop-opacity="0.55"/>
+          <stop offset="55%" stop-color="#ff9d3d" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#ff9d3d" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="flameHeart" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#2a4fae" stop-opacity="0.55"/>
+          <stop offset="35%" stop-color="#4d6fc2" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="#4d6fc2" stop-opacity="0"/>
+        </linearGradient>
+        <radialGradient id="flameCore" cx="50%" cy="75%" r="50%">
+          <stop offset="0%" stop-color="#fffef2" stop-opacity="0.95"/>
+          <stop offset="60%" stop-color="#fff2b8" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#fff2b8" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="flameBase" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#5b7fd4" stop-opacity="0"/>
+          <stop offset="65%" stop-color="#5b7fd4" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#3f5db8" stop-opacity="0.4"/>
+        </linearGradient>
+        <linearGradient id="waxGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="var(--wax-shadow)"/>
+          <stop offset="15%" stop-color="var(--wax-edge)"/>
+          <stop offset="50%" stop-color="var(--wax)"/>
+          <stop offset="85%" stop-color="var(--wax-edge)"/>
+          <stop offset="100%" stop-color="var(--wax-shadow)"/>
+        </linearGradient>
+        <!-- warm light bleeding through the wax near the flame, like a
+             real (or LED) candle lit from within — brightest at the
+             top of whatever wax is left, fading out toward the base -->
+        <linearGradient id="waxGlow" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffe1ae" stop-opacity="0.9"/>
+          <stop offset="16%" stop-color="#ffd08a" stop-opacity="0.6"/>
+          <stop offset="40%" stop-color="#ffc978" stop-opacity="0.16"/>
+          <stop offset="68%" stop-color="#ffc978" stop-opacity="0"/>
+        </linearGradient>
+        <!-- a richer, more saturated yellow pooling low in the wax —
+             like the base of an LED pillar candle, where the light
+             source sits and the wax reads warmest/most golden -->
+        <linearGradient id="waxBaseGlow" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#ffc93d" stop-opacity="0.6"/>
+          <stop offset="22%" stop-color="#ffbf3d" stop-opacity="0.4"/>
+          <stop offset="50%" stop-color="#ffc978" stop-opacity="0.12"/>
+          <stop offset="78%" stop-color="#ffc978" stop-opacity="0"/>
+        </linearGradient>
+        <filter id="flameSoften" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="0.6"/>
+        </filter>
+        <!-- beeswax density: pale/light near the top where the wax reads
+             thinner and warmer, richer and more opaque lower down where
+             it's had time to settle and cool — matches the reference
+             LED beeswax pillar candles -->
+        <linearGradient id="waxToneVertical" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#fdf1cd"/>
+          <stop offset="45%" stop-color="#f0da97"/>
+          <stop offset="100%" stop-color="#c69a3e"/>
+        </linearGradient>
+        <linearGradient id="pinMetal" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f2dcae"/>
+          <stop offset="45%" stop-color="var(--brass-light)"/>
+          <stop offset="100%" stop-color="#8a6636"/>
+        </linearGradient>
+        <radialGradient id="brassPlate" cx="30%" cy="32%" r="90%">
+          <stop offset="0%" stop-color="#fdeec0"/>
+          <stop offset="22%" stop-color="#e8c684"/>
+          <stop offset="50%" stop-color="#b8934f"/>
+          <stop offset="80%" stop-color="#7a6032"/>
+          <stop offset="100%" stop-color="#4a3a21"/>
+        </radialGradient>
+        <radialGradient id="brassRim" cx="26%" cy="26%" r="95%">
+          <stop offset="0%" stop-color="#fff4d6"/>
+          <stop offset="25%" stop-color="#f0d090"/>
+          <stop offset="55%" stop-color="#bc9450"/>
+          <stop offset="85%" stop-color="#7a6032"/>
+          <stop offset="100%" stop-color="#453620"/>
+        </radialGradient>
+        <radialGradient id="brassLip" cx="30%" cy="25%" r="100%">
+          <stop offset="0%" stop-color="#fffbe8"/>
+          <stop offset="30%" stop-color="#f5dca0"/>
+          <stop offset="65%" stop-color="#c9a05c"/>
+          <stop offset="100%" stop-color="#8a6636"/>
+        </radialGradient>
+        <linearGradient id="brassWall" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#a9884d"/>
+          <stop offset="100%" stop-color="#332812"/>
+        </linearGradient>
+        <filter id="plateShadow" x="-30%" y="-100%" width="160%" height="300%">
+          <feGaussianBlur stdDeviation="4"/>
+        </filter>
+        <filter id="inkWobble" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.028 0.045" numOctaves="2" seed="7" result="n"/>
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+        <filter id="paperGrain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="grain"/>
+          <feColorMatrix in="grain" type="matrix"
+            values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.5 0.5 0.5 0 0"/>
+        </filter>
+      </defs>
+
+      <!-- soft grounding shadow -->
+      <ellipse cx="190" cy="498" rx="156" ry="10" fill="#000000" opacity="0.5" filter="url(#plateShadow)"/>
+
+      <!-- three round brass ball feet, drawn BEFORE the plate so the
+           plate's own front wall renders on top of them — the outer
+           two sit low enough that their tops disappear behind/under
+           the rim, and the middle one is only ever a half-disc (its
+           flat edge standing in for "the rest is behind the plate"),
+           reading as the back foot glimpsed low and center -->
+      <ellipse cx="95" cy="505" rx="17" ry="6.5" fill="#000000" opacity="0.4" filter="url(#plateShadow)"/>
+      <ellipse cx="285" cy="505" rx="17" ry="6.5" fill="#000000" opacity="0.4" filter="url(#plateShadow)"/>
+      <ellipse cx="190" cy="503" rx="18" ry="7" fill="#000000" opacity="0.35" filter="url(#plateShadow)"/>
+      <path d="M 174 494 A 16 16 0 0 0 206 494 Z" fill="url(#brassPlate)" stroke="#3f331e" stroke-width="1.2"/>
+      <circle cx="95" cy="498" r="14" fill="url(#brassPlate)" stroke="#3f331e" stroke-width="1.2"/>
+      <circle cx="285" cy="498" r="14" fill="url(#brassPlate)" stroke="#3f331e" stroke-width="1.2"/>
+      <circle cx="90" cy="493.5" r="4.4" fill="#f2dcae" opacity="0.55"/>
+      <circle cx="280" cy="493.5" r="4.4" fill="#f2dcae" opacity="0.55"/>
+
+      <!-- holder plate: widened so a much bigger candle (up to a 24-hour
+           burn) still reads as sitting flush in it -->
+      <path d="M 18 473 A 172 14 0 0 1 362 473 L 364 489 A 174 8.5 0 0 0 16 489 Z"
+            fill="url(#brassWall)"/>
+      <ellipse cx="190" cy="473" rx="172" ry="14" fill="url(#brassPlate)" stroke="#3f331e" stroke-width="1"/>
+      <ellipse cx="190" cy="473" rx="172" ry="14" fill="none" stroke="url(#brassLip)" stroke-width="3.4"/>
+      <ellipse cx="190" cy="473.4" rx="164.5" ry="13.2" fill="none" stroke="#3f331e" stroke-width="0.8" opacity="0.55"/>
+      <ellipse cx="190" cy="472.2" rx="157.3" ry="12.6" fill="none" stroke="#fdeec0" stroke-width="0.45" opacity="0.4"/>
+      <ellipse cx="190" cy="471.8" rx="152.1" ry="12" fill="none" stroke="#3f331e" stroke-width="0.4" opacity="0.4"/>
+      <ellipse cx="190" cy="471.5" rx="91" ry="9" fill="url(#brassRim)" stroke="#453620" stroke-width="0.7"/>
+      <ellipse cx="190" cy="470.6" rx="89.7" ry="8.5" fill="none" stroke="#fdeec0" stroke-width="0.4" opacity="0.4"/>
+      <ellipse cx="190" cy="470" rx="75.4" ry="7.5" fill="url(#brassPlate)" stroke="#3f331e" stroke-width="0.6"/>
+      <ellipse cx="190" cy="473" rx="173.6" ry="15.5" fill="none" stroke="#3a2a17" stroke-width="0.8"
+               opacity="0.4" filter="url(#inkWobble)"/>
+      <ellipse cx="190" cy="471.5" rx="91" ry="9" fill="none" stroke="#3a2a17" stroke-width="0.6"
+               opacity="0.35" filter="url(#inkWobble)"/>
+
+      <!-- glow -->
+      <circle id="glowCircle" cx="190" cy="300" r="70" fill="url(#glow)"/>
+
+      <!-- candle body -->
+      <g id="candleBody"></g>
+
+      <!-- timer pins: each pin gets its own persistent <g>, created in
+           addPin() and only ever touched again by firePin() — render()
+           never rewrites them, so a falling pin's CSS transition
+           actually gets to play instead of being clobbered every frame -->
+      <g id="pinsGroup"></g>
+
+      <!-- flame -->
+      <g id="flameGroup"></g>
+
+      <!-- paper grain -->
+      <rect x="0" y="0" width="380" height="520" filter="url(#paperGrain)" opacity="0.05" style="mix-blend-mode:overlay" pointer-events="none"/>
+    </svg>
+  </div>
+
+  <div class="panel-wrap">
+    <div class="icon-popup" id="iconPopup">
+      <button type="button" class="icon-option" data-icon="" title="No icon">✕</button>
+      <button type="button" class="icon-option" data-icon="☕" title="Tea">☕</button>
+      <button type="button" class="icon-option" data-icon="🍳" title="Cooking">🍳</button>
+      <button type="button" class="icon-option" data-icon="🧘" title="Meditation">🧘</button>
+      <button type="button" class="icon-option" data-icon="📖" title="Reading">📖</button>
+      <button type="button" class="icon-option" data-icon="🛌" title="Nap">🛌</button>
+      <button type="button" class="icon-option" data-icon="💊" title="Medicine">💊</button>
+      <button type="button" class="icon-option" data-icon="🍕" title="Baking">🍕</button>
+      <button type="button" class="icon-option" data-icon="🕯️" title="Candle">🕯️</button>
+      <button type="button" class="icon-option" data-icon="⏰" title="Alarm">⏰</button>
+    </div>
+    <div class="panel">
+      <div class="ctrl" id="sizeCtrl">
+        <span class="icon">🕯️</span>
+        <input id="sizeSlider" type="range" min="0" max="100" value="100">
+      </div>
+      <div class="divider"></div>
+      <div class="ctrl" id="windCtrl">
+        <span class="icon">💨</span>
+        <input id="windSlider" type="range" min="0" max="100" value="15">
+      </div>
+      <div class="divider"></div>
+      <div class="ctrl" id="soundCtrl">
+        <span class="icon">🔊</span>
+        <input id="soundCheck" type="checkbox">
+      </div>
+      <div class="divider"></div>
+      <div class="divider"></div>
+      <div class="ctrl" id="pitchCtrl">
+        <span class="icon">🔔</span>
+        <input id="pitchSlider" type="range" min="0" max="100" value="50">
+      </div>
+      <div class="ctrl">
+        <span class="icon">⏱️</span>
+        <input id="timerCheck" type="checkbox">
+      </div>
+      <div class="ctrl" id="repeatCtrl" style="opacity:0;width:0;overflow:hidden;margin:0 -11px;">
+        <span class="icon">💤</span>
+        <input id="repeatCheck" type="checkbox">
+      </div>
+    </div>
+    <div class="panel" id="pillarPanel" style="padding-top:6px;padding-bottom:6px;">
+      <div class="ctrl">
+        <input id="pillarCheck" type="checkbox">
+        <span class="icon">🗓️</span>
+        <input id="pillarSlider" type="range" min="2" max="7" step="1" value="4">
+      </div>
+    </div>
+  </div>
+
+  <div class="pin-list" id="pinList"></div>
+  <div class="readout" id="readout"></div>
+  <div class="pin-tooltip" id="pinTooltip"></div>
+</div>
+
+<script>
+/* ============================================================
+   SAGNE CANDLE — physics + render
+   Single self-contained file: double-click index.html, no
+   server or build step required.
+
+   One real per-mode input drives everything else.
+   Passive mode:  wind  -> flame height/lean/flicker + burn rate
+   Timer mode:    size  -> duration (candle geometry), wind disabled
+
+   Timer mode seeds one pin automatically. To add more (up to MAX_PINS),
+   click anywhere on the candle itself — a pin appears right there and
+   the icon picker pops up next to it so you can label it (or click
+   elsewhere to skip). Dragging any pin up or down the candle changes
+   how long it waits before ringing — its height IS its time, with a
+   small floating tooltip confirming the wait live as you drag (and on
+   hover, once it's placed). Clicking an existing pin without dragging
+   reopens the icon picker for just that pin. Each pin fires
+   independently as the candle burns past it — firing one doesn't
+   stop the others, and you can keep adding pins (up to the limit)
+   any time while the candle burns.
+   ============================================================ */
+
+// ---------- DOM ----------
+const sizeSlider     = document.getElementById('sizeSlider');
+const sizeCtrl       = document.getElementById('sizeCtrl');
+const pillarCheck    = document.getElementById('pillarCheck');
+const pillarSlider   = document.getElementById('pillarSlider');
+const windSlider     = document.getElementById('windSlider');
+const windCtrl       = document.getElementById('windCtrl');
+const timerCheck     = document.getElementById('timerCheck');
+const repeatCheck    = document.getElementById('repeatCheck');
+const repeatCtrl     = document.getElementById('repeatCtrl');
+const soundCheck     = document.getElementById('soundCheck');
+const pitchSlider    = document.getElementById('pitchSlider');
+const iconPopup      = document.getElementById('iconPopup');
+const pinList        = document.getElementById('pinList');
+const candleBody     = document.getElementById('candleBody');
+const flameGroup     = document.getElementById('flameGroup');
+const pinsGroup      = document.getElementById('pinsGroup');
+const glowCircle     = document.getElementById('glowCircle');
+const readout        = document.getElementById('readout');
+const pinTooltip     = document.getElementById('pinTooltip');
+const scene          = document.getElementById('scene');
+
+function syncFill(el) {
+  const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+  el.style.setProperty('--fill', pct + '%');
+}
+[sizeSlider, windSlider, pitchSlider, pillarSlider].forEach(syncFill);
+
+// ---------- geometry constants ----------
+const CENTER_X = 190;   // horizontal center of the whole scene
+const BASE_Y   = 470;   // saucer height where wax base sits
+const CANDLE_HEIGHT = 260;   // fixed — only thickness (width) varies with size now
+const HALF_W_MIN = 26;
+const HALF_W_MAX = 60;  // widened so a 24-hour candle looks like it could plausibly hold that much wax
+// ---------- real-world burn timing ----------
+// A real candle burns anywhere from tens of minutes (a thin taper) up to
+// a full day (a wide, dense pillar or emergency candle). These two
+// numbers are the single source of truth for "how long a candle
+// actually lasts" — change them to retune the whole app.
+const MIN_BURN_MINUTES = 30;    // smallest candle, full burn-down
+const MAX_BURN_MINUTES = 1440;  // largest candle, full burn-down (24 hours)
+
+// ---------- big pillar mode: an optional second scale, well beyond the
+// ordinary candle range, where the candle burns for days rather than
+// hours. Uses the exact same "duration scales with wax volume" physics
+// as the normal size slider — just extended along the same real rate
+// rather than a different formula — but is taller as well as thicker,
+// since simply widening at the same fixed height would make a 7-day
+// candle wider than it is tall, a squat drum rather than a pillar.
+const PILLAR_HEIGHT = 380;
+const PILLAR_MIN_DAYS = 2;
+const PILLAR_MAX_DAYS = 7;
+// once this fraction of the pillar's total burn has elapsed, the flame
+// has sunk below the rim and the hollow-well rendering takes over
+const HOLLOW_START_FRACTION = 0.14; // roughly "day 1" of a 7-day burn
+function pillarHalfWidth(days) {
+  const targetMinutes = days * 24 * 60;
+  const minVol = CANDLE_HEIGHT * HALF_W_MIN * HALF_W_MIN;
+  const maxVol = CANDLE_HEIGHT * HALF_W_MAX * HALF_W_MAX;
+  const rate = (MAX_BURN_MINUTES - MIN_BURN_MINUTES) / (maxVol - minVol); // minutes per volume unit, same real rate as the small-candle range
+  const targetVol = minVol + (targetMinutes - MIN_BURN_MINUTES) / rate;
+  return Math.sqrt(targetVol / PILLAR_HEIGHT);
+}
+function smoothstep(edge0, edge1, x) {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+// ---------- state ----------
+let state = {
+  size: 1.0,          // 0..1, from sizeSlider (dual meaning: thickness OR duration)
+  pillarMode: false,  // when true, overrides size entirely — a big pillar burning over days
+  pillarDays: 4,       // 2..7, from pillarSlider
+  wind: 0.15,          // 0..1, passive mode only
+  timerMode: false,
+  repeat: false,
+  waxFraction: 1.0,    // 1 = full candle, 0 = burned out
+  lightedAt: Date.now(), // wall-clock moment this burn started, so progress survives closing the tab
+  flicker: 0,
+  lean: 0,
+  extinguished: false,
+  pins: [],             // up to MAX_PINS: { fraction, icon, fallen, firing, el }
+  landedSlots: 0,        // how many pins have already come to rest on the plate, for spacing
+  repeatTimeoutId: null,
+  pitch: 1.0,            // multiplier on the pin-ring's base frequency, adjustable via pitchSlider
+};
+
+const REPEAT_INTERVAL_MS = 60_000; // snooze: real 1 minute between chimes
+const MAX_PINS = 5;
+
+// ---------- flame turbulence ----------
+// Real flame movement is chaotic, not periodic — air currents nudge it
+// unevenly and it never quite repeats itself. Stacking a few sine waves
+// (the original approach) still has an underlying rhythm you can feel
+// after a few cycles, since the frequencies are fixed and their sum
+// eventually re-syncs. Instead, each channel below wanders toward a
+// randomly-chosen target and eases toward it continuously; when it gets
+// close (or a random timer runs out), it picks a new target. That keeps
+// the motion smooth (nothing snaps) while staying genuinely non-repeating.
+function makeTurbChannel(period) { return { v: 0, target: 0, timer: Math.random() * period }; }
+function stepTurb(ch, dt, range, minPeriod, maxPeriod, smooth) {
+  ch.timer -= dt;
+  if (ch.timer <= 0) {
+    ch.target = (Math.random() * 2 - 1) * range;
+    ch.timer = minPeriod + Math.random() * (maxPeriod - minPeriod);
+  }
+  ch.v += (ch.target - ch.v) * Math.min(1, dt * smooth);
+}
+const turb = {
+  lean:   makeTurbChannel(900),   // slow overall drift, side to side
+  height: makeTurbChannel(350),   // flame stretching/shrinking
+  tip:    makeTurbChannel(260),   // tip flicking independently
+  edgeL:  makeTurbChannel(300),   // left silhouette wobble
+  edgeR:  makeTurbChannel(320),   // right silhouette wobble
+};
+function stepFlameTurbulence(dt, burnWind) {
+  const speed = 1 + burnWind * 1.6; // wind makes it more restless, not just bigger
+  stepTurb(turb.lean,   dt, 1,    700,  1600, 0.0045 * speed);
+  stepTurb(turb.height, dt, 1,    260,  620,  0.008  * speed);
+  stepTurb(turb.tip,    dt, 1,    180,  460,  0.011  * speed);
+  stepTurb(turb.edgeL,  dt, 1,    220,  520,  0.010  * speed);
+  stepTurb(turb.edgeR,  dt, 1,    240,  540,  0.010  * speed);
+}
+
+// ---------- derived geometry ----------
+function candleHeight(sizeVal) {
+  // height no longer varies with size — only thickness does. A thin
+  // taper burning fast next to a thick pillar burning slow, both the
+  // same height, is a more honest read of "faster" than just "smaller
+  // overall" was. Pillar mode is taller still — see the note above.
+  if (state.pillarMode) return PILLAR_HEIGHT;
+  return CANDLE_HEIGHT;
+}
+function candleHalfWidth(sizeVal) {
+  if (state.pillarMode) return pillarHalfWidth(state.pillarDays);
+  return HALF_W_MIN + sizeVal * (HALF_W_MAX - HALF_W_MIN);
+}
+// Burn duration scales with wax volume (height * width^2). Height is now
+// fixed, so duration is really just a function of thickness — a thinner
+// candle has less wax across its cross-section and burns faster, the
+// same physical logic as before, just no longer also shrinking overall.
+// Returns real milliseconds, linearly interpolated between
+// MIN_BURN_MINUTES and MAX_BURN_MINUTES by normalized wax volume.
+// Pillar mode bypasses all of this and returns the selected day count
+// directly — it's the thing being solved for, not derived.
+function burnDurationMs(sizeVal) {
+  if (state.pillarMode) return state.pillarDays * 24 * 60 * 60_000;
+  const h = candleHeight(sizeVal);
+  const w = candleHalfWidth(sizeVal);
+  const volume = h * w * w;
+  const minVol = CANDLE_HEIGHT * HALF_W_MIN * HALF_W_MIN;
+  const maxVol = CANDLE_HEIGHT * HALF_W_MAX * HALF_W_MAX;
+  const t = (volume - minVol) / (maxVol - minVol);
+  const minutes = MIN_BURN_MINUTES + t * (MAX_BURN_MINUTES - MIN_BURN_MINUTES);
+  return minutes * 60_000;
+}
+
+// ---------- audio: synthesized metallic pin-ring, no external asset ----------
+let audioCtx = null;
+function ring() {
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  const now = audioCtx.currentTime;
+  // a small cluster of inharmonic partials = "metallic" character,
+  // fast attack, slow-ish decay = "ring"
+  const partials = [1, 2.41, 3.88, 5.13];
+  partials.forEach((mult, i) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 1046 * mult * state.pitch; // C6-ish fundamental, adjustable
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.22 / (i + 1), now + 0.005);
+    // a longer, gentler taper instead of a hard cutoff — the ring still
+    // announces itself clearly, then fades out over a few seconds rather
+    // than stopping abruptly
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.2 - i * 0.3);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 3.4);
+  });
+}
+
+// tiny extinguish sound — a short filtered noise burst, not a bell.
+// "Tiny fssst sound — it's just the visible end of the candle"
+function fssst() {
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  const now = audioCtx.currentTime;
+  const bufferSize = audioCtx.sampleRate * 0.25;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+  }
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 2200;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.12, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+  noise.connect(filter).connect(gain).connect(audioCtx.destination);
+  noise.start(now);
+}
+
+// ---------- ambient candle crackle (synthesized, either mode) ----------
+let crackleOn = false;
+let crackleTimeoutId = null;
+function scheduleCrackle() {
+  if (!crackleOn || state.extinguished) return;
+  // timer mode locks burn rate to the candle's true, unaided speed —
+  // the crackle should reflect that same still-air pace, not whatever
+  // the wind slider happened to be left at before switching modes
+  const wind = state.timerMode ? 0 : state.wind;
+  const gapMs = 700 - wind * 400 + Math.random() * 500;
+  crackleTimeoutId = setTimeout(() => {
+    pop(0.03 + wind * 0.05);
+    scheduleCrackle();
+  }, gapMs);
+}
+function pop(volume) {
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  const now = audioCtx.currentTime;
+  const len = audioCtx.sampleRate * 0.05;
+  const buffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 1200 + Math.random() * 1800;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(volume, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+  noise.connect(filter).connect(gain).connect(audioCtx.destination);
+  noise.start(now);
+}
+soundCheck.addEventListener('change', (e) => {
+  crackleOn = e.target.checked;
+  clearTimeout(crackleTimeoutId);
+  if (crackleOn) scheduleCrackle();
+});
+
+// ---------- timer icon picker ----------
+// Clicking any pin (new or existing) without dragging it opens this popup
+// right next to that pin — wherever it actually is on the candle — so
+// there's never any doubt about which pin's icon you're setting.
+let activePinIconTarget = null;
+
+function positionIconPopup(anchorRect) {
+  const popupW = iconPopup.offsetWidth || 220;
+  const popupH = iconPopup.offsetHeight || 90;
+  let left = anchorRect.left + anchorRect.width / 2 - popupW / 2;
+  let top = anchorRect.top - popupH - 12;
+  left = Math.max(8, Math.min(left, window.innerWidth - popupW - 8));
+  top = Math.max(8, top);
+  iconPopup.style.left = `${left}px`;
+  iconPopup.style.top = `${top}px`;
+}
+
+iconPopup.querySelectorAll('.icon-option').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const icon = btn.dataset.icon || null;
+    if (activePinIconTarget) {
+      setPinIcon(activePinIconTarget, icon);
+      activePinIconTarget = null;
+    }
+    iconPopup.classList.remove('open');
+  });
+});
+
+// Updates an already-placed pin's icon in place, without touching its
+// position, fall state, or anything else about it.
+function setPinIcon(pin, icon) {
+  pin.icon = icon;
+  const plateFaceX = pin.el.getAttribute('data-plate-x');
+  const pinY = pin.el.getAttribute('data-anchor-y');
+  const existingText = pin.el.querySelector('text');
+  if (existingText) existingText.remove();
+  if (icon) {
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', plateFaceX);
+    text.setAttribute('y', pinY);
+    text.setAttribute('font-size', '17');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'central');
+    text.style.userSelect = 'none';
+    text.textContent = icon;
+    pin.el.appendChild(text);
+  }
+  renderPinList();
+  saveState();
+}
+document.addEventListener('click', (e) => {
+  if (iconPopup.classList.contains('open') && !iconPopup.contains(e.target)) {
+    iconPopup.classList.remove('open');
+    activePinIconTarget = null;
+  }
+});
+
+// ---------- status readout ----------
+function formatDuration(ms) {
+  if (ms < 60_000) {
+    return `${Math.max(0, Math.round(ms / 1000))}s`;
+  }
+  const totalMinutes = Math.max(0, Math.round(ms / 60_000));
+  const d = Math.floor(totalMinutes / 1440);
+  const h = Math.floor((totalMinutes % 1440) / 60);
+  const m = totalMinutes % 60;
+  if (d > 0) {
+    if (h === 0) return `${d}d`;
+    return `${d}d ${h}h`;
+  }
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+function updateReadout() {
+  const total = burnDurationMs(state.size);
+  const remaining = total * Math.max(state.waxFraction, 0);
+  if (state.extinguished) {
+    readout.textContent = 'Burned out';
+  } else if (state.timerMode && state.pins.length) {
+    const next = state.pins.find((p) => !p.fallen);
+    if (next) {
+      const alarmMs = Math.max(0, state.waxFraction - next.fraction) * total;
+      const prefix = next.icon ? `${next.icon} ` : '';
+      readout.textContent = `${prefix}Next alarm in ${formatDuration(alarmMs)} · candle burns out in ${formatDuration(remaining)}`;
+    } else {
+      readout.textContent = '';
+    }
+  } else {
+    readout.textContent = `${formatDuration(remaining)} remaining of ${formatDuration(total)}`;
+  }
+  renderPinList();
+}
+
+// ---------- floating time tooltip (shown while dragging or hovering a pin) ----------
+function showPinTooltip(clientX, clientY, text) {
+  pinTooltip.textContent = text;
+  pinTooltip.style.transform = `translate(${clientX}px, ${clientY}px) translate(-50%, calc(-100% - 10px))`;
+  pinTooltip.classList.add('visible');
+}
+function hidePinTooltip() {
+  pinTooltip.classList.remove('visible');
+}
+
+// ---------- pin list (the little chips under the panel) ----------
+function renderPinList() {
+  const total = burnDurationMs(state.size);
+  pinList.innerHTML = state.pins.map((pin, i) => {
+    const icon = pin.icon || '📌';
+    if (pin.fallen) {
+      return `<span class="pin-chip fallen">${icon} rung<button type="button" data-snooze="${i}" aria-label="Snooze pin, ring again in ${SNOOZE_MINUTES} minutes" title="Ring again in ${SNOOZE_MINUTES}m">⟳</button></span>`;
+    }
+    const remainMs = Math.max(0, state.waxFraction - pin.fraction) * total;
+    return `<span class="pin-chip">${icon} ${formatDuration(remainMs)}<button type="button" data-remove="${i}" aria-label="Remove pin">✕</button></span>`;
+  }).join('');
+}
+pinList.addEventListener('click', (e) => {
+  const removeIdx = e.target.getAttribute('data-remove');
+  if (removeIdx !== null) { removePin(parseInt(removeIdx, 10)); return; }
+  const snoozeIdx = e.target.getAttribute('data-snooze');
+  if (snoozeIdx !== null) snoozePin(parseInt(snoozeIdx, 10));
+});
+
+// ---------- pins: geometry + lifecycle ----------
+// A pin's on-screen height directly IS its wait time: BASE_Y is the plate,
+// and pin.fraction (0..1) is how much wax will be left when it fires — so
+// higher on the candle = fires sooner, lower = fires later. Dragging a pin
+// up/down just recomputes fraction from its new height.
+function pinMarkup(pin, pinY, fullH, halfW) {
+  // sized up from the original (larger head + thicker rod) so a pin is
+  // easier to see, aim for, and grab — especially with a finger on a
+  // small phone screen
+  const side = pin.side || 1; // 1 = right, -1 = left — alternates per pin so a row of pins doesn't collide on one face
+  const insertionDepth = 16;
+  const protrusion = 30;
+  const surfaceX = CENTER_X + side * halfW;
+  const tipX = surfaceX - side * insertionDepth;
+  const tipR = 2.8;
+  const rodR = 4.6;
+  const plateR = 13;
+  const plateThickness = 4;
+  const rodEndX = surfaceX + side * (protrusion - plateThickness);
+  const plateFaceX = surfaceX + side * protrusion;
+  const connectorX = Math.min(rodEndX, plateFaceX);
+  const html = `
+    <path d="M ${tipX} ${pinY - tipR}
+             L ${rodEndX} ${pinY - rodR}
+             L ${rodEndX} ${pinY + rodR}
+             L ${tipX} ${pinY + tipR} Z"
+          fill="url(#pinMetal)" stroke="#5a4322" stroke-width="0.5"/>
+    <rect x="${connectorX}" y="${pinY - plateR}" width="${plateThickness}" height="${plateR * 2}"
+          fill="#8a6636"/>
+    <circle cx="${plateFaceX}" cy="${pinY}" r="${plateR}" fill="#c9a06b" stroke="#5a4322" stroke-width="0.8"/>
+    <circle cx="${plateFaceX}" cy="${pinY}" r="${plateR - 2.2}" fill="none" stroke="#8a6636" stroke-width="0.6" opacity="0.6"/>
+    <ellipse cx="${plateFaceX - side * plateR * 0.35}" cy="${pinY - plateR * 0.35}" rx="${plateR * 0.4}" ry="${plateR * 0.22}"
+             fill="#f2dcae" opacity="0.45"/>
+    ${pin.icon ? `<text x="${plateFaceX}" y="${pinY}" font-size="17" text-anchor="middle" dominant-baseline="central" style="user-select:none">${pin.icon}</text>` : ''}
+  `;
+  return { html, surfaceX, plateFaceX };
+}
+
+function createPinElement(pin, fullH, halfW) {
+  const pinY = BASE_Y - fullH * pin.fraction;
+  const { html, surfaceX, plateFaceX } = pinMarkup(pin, pinY, fullH, halfW);
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('data-anchor-x', surfaceX);
+  g.setAttribute('data-anchor-y', pinY);
+  g.setAttribute('data-plate-x', plateFaceX);
+  g.style.cursor = 'grab';
+  g.innerHTML = html;
+  return g;
+}
+
+// Rewrites an existing pin's element at a new fraction (used while
+// dragging) — same look, new height, nothing else about the pin touched.
+function movePinTo(pin, fraction) {
+  pin.fraction = fraction;
+  const fullH = candleHeight(state.size);
+  const halfW = candleHalfWidth(state.size);
+  const pinY = BASE_Y - fullH * fraction;
+  const { html, surfaceX, plateFaceX } = pinMarkup(pin, pinY, fullH, halfW);
+  pin.el.setAttribute('data-anchor-x', surfaceX);
+  pin.el.setAttribute('data-anchor-y', pinY);
+  pin.el.setAttribute('data-plate-x', plateFaceX);
+  pin.el.style.transform = '';
+  pin.el.innerHTML = html;
+}
+
+// The valid range a pin's fraction can sit in right now: never above the
+// current wax top (nothing to stick into up there), never so high it'd
+// ring in less than a minute, and never so low that ringing it would
+// leave less than ALARM_MIN_REMAINING_MINUTES of candle left.
+const ALARM_MIN_WAIT_MINUTES = 1;
+const ALARM_MIN_REMAINING_MINUTES = 2;
+function fractionBounds() {
+  const totalMinutes = burnDurationMs(state.size) / 60_000;
+  const minWaitFraction = ALARM_MIN_WAIT_MINUTES / totalMinutes;
+  const minRemainingFraction = ALARM_MIN_REMAINING_MINUTES / totalMinutes;
+  let maxFraction = Math.min(state.waxFraction, state.waxFraction - minWaitFraction);
+  let minFraction = minRemainingFraction;
+  if (maxFraction < minFraction) maxFraction = minFraction;
+  return { minFraction: Math.max(0.001, minFraction), maxFraction: Math.max(0.001, maxFraction) };
+}
+
+// Minimum gap (in wax-fraction units) kept between two pins so they never
+// land on, or get dragged onto, the exact same spot on the candle.
+const MIN_PIN_GAP = 0.035;
+
+function clampPinFraction(candidate, pin) {
+  const { minFraction, maxFraction } = fractionBounds();
+  let f = Math.min(maxFraction, Math.max(minFraction, candidate));
+  const others = state.pins.filter((p) => p !== pin && !p.fallen);
+  for (const other of others) {
+    if (Math.abs(f - other.fraction) < MIN_PIN_GAP) {
+      f = f >= other.fraction
+        ? Math.min(maxFraction, other.fraction + MIN_PIN_GAP)
+        : Math.max(minFraction, other.fraction - MIN_PIN_GAP);
+    }
+  }
+  return f;
+}
+
+// A sensible starting height for a brand-new pin, close to the shortest
+// allowed wait — you then drag it to wherever you actually want it.
+function defaultPinFraction() {
+  const { minFraction, maxFraction } = fractionBounds();
+  let fraction = Math.min(maxFraction, maxFraction - (maxFraction - minFraction) * 0.1);
+  const active = state.pins.filter((p) => !p.fallen);
+  while (fraction > minFraction && active.some((p) => Math.abs(p.fraction - fraction) < MIN_PIN_GAP)) {
+    fraction -= MIN_PIN_GAP;
+  }
+  return Math.max(minFraction, fraction);
+}
+
+function waitMinutesFor(fraction) {
+  const totalMinutes = burnDurationMs(state.size) / 60_000;
+  return Math.max(0, state.waxFraction - fraction) * totalMinutes;
+}
+
+let draggingPin = null;
+
+function attachPinInteractions(pin) {
+  pin.el.addEventListener('pointerdown', (e) => {
+    if (pin.fallen || pin.firing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    pin.el.setPointerCapture(e.pointerId);
+    pin.el.style.cursor = 'grabbing';
+    pin._moved = false;
+    pin._dragStartClientY = e.clientY;
+    pin._dragStartFraction = pin.fraction;
+    draggingPin = pin;
+  });
+
+  pin.el.addEventListener('pointermove', (e) => {
+    if (pin.fallen) return;
+    if (draggingPin === pin) {
+      if (Math.abs(e.clientY - pin._dragStartClientY) > 3) pin._moved = true;
+      const rect = scene.getBoundingClientRect();
+      const scale = 520 / rect.height; // viewBox units per on-screen pixel
+      const fullH = candleHeight(state.size);
+      const deltaSvg = (e.clientY - pin._dragStartClientY) * scale;
+      const startPinY = BASE_Y - fullH * pin._dragStartFraction;
+      const candidatePinY = startPinY + deltaSvg;
+      const candidateFraction = (BASE_Y - candidatePinY) / fullH;
+      movePinTo(pin, clampPinFraction(candidateFraction, pin));
+      renderPinList();
+    }
+    if (!pin.fallen) {
+      showPinTooltip(e.clientX, e.clientY, `Rings in ${formatDuration(waitMinutesFor(pin.fraction) * 60_000)}`);
+    }
+  });
+
+  pin.el.addEventListener('pointerup', (e) => {
+    if (draggingPin === pin) {
+      draggingPin = null;
+      pin.el.style.cursor = 'grab';
+      // always dismiss the floating time popup once the finger/mouse
+      // lifts — on touch devices there's no hover to leave afterward,
+      // so this can't be left to the pointerleave handler alone
+      hidePinTooltip();
+      if (!pin._moved) {
+        // no real movement happened — treat it as a click, open the icon
+        // picker right next to this pin, not down at the bottom toolbar
+        activePinIconTarget = pin;
+        positionIconPopup(pin.el.getBoundingClientRect());
+        iconPopup.classList.add('open');
+      }
+    }
+  });
+
+  pin.el.addEventListener('pointercancel', () => {
+    if (draggingPin === pin) {
+      draggingPin = null;
+      pin.el.style.cursor = 'grab';
+      hidePinTooltip();
+    }
+  });
+
+  pin.el.addEventListener('pointerleave', () => {
+    if (draggingPin !== pin) hidePinTooltip();
+  });
+}
+
+function addPin(fraction) {
+  if (state.pins.length >= MAX_PINS) return null;
+  if (fraction === undefined) fraction = defaultPinFraction();
+  fraction = clampPinFraction(fraction, null);
+  const fullH = candleHeight(state.size);
+  const halfW = candleHalfWidth(state.size);
+  const pin = { fraction, icon: null, fallen: false, firing: false, el: null, side: state.pins.length % 2 === 0 ? 1 : -1 };
+  pin.el = createPinElement(pin, fullH, halfW);
+  attachPinInteractions(pin);
+  pinsGroup.appendChild(pin.el);
+  state.pins.push(pin);
+  renderPinList();
+  saveState();
+  return pin;
+}
+
+function removePin(idx) {
+  const pin = state.pins[idx];
+  if (!pin || pin.fallen || pin.firing) return;
+  pin.el.remove();
+  state.pins.splice(idx, 1);
+  renderPinList();
+  saveState();
+}
+
+// Tapping the ⟳ on a fallen pin re-arms it a few minutes out, without
+// having to place a brand-new pin from scratch. It reappears stuck back
+// into the candle at whatever height corresponds to "rings again in
+// SNOOZE_MINUTES", same as any other pin from there on.
+const SNOOZE_MINUTES = 5;
+function snoozePin(idx) {
+  const pin = state.pins[idx];
+  if (!pin || !pin.fallen) return;
+  const totalMinutes = burnDurationMs(state.size) / 60_000;
+  const waitFraction = SNOOZE_MINUTES / totalMinutes;
+  const { minFraction, maxFraction } = fractionBounds();
+  let newFraction = state.waxFraction - waitFraction;
+  newFraction = Math.min(maxFraction, Math.max(minFraction, newFraction));
+  newFraction = clampPinFraction(newFraction, pin);
+
+  pin.fallen = false;
+  pin.firing = false;
+  pin.el.style.transition = '';
+  movePinTo(pin, newFraction);
+  renderPinList();
+  saveState();
+}
+
+function clearAllPins() {
+  state.pins.forEach((p) => p.el && p.el.remove());
+  state.pins = [];
+  state.landedSlots = 0;
+  renderPinList();
+}
+
+// Clicking the candle body itself (rather than an existing pin) places a
+// brand-new pin right at that height and immediately opens its icon
+// popup — this is how additional pins (2nd through 5th) get added, since
+// there's no separate toolbar button for it.
+candleBody.addEventListener('pointerdown', (e) => {
+  if (!state.timerMode || draggingPin) return;
+  if (state.pins.length >= MAX_PINS) return;
+  const rect = scene.getBoundingClientRect();
+  const scale = 520 / rect.height;
+  const svgY = (e.clientY - rect.top) * scale;
+  const fullH = candleHeight(state.size);
+  const rawFraction = (BASE_Y - svgY) / fullH;
+  const pin = addPin(clampPinFraction(rawFraction, null));
+  if (pin) {
+    activePinIconTarget = pin;
+    positionIconPopup(pin.el.getBoundingClientRect());
+    iconPopup.classList.add('open');
+  }
+});
+
+// ---------- alarm ----------
+// Fired once per pin, the moment the candle burns down past it. Once a
+// pin starts falling, render() never touches it again — only this
+// function and its own timeout own that pin's element from here on,
+// so the fall animation actually gets to play instead of being
+// overwritten on the very next frame.
+function firePin(pin) {
+  pin.firing = true;
+  const anchorX = parseFloat(pin.el.getAttribute('data-anchor-x')) || CENTER_X;
+  const anchorY = parseFloat(pin.el.getAttribute('data-anchor-y')) || 300;
+  const plateY = BASE_Y + 6; // brass plate surface, where it actually lands
+  const fallDistance = plateY - anchorY;
+  const fallMs = 420 + fallDistance * 0.6; // taller drop takes a little longer
+
+  // every pin falls to the same spot on the rim (same anchorX, same
+  // plateY) since they're pinned into whichever side they were placed on —
+  // so each landing gets its own slot spaced along the plate, otherwise
+  // fallen pins would stack invisibly on top of each other. Direction of
+  // both the spread and the rotation has to mirror for left-side pins,
+  // or a pin stuck into the left face falls "backwards" and ends up
+  // propped at an angle instead of lying flat like its right-side twins.
+  const side = pin.side || 1;
+  const landingOffsetX = (8 + state.landedSlots * 16) * side;
+  state.landedSlots++;
+
+  pin.el.style.transition = `transform ${fallMs}ms cubic-bezier(.5,0,1,1)`;
+  pin.el.style.transformOrigin = `${anchorX}px ${anchorY}px`;
+  // pin works loose from where it's stuck in and drops, landing flat on the plate
+  pin.el.style.transform = `translate(${landingOffsetX}px, ${fallDistance}px) rotate(${82 * side}deg)`;
+
+  // the clink is the sound of it actually hitting the brass plate, not
+  // the moment it comes loose — so the ring is timed to land with impact.
+  // The pin stays right where it landed afterward, resting on the plate,
+  // instead of disappearing.
+  setTimeout(() => {
+    ring();
+    pin.fallen = true;
+    renderPinList();
+    // once every pin you've set has rung, repeat (if on) keeps chiming
+    // on an interval until turned off — there's nothing left to re-arm
+    if (state.repeat && state.pins.length && state.pins.every((p) => p.fallen)) {
+      clearTimeout(state.repeatTimeoutId);
+      state.repeatTimeoutId = setTimeout(repeatRing, REPEAT_INTERVAL_MS);
+    }
+  }, fallMs);
+}
+
+function repeatRing() {
+  if (!state.repeat) return;
+  // "ding, ding" — two chimes rather than one, so a snoozed alarm is
+  // audibly distinct from the original single ring
+  ring();
+  setTimeout(() => { if (state.repeat) ring(); }, 450);
+  state.repeatTimeoutId = setTimeout(repeatRing, REPEAT_INTERVAL_MS);
+}
+
+// ---------- mode handling ----------
+// seedPins (optional): [{fraction, icon}, ...] restored from a previous
+// visit — if given, those exact pins are recreated instead of the usual
+// single default pin.
+function enterTimerMode(seedPins) {
+  state.timerMode = true;
+  windSlider.disabled = true;
+  windCtrl.style.opacity = 0.35;
+  repeatCtrl.classList.remove('hidden');
+  repeatCtrl.style.opacity = 1;
+  repeatCtrl.style.width = '';
+  repeatCtrl.style.margin = '';
+  candleBody.style.cursor = 'copy'; // hints that clicking the wax adds a pin
+  clearAllPins();
+  if (seedPins && seedPins.length) {
+    seedPins.forEach((sp) => {
+      const pin = addPin(sp.fraction);
+      if (pin && sp.icon) setPinIcon(pin, sp.icon);
+    });
+  } else {
+    addPin(); // seed one pin so just toggling ⏱ on still sets an alarm
+  }
+}
+
+function exitTimerMode() {
+  state.timerMode = false;
+  windSlider.disabled = false;
+  windCtrl.style.opacity = 1;
+  repeatCtrl.style.opacity = 0;
+  repeatCtrl.style.width = '0';
+  repeatCtrl.style.margin = '0 -11px';
+  candleBody.style.cursor = '';
+  clearTimeout(state.repeatTimeoutId);
+  clearAllPins();
+  saveState();
+}
+
+// ---------- persistence: remember the last candle size and its pins so
+// the app reopens where you left off, instead of resetting fresh every
+// time (only the setup — size, mode, pins — is remembered; the burn
+// itself always restarts full, since a candle can't un-burn) ----------
+const STORAGE_KEY = 'sagneCandleState';
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      size: state.size,
+      pillarMode: state.pillarMode,
+      pillarDays: state.pillarDays,
+      timerMode: state.timerMode,
+      repeat: state.repeat,
+      lightedAt: state.lightedAt,
+      pins: state.pins.map((p) => ({ fraction: p.fraction, icon: p.icon })),
+      pitch: state.pitch,
+    }));
+  } catch (e) {
+    // storage unavailable (private browsing, etc.) — nothing depends on
+    // this succeeding, so just skip remembering this time
+  }
+}
+function loadSavedState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// ---------- events ----------
+sizeSlider.addEventListener('input', () => {
+  state.size = sizeSlider.value / 100;
+  syncFill(sizeSlider);
+  resetCandle(); // changing size = a different candle, per brief
+  saveState();
+});
+pillarCheck.addEventListener('change', () => {
+  state.pillarMode = pillarCheck.checked;
+  sizeSlider.disabled = state.pillarMode;
+  sizeCtrl.style.opacity = state.pillarMode ? 0.35 : 1;
+  resetCandle(); // switching in or out of pillar mode = a different candle
+  saveState();
+});
+pillarSlider.addEventListener('input', () => {
+  state.pillarDays = parseInt(pillarSlider.value, 10);
+  syncFill(pillarSlider);
+  if (state.pillarMode) resetCandle(); // only actually a different candle while pillar mode is engaged
+  saveState();
+});
+windSlider.addEventListener('input', () => {
+  state.wind = windSlider.value / 100;
+  syncFill(windSlider);
+});
+pitchSlider.addEventListener('input', () => {
+  // 0.65..1.65 range, centered on the original tone at the slider's midpoint
+  state.pitch = 0.65 + (pitchSlider.value / 100) * 1.0;
+  syncFill(pitchSlider);
+});
+pitchSlider.addEventListener('change', () => {
+  ring(); // preview the new tone once the person settles on a value
+  saveState();
+});
+timerCheck.addEventListener('change', () => {
+  timerCheck.checked ? enterTimerMode() : exitTimerMode();
+  saveState();
+});
+repeatCheck.addEventListener('change', () => {
+  state.repeat = repeatCheck.checked;
+  if (!state.repeat) clearTimeout(state.repeatTimeoutId);
+  saveState();
+});
+
+function resetCandle() {
+  state.waxFraction = 1.0;
+  state.lightedAt = Date.now();
+  state.extinguished = false;
+  clearTimeout(state.repeatTimeoutId);
+  clearAllPins();
+  if (state.timerMode) addPin();
+}
+
+function render() {
+  const s = state.size;
+  const fullH = candleHeight(s);
+  const halfW = candleHalfWidth(s);
+  const curH = fullH * Math.max(state.waxFraction, 0);
+  const topY = BASE_Y - curH;
+
+  // ---- big-pillar hollow well: once enough of a multi-day burn has
+  // elapsed, the flame has sunk below the rim and the top of the candle
+  // is a dark, glowing hollow rather than a flat surface. The outer rim
+  // still erodes on exactly the same waxFraction the pins already fire
+  // against — only the top portion's appearance changes, and the flame's
+  // own position moves down into the well instead of sitting at the rim.
+  const elapsedFraction = 1 - Math.max(state.waxFraction, 0);
+  const hollowT = state.pillarMode
+    ? smoothstep(HOLLOW_START_FRACTION, HOLLOW_START_FRACTION + 0.04, elapsedFraction)
+    : 0;
+  const wellDepth = fullH * 0.22 * hollowT;
+
+  // wax body — flat top, slightly rounded corners, subtle pooled-wax lip at top
+  const waxStriations = [-0.62, -0.28, 0.05, 0.4, 0.7].map((f, i) => {
+    const x = CENTER_X + f * halfW;
+    return `<line x1="${x.toFixed(1)}" y1="${topY + halfW * 0.15}" x2="${x.toFixed(1)}" y2="${topY + curH}"
+              stroke="var(--wax-shadow)" stroke-width="${0.5 + (i % 2) * 0.4}" opacity="${0.1 + (i % 3) * 0.05}"/>`;
+  }).join('');
+
+  // the hollow well itself — a darker inset at the top of the body,
+  // warmly lit from the flame sunk inside it, only present once hollowT>0
+  const wellFloorY = topY + wellDepth;
+  const wellShape = hollowT > 0.01 ? `
+    <rect x="${CENTER_X - halfW * 0.82}" y="${topY}" width="${halfW * 1.64}" height="${wellDepth}"
+          rx="${halfW * 0.15}" fill="#120d08" opacity="${0.55 * hollowT}"/>
+    <ellipse cx="${CENTER_X}" cy="${wellFloorY}" rx="${halfW * 0.7}" ry="${halfW * 0.14}"
+             fill="url(#waxGlow)" opacity="${0.9 * hollowT}" style="mix-blend-mode:screen"/>
+  ` : '';
+  // the bright pooled-wax lip only makes sense on an intact flat surface —
+  // once hollowed, that same edge reads as the dark rim of the opening instead
+  const rimLipOpacity = 1 - hollowT;
+
+  candleBody.innerHTML = `
+    <rect x="${CENTER_X - halfW}" y="${topY}" width="${halfW * 2}" height="${curH}"
+          rx="${halfW * 0.18}" fill="url(#waxGrad)" />
+    <rect x="${CENTER_X - halfW}" y="${topY}" width="${halfW * 2}" height="${curH}"
+          rx="${halfW * 0.18}" fill="url(#waxToneVertical)" style="mix-blend-mode:multiply"/>
+    ${waxStriations}
+    <rect x="${CENTER_X - halfW}" y="${topY}" width="${halfW * 2}" height="${curH}"
+          rx="${halfW * 0.18}" fill="none" stroke="#5c4a30" stroke-width="1"
+          opacity="0.4" filter="url(#inkWobble)"/>
+    <ellipse cx="${CENTER_X}" cy="${topY}" rx="${halfW * 0.94}" ry="${halfW * 0.16}"
+             fill="var(--wax-edge)" opacity="${0.9 * rimLipOpacity}"/>
+    <ellipse cx="${CENTER_X}" cy="${topY}" rx="${halfW * 0.94}" ry="${halfW * 0.16}"
+             fill="none" stroke="#5c4a30" stroke-width="0.7" opacity="0.35" filter="url(#inkWobble)"/>
+    ${!state.extinguished ? `<rect x="${CENTER_X - halfW}" y="${topY}" width="${halfW * 2}" height="${curH}"
+             rx="${halfW * 0.18}" fill="url(#waxBaseGlow)" style="mix-blend-mode:screen"/>` : ''}
+    ${!state.extinguished ? `<rect x="${CENTER_X - halfW}" y="${topY}" width="${halfW * 2}" height="${curH}"
+             rx="${halfW * 0.18}" fill="url(#waxGlow)" style="mix-blend-mode:screen"/>` : ''}
+    ${wellShape}
+    ${!state.extinguished ? `<rect x="${CENTER_X - 1.5}" y="${wellFloorY - 12}" width="3" height="14" rx="1.4" fill="var(--wick)"/>`
+                           : `<rect x="${CENTER_X - 1.3}" y="${wellFloorY - 4}" width="2.6" height="6" rx="1.2" fill="#1a1512"/>`}
+  `;
+
+  glowCircle.setAttribute('cy', wellFloorY - 10);
+  glowCircle.setAttribute('r', state.extinguished ? 0 : 90 + (state.timerMode ? 0 : state.wind) * 35);
+
+  // flame — timer mode locks wind to zero: "burn rate locks to the
+  // candle's true, unaided speed at its set size"
+  const effWind = state.timerMode ? 0 : state.wind;
+  if (!state.extinguished) {
+    // non-repeating turbulence (see stepFlameTurbulence) rather than
+    // stacked sine waves — real flame movement never quite loops
+    const leftWobble  = turb.edgeL.v * 0.6;
+    const rightWobble = turb.edgeR.v * 0.6;
+    const tipWobble    = turb.tip.v;
+    const heightPulse = 1 + turb.height.v * (0.07 + effWind * 0.1);
+
+    // real flames are rarely perfectly plumb even in still air — a small
+    // constant off-axis bias on top of the genuine turbulence in state.lean
+    const idleAsymmetry = 1.4;
+
+    const windLean = state.lean * (10 + effWind * 34) + idleAsymmetry;
+    // a flame sunk into a well is shielded from any draft at all, and
+    // reads smaller/dimmer from outside than one burning in the open
+    const heightScale = (1 - effWind * 0.35) * heightPulse * (1 - hollowT * 0.3);
+    const flameH = 48 * heightScale;
+    const flameW = 14 * (1 - effWind * 0.22) * (1 - hollowT * 0.15);
+    const baseY = wellFloorY - 12;
+    const tipX = CENTER_X + windLean + tipWobble * 3;
+    const tipY = baseY - flameH;
+    const leftW  = flameW * (1 - effWind * 0.4) * (1 + leftWobble * 0.12);
+    const rightW = flameW * (1 + effWind * 0.5) * (1 + rightWobble * 0.12);
+    const cx1 = CENTER_X - leftW;
+    const cx2 = CENTER_X + rightW;
+    const midY = baseY - flameH * 0.42;
+    const bulgeY = baseY - flameH * 0.18; // widest point, low, near the wick — where real diffusion flames bulge
+    // a slight waist just above the bulge, where a real flame narrows
+    // before opening back out toward the tip — breaks up the smooth
+    // single-curve "leaf" silhouette
+    const waistY = baseY - flameH * 0.62;
+    const waistPull = flameW * 0.16;
+    // the waist and the tip's control points bend with the same lean the
+    // rest of the flame has, just scaled down by how far up they sit —
+    // anchored at the base, freest at the tip, like a real flame bending
+    // in a draft. Wobble is kept small here and used only as flicker
+    // texture, not as its own independent sway, or the mid-section reads
+    // as wiggling out of sync with the tip and base.
+    const waistLean = windLean * 0.45;
+    const midLean = windLean * 0.75;
+
+    const flamePathD = `M ${cx1} ${baseY}
+               C ${CENTER_X - leftW * 1.1} ${bulgeY} ${CENTER_X - leftW * 0.55 + waistLean} ${waistY + flameH * 0.1} ${CENTER_X - waistPull + waistLean + leftWobble * 0.4} ${waistY}
+               C ${CENTER_X - waistPull * 0.3 + midLean} ${waistY - flameH * 0.12} ${CENTER_X - leftW * 0.3 + midLean} ${midY} ${tipX} ${tipY}
+               C ${CENTER_X + rightW * 0.3 + midLean} ${midY} ${CENTER_X + waistPull * 0.3 + midLean} ${waistY - flameH * 0.12} ${CENTER_X + waistPull + waistLean + rightWobble * 0.4} ${waistY}
+               C ${CENTER_X + leftW * 0.55 + waistLean} ${waistY + flameH * 0.1} ${CENTER_X + rightW * 1.1} ${bulgeY} ${cx2} ${baseY}
+               C ${CENTER_X + rightW * 0.6} ${baseY + 8} ${CENTER_X - leftW * 0.6} ${baseY + 8} ${cx1} ${baseY} Z`;
+
+    flameGroup.innerHTML = `
+      <ellipse cx="${CENTER_X + windLean * 0.3}" cy="${baseY - flameH * 0.52}"
+               rx="${flameW * 1.9}" ry="${flameH * 0.68}"
+               fill="url(#flameHalo)" filter="url(#flameSoften)"/>
+      <path d="${flamePathD}" fill="url(#flameGrad)" opacity="0.97" filter="url(#flameSoften)"/>
+      <ellipse cx="${CENTER_X + leftWobble * 0.6}" cy="${baseY - flameH * 0.3}"
+               rx="${flameW * 0.4}" ry="${flameH * 0.32}"
+               fill="url(#flameCore)"/>
+      <path d="M ${CENTER_X - flameW * 0.32} ${baseY - 1}
+               Q ${CENTER_X} ${baseY - flameH * 0.3} ${CENTER_X + flameW * 0.28} ${baseY - 1}
+               Q ${CENTER_X} ${baseY + 3} ${CENTER_X - flameW * 0.32} ${baseY - 1} Z"
+            fill="url(#flameHeart)"/>
+      <ellipse cx="${CENTER_X}" cy="${baseY + 2}" rx="${(leftW + rightW) * 0.24}" ry="4.5"
+               fill="url(#flameBase)" filter="url(#flameSoften)"/>
+      <path d="${flamePathD}" fill="none" stroke="#8a4a1e" stroke-width="0.6"
+            opacity="0.22" filter="url(#inkWobble)"/>
+    `;
+  } else {
+    flameGroup.innerHTML = `
+      <path d="M ${CENTER_X} ${topY - 12} q -2 -10 0 -16 q 2 6 0 16" stroke="#9a9a9a" stroke-width="2.5"
+            stroke-linecap="round" fill="none" opacity="0.5"/>
+    `;
+  }
+}
+
+// ---------- restore last visit, if there's anything saved ----------
+(function restoreSavedState() {
+  const saved = loadSavedState();
+  if (!saved) return;
+  if (typeof saved.size === 'number' && isFinite(saved.size)) {
+    state.size = Math.min(1, Math.max(0, saved.size));
+    sizeSlider.value = Math.round(state.size * 100);
+    syncFill(sizeSlider);
+  }
+  if (typeof saved.pillarDays === 'number' && isFinite(saved.pillarDays)) {
+    state.pillarDays = Math.min(PILLAR_MAX_DAYS, Math.max(PILLAR_MIN_DAYS, saved.pillarDays));
+    pillarSlider.value = state.pillarDays;
+    syncFill(pillarSlider);
+  }
+  if (saved.pillarMode) {
+    state.pillarMode = true;
+    pillarCheck.checked = true;
+    sizeSlider.disabled = true;
+    sizeCtrl.style.opacity = 0.35;
+  }
+  if (typeof saved.pitch === 'number' && isFinite(saved.pitch)) {
+    state.pitch = Math.min(1.65, Math.max(0.65, saved.pitch));
+    pitchSlider.value = Math.round(((state.pitch - 0.65) / 1.0) * 100);
+    syncFill(pitchSlider);
+  }
+  if (saved.repeat) {
+    state.repeat = true;
+    repeatCheck.checked = true;
+  }
+
+  // pick up the burn where it actually stands in real time, not where it
+  // was left visually — the candle keeps burning at its true, unaided
+  // rate whether or not anyone's tab is open, the same way a real one
+  // left lit on a table would
+  let burnedOutWhileAway = false;
+  if (typeof saved.lightedAt === 'number' && isFinite(saved.lightedAt)) {
+    const elapsedMs = Math.max(0, Date.now() - saved.lightedAt);
+    const duration = burnDurationMs(state.size);
+    const fraction = 1 - elapsedMs / duration;
+    state.lightedAt = saved.lightedAt;
+    if (fraction <= 0) {
+      state.waxFraction = 0;
+      state.extinguished = true;
+      burnedOutWhileAway = true;
+    } else {
+      state.waxFraction = fraction;
+    }
+  }
+
+  if (saved.timerMode && !burnedOutWhileAway) {
+    timerCheck.checked = true;
+    enterTimerMode(Array.isArray(saved.pins) ? saved.pins : null);
+  } else if (saved.timerMode && burnedOutWhileAway) {
+    // still reflect the mode in the UI, but there's nothing left to
+    // time — every pin would already have rung while it was away
+    timerCheck.checked = true;
+    state.timerMode = true;
+    windSlider.disabled = true;
+    windCtrl.style.opacity = 0.35;
+    repeatCtrl.classList.remove('hidden');
+    repeatCtrl.style.opacity = 1;
+  }
+})();
+
+// ---------- background-safe alarm checking ----------
+// The main tick() loop runs on requestAnimationFrame, which browsers
+// deliberately pause (or slow to a crawl) the moment a tab isn't the
+// active one, to save battery — so a pin waiting to ring would just sit
+// there silently until you switched back. Timer mode locks wind to zero,
+// which means its burn rate is always exactly wall-clock time, so the
+// real remaining fraction can be recomputed directly from lightedAt at
+// any moment, with no dependency on the animation loop having run.
+function realTimerWaxFraction() {
+  const duration = burnDurationMs(state.size);
+  return 1 - Math.max(0, Date.now() - state.lightedAt) / duration;
+}
+function checkPinAlarms() {
+  if (!state.timerMode || state.extinguished) return;
+  const fraction = realTimerWaxFraction();
+  if (fraction <= 0) {
+    state.waxFraction = 0;
+    state.extinguished = true;
+    fssst();
+    renderPinList();
+    return;
+  }
+  state.waxFraction = fraction; // stays accurate even while backgrounded
+  for (const pin of state.pins) {
+    if (!pin.fallen && !pin.firing && fraction <= pin.fraction) firePin(pin);
+  }
+}
+// setInterval is throttled in background tabs too, but far more gently
+// than rAF — modern browsers still run it roughly once a second, which
+// is close enough for a ring you're meant to hear from another room.
+setInterval(checkPinAlarms, 1000);
+// and the instant you do switch back, catch up immediately rather than
+// waiting for the next interval tick
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkPinAlarms();
+});
+
+// ---------- main loop ----------
+let lastT = performance.now();
+let readoutAccumMs = 0;
+function tick(t) {
+  const dt = t - lastT;
+  lastT = t;
+
+  if (!state.extinguished) {
+    const burnWind = state.timerMode ? 0 : state.wind;
+    state.flicker += dt * (0.0016 + burnWind * 0.0055);
+    stepFlameTurbulence(dt, burnWind);
+    state.lean = turb.lean.v * (0.5 + burnWind * 1.5);
+
+    // Size sets the candle's total (real-time) burn capacity in both
+    // modes. Each pin's fraction was fixed relative to that capacity
+    // when it was added.
+    const duration = burnDurationMs(state.size);
+    // wind feeds the flame -> faster burn; locked to 0 in timer mode so
+    // "burn rate locks to the candle's true, unaided speed at its set size"
+    const rateMult = 1 + burnWind * 1.8;
+    state.waxFraction -= (dt / duration) * rateMult;
+
+    if (state.waxFraction <= 0) {
+      state.waxFraction = 0;
+      state.extinguished = true;
+      fssst(); // tiny sound marking the natural end of the candle
+    }
+
+    if (state.timerMode) {
+      for (const pin of state.pins) {
+        if (!pin.fallen && !pin.firing && state.waxFraction <= pin.fraction) {
+          firePin(pin);
+        }
+      }
+    }
+  }
+
+  render();
+
+  readoutAccumMs += dt;
+  if (readoutAccumMs > 500) {
+    readoutAccumMs = 0;
+    updateReadout();
+  }
+
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+// ---------- keep the screen on ----------
+// The whole point of a candle you can prop up and see across a room is
+// defeated if the phone dims and locks itself after a minute of nobody
+// touching it. The Wake Lock API tells the browser to leave the display
+// on while this page is open. It's well supported on modern phones and
+// fails completely silently on anything that doesn't support it — no
+// error, no broken behaviour, the candle just works exactly as before.
+let wakeLockSentinel = null;
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLockSentinel = await navigator.wakeLock.request('screen');
+  } catch (err) {
+    // silently ignore — e.g. battery saver mode, or the tab isn't
+    // visible yet; nothing to surface to the person lighting a candle
+  }
+}
+requestWakeLock();
+// a wake lock is automatically released whenever the tab is hidden
+// (switching apps, locking manually), so it has to be re-requested each
+// time the page becomes visible again, or it silently stops working
+// after the very first app-switch
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') requestWakeLock();
+});
+</script>
+</body>
+</html>

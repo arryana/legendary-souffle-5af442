@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Galileo Thermometer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400&display=swap');
+
+  :root{
+    --bg:#171009;
+    --brass:#b8903f;
+    --brass-lo:#7a5f28;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+    background: radial-gradient(ellipse at 50% 15%, #241a10 0%, var(--bg) 70%);
+    color:#e2d6bb;
+    font-family:'Jost', sans-serif;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+    overflow:hidden;
+  }
+  #stage{
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:2vh 4vw;
+    gap:1.5vh;
+  }
+  #instrument-wrap{
+    width:min(20vw, 190px);
+    height:min(88vh, 780px);
+    filter:drop-shadow(0 24px 46px rgba(0,0,0,.55));
+  }
+  #instrument-wrap svg{ width:100%; height:100%; overflow:visible; }
+
+  .bulb-group{ transition: transform 1.4s cubic-bezier(.34,.1,.2,1); }
+  .tag-chip{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+  }
+  .hover-clone{
+    opacity:0;
+    transition: opacity .22s ease, transform .22s ease;
+    pointer-events:none;
+  }
+  .hover-clone.show{ opacity:1; }
+  .hit-circle{ cursor:pointer; }
+
+  #unit-toggle{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:'Cormorant Garamond', serif;
+    font-size:17px;
+    letter-spacing:.02em;
+  }
+  #unit-toggle button{
+    background:none;
+    border:none;
+    color:#7a6b52;
+    font:inherit;
+    cursor:pointer;
+    padding:2px 4px;
+    transition:color .3s ease;
+  }
+  #unit-toggle button.active{ color:var(--brass); }
+  #unit-toggle .sep{ color:#5a4c38; }
+
+  @media (orientation:portrait){
+    #instrument-wrap{ width:min(52vw, 230px); height:min(80vh, 660px); }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="instrument-wrap">
+    <svg id="vessel-svg" viewBox="595 20 220 725" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="liquidFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#d2d6d9"/>
+          <stop offset="30%" stop-color="#c7cbce"/>
+          <stop offset="65%" stop-color="#b3b7bb"/>
+          <stop offset="100%" stop-color="#94989c"/>
+        </linearGradient>
+      </defs>
+      <image href="tube-fill.png" x="661" y="124" width="84" height="521"/>
+      <g id="bulb-layer"></g>
+      <g id="tag-layer"></g>
+      <image href="vessel-photo.png" x="595" y="20" width="220" height="725" style="pointer-events:none;"/>
+      <g id="hit-layer"></g>
+      <g id="hover-layer"></g>
+    </svg>
+  </div>
+
+  <div id="unit-toggle">
+    <button id="btn-c">C</button>
+    <span class="sep">/</span>
+    <button id="btn-f">F</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const BULBS_F = [30, 37.5, 45, 52.5, 60, 67.5, 75, 82.5, 90];
+  const FLOAT_IMAGES = ['blue','aqua','green','yellow','orange','red','pink','purple','silver'];
+  const X_JITTER = [-22, 18, -10, 24, -27, 11, -16, 26, -5];
+
+  // display size for each float sprite (native crop is 340x435)
+  // sized so a bulb reads as roughly a real pea against the tube (tube interior ~130 units wide)
+  const FLOAT_W = 48;
+  const FLOAT_H = FLOAT_W * (660/370);
+  const TAG_FONT_SIZE = FLOAT_W * 0.16;
+  const TAG_TEXT_X = 1;
+  // coin's true visual center measured at its widest row (y=95 of 107px sprite),
+  // plus a baseline correction since SVG text y= is the baseline, not the glyph's visual middle
+  const TAG_TEXT_Y = FLOAT_H/2 - FLOAT_H*0.08;
+
+  // tube interior bounds measured from the traced vessel (native SVG coords)
+  const TUBE_CX = 703;
+  const TUBE_Y_TOP = 163;
+  const TUBE_Y_BOTTOM = 632;
+
+  let unit = 'f';
+  let currentTempF = 65;
+  let lat = null, lon = null;
+
+  const bulbLayer = document.getElementById('bulb-layer');
+  const tagLayer = document.getElementById('tag-layer');
+  const hitLayer = document.getElementById('hit-layer');
+  const hoverLayer = document.getElementById('hover-layer');
+  const btnC = document.getElementById('btn-c');
+  const btnF = document.getElementById('btn-f');
+
+  const HOVER_SCALE = 2.4;
+
+  function fToC(f){ return (f-32)*5/9; }
+
+  const bulbEls = BULBS_F.map((t,i)=>{
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','bulb-group');
+    g.innerHTML = `<image href="floats/${FLOAT_IMAGES[i]}.png" x="${-FLOAT_W/2}" y="${-FLOAT_H/2}" width="${FLOAT_W}" height="${FLOAT_H}"/>`;
+    bulbLayer.appendChild(g);
+
+    const tg = document.createElementNS('http://www.w3.org/2000/svg','g');
+    tg.setAttribute('class','tag-group');
+    tg.innerHTML = `<text x="${TAG_TEXT_X}" y="${TAG_TEXT_Y}" text-anchor="middle" font-size="${TAG_FONT_SIZE}" class="tag-chip" fill="#000000">${Math.round(t)}°</text>`;
+    tagLayer.appendChild(tg);
+
+    // zoomed-in clone shown on hover, rendered above the glass so it's never clipped
+    const hg = document.createElementNS('http://www.w3.org/2000/svg','g');
+    hg.setAttribute('class','hover-clone');
+    hg.innerHTML = `
+      <image href="floats/${FLOAT_IMAGES[i]}.png" x="${-FLOAT_W/2*HOVER_SCALE}" y="${-FLOAT_H/2*HOVER_SCALE}" width="${FLOAT_W*HOVER_SCALE}" height="${FLOAT_H*HOVER_SCALE}"/>
+      <text x="${TAG_TEXT_X*HOVER_SCALE}" y="${TAG_TEXT_Y*HOVER_SCALE}" text-anchor="middle" font-size="${TAG_FONT_SIZE*HOVER_SCALE}" class="tag-chip" fill="#000000">${Math.round(t)}°</text>
+    `;
+    hoverLayer.appendChild(hg);
+
+    // invisible larger hit target, easier to hover/tap than the tiny coin itself
+    const hit = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    hit.setAttribute('class','hit-circle');
+    hit.setAttribute('r', FLOAT_W*0.7);
+    hit.setAttribute('fill', 'transparent');
+    hitLayer.appendChild(hit);
+
+    function showZoom(){ hg.classList.add('show'); }
+    function hideZoom(){ hg.classList.remove('show'); }
+    hit.addEventListener('pointerenter', showZoom);
+    hit.addEventListener('pointerleave', hideZoom);
+    hit.addEventListener('touchstart', (e)=>{ e.preventDefault(); showZoom(); }, {passive:false});
+    hit.addEventListener('touchend', hideZoom);
+
+    return { el: g, tagEl: tg, hoverEl: hg, hitEl: hit, hoverText: hg.querySelector('text'), temp: t, x: X_JITTER[i] };
+  });
+
+  function tagLabel(tempF){
+    if (unit === 'f') return Math.round(tempF);
+    return Math.round(fToC(tempF));
+  }
+
+  function updateTags(){
+    bulbEls.forEach(b=>{
+      const textEl = b.tagEl.querySelector('text');
+      textEl.textContent = tagLabel(b.temp) + '°';
+      b.hoverText.textContent = tagLabel(b.temp) + '°';
+    });
+  }
+
+  function updatePositions(){
+    const n = BULBS_F.length;
+    bulbEls.forEach((b,i)=>{
+      const buoyancy = b.temp - currentTempF;
+      const k = 0.11;
+      let frac = 0.5 - 0.5*Math.tanh(buoyancy*k);
+      const stagger = (i - (n-1)/2) * 14;
+      let y = TUBE_Y_TOP + frac*(TUBE_Y_BOTTOM-TUBE_Y_TOP) + stagger;
+      y = Math.max(TUBE_Y_TOP+8, Math.min(TUBE_Y_BOTTOM-8, y));
+      const x = TUBE_CX + b.x;
+      b.el.setAttribute('transform', `translate(${x},${y})`);
+      b.tagEl.setAttribute('transform', `translate(${x},${y})`);
+      b.hoverEl.setAttribute('transform', `translate(${x},${y})`);
+      b.hitEl.setAttribute('cx', x);
+      b.hitEl.setAttribute('cy', y);
+    });
+  }
+
+  function setUnit(u){
+    unit = u;
+    btnC.classList.toggle('active', u==='c');
+    btnF.classList.toggle('active', u==='f');
+    updateTags();
+  }
+  btnC.addEventListener('click', ()=>setUnit('c'));
+  btnF.addEventListener('click', ()=>setUnit('f'));
+  setUnit('f');
+
+  async function fetchWeather(){
+    if (lat==null || lon==null) return;
+    try{
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m&temperature_unit=fahrenheit`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data && data.current && typeof data.current.temperature_2m === 'number'){
+        currentTempF = data.current.temperature_2m;
+        updatePositions();
+      }
+    } catch(e){ /* keep last known value silently */ }
+  }
+
+  function init(){
+    updatePositions();
+    if (navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        pos => { lat = pos.coords.latitude; lon = pos.coords.longitude; fetchWeather(); },
+        () => { lat = 55.19; lon = -1.56; fetchWeather(); },
+        { timeout: 5000 }
+      );
+    } else {
+      lat = 55.19; lon = -1.56; fetchWeather();
+    }
+    setInterval(fetchWeather, 10*60*1000);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

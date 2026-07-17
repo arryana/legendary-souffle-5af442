@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>lamp — sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  :root{
+    --bg:#050505;
+    --brass:#c9974e; --brass-light:#e8c383;
+    --parchment:#f2e9d8;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    height:100%; margin:0; overflow:hidden;
+    background: var(--bg);
+    font-family: Georgia, serif; color:var(--parchment);
+  }
+  #backlink{
+    position:fixed; top:18px; left:22px; z-index:50;
+    color:var(--parchment); opacity:.5; text-decoration:none;
+    font-size:14px; letter-spacing:.04em; transition:opacity .3s ease;
+  }
+  #backlink:hover{opacity:.9;}
+  #stage{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  canvas{ width:min(72vw, 480px); height:min(88vw, 640px); max-height:62vh; display:block; }
+
+  #dock{
+    position:fixed; bottom:0; left:0; right:0;
+    display:flex; flex-direction:column; align-items:center; gap:12px;
+    padding:16px 18px 26px;
+    background:linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,0));
+    z-index:40;
+  }
+  #wickRow{ display:flex; align-items:center; gap:12px; }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:170px; height:3px; border-radius:3px;
+    background:rgba(242,233,216,.25); outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+    background:var(--brass); cursor:pointer;
+    box-shadow:0 0 6px rgba(201,151,78,.6);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px; height:14px; border-radius:50%; border:none;
+    background:var(--brass); cursor:pointer;
+  }
+  #shapeRow{ display:flex; align-items:center; gap:10px; }
+  #shapeRow input[type=range]{ width:120px; }
+  #volumeRow{
+    display:flex; align-items:center; gap:10px;
+    font-size:12px; opacity:.6; letter-spacing:.03em;
+  }
+  #volumeRow input[type=range]{ width:100px; }
+  #volumeRow input[type=checkbox]{
+    -webkit-appearance:none; appearance:none;
+    width:14px; height:14px; border-radius:3px;
+    border:1px solid rgba(242,233,216,.4);
+    background:transparent; cursor:pointer; position:relative;
+    margin:0; flex-shrink:0;
+  }
+  #volumeRow input[type=checkbox]:checked{
+    background:rgba(201,151,78,0.25); border-color:var(--brass);
+  }
+  #volumeRow input[type=checkbox]:checked::after{
+    content:''; position:absolute; left:3px; top:0px;
+    width:4px; height:8px;
+    border:solid var(--brass); border-width:0 2px 2px 0;
+    transform:rotate(45deg);
+  }
+  .wickIcon{ display:block; background:currentColor; opacity:.55; }
+  .barIcon{ width:15px; height:2.5px; border-radius:1.5px; }
+  .pointIcon{
+    width:0; height:0; background:transparent;
+    border-left:6px solid transparent; border-right:6px solid transparent;
+    border-bottom:11px solid var(--parchment);
+  }
+</style>
+</head>
+<body>
+
+<a id="backlink" href="index.html">← sagne</a>
+<div id="stage">
+  <canvas id="scene"></canvas>
+</div>
+
+<div id="dock">
+  <div id="shapeRow">
+    <span class="wickIcon barIcon" title="flat wick"></span>
+    <input type="range" id="wickShapeSlider" min="0" max="100" value="0" title="wick shape: flat to triangular">
+    <span class="wickIcon pointIcon" title="triangular wick"></span>
+  </div>
+  <div id="wickRow">
+    <span title="wick height">🕯️</span>
+    <input type="range" id="wickSlider" min="10" max="100" value="55">
+  </div>
+  <div id="volumeRow">
+    <input type="checkbox" id="muteCheckbox" title="no sound" aria-label="no sound">
+    <span title="volume">🔊</span>
+    <input type="range" id="volumeSlider" min="0" max="100" value="70" aria-label="volume">
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('scene');
+  const ctx = canvas.getContext('2d');
+  const wickSlider = document.getElementById('wickSlider');
+
+  let W = 0, H = 0, DPR = 1;
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = canvas.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+
+  let wick = wickSlider.value / 100;
+  wickSlider.addEventListener('input', () => { wick = wickSlider.value / 100; });
+
+  let wickShape = 0; // 0 = flat wick, 1 = triangular wick — continuous, not a toggle
+  const wickShapeSlider = document.getElementById('wickShapeSlider');
+  wickShapeSlider.addEventListener('input', () => { wickShape = wickShapeSlider.value / 100; });
+
+  // no-sound and volume are shared site-wide — same localStorage keys
+  // the acorn sagnity uses, so the setting carries over between pages
+  const muteCheckbox = document.getElementById('muteCheckbox');
+  let muted = localStorage.getItem('sagne-muted') === 'true';
+  muteCheckbox.checked = muted;
+  muteCheckbox.addEventListener('change', () => {
+    muted = muteCheckbox.checked;
+    localStorage.setItem('sagne-muted', muted ? 'true' : 'false');
+  });
+
+  const volumeSlider = document.getElementById('volumeSlider');
+  let volumeLevel = parseFloat(localStorage.getItem('sagne-volume'));
+  if (isNaN(volumeLevel)) volumeLevel = 0.7;
+  volumeSlider.value = Math.round(volumeLevel * 100);
+  volumeSlider.addEventListener('input', () => {
+    volumeLevel = volumeSlider.value / 100;
+    localStorage.setItem('sagne-volume', volumeLevel);
+  });
+
+  // ---------- organic, non-repeating flicker (same turbulence approach
+  // as the candle) — but no lean at all. The whole point of a hurricane
+  // lamp is the chimney shields the flame from air movement, so it never
+  // gutters or drifts; only its height and texture flicker gently.
+  function makeTurbChannel(period) { return { v: 0, target: 0, timer: Math.random()*period }; }
+  function stepTurb(ch, dt, range, minP, maxP, smooth){
+    ch.timer -= dt;
+    if (ch.timer <= 0){
+      ch.target = (Math.random()*2-1)*range;
+      ch.timer = minP + Math.random()*(maxP-minP);
+    }
+    ch.v += (ch.target - ch.v) * Math.min(1, dt*smooth);
+  }
+  const turb = {
+    height: makeTurbChannel(300), tip: makeTurbChannel(220),
+    edgeL: makeTurbChannel(280), edgeR: makeTurbChannel(310)
+  };
+  function stepFlameTurbulence(dt){
+    stepTurb(turb.height, dt, 1, 260, 560, 0.009);
+    stepTurb(turb.tip, dt, 1, 160, 380, 0.012);
+    stepTurb(turb.edgeL, dt, 1, 220, 500, 0.010);
+    stepTurb(turb.edgeR, dt, 1, 240, 520, 0.010);
+  }
+
+
+  // ---------- audio: hiss/roar scaling with wick height, exactly as
+  // described — a low hiss turned down, a fuller sound at full flame ----------
+  let audioCtx = null, hissGain = null, hissFilter = null;
+  function ensureAudio(){
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const bufferSize = audioCtx.sampleRate * 2;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffer; src.loop = true;
+    hissFilter = audioCtx.createBiquadFilter();
+    hissFilter.type = 'bandpass';
+    hissFilter.frequency.value = 900;
+    hissFilter.Q.value = 0.6;
+    hissGain = audioCtx.createGain();
+    hissGain.gain.value = 0;
+    src.connect(hissFilter).connect(hissGain).connect(audioCtx.destination);
+    src.start();
+  }
+  document.body.addEventListener('pointerdown', ensureAudio, { once:true });
+  function updateAudio(){
+    if (!hissGain) return;
+    const target = muted ? 0 : (0.015 + wick*0.05) * volumeLevel;
+    hissGain.gain.setTargetAtTime(target, audioCtx.currentTime, 0.15);
+    hissFilter.frequency.setTargetAtTime(500 + wick*900, audioCtx.currentTime, 0.2);
+  }
+
+  // ---------- rendering ----------
+  // ---------- rendering: the base, collar, and glass are the actual
+  // photograph (wicklamp.png) rather than a redrawn illustration — only
+  // the wick and flame are genuinely dynamic, so only they're drawn on
+  // canvas, precisely aligned to where the real burner sits in the
+  // photo ----------
+  const lampPhoto = new Image();
+  function smoothstep(edge0, edge1, x){
+    const t = Math.max(0, Math.min(1, (x-edge0)/(edge1-edge0)));
+    return t*t*(3-2*t);
+  }
+  // The wick genuinely passes through four distinct shapes as it goes
+  // from flat to triangular: horned (two peaks with a dip between them)
+  // -> flat with rounded edges (level top, wide, corners softened) ->
+  // curved (the level top becomes a gentle dome, bulging upward) ->
+  // sharp and taller (dome collapses to one crisp point, height grows).
+  // "dip" is the key trick: positive sinks the centre below the
+  // shoulders (a horned dip), zero is level (flat), negative raises the
+  // centre above the shoulders (a curved dome) — the same value that
+  // made a dip can also make a bulge, just by crossing zero.
+  const FLAME_KEYFRAMES = [
+    { wt:0.00, hornX:1.00, dip: 0.24, tr:1.00, trV:1.00, shoulderY:0.10, heightMult:1.00, flameWMult:1.00 },
+    { wt:0.28, hornX:0.55, dip: 0.02, tr:1.35, trV:0.55, shoulderY:0.28, heightMult:1.05, flameWMult:0.96 },
+    { wt:0.55, hornX:0.30, dip:-0.16, tr:1.05, trV:0.35, shoulderY:0.06, heightMult:1.16, flameWMult:0.88 },
+    { wt:0.80, hornX:0.10, dip:-0.05, tr:0.60, trV:0.10, shoulderY:0.00, heightMult:1.30, flameWMult:0.78 },
+    { wt:1.00, hornX:0.00, dip: 0.00, tr:0.42, trV:0.00, shoulderY:0.00, heightMult:1.42, flameWMult:0.72 },
+  ];
+  function lerpFlameKeyframes(wt){
+    const K = FLAME_KEYFRAMES;
+    for (let i=0; i<K.length-1; i++){
+      if (wt <= K[i+1].wt || i === K.length-2){
+        const a = K[i], b = K[i+1];
+        const localT = smoothstep(a.wt, b.wt, wt);
+        const out = {};
+        for (const key of ['hornX','dip','tr','trV','shoulderY','heightMult','flameWMult']){
+          out[key] = a[key] + (b[key]-a[key])*localT;
+        }
+        return out;
+      }
+    }
+  }
+  let lampPhotoReady = false;
+  lampPhoto.onload = () => { lampPhotoReady = true; };
+  lampPhoto.src = 'wicklampblack.png';
+  const PHOTO_W = 848, PHOTO_H = 1239;
+
+  // measured directly from the photo: the burner rim where the wick
+  // emerges, and a clean patch of glass (same column, higher up) used
+  // to paint over the photo's own static wick so our animated one
+  // reads as the only wick, not a second one layered on top
+  const PHOTO_WICK_X = 430, PHOTO_WICK_RIM_Y = 698;
+  const PHOTO_ERASE = { sx: 395, sy: 500, sw: 70, sh: 86, dx: 395, dy: 615, dw: 70, dh: 86 };
+
+  function drawLamp(){
+    ctx.clearRect(0,0,W,H);
+
+    if (!lampPhotoReady){
+      requestAnimationFrame(loop);
+      return;
+    }
+
+    // fit the whole photo within the canvas (never cropped), centered,
+    // so the ambient glow can show in the margins around it
+    const scale = Math.min(W/PHOTO_W, H/PHOTO_H);
+    const dw = PHOTO_W*scale, dh = PHOTO_H*scale;
+    const dx = (W-dw)/2, dy = (H-dh)/2;
+    function toCanvas(px, py){ return { x: dx + px*scale, y: dy + py*scale }; }
+
+    const centerX = dx + PHOTO_WICK_X*scale;
+    const wickRimY = dy + PHOTO_WICK_RIM_Y*scale;
+
+    // wick shape blends continuously from flat (0) to triangular (1) —
+    // but not linearly. In reality the horns round off quickly, the
+    // flame then holds a flat-ish/curved top through most of the
+    // middle range, and only sharpens — and grows taller — in the
+    // final stretch toward fully triangular.
+    const wt = wickShape;
+    const kf = lerpFlameKeyframes(wt);
+
+    // wick geometry — rises and falls with the height slider, top edge
+    // narrows from a flat ribbon to a point with the shape slider.
+    // Sized against the photo's real measurements (wick fabric is
+    // ~53px wide, burner collar ~140px wide, in the photo's own pixel
+    // space) rather than the old illustration's much smaller canvas
+    // scale, which is what made everything read as tiny.
+    const wickProtrusion = (7 + wick*30) * scale;
+    const wickBaseY = wickRimY;
+    const wickTipY = wickBaseY - wickProtrusion;
+    const wickHalfW_base = 12 * scale;
+    const wickHalfW_top = wickHalfW_base * kf.hornX;
+
+    // flame geometry, anchored to the wick's actual tip
+    const flameH = (40 + wick*95) * scale * (1 + turb.height.v*0.05) * kf.heightMult;
+    const fBaseY = wickTipY;
+    const fTipY = fBaseY - flameH;
+    const idleAsymmetry = 3 * scale;
+    const lean = idleAsymmetry + turb.tip.v * 0.8 * scale;
+    const flameW = 15 * kf.flameWMult * scale;
+
+    // ambient warm glow, drawn behind the photo so it only shows in
+    // the letterboxed margins around it — a hint of the room the lamp
+    // is lighting, not an effect on the glass itself
+    const glow = ctx.createRadialGradient(centerX, wickRimY, 10*scale, centerX, wickRimY, (dh)*0.55 + wick*40*scale);
+    glow.addColorStop(0, `rgba(255,190,110,${0.30 + wick*0.22})`);
+    glow.addColorStop(1, 'rgba(255,190,110,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0,0,W,H);
+
+    // the photograph itself
+    ctx.drawImage(lampPhoto, 0, 0, PHOTO_W, PHOTO_H, dx, dy, dw, dh);
+
+    // erase the photo's own small static wick by cloning a clean patch
+    // of glass from directly above it — same column, so lighting and
+    // perspective match seamlessly
+    const er = PHOTO_ERASE;
+    ctx.drawImage(lampPhoto, er.sx, er.sy, er.sw, er.sh,
+                  dx+er.dx*scale, dy+er.dy*scale, er.dw*scale, er.dh*scale);
+
+    // a soft warm highlight glowing on the glass right around the
+    // flame, screen-blended so it brightens the photo rather than
+    // painting over it. The gradient itself is already soft, so no
+    // blur filter is needed — combining a CSS blur filter with a
+    // non-default composite operation renders as solid black in some
+    // WebKit browsers, which is what was happening here.
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    const glowCenterY = fBaseY - flameH*0.45;
+    const rimGlow = ctx.createRadialGradient(centerX, glowCenterY, 0, centerX, glowCenterY, 270*scale + wick*135*scale);
+    rimGlow.addColorStop(0, `rgba(255,200,130,${0.35+wick*0.25})`);
+    rimGlow.addColorStop(1, 'rgba(255,200,130,0)');
+    ctx.fillStyle = rimGlow;
+    ctx.fillRect(dx, dy, dw, dh);
+    ctx.restore();
+
+
+
+    // the wick — real fabric poking out of the ferrule
+    function wickPath(){
+      ctx.beginPath();
+      ctx.moveTo(centerX-wickHalfW_base, wickBaseY);
+      ctx.lineTo(centerX-wickHalfW_top, wickTipY);
+      ctx.lineTo(centerX+wickHalfW_top, wickTipY);
+      ctx.lineTo(centerX+wickHalfW_base, wickBaseY);
+      ctx.closePath();
+    }
+    wickPath();
+    const wickG = ctx.createLinearGradient(centerX-wickHalfW_base, 0, centerX+wickHalfW_base, 0);
+    wickG.addColorStop(0, '#8a6a48');
+    wickG.addColorStop(0.5, '#d9bd93');
+    wickG.addColorStop(1, '#7c5d3e');
+    ctx.save();
+    ctx.filter = `blur(${0.6*scale}px)`;
+    ctx.fillStyle = wickG;
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    wickPath();
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(60,42,24,0.35)';
+    ctx.lineWidth = 2.2*scale;
+    for (let i=-1; i<=1; i++){
+      ctx.beginPath();
+      ctx.moveTo(centerX+i*9*scale, wickBaseY);
+      ctx.lineTo(centerX+i*9*scale*(1-wt), wickTipY);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // flame — passes through the same four stages as the wick: horned,
+    // flat with rounded edges, curved (domed), sharp and taller. The
+    // centre point (Vx,Vy) sinks below the shoulders for a dip when
+    // horned, sits level with them when flat, and rises above them for
+    // a dome when curved — the same value crossing zero is what makes
+    // a dip become a bulge.
+    function flamePath(){
+      ctx.beginPath();
+      const hornX = flameW*1.05*kf.hornX;
+      const trV = 3.5*scale*kf.trV;
+      const tr = 5*scale*kf.tr;
+      const leanAtT = lean*(0.5+0.5*wt);
+      const peakYOffset = flameH*kf.shoulderY;
+      const Lx = centerX-hornX+leanAtT, Ly = fTipY+peakYOffset;
+      const Rx = centerX+hornX+leanAtT, Ry = fTipY+peakYOffset;
+      const Vx = centerX+leanAtT, Vy = Ly + flameH*kf.dip;
+      const ctrlY = fBaseY - flameH*(0.55-0.05*wt);
+      ctx.moveTo(centerX-flameW, fBaseY);
+      ctx.quadraticCurveTo(centerX-flameW*1.1, ctrlY, Lx-tr*0.6, Ly+tr*0.8);
+      ctx.quadraticCurveTo(Lx, Ly, Lx+tr*0.5, Ly+tr*0.6);
+      ctx.quadraticCurveTo(centerX-hornX*0.3+leanAtT, fBaseY-flameH*0.80, Vx-trV*0.6, Vy-trV*0.4);
+      ctx.quadraticCurveTo(Vx, Vy, Vx+trV*0.6, Vy-trV*0.4);
+      ctx.quadraticCurveTo(centerX+hornX*0.3+leanAtT, fBaseY-flameH*0.80, Rx-tr*0.5, Ry+tr*0.6);
+      ctx.quadraticCurveTo(Rx, Ry, Rx+tr*0.6, Ry+tr*0.8);
+      ctx.quadraticCurveTo(centerX+flameW*1.1, ctrlY, centerX+flameW, fBaseY);
+      ctx.quadraticCurveTo(centerX+flameW*0.5, fBaseY-flameH*0.06, centerX, fBaseY-flameH*0.1);
+      ctx.quadraticCurveTo(centerX-flameW*0.5, fBaseY-flameH*0.06, centerX-flameW, fBaseY);
+      ctx.closePath();
+    }
+    flamePath();
+    const flameG = ctx.createLinearGradient(0, fTipY, 0, fBaseY);
+    flameG.addColorStop(0, '#fff6e0');
+    flameG.addColorStop(0.45, '#ffcf7a');
+    flameG.addColorStop(0.8, '#f0923f');
+    flameG.addColorStop(1, '#c96a2e');
+    ctx.save();
+    ctx.filter = `blur(${1.6*scale}px)`;
+    ctx.globalAlpha = 0.88;
+    ctx.fillStyle = flameG;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  let lastDt = 16.67;
+  let lastT = performance.now();
+  function loop(t){
+    lastDt = Math.min(t - lastT, 50);
+    lastT = t;
+    stepFlameTurbulence(lastDt);
+    drawLamp();
+    updateAudio();
+    requestAnimationFrame(loop);
+  }
+
+  resize();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

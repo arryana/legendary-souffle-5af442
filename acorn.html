@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>acorn — sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  :root{
+    --bg1:#0f1420; --bg2:#1c2433;
+    --brass:#c9974e; --parchment:#f2e9d8;
+    --tray-light:#c9a877; --tray-mid:#a8804e; --tray-dark:#6e5230;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    height:100%; margin:0; overflow:hidden;
+    background: radial-gradient(ellipse at 50% 35%, var(--bg2) 0%, var(--bg1) 75%);
+    font-family: Georgia, serif; color:var(--parchment);
+  }
+  #backlink{
+    position:fixed; top:18px; left:22px; z-index:50;
+    color:var(--parchment); opacity:.5; text-decoration:none;
+    font-size:14px; letter-spacing:.04em; transition:opacity .3s ease;
+  }
+  #backlink:hover{opacity:.9;}
+
+  #stage{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #trayWrap{
+    position:relative;
+    width:min(88vw, 640px); height:min(88vw, 640px);
+    max-height:60vh;
+  }
+  canvas{
+    width:100%; height:100%; display:block; border-radius:18px;
+    touch-action:none;
+  }
+
+  #permissionGate{
+    position:fixed; inset:0; z-index:60;
+    background:rgba(10,13,20,0.92);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:18px; text-align:center; padding:30px;
+  }
+  #permissionGate.hidden{ display:none; }
+  #permissionGate p{ max-width:340px; opacity:.75; font-size:15px; line-height:1.5; margin:0; }
+  #tiltBtn{
+    background:transparent; border:1px solid rgba(201,151,78,0.6);
+    color:var(--brass); font-family:inherit; font-size:16px;
+    padding:12px 28px; border-radius:30px; cursor:pointer;
+    letter-spacing:.05em;
+  }
+  #tiltBtn:hover{ background:rgba(201,151,78,0.12); }
+  #skipDesktop{
+    background:none; border:none; color:var(--parchment); opacity:.4;
+    font-size:13px; text-decoration:underline; cursor:pointer; font-family:inherit;
+  }
+
+  #dock{
+    position:fixed; bottom:0; left:0; right:0;
+    display:flex; flex-direction:column; align-items:center; gap:12px;
+    padding:16px 18px 26px;
+    background:linear-gradient(to top, rgba(10,13,20,.85), rgba(10,13,20,0));
+    z-index:40;
+  }
+  #objRow{ display:flex; align-items:center; justify-content:center; gap:10px; }
+  .objBtn{
+    background:transparent; border:1px solid rgba(242,233,216,.3);
+    color:var(--parchment); font-size:22px; width:50px; height:50px;
+    border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    opacity:.55; transition:all .25s ease;
+  }
+  .objBtn.active{ opacity:1; border-color:var(--brass); background:rgba(201,151,78,0.14); }
+  .objBtn:hover{ opacity:1; }
+
+  #speedRow{
+    display:flex; align-items:center; gap:12px;
+    font-size:13px; opacity:.75; letter-spacing:.03em;
+  }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:150px; height:3px; border-radius:3px;
+    background:rgba(242,233,216,.25); outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+    background:var(--brass); cursor:pointer;
+    box-shadow:0 0 6px rgba(201,151,78,.6);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px; height:14px; border-radius:50%; border:none;
+    background:var(--brass); cursor:pointer;
+  }
+
+  #muteRow{
+    display:flex; align-items:center; gap:8px;
+    font-size:12px; opacity:.55; letter-spacing:.03em;
+    cursor:pointer; user-select:none; transition:opacity .25s ease;
+  }
+  #muteRow:hover{ opacity:.85; }
+  #muteRow input[type=checkbox]{
+    -webkit-appearance:none; appearance:none;
+    width:14px; height:14px; border-radius:3px;
+    border:1px solid rgba(242,233,216,.4);
+    background:transparent; cursor:pointer; position:relative;
+    margin:0;
+  }
+  #muteRow input[type=checkbox]:checked{
+    background:rgba(201,151,78,0.25); border-color:var(--brass);
+  }
+  #muteRow input[type=checkbox]:checked::after{
+    content:''; position:absolute; left:3px; top:0px;
+    width:4px; height:8px;
+    border:solid var(--brass); border-width:0 2px 2px 0;
+    transform:rotate(45deg);
+  }
+  #volumeRow{
+    display:flex; align-items:center; gap:10px;
+    font-size:12px; opacity:.6; letter-spacing:.03em;
+  }
+  #volumeRow input[type=range]{ width:100px; }
+
+  #hint{
+    position:fixed; top:22px; right:26px; font-size:13px; opacity:.4;
+    letter-spacing:.03em; z-index:40; text-align:right; max-width:200px;
+  }
+</style>
+</head>
+<body>
+
+<a id="backlink" href="index.html">← sagne</a>
+<div id="hint">tilt your device<br>or move your mouse</div>
+
+<div id="permissionGate">
+  <p>acorn responds to how you tilt whatever it's resting on.<br>On a phone or tablet, that means the device itself.</p>
+  <button id="tiltBtn">enable tilt</button>
+  <button id="skipDesktop">I'm on a computer — use my mouse instead</button>
+</div>
+
+<div id="stage">
+  <div id="trayWrap">
+    <canvas id="scene"></canvas>
+  </div>
+</div>
+
+<div id="dock">
+  <div id="speedRow">
+    <span title="speed">💨</span>
+    <input type="range" id="speedSlider" min="20" max="220" value="100" aria-label="speed">
+  </div>
+  <div id="objRow">
+    <button class="objBtn active" data-obj="pebble" title="river pebble">⬮</button>
+    <button class="objBtn" data-obj="acorn" title="acorn">🌰</button>
+    <button class="objBtn" data-obj="disc" title="disc">⬤</button>
+    <button class="objBtn" data-obj="jellybean" title="jellybean stone">⬬</button>
+  </div>
+  <label id="muteRow">
+    <input type="checkbox" id="muteCheckbox">
+    <span>no sound</span>
+  </label>
+  <div id="volumeRow">
+    <span title="volume">🔊</span>
+    <input type="range" id="volumeSlider" min="0" max="100" value="70" aria-label="volume">
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('scene');
+  const ctx = canvas.getContext('2d');
+  const trayWrap = document.getElementById('trayWrap');
+  const gate = document.getElementById('permissionGate');
+  const tiltBtn = document.getElementById('tiltBtn');
+  const skipDesktop = document.getElementById('skipDesktop');
+  const hint = document.getElementById('hint');
+  const objBtns = document.querySelectorAll('.objBtn');
+  const muteCheckbox = document.getElementById('muteCheckbox');
+
+  // no-sound preference is site-wide — stored under one shared key so
+  // every sagnity reads and respects the same setting
+  let muted = localStorage.getItem('sagne-muted') === 'true';
+  muteCheckbox.checked = muted;
+  muteCheckbox.addEventListener('change', () => {
+    muted = muteCheckbox.checked;
+    localStorage.setItem('sagne-muted', muted ? 'true' : 'false');
+    if (rumbleGain && audioCtx) {
+      rumbleGain.gain.setTargetAtTime(muted ? 0 : rumbleGain.gain.value, audioCtx.currentTime, 0.05);
+    }
+  });
+
+  // roll-sound volume — shared site-wide the same way mute is, so the
+  // level carries over between sagnities rather than resetting each time
+  const volumeSlider = document.getElementById('volumeSlider');
+  let volumeLevel = parseFloat(localStorage.getItem('sagne-volume'));
+  if (isNaN(volumeLevel)) volumeLevel = 0.7;
+  volumeSlider.value = Math.round(volumeLevel * 100);
+  volumeSlider.addEventListener('input', () => {
+    volumeLevel = volumeSlider.value / 100;
+    localStorage.setItem('sagne-volume', volumeLevel);
+  });
+
+  let W = 0, H = 0, DPR = 1;
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = trayWrap.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------- tilt input ----------
+  // raw tilt is smoothed (low-pass) to remove hand tremor / sensor jitter,
+  // exactly as specified in the brief — the object should feel like it's
+  // resting on a real physical tray, not jerking with every micro-shake
+  let rawTiltX = 0, rawTiltY = 0;
+  let tiltX = 0, tiltY = 0;
+  let baseBeta = null, baseGamma = null;
+  const SMOOTHING = 0.12;
+
+  function useDeviceTilt(){
+    window.addEventListener('deviceorientation', (e) => {
+      if (e.beta === null || e.gamma === null) return;
+      // "flat" isn't one fixed angle — a phone propped on a table for a
+      // countdown might sit at 20 degrees or 70 depending on the case or
+      // the table, and everyone holds a phone slightly differently even
+      // just standing there. Rather than assuming a prop angle, whatever
+      // orientation the phone is actually in the moment tilt gets
+      // enabled becomes the neutral centre, and every reading after that
+      // is measured relative to it.
+      if (baseBeta === null) { baseBeta = e.beta; baseGamma = e.gamma; }
+      rawTiltX = Math.max(-1, Math.min(1, (e.gamma - baseGamma) / 22));
+      rawTiltY = Math.max(-1, Math.min(1, (e.beta - baseBeta) / 22));
+    });
+  }
+
+  function useMouseTilt(){
+    hint.textContent = 'move your mouse over the tray';
+    window.addEventListener('pointermove', (e) => {
+      const rect = trayWrap.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      rawTiltX = Math.max(-1, Math.min(1, (e.clientX - cx) / (rect.width / 2)));
+      rawTiltY = Math.max(-1, Math.min(1, (e.clientY - cy) / (rect.height / 2)));
+    });
+  }
+
+  tiltBtn.addEventListener('click', async () => {
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      try {
+        const res = await DeviceOrientationEvent.requestPermission();
+        if (res === 'granted') { useDeviceTilt(); gate.classList.add('hidden'); ensureAudio(); return; }
+      } catch (e) { /* fall through to mouse */ }
+    } else {
+      useDeviceTilt();
+      gate.classList.add('hidden');
+      ensureAudio();
+      return;
+    }
+    useMouseTilt();
+    gate.classList.add('hidden');
+    ensureAudio();
+  });
+  skipDesktop.addEventListener('click', () => {
+    useMouseTilt();
+    gate.classList.add('hidden');
+    ensureAudio();
+  });
+
+  // ---------- audio: soft rolling rumble + edge clack ----------
+  let audioCtx = null, rumbleGain = null, rumbleFilter = null, rumbleSrc = null;
+  function ensureAudio(){
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const bufferSize = audioCtx.sampleRate * 2;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    rumbleSrc = audioCtx.createBufferSource();
+    rumbleSrc.buffer = buffer;
+    rumbleSrc.loop = true;
+    rumbleFilter = audioCtx.createBiquadFilter();
+    rumbleFilter.type = 'lowpass';
+    rumbleFilter.frequency.value = 200;
+    rumbleGain = audioCtx.createGain();
+    rumbleGain.gain.value = 0;
+    rumbleSrc.connect(rumbleFilter).connect(rumbleGain).connect(audioCtx.destination);
+    rumbleSrc.start();
+  }
+  function setRumble(speed, objType){
+    if (!rumbleGain) return;
+    // a lingering spin still makes a little noise even once the disc has
+    // basically stopped travelling — the actual sound of a coin winding
+    // down, not silence the instant translation stops
+    const spinContribution = (objType === 'disc') ? Math.abs(obj.discAngVel) * 3.2 : 0;
+    const activity = speed + spinContribution;
+    const target = muted ? 0 : Math.min(0.16, activity * 0.02) * volumeLevel;
+    rumbleGain.gain.setTargetAtTime(target, audioCtx.currentTime, 0.05);
+    // a flat disc scraping a hard edge reads brighter/sharper than the
+    // pebble's softer, duller slide
+    const baseFreq = (objType === 'disc') ? 260 : 140;
+    rumbleFilter.frequency.setTargetAtTime(baseFreq + activity * 12, audioCtx.currentTime, 0.08);
+  }
+  function playClack(intensity){
+    if (!audioCtx || muted) return;
+    const now = audioCtx.currentTime;
+    // a light tap is contact noise, not a musical pitch — a short burst
+    // of filtered noise decays the way a small hard object actually
+    // sounds against a surface, where a clean oscillator tone reads as
+    // synthesized and too "bloopy"
+    const dur = 0.045;
+    const bufferSize = Math.ceil(audioCtx.sampleRate * dur);
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 900 + Math.random() * 300;
+    filter.Q.value = 1.2;
+
+    const gain = audioCtx.createGain();
+    // quiet, and only scales gently with impact speed — should stay a
+    // light tap even on a fairly hard hit, not swell into something loud
+    const peak = Math.min(0.06, 0.012 + intensity * 0.008) * volumeLevel;
+    gain.gain.setValueAtTime(peak, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+    src.connect(filter).connect(gain).connect(audioCtx.destination);
+    src.start(now);
+    src.stop(now + dur);
+  }
+
+  // ---------- objects ----------
+  // river pebble: the simplest case per the brief — position, velocity,
+  // friction, boundary collision. No rotation.
+  // acorn: the cap is wider than the body, so its centre of mass isn't on
+  // the rolling axis — once per rotation the wide edge of the cap catches
+  // the surface and momentarily hitches, kicking the object sideways and
+  // stealing some of its speed, before it rolls freely again until the
+  // next catch. That's a stick-slip pattern, not a smooth curve — a
+  // continuous sine wobble reads as "ball on a wavy path," which isn't
+  // what a lopsided object actually does.
+  // disc: flat and rigid, so it slides rather than rolls — same core
+  // mechanic as the pebble — but it can still spin in place around its
+  // own centre, independent of where it's travelling. That spin comes
+  // from real angled contact with the wall (a glancing hit imparts
+  // torque the same way a hockey puck catches an edge), not from being
+  // scripted to twirl; a dead-on hit imparts no spin at all.
+  // jellybean stone: a smooth, elongated stone with a very slightly
+  // off-centre mass — nowhere near the acorn's dramatic cap asymmetry,
+  // just a barely-perceptible lean in its density. Reuses the exact same
+  // curl mechanism as the acorn's cone-rolling physics, just at a small
+  // fraction of the strength, so it drifts in a lazy, wide arc rather
+  // than looping. And because it's one smooth stone with no attached
+  // cap to catch on anything, it skips the stick-slip catch mechanic
+  // entirely — there's nothing on it that could catch.
+  const OBJECTS = {
+    pebble:    { friction: 0.985, radius: 30, wobble: 0 },
+    acorn:     { friction: 0.972, radius: 60, wobble: 1, catchInterval: 290, curlRate: 0.012 },
+    disc:      { friction: 0.976, radius: 34, wobble: 0, spinOnImpact: 1 },
+    jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.0022 },
+  };
+
+  let activeType = 'pebble';
+  let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0 };
+
+  function resetObject(){
+    obj.x = W / 2;
+    obj.y = H / 2;
+    obj.vx = 0;
+    obj.vy = 0;
+    obj.spin = Math.random() * Math.PI * 2;
+    obj.rollDistance = 0;
+    obj.nextCatch = 30 + Math.random() * 20;
+    // which way this particular acorn curls — a real cone always arcs
+    // toward the same side (its narrow end), but which side that is
+    // depends on which way it happens to be lying, so it's randomised
+    // once per reset and then held fixed, not re-rolled every frame
+    obj.curlDir = Math.random() < 0.5 ? 1 : -1;
+    obj.discSpin = Math.random() * Math.PI * 2;
+    obj.discAngVel = 0;
+  }
+
+  objBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      objBtns.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeType = btn.dataset.obj;
+      resetObject();
+    });
+  });
+
+  // speed slider: a direct multiplier on how strongly tilt translates
+  // into force — 100 is the original feel, lower is gentler/slower,
+  // higher is quicker to accelerate
+  const speedSlider = document.getElementById('speedSlider');
+  let speedMult = speedSlider.value / 100;
+  speedSlider.addEventListener('input', () => {
+    speedMult = speedSlider.value / 100;
+  });
+
+  // tap/click the tray itself to recentre the object at rest, and
+  // recalibrate — covers picking the phone back up and repropping it at
+  // a different angle than when tilt was first enabled
+  canvas.addEventListener('pointerdown', (e) => {
+    resetObject();
+    baseBeta = null;
+    baseGamma = null;
+  });
+
+  // ---------- physics ----------
+  const GRAVITY = 0.55; // px/frame^2 at full tilt
+  const WALL_RESTITUTION = 0.42;
+
+  function step(){
+    tiltX += (rawTiltX - tiltX) * SMOOTHING;
+    tiltY += (rawTiltY - tiltY) * SMOOTHING;
+
+    const spec = OBJECTS[activeType];
+    obj.vx += tiltX * GRAVITY * speedMult;
+    obj.vy += tiltY * GRAVITY * speedMult;
+
+    const speed = Math.hypot(obj.vx, obj.vy);
+    const r = spec.radius;
+
+    // real rolling: how far it's actually travelled determines how much
+    // it's turned, exactly like a wheel — used for rendering the spin,
+    // and for the acorn also used to time when the cap catches next
+    obj.spin += speed / r;
+
+    if (spec.wobble) {
+      obj.rollDistance += speed;
+      if (obj.rollDistance > obj.nextCatch && speed > 0.15) {
+        // the cap has come round to its wide point again — it catches
+        // the surface, stealing a little forward momentum and kicking
+        // the object slightly sideways, texture layered on top of the
+        // steadier cone-curl below rather than the dominant effect now
+        const perpX = -obj.vy / (speed || 1);
+        const perpY = obj.vx / (speed || 1);
+        const kick = (Math.random() * 2 - 1) * Math.min(1, speed / 5);
+        obj.vx += perpX * kick * 0.6;
+        obj.vy += perpY * kick * 0.6;
+        obj.vx *= 0.88;
+        obj.vy *= 0.88;
+        // catches come slightly irregularly, not on a metronome
+        obj.nextCatch = obj.rollDistance + spec.catchInterval * (0.75 + Math.random() * 0.5);
+      }
+
+      // the cone curl: a real tapered object rolling on its side doesn't
+      // travel in a straight line even under a steady push — the narrow
+      // end covers less ground per turn than the wide end, so the whole
+      // object steadily arcs toward its own tip instead. Approximated
+      // here by rotating the velocity vector a small amount every frame,
+      // proportional to how far it's currently travelling — so it curls
+      // more sharply the faster it rolls, and doesn't curl at all when
+      // it's sitting still, the same way an actual rolling cone wouldn't.
+      const curlSpeed = Math.hypot(obj.vx, obj.vy);
+      if (spec.curlRate && curlSpeed > 0.01) {
+        const rotAmt = spec.curlRate * obj.curlDir * curlSpeed;
+        const cosA = Math.cos(rotAmt), sinA = Math.sin(rotAmt);
+        const nvx = obj.vx * cosA - obj.vy * sinA;
+        const nvy = obj.vx * sinA + obj.vy * cosA;
+        obj.vx = nvx;
+        obj.vy = nvy;
+      }
+
+      obj.vx *= spec.friction;
+      obj.vy *= spec.friction;
+    } else {
+      obj.vx *= spec.friction;
+      obj.vy *= spec.friction;
+    }
+
+    if (spec.spinOnImpact) {
+      // spin decays on its own, same as translation does, just with its
+      // own independent friction — nothing keeps it turning once contact
+      // stops feeding it energy
+      obj.discAngVel *= 0.965;
+      obj.discSpin += obj.discAngVel;
+    }
+
+    obj.x += obj.vx;
+    obj.y += obj.vy;
+
+    let clacked = false;
+    let clackIntensity = 0;
+    if (obj.x < r) { obj.x = r; obj.vx = -obj.vx * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vx); if (spec.spinOnImpact) obj.discAngVel += obj.vy * 0.05; }
+    if (obj.x > W - r) { obj.x = W - r; obj.vx = -obj.vx * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vx); if (spec.spinOnImpact) obj.discAngVel -= obj.vy * 0.05; }
+    if (obj.y < r) { obj.y = r; obj.vy = -obj.vy * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel -= obj.vx * 0.05; }
+    if (obj.y > H - r) { obj.y = H - r; obj.vy = -obj.vy * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel += obj.vx * 0.05; }
+    if (clacked && clackIntensity > 0.6) playClack(clackIntensity);
+
+    setRumble(speed, activeType);
+  }
+
+  // ---------- rendering ----------
+  const trayImg = new Image();
+  let trayImgReady = false;
+  trayImg.onload = () => { trayImgReady = true; };
+  trayImg.src = 'tray-wood.jpg';
+
+  function drawTray(){
+    ctx.clearRect(0, 0, W, H);
+
+    if (trayImgReady) {
+      // cover-crop the photo into the square tray, clipped to its
+      // rounded corners
+      ctx.save();
+      roundRect(ctx, 0, 0, W, H, 16);
+      ctx.clip();
+      const iw = trayImg.naturalWidth, ih = trayImg.naturalHeight;
+      const scale = Math.max(W / iw, H / ih);
+      const dw = iw * scale, dh = ih * scale;
+      const dx = (W - dw) / 2, dy = (H - dh) / 2;
+      ctx.filter = 'contrast(0.7) brightness(1.08) saturate(0.85)';
+      ctx.drawImage(trayImg, dx, dy, dw, dh);
+      ctx.filter = 'none';
+      // a soft warm wash over the top mutes the grain lines further
+      // without losing the texture entirely
+      ctx.fillStyle = 'rgba(196,160,110,0.22)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    } else {
+      // brief fallback while the photo loads, so the tray isn't blank
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, '#d4b483');
+      grad.addColorStop(0.5, '#b08c56');
+      grad.addColorStop(1, '#8a6a3c');
+      ctx.fillStyle = grad;
+      roundRect(ctx, 0, 0, W, H, 16);
+      ctx.fill();
+    }
+
+    // raised inner lip / vignette
+    const inner = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.25, W/2, H/2, Math.min(W,H)*0.62);
+    inner.addColorStop(0, 'rgba(0,0,0,0)');
+    inner.addColorStop(1, 'rgba(40,25,10,0.35)');
+    ctx.fillStyle = inner;
+    roundRect(ctx, 0, 0, W, H, 16);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255,235,190,0.25)';
+    ctx.lineWidth = 2;
+    roundRect(ctx, 2, 2, W-4, H-4, 14);
+    ctx.stroke();
+  }
+
+  function roundRect(c, x, y, w, h, r){
+    c.beginPath();
+    c.moveTo(x+r, y);
+    c.arcTo(x+w, y, x+w, y+h, r);
+    c.arcTo(x+w, y+h, x, y+h, r);
+    c.arcTo(x, y+h, x, y, r);
+    c.arcTo(x, y, x+w, y, r);
+    c.closePath();
+  }
+
+  // small trapped air bubbles, fixed positions (not regenerated per
+  // frame) so they read as part of the glass rather than noise
+  const GLASS_BUBBLES = [
+    [-0.35, -0.25, 0.10], [0.15, -0.35, 0.06], [0.40, 0.05, 0.08],
+    [-0.10, 0.15, 0.05], [0.05, 0.40, 0.07], [-0.45, 0.20, 0.05],
+    [0.30, -0.05, 0.04], [-0.20, -0.05, 0.04],
+  ];
+
+  function drawPebble(){
+    const r = OBJECTS.pebble.radius;
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    // soft ink-wobble shadow
+    ctx.beginPath();
+    ctx.ellipse(1, r*0.6, r*0.95, r*0.4, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(20,12,4,0.28)';
+    ctx.fill();
+
+    // sea-glass body — coke-bottle teal, translucent enough that the
+    // wood grain underneath still shows faintly through it. Fewer,
+    // sharper gradient bands than before, and a crisp point highlight
+    // rather than a soft diffused one — reads as polished glass rather
+    // than tumbled, frosted beach glass.
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r, r*0.82, 0, 0, Math.PI*2);
+    ctx.clip();
+
+    ctx.globalAlpha = 0.6;
+    const g = ctx.createRadialGradient(-r*0.25, -r*0.3, r*0.05, r*0.05, r*0.05, r*1.05);
+    g.addColorStop(0, '#d9f5ea');
+    g.addColorStop(0.5, '#4fae93');
+    g.addColorStop(1, '#1c5f52');
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r, r*0.82, 0, 0, Math.PI*2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // trapped bubbles — a thin ring rather than a soft blob, so they
+    // read as tiny glass voids instead of frosted specks
+    GLASS_BUBBLES.forEach(([bx, by, brad]) => {
+      const x = bx*r, y = by*r*0.82, rad = brad*r;
+      ctx.beginPath();
+      ctx.arc(x, y, rad, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fill();
+      ctx.lineWidth = Math.max(0.5, rad*0.25);
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x - rad*0.3, y - rad*0.3, rad*0.3, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fill();
+    });
+
+    // a small, crisp, near-opaque specular point — this is what actually
+    // reads as "polished glass" rather than the wider soft glow alone
+    ctx.beginPath();
+    ctx.ellipse(-r*0.32, -r*0.38, r*0.14, r*0.1, -0.4, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.fill();
+
+    // wider, softer glow around it for a bit of falloff
+    const hi = ctx.createRadialGradient(-r*0.3, -r*0.35, 0, -r*0.3, -r*0.35, r*0.42);
+    hi.addColorStop(0, 'rgba(255,255,255,0.4)');
+    hi.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.beginPath();
+    ctx.ellipse(-r*0.3, -r*0.35, r*0.42, r*0.34, 0, 0, Math.PI*2);
+    ctx.fillStyle = hi;
+    ctx.fill();
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r, r*0.82, 0, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(20,60,50,0.55)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawDisc(){
+    const r = OBJECTS.disc.radius;
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    // shadow
+    ctx.beginPath();
+    ctx.ellipse(1, r*0.15, r*1.02, r*0.9, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(20,12,4,0.3)';
+    ctx.fill();
+
+    // flat stone disc, seen from directly above — nearly circular, with
+    // a slightly uneven edge like a real water-worn stone rather than a
+    // machined coin
+    const body = ctx.createRadialGradient(-r*0.25, -r*0.3, r*0.1, 0, 0, r);
+    body.addColorStop(0, '#a8b0ae');
+    body.addColorStop(0.6, '#767f7c');
+    body.addColorStop(1, '#4c5250');
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r, r*0.94, 0, 0, Math.PI*2);
+    ctx.fillStyle = body;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(30,34,32,0.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // this rotates with obj.discSpin — the one visible cue that the disc
+    // is actually spinning in place, not just a plain circle that would
+    // look identical at any rotation
+    ctx.save();
+    ctx.rotate(obj.discSpin);
+    ctx.beginPath();
+    ctx.ellipse(r*0.32, -r*0.1, r*0.22, r*0.14, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-r*0.15, r*0.35);
+    ctx.lineTo(r*0.1, r*0.45);
+    ctx.strokeStyle = 'rgba(20,24,22,0.35)';
+    ctx.lineWidth = Math.max(1, r*0.03);
+    ctx.stroke();
+    ctx.restore();
+
+    // soft specular highlight, fixed relative to the light source, not
+    // to the disc's own spin
+    const hi = ctx.createRadialGradient(-r*0.3, -r*0.35, 0, -r*0.3, -r*0.35, r*0.5);
+    hi.addColorStop(0, 'rgba(255,255,255,0.35)');
+    hi.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.beginPath();
+    ctx.ellipse(-r*0.3, -r*0.35, r*0.5, r*0.42, 0, 0, Math.PI*2);
+    ctx.fillStyle = hi;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ---------- acorn silhouette ----------
+  // A real acorn is an elongated, slightly asymmetric teardrop under a
+  // textured cap — not a smooth ball with a smaller ball stuck on top.
+  // These vertices are hand-placed (with small fixed jitter baked in, not
+  // recomputed per frame) to read as a drawn silhouette rather than a
+  // perfect geometric ellipse.
+  const ACORN_BODY = [
+    [0.00, -0.90], [0.30, -0.78], [0.52, -0.52], [0.62, -0.18],
+    [0.63,  0.18], [0.54,  0.50], [0.34,  0.78], [0.12,  0.95],
+    [0.00,  1.02], [-0.13, 0.94], [-0.36, 0.76], [-0.56, 0.48],
+    [-0.64, 0.15], [-0.60, -0.20], [-0.48, -0.53], [-0.27, -0.79],
+  ];
+  const ACORN_CAP = [
+    [0.00, -0.90], [0.22, -0.94], [0.44, -0.90], [0.62, -0.76],
+    [0.72, -0.55], [0.66, -0.40], [0.46, -0.48], [0.24, -0.56],
+    [0.02, -0.60], [-0.22, -0.55], [-0.44, -0.47], [-0.66, -0.38],
+    [-0.73, -0.55], [-0.60, -0.77], [-0.40, -0.90], [-0.20, -0.94],
+  ];
+  // small scale marks scattered over the cap, each a short curved dash —
+  // this is what reads as "textured cap" rather than a smooth dome
+  const CAP_SCALES = [
+    [-0.42,-0.82,0.1],[-0.20,-0.86,-0.15],[0.05,-0.87,0.08],[0.30,-0.84,-0.1],[0.50,-0.76,0.15],
+    [-0.55,-0.68,0.05],[-0.30,-0.72,-0.12],[-0.05,-0.73,0.1],[0.20,-0.71,-0.08],[0.44,-0.65,0.12],
+    [-0.60,-0.52,-0.1],[-0.38,-0.56,0.08],[-0.12,-0.58,-0.1],[0.14,-0.57,0.1],[0.38,-0.52,-0.08],[0.58,-0.46,0.1],
+  ];
+
+  // ---------- jellybean stone silhouette ----------
+  // An elongated stone, gently asymmetric — fuller toward one end,
+  // tapering toward the other — with the same small hand-placed jitter
+  // as the acorn's outline, so it reads as drawn rather than a perfect
+  // geometric capsule.
+  const JELLYBEAN_BODY = [
+    [0.00, -0.95], [0.28, -0.88], [0.48, -0.65], [0.58, -0.30],
+    [0.60,  0.05], [0.52,  0.42], [0.36,  0.72], [0.14,  0.92],
+    [-0.10, 0.95], [-0.32, 0.80], [-0.48, 0.52], [-0.56, 0.15],
+    [-0.55, -0.25], [-0.44, -0.60], [-0.24, -0.85],
+  ];
+
+  function drawJellybean(){
+    const r = OBJECTS.jellybean.radius;
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    // shadow
+    ctx.beginPath();
+    ctx.ellipse(1, r*0.75, r*0.68, r*0.28, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(20,12,4,0.28)';
+    ctx.fill();
+
+    ctx.rotate(obj.spin);
+
+    const body = ctx.createRadialGradient(-r*0.2, -r*0.35, r*0.1, 0, r*0.05, r*1.1);
+    body.addColorStop(0, '#e8dcc4');
+    body.addColorStop(0.55, '#c1a97e');
+    body.addColorStop(1, '#8a7250');
+    pathFromPoints(ctx, JELLYBEAN_BODY, 0, 0, r, r);
+    ctx.fillStyle = body;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(60,46,24,0.45)';
+    ctx.lineWidth = Math.max(1, r*0.025);
+    ctx.stroke();
+
+    // a soft highlight stroke down its length, the same brushed-shading
+    // touch used on the acorn's body
+    ctx.save();
+    pathFromPoints(ctx, JELLYBEAN_BODY, 0, 0, r, r);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(255,245,220,0.3)';
+    ctx.lineWidth = r*0.14;
+    ctx.beginPath();
+    ctx.moveTo(-r*0.15, -r*0.6);
+    ctx.quadraticCurveTo(-r*0.28, 0, -r*0.1, r*0.65);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function pathFromPoints(c, pts, cx, cy, scaleX, scaleY){
+    c.beginPath();
+    const n = pts.length;
+    for (let i = 0; i <= n; i++){
+      const p = pts[i % n];
+      const x = cx + p[0]*scaleX, y = cy + p[1]*scaleY;
+      if (i === 0) c.moveTo(x, y);
+      else {
+        const prev = pts[(i-1) % n];
+        const px = cx + prev[0]*scaleX, py = cy + prev[1]*scaleY;
+        c.quadraticCurveTo(px + (x-px)*0.5*0, py + (y-py)*0.5*0, x, y);
+        c.lineTo(x, y);
+      }
+    }
+    c.closePath();
+  }
+
+  function drawAcorn(){
+    const r = OBJECTS.acorn.radius;
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    // shadow
+    ctx.beginPath();
+    ctx.ellipse(1, r*0.85, r*0.78, r*0.3, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(20,12,4,0.3)';
+    ctx.fill();
+
+    ctx.rotate(obj.spin);
+
+    // soft watercolor bloom just under the surface, slightly offset —
+    // a translucent second wash reads as pigment pooling at the edges
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    pathFromPoints(ctx, ACORN_BODY, r*0.04, r*0.04, r, r);
+    ctx.fillStyle = '#8a5a28';
+    ctx.fill();
+    ctx.restore();
+
+    // body — the nut itself, elongated and tapering to a rounded point
+    const bodyG = ctx.createRadialGradient(-r*0.22, -r*0.15, r*0.1, 0, r*0.1, r*1.05);
+    bodyG.addColorStop(0, '#dba669');
+    bodyG.addColorStop(0.55, '#b97f3e');
+    bodyG.addColorStop(1, '#7c5225');
+    pathFromPoints(ctx, ACORN_BODY, 0, 0, r, r);
+    ctx.fillStyle = bodyG;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(60,38,14,0.5)';
+    ctx.lineWidth = Math.max(1, r*0.02);
+    ctx.stroke();
+
+    // a couple of soft highlight strokes down the body, like brushed
+    // watercolor shading rather than a flat gradient alone
+    ctx.save();
+    pathFromPoints(ctx, ACORN_BODY, 0, 0, r, r);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(255,235,200,0.25)';
+    ctx.lineWidth = r*0.1;
+    ctx.beginPath();
+    ctx.moveTo(-r*0.2, -r*0.5);
+    ctx.quadraticCurveTo(-r*0.35, r*0.1, -r*0.15, r*0.7);
+    ctx.stroke();
+    ctx.restore();
+
+    // cap — textured, scalloped where it meets the nut
+    const capG = ctx.createLinearGradient(0, -r*0.95, 0, -r*0.4);
+    capG.addColorStop(0, '#93714a');
+    capG.addColorStop(1, '#5c4326');
+    pathFromPoints(ctx, ACORN_CAP, 0, 0, r, r);
+    ctx.fillStyle = capG;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(45,30,14,0.55)';
+    ctx.lineWidth = Math.max(1, r*0.018);
+    ctx.stroke();
+
+    // scale texture: small curved dashes, the thing that actually reads
+    // as "cap" rather than a smooth brown dome
+    ctx.save();
+    pathFromPoints(ctx, ACORN_CAP, 0, 0, r, r);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(35,22,10,0.4)';
+    ctx.lineWidth = Math.max(0.7, r*0.014);
+    CAP_SCALES.forEach(([sx, sy, curve]) => {
+      const x = sx*r, y = sy*r;
+      ctx.beginPath();
+      ctx.moveTo(x - r*0.06, y);
+      ctx.quadraticCurveTo(x, y + curve*r*0.3, x + r*0.06, y);
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // stem — short, a real twig snapped off close to the cap rather than
+    // a long stick
+    ctx.strokeStyle = '#4a3016';
+    ctx.lineWidth = Math.max(1.4, r*0.05);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(r*0.08, -r*0.92);
+    ctx.quadraticCurveTo(r*0.16, -r*1.05, r*0.14, -r*1.14);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function render(){
+    drawTray();
+    if (activeType === 'pebble') drawPebble();
+    else if (activeType === 'disc') drawDisc();
+    else if (activeType === 'jellybean') drawJellybean();
+    else drawAcorn();
+  }
+
+  function loop(){
+    step();
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  resize();
+  resetObject();
+  loop();
+})();
+</script>
+</body>
+</html>

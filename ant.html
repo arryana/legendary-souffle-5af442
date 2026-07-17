@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ant — sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  :root{
+    --bg1:#3a2f22; --bg2:#282016;
+    --brass:#c9974e; --parchment:#f2e9d8;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    height:100%; margin:0; overflow:hidden;
+    background:#0f1420;
+    font-family: Georgia, serif; color:var(--parchment);
+  }
+  #backlink{
+    position:fixed; top:18px; left:22px; z-index:50;
+    color:var(--parchment); opacity:.5; text-decoration:none;
+    font-size:14px; letter-spacing:.04em; transition:opacity .3s ease;
+  }
+  #backlink:hover{opacity:.9;}
+  #hint{
+    position:fixed; top:22px; right:26px; font-size:12px; opacity:.4;
+    letter-spacing:.03em; z-index:40; text-align:right; max-width:220px;
+  }
+
+  #stage{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #groundWrap{
+    position:relative;
+    width:min(88vw, 720px); height:min(66vw, 480px);
+    max-height:56vh;
+    border-radius:6px;
+    box-shadow: 0 25px 70px rgba(0,0,0,0.6), 0 0 0 8px #241a10, 0 0 0 9px rgba(201,151,78,0.3);
+    overflow:hidden;
+  }
+  canvas{ width:100%; height:100%; display:block; touch-action:none; }
+
+  #dock{
+    position:fixed; bottom:0; left:0; right:0;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    padding:14px 18px 24px;
+    background:linear-gradient(to top, rgba(10,13,20,.85), rgba(10,13,20,0));
+    z-index:40;
+  }
+  .dockRow{
+    display:flex; flex-direction:row; flex-wrap:wrap;
+    justify-content:center; align-items:center;
+    gap:14px 26px;
+    width:min(88vw, 720px);
+  }
+  .sliderRow{ display:flex; align-items:center; gap:10px; }
+  .sliderRow input[type=checkbox]{
+    -webkit-appearance:none; appearance:none;
+    width:16px; height:16px; border-radius:4px;
+    border:1px solid rgba(242,233,216,.4);
+    background:transparent; cursor:pointer; position:relative;
+    margin:0;
+  }
+  .sliderRow input[type=checkbox]:checked{
+    background:rgba(201,151,78,0.25); border-color:var(--brass);
+  }
+  .sliderRow input[type=checkbox]:checked::after{
+    content:''; position:absolute; left:4px; top:1px;
+    width:4px; height:8px;
+    border:solid var(--brass); border-width:0 2px 2px 0;
+    transform:rotate(45deg);
+  }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:120px; height:3px; border-radius:3px;
+    background:rgba(242,233,216,.25); outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+    background:var(--brass); cursor:pointer;
+    box-shadow:0 0 6px rgba(201,151,78,.6);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px; height:14px; border-radius:50%; border:none;
+    background:var(--brass); cursor:pointer;
+  }
+  .iconBtn{
+    width:30px; height:30px; border-radius:50%;
+    border:1px solid rgba(242,233,216,.3); background:transparent;
+    font-size:14px; cursor:pointer; opacity:.6;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .25s ease;
+  }
+  .iconBtn.active{
+    opacity:1; border-color:var(--brass); background:rgba(201,151,78,0.18);
+  }
+</style>
+</head>
+<body>
+
+<a id="backlink" href="index.html">← sagne</a>
+
+<div id="stage">
+  <div id="groundWrap">
+    <canvas id="scene"></canvas>
+  </div>
+</div>
+
+<div id="dock">
+  <div class="dockRow">
+    <div class="sliderRow"><span title="colony size">🐜</span><input type="range" id="countSlider" min="5" max="45" value="20"></div>
+    <div class="sliderRow"><span title="speed">🏃</span><input type="range" id="speedSlider" min="20" max="200" value="100"></div>
+    <div class="sliderRow"><span title="light">☀️</span><input type="range" id="lightSlider" min="10" max="100" value="70"></div>
+    <div class="sliderRow"><span title="ant size">🔍</span><input type="range" id="sizeSlider" min="0" max="150" value="0"></div>
+  </div>
+  <div class="dockRow">
+    <div class="sliderRow"><span title="food">🍭</span><input type="checkbox" id="foodCheck" checked></div>
+    <div class="sliderRow">
+      <button type="button" id="pebbleBtn" class="iconBtn" title="pebble">🪨</button>
+      <input type="range" id="pebbleSizeSlider" min="0" max="100" value="50">
+    </div>
+    <div class="sliderRow">
+      <button type="button" id="leafBtn" class="iconBtn" title="leaf">🍃</button>
+      <input type="range" id="leafSizeSlider" min="0" max="100" value="50">
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('scene');
+  const ctx = canvas.getContext('2d');
+  const groundWrap = document.getElementById('groundWrap');
+  const countSlider = document.getElementById('countSlider');
+  const speedSlider = document.getElementById('speedSlider');
+  const lightSlider = document.getElementById('lightSlider');
+  const sizeSlider = document.getElementById('sizeSlider');
+  const foodCheck = document.getElementById('foodCheck');
+  const pebbleBtn = document.getElementById('pebbleBtn');
+  const pebbleSizeSlider = document.getElementById('pebbleSizeSlider');
+  const leafBtn = document.getElementById('leafBtn');
+  const leafSizeSlider = document.getElementById('leafSizeSlider');
+
+  // ---------- ground texture: a real above-ground dirt/pebble surface
+  // photo, cover-cropped to the canvas, same pattern used elsewhere on
+  // the platform (e.g. the acorn's wood tray)
+  const groundImg = new Image();
+  let groundImgReady = false;
+  groundImg.onload = () => { groundImgReady = true; };
+  groundImg.src = 'ant-ground.jpg';
+
+  const leafImg = new Image();
+  let leafImgReady = false;
+  leafImg.onload = () => { leafImgReady = true; };
+  leafImg.src = 'ant-leaf.png';
+
+
+  let W = 0, H = 0, DPR = 1;
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = groundWrap.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    initTrailGrid();
+  }
+  window.addEventListener('resize', resize);
+
+  let speedMult = speedSlider.value / 100;
+  speedSlider.addEventListener('input', () => { speedMult = speedSlider.value / 100; });
+  let lightLevel = lightSlider.value / 100;
+  lightSlider.addEventListener('input', () => { lightLevel = lightSlider.value / 100; });
+  // slider's minimum (0) is the current/smallest ant size — it only
+  // scales up from there, never smaller than what's already there
+  let antSizeMult = 1 + sizeSlider.value/100;
+  sizeSlider.addEventListener('input', () => { antSizeMult = 1 + sizeSlider.value/100; });
+  let showFood = foodCheck.checked;
+  foodCheck.addEventListener('change', () => {
+    showFood = foodCheck.checked;
+    if (showFood) respawnFood();
+  });
+
+  // ---------- pheromone trail: a fading data layer, exactly as
+  // specified — a grid of strength values, reinforced by returning ants,
+  // decaying continuously whether or not anything reinforces it. This
+  // stays invisible on screen (an above-ground watch shouldn't show a
+  // ghostly trail), but it's still real ant behavior underneath —
+  // trails guide foraging even when we can't see them ----------
+  const CELL = 8;
+  let cols, rows, trail;
+  function initTrailGrid(){
+    cols = Math.ceil(W/CELL); rows = Math.ceil(H/CELL);
+    trail = new Float32Array(cols*rows);
+  }
+  function trailAt(x,y){
+    const cx = Math.floor(x/CELL), cy = Math.floor(y/CELL);
+    if (cx<0||cx>=cols||cy<0||cy>=rows) return 0;
+    return trail[cy*cols+cx];
+  }
+  function depositTrail(x,y,amount){
+    const cx = Math.floor(x/CELL), cy = Math.floor(y/CELL);
+    if (cx<0||cx>=cols||cy<0||cy>=rows) return;
+    trail[cy*cols+cx] = Math.min(1, trail[cy*cols+cx] + amount);
+  }
+  function decayTrail(dt){
+    const decay = 1 - 0.15*dt/60;
+    for (let i=0;i<trail.length;i++){
+      if (trail[i] > 0) trail[i] *= decay;
+      if (trail[i] < 0.003) trail[i] = 0;
+    }
+  }
+
+  // ---------- obstacles: click the pebble or leaf icon to place a
+  // single one of that kind, drag it to reposition, click the icon
+  // again to remove it. A size slider for each adjusts it within a
+  // reasonable range, starting at the middle. No free-form tapping —
+  // the icons are the only way in or out ----------
+  const PEBBLE_R_MIN = 8, PEBBLE_R_MAX = 22;
+  const LEAF_R_MIN = 15, LEAF_R_MAX = 45;
+  let stones = [];
+  let pebbleObstacle = null;
+  let leafObstacle = null;
+  let dragTarget = null;
+
+  function sliderToRange(slider, min, max){
+    return min + (slider.value/100) * (max-min);
+  }
+
+  pebbleBtn.addEventListener('click', () => {
+    if (pebbleObstacle){
+      const idx = stones.indexOf(pebbleObstacle);
+      if (idx >= 0) stones.splice(idx,1);
+      pebbleObstacle = null;
+      pebbleBtn.classList.remove('active');
+    } else {
+      pebbleObstacle = { x: W*0.45, y: H*0.5, r: sliderToRange(pebbleSizeSlider, PEBBLE_R_MIN, PEBBLE_R_MAX), rot: 0 };
+      stones.push(pebbleObstacle);
+      pebbleBtn.classList.add('active');
+    }
+  });
+  pebbleSizeSlider.addEventListener('input', () => {
+    if (pebbleObstacle) pebbleObstacle.r = sliderToRange(pebbleSizeSlider, PEBBLE_R_MIN, PEBBLE_R_MAX);
+  });
+
+  leafBtn.addEventListener('click', () => {
+    if (leafObstacle){
+      const idx = stones.indexOf(leafObstacle);
+      if (idx >= 0) stones.splice(idx,1);
+      leafObstacle = null;
+      leafBtn.classList.remove('active');
+    } else {
+      // a real leaf photo rather than a drawn shape — collision uses a
+      // circle sized to the leaf's overall footprint, close enough for
+      // ants to visibly route around it
+      leafObstacle = { x: W*0.65, y: H*0.35, r: sliderToRange(leafSizeSlider, LEAF_R_MIN, LEAF_R_MAX), type:'leaf', rot: 0 };
+      stones.push(leafObstacle);
+      leafBtn.classList.add('active');
+    }
+  });
+  leafSizeSlider.addEventListener('input', () => {
+    if (leafObstacle) leafObstacle.r = sliderToRange(leafSizeSlider, LEAF_R_MIN, LEAF_R_MAX);
+  });
+
+  const FOOD_HIT_R = 32;
+
+  // dragging — pick up whichever placed object the pointer lands on
+  // (pebble, leaf, or food)
+  let pointerStart = null;
+  groundWrap.addEventListener('pointerdown', (e) => {
+    const rect = groundWrap.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    let hit = stones.find(s => Math.hypot(s.x-x, s.y-y) < s.r);
+    if (!hit && showFood && food.amount > 0 && Math.hypot(food.x-x, food.y-y) < FOOD_HIT_R){
+      hit = food;
+    }
+    if (hit){
+      dragTarget = hit;
+      pointerStart = { x, y, moved:false };
+      groundWrap.setPointerCapture(e.pointerId);
+    }
+  });
+  groundWrap.addEventListener('pointermove', (e) => {
+    if (!dragTarget) return;
+    const rect = groundWrap.getBoundingClientRect();
+    const clampR = dragTarget.r || FOOD_HIT_R;
+    const nx = e.clientX - rect.left, ny = e.clientY - rect.top;
+    if (pointerStart && Math.hypot(nx-pointerStart.x, ny-pointerStart.y) > 4) pointerStart.moved = true;
+    dragTarget.x = Math.max(clampR, Math.min(W-clampR, nx));
+    dragTarget.y = Math.max(clampR, Math.min(H-clampR, ny));
+  });
+  groundWrap.addEventListener('pointerup', () => {
+    // a click (no meaningful movement) rotates a placed rock/leaf an
+    // eighth turn rather than repositioning it; dragging still moves it
+    if (dragTarget && pointerStart && !pointerStart.moved && dragTarget !== food){
+      dragTarget.rot = (dragTarget.rot||0) + Math.PI/4;
+    }
+    dragTarget = null;
+    pointerStart = null;
+  });
+  groundWrap.addEventListener('pointercancel', () => { dragTarget = null; pointerStart = null; });
+
+  function blockedAt(x,y){
+    return stones.some(s => Math.hypot(s.x-x,s.y-y) < s.r);
+  }
+
+  // ---------- colony and food ----------
+  const colony = { x: 45, y: 0 }; // y set on resize
+  let food = { x:0, y:0, amount: 1 };
+  function respawnFood(){
+    food.x = 120 + Math.random()*(W-160);
+    food.y = 50 + Math.random()*(H-185);
+    food.amount = 1;
+  }
+
+  // ---------- ants ----------
+  let ants = [];
+  function makeAnt(){
+    return {
+      x: colony.x, y: colony.y,
+      heading: Math.random()*Math.PI*2,
+      state: 'search', // search | toFood | return
+      wobble: Math.random()*Math.PI*2,
+      straightTimer: 30 + Math.random()*60,
+    };
+  }
+  function syncAntCount(){
+    const target = parseInt(countSlider.value,10);
+    while (ants.length < target) ants.push(makeAnt());
+    while (ants.length > target) ants.pop();
+  }
+  countSlider.addEventListener('input', syncAntCount);
+
+  function stepAnt(a, dt){
+    const speed = 1.3 * speedMult * dt;
+    a.wobble += dt*0.15;
+
+    if (a.state === 'search'){
+      // weighted choice: mostly wander, but nearby trail strength pulls
+      // the heading toward it — a probabilistic nudge, not a locked path
+      let bestDir = null, bestStrength = 0.05;
+      for (let i=0;i<5;i++){
+        const testAngle = a.heading + (Math.random()*2-1)*1.3;
+        const tx = a.x + Math.cos(testAngle)*CELL*2, ty = a.y + Math.sin(testAngle)*CELL*2;
+        const s = trailAt(tx,ty);
+        if (s > bestStrength){ bestStrength = s; bestDir = testAngle; }
+      }
+      if (bestDir !== null && Math.random() < 0.7){
+        a.heading = bestDir;
+      } else {
+        // run-and-tumble: travel in a fairly straight line for a while,
+        // then pick a new direction — this is what real foraging insects
+        // actually do, and it covers ground far more efficiently than
+        // constant small random turns, which just diffuses in place
+        a.straightTimer -= dt;
+        if (a.straightTimer <= 0){
+          a.heading = Math.random()*Math.PI*2;
+          a.straightTimer = 70 + Math.random()*110;
+        } else {
+          a.heading += (Math.random()*2-1)*0.02*dt; // tiny jitter within a "run"
+        }
+      }
+      if (showFood && Math.hypot(a.x-food.x, a.y-food.y) < 32 && food.amount > 0){
+        a.state = 'toFood';
+      }
+    } else if (a.state === 'toFood'){
+      a.state = 'return';
+      food.amount -= 0.01;
+    } else if (a.state === 'return'){
+      const dx = colony.x-a.x, dy = colony.y-a.y;
+      const distToColony = Math.hypot(dx,dy);
+      a.heading = Math.atan2(dy,dx) + (Math.random()*2-1)*0.15;
+      depositTrail(a.x, a.y, 0.5);
+      if (distToColony < 14){ a.state = 'search'; a.heading = Math.random()*Math.PI*2; }
+    }
+
+    // obstacle disruption: if the step ahead is blocked, weighted random
+    // alternate direction — this is the actual mechanic, not scripted
+    // pathing around stones
+    let nx = a.x + Math.cos(a.heading)*speed;
+    let ny = a.y + Math.sin(a.heading)*speed + Math.sin(a.wobble)*0.3;
+    if (blockedAt(nx,ny)){
+      const choices = [-1.1,-0.6,0.6,1.1];
+      a.heading += choices[Math.floor(Math.random()*choices.length)];
+      nx = a.x + Math.cos(a.heading)*speed;
+      ny = a.y + Math.sin(a.heading)*speed;
+    }
+    nx = Math.max(4, Math.min(W-4, nx));
+    ny = Math.max(4, Math.min(H-4, ny));
+    a.x = nx; a.y = ny;
+  }
+
+  function render(){
+    ctx.clearRect(0,0,W,H);
+    // ground — a real photo of dirt/pebbles rather than a flat
+    // gradient, cover-cropped to fill the frame regardless of aspect
+    if (groundImgReady){
+      const iw = groundImg.naturalWidth, ih = groundImg.naturalHeight;
+      const scale = Math.max(W/iw, H/ih);
+      const dw = iw*scale, dh = ih*scale;
+      const dx = (W-dw)/2, dy = (H-dh)/2;
+      ctx.drawImage(groundImg, dx, dy, dw, dh);
+      // light slider darkens/brightens the photo rather than tinting a
+      // solid color over it
+      if (lightLevel < 1){
+        ctx.fillStyle = `rgba(5,6,10,${(1-lightLevel)*0.85})`;
+        ctx.fillRect(0,0,W,H);
+      } else if (lightLevel > 1){
+        ctx.fillStyle = `rgba(255,250,235,${(lightLevel-1)*0.4})`;
+        ctx.fillRect(0,0,W,H);
+      }
+    } else {
+      // brief fallback while the photo loads, so the ground isn't blank
+      const g = ctx.createLinearGradient(0,0,0,H);
+      g.addColorStop(0, `rgba(90,68,42,${lightLevel})`);
+      g.addColorStop(1, `rgba(56,42,26,${lightLevel})`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,W,H);
+    }
+
+    // anthill — a small pile of excavated earth around the entrance,
+    // built from a soft mound plus a few clumped humps for texture,
+    // with a dark entrance hole, rather than a flat colored disc
+    ctx.save();
+    ctx.globalAlpha = lightLevel;
+    const hillR = 15;
+    const moundG = ctx.createRadialGradient(colony.x, colony.y-hillR*0.3, 1, colony.x, colony.y, hillR*1.3);
+    moundG.addColorStop(0, '#5b4128');
+    moundG.addColorStop(0.6, '#4a3320');
+    moundG.addColorStop(1, 'rgba(58,47,34,0)');
+    ctx.beginPath();
+    ctx.ellipse(colony.x, colony.y, hillR*1.3, hillR*0.8, 0, 0, Math.PI*2);
+    ctx.fillStyle = moundG;
+    ctx.fill();
+    for (let i=0;i<7;i++){
+      const ang = i*0.9 + 0.3;
+      const dist = hillR*0.65;
+      const cx = colony.x + Math.cos(ang)*dist, cy = colony.y + Math.sin(ang)*dist*0.55;
+      const rr = hillR*0.28;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rr, rr*0.6, ang, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(74,55,34,0.55)';
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(colony.x, colony.y+1, hillR*0.24, hillR*0.16, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(10,7,4,0.9)';
+    ctx.fill();
+    ctx.restore();
+
+    // food (lollipop) — a glossy round candy ball on a pale plastic
+    // stick, with swirl bands wrapped around the sphere's curve (rather
+    // than a flat 2D spiral) so it actually reads as a ball
+    if (showFood && food.amount > 0){
+      ctx.save();
+      ctx.globalAlpha = lightLevel;
+      const r = 13 + 20*food.amount;
+
+      // soft drop shadow so the candy reads clearly against the ground
+      // photo instead of blending into it
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(food.x+2, food.y+3, r*0.92, r*0.8, 0, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.fill();
+      ctx.restore();
+
+      // pale plastic stick, rounded where it ends
+      const stickLen = 102, sw = 8.6;
+      const topY = food.y + r*0.82;
+      ctx.beginPath();
+      ctx.moveTo(food.x-sw/2, topY);
+      ctx.lineTo(food.x-sw/2, topY+stickLen-sw/2);
+      ctx.arc(food.x, topY+stickLen-sw/2, sw/2, Math.PI, 0);
+      ctx.lineTo(food.x+sw/2, topY);
+      ctx.closePath();
+      const stickG = ctx.createLinearGradient(food.x-sw, topY, food.x+sw, topY);
+      stickG.addColorStop(0, '#d8d8dc');
+      stickG.addColorStop(0.5, '#ffffff');
+      stickG.addColorStop(1, '#d2d2d8');
+      ctx.fillStyle = stickG;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(120,120,130,0.25)';
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+
+      // candy ball, clipped so the swirl bands and shading stay inside
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(food.x, food.y, r, 0, Math.PI*2);
+      ctx.clip();
+
+      const baseG = ctx.createRadialGradient(food.x-r*0.35, food.y-r*0.4, r*0.15, food.x, food.y, r*1.05);
+      baseG.addColorStop(0, '#c9a3e0');
+      baseG.addColorStop(0.45, '#9a55bd');
+      baseG.addColorStop(1, '#5c2c78');
+      ctx.beginPath();
+      ctx.arc(food.x, food.y, r, 0, Math.PI*2);
+      ctx.fillStyle = baseG;
+      ctx.fill();
+
+      // swirl bands — a couple of diagonal bands rotated around the
+      // center, like a barber-pole twist wrapping the candy
+      const bandAngles = [-0.28 + Math.PI/2, 0.34 + Math.PI/2];
+      const bandColors = ['rgba(120,60,150,0.4)','rgba(60,24,88,0.5)'];
+      for (let i=0;i<bandAngles.length;i++){
+        ctx.save();
+        ctx.translate(food.x, food.y);
+        ctx.rotate(bandAngles[i]);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r*0.22, r*1.15, 0, 0, Math.PI*2);
+        ctx.fillStyle = bandColors[i];
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // sphere shading — darken the lower-right rim for volume
+      const shadeG = ctx.createRadialGradient(food.x+r*0.3, food.y+r*0.35, r*0.2, food.x, food.y, r*1.05);
+      shadeG.addColorStop(0, 'rgba(0,0,0,0)');
+      shadeG.addColorStop(1, 'rgba(30,10,42,0.45)');
+      ctx.beginPath();
+      ctx.arc(food.x, food.y, r, 0, Math.PI*2);
+      ctx.fillStyle = shadeG;
+      ctx.fill();
+      ctx.restore();
+
+      // rim
+      ctx.beginPath();
+      ctx.arc(food.x, food.y, r, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(60,24,88,0.5)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // stones
+    stones.forEach(s => {
+      if (s.type === 'leaf' && leafImgReady){
+        const lw = s.r*2.8, lh = lw * (leafImg.naturalHeight/leafImg.naturalWidth);
+        ctx.save();
+        ctx.globalAlpha = lightLevel;
+        ctx.translate(s.x, s.y);
+        ctx.rotate(s.rot||0);
+        ctx.drawImage(leafImg, -lw/2, -lh/2, lw, lh);
+        ctx.restore();
+        return;
+      }
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.rot||0);
+      ctx.beginPath();
+      ctx.arc(0, 0, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(110,110,105,${lightLevel})`;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(60,60,58,${lightLevel})`;
+      ctx.stroke();
+      // subtle facet highlight so the rotation is actually visible on
+      // what would otherwise be a featureless circle
+      ctx.beginPath();
+      ctx.ellipse(-s.r*0.32, -s.r*0.32, s.r*0.34, s.r*0.2, -0.6, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(200,200,195,${lightLevel*0.35})`;
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // ants
+    ants.forEach(a => {
+      ctx.save();
+      ctx.translate(a.x,a.y);
+      ctx.rotate(a.heading);
+      ctx.fillStyle = a.state==='return' ? `rgba(154,85,189,${lightLevel})` : `rgba(20,14,8,${lightLevel})`;
+      ctx.beginPath();
+      ctx.ellipse(0,0,3.6*antSizeMult,2.0*antSizeMult,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  let lastT = performance.now();
+  function loop(t){
+    const dt = Math.min((t-lastT)/16.67, 3);
+    lastT = t;
+    decayTrail(dt);
+    ants.forEach(a => stepAnt(a, dt));
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  resize();
+  colony.y = 42;
+  respawnFood();
+  syncAntCount();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

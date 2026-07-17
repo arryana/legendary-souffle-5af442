@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400&display=swap');
+
+  :root{
+    --bg1:#0f1420;
+    --bg2:#1c2433;
+    --brass:#c9974e;
+    --brass-light:#e8c383;
+    --parchment:#f2e9d8;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    min-height:100%; margin:0;
+    background: radial-gradient(ellipse at 50% 38%, var(--bg2) 0%, var(--bg1) 72%);
+    color:var(--parchment);
+    font-family:'Jost', sans-serif;
+    overflow-x:hidden;
+    overflow-y:auto;
+  }
+  #wrap{
+    min-height:100vh; min-height:100dvh;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding:40px 24px;
+  }
+  h1{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:400; font-style:italic;
+    font-size:clamp(30px, 5vw, 46px);
+    letter-spacing:.14em;
+    margin:0 0 56px;
+    color:var(--parchment);
+    text-shadow: 0 0 24px rgba(201,151,78,0.25);
+  }
+
+  #cards{
+    display:flex; gap:28px; align-items:center; justify-content:center;
+    flex-wrap:wrap;
+    max-width:500px; /* at 4 cards, forces 2x2 pairs per the compositional rule */
+  }
+  #cards.dice5{
+    display:grid;
+    grid-template-columns: 220px 220px 220px;
+    grid-template-rows: 320px 320px 320px;
+    grid-template-areas:
+      "tl .  tr"
+      ".  c  ."
+      "bl .  br";
+    gap:24px;
+    max-width:none;
+  }
+  #cards.dice5 a:nth-child(1){ grid-area: tl; }
+  #cards.dice5 a:nth-child(2){ grid-area: tr; }
+  #cards.dice5 a:nth-child(3){ grid-area: c; }
+  #cards.dice5 a:nth-child(4){ grid-area: bl; }
+  #cards.dice5 a:nth-child(5){ grid-area: br; }
+  #cards.dice6{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 200px));
+    justify-content:center;
+    gap:22px;
+    max-width:none;
+    width:100%;
+  }
+  #cards.dice5 .card, #cards.dice6 .card{ width:100%; height:auto; aspect-ratio: 11 / 16; }
+  .card{
+    position:relative;
+    width:220px; height:320px;
+    border-radius:6px;
+    cursor:pointer;
+    text-decoration:none;
+    display:block;
+    background:#0d1119;
+    border:1px solid rgba(201,151,78,0.35);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.4),
+      0 20px 60px rgba(0,0,0,0.55),
+      0 0 40px rgba(201,151,78,0.08);
+    overflow:hidden;
+    transition: transform .5s cubic-bezier(.2,.8,.2,1), box-shadow .5s ease, border-color .5s ease;
+    animation: cardGlow 5.5s ease-in-out infinite;
+  }
+  .card img{
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+  .card:hover{
+    transform: translateY(-6px) scale(1.015);
+    border-color: rgba(232,195,131,0.75);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.4),
+      0 28px 70px rgba(0,0,0,0.6),
+      0 0 70px rgba(201,151,78,0.22);
+  }
+  @keyframes cardGlow{
+    0%, 100% { box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 20px 60px rgba(0,0,0,0.55), 0 0 34px rgba(201,151,78,0.06); }
+    50%      { box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 20px 60px rgba(0,0,0,0.55), 0 0 52px rgba(201,151,78,0.14); }
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>sagne</h1>
+
+  <div id="cards" class="dice6">
+    <a class="card" href="candler.html">
+      <img src="candle-card.png" alt="">
+    </a>
+    <a class="card" href="acorn.html">
+      <img src="acorn-card.png" alt="">
+    </a>
+    <a class="card" href="lamp.html">
+      <img src="lamp-card.png" alt="">
+    </a>
+    <a class="card" href="warmler.html">
+      <img src="warmler-card.png" alt="">
+    </a>
+    <a class="card" href="rain.html">
+      <img src="rain-card.png" alt="">
+    </a>
+    <a class="card" href="ant.html">
+      <img src="ant-card.png" alt="">
+    </a>
+    <a class="card" href="windower.html">
+      <img src="windower-card.png" alt="">
+    </a>
+    <a class="card" href="galileo.html">
+      <img src="galileo-card.png" alt="">
+    </a>
+    <a class="card" href="conometer.html">
+      <img src="conometer-card.png" alt="">
+    </a>
+  </div>
+</div>
+</body>
+</html>
