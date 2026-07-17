@@ -102,6 +102,24 @@
     0%, 100% { box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 20px 60px rgba(0,0,0,0.55), 0 0 34px rgba(201,151,78,0.06); }
     50%      { box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 20px 60px rgba(0,0,0,0.55), 0 0 52px rgba(201,151,78,0.14); }
   }
+
+  /* Mobile: fill the width with a 2-column grid instead of a lone centered column */
+  @media (max-width: 560px){
+    #wrap{ padding: 28px 14px; justify-content:flex-start; }
+    h1{ font-size: clamp(28px, 8vw, 40px); margin: 0 0 32px; }
+    #cards.dice6{
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      width: 100%;
+      max-width: 460px;
+    }
+    /* Center the last card when it's alone on an odd-numbered final row */
+    #cards.dice6 a:last-child:nth-child(odd){
+      grid-column: 1 / -1;
+      width: calc(50% - 8px);
+      justify-self: center;
+    }
+  }
 </style>
 </head>
 <body>
