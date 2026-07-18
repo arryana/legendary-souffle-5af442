@@ -9,8 +9,9 @@ This file tells Claude Code how to work on this site. Read it first, every sessi
 - The owner is **non-technical** and works **only through Claude Code chat**. There is no
   local editor, no terminal on their side, no GitHub UI. You are the whole interface.
 - The whole workflow reduces to two words: **"Do"** (make my change real, on the live site)
-  and **"Undo"** (take the last one back). Before every **Do** there's a **Preview** — a real,
-  working link to look at first. So: **Preview → Do → (or Undo).**
+  and **"Undo"** (take the last one back). Before every **Do** there's a **Preview** to look at
+  first (a picture today; a live link once Netlify previews are enabled — see below). So:
+  **Preview → Do → (or Undo).**
 - **No jargon in chat.** Don't say "commit", "branch", "merge", "PR", "rebase". Say things like
   "Here's a **Preview** — want me to **Do** it (make it live)?" All the git machinery lives in
   this file and stays invisible to the owner.
@@ -53,7 +54,8 @@ to one piece.
 
 **Live-data pieces** — `galileo`, `conometer`, `windower` — read the visitor's **geolocation**
 and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that working; don't
-break the geolocation or the fetch. (These are also why a *faithful* Preview matters — see below.)
+break the geolocation or the fetch. (These are also why a *faithful* Preview matters — a plain
+screenshot can't show live weather.)
 
 ### Asset naming conventions (follow these for any new asset)
 
@@ -76,51 +78,39 @@ break the geolocation or the fetch. (These are also why a *faithful* Preview mat
 Everything the owner does is one of these three words. Keep the git details hidden; just use the
 words.
 
-### 🔍 Preview — see the change for real, before it's live
+### 🔍 Preview — see the change before it's live
 
-**What it means to the owner:** "show me a working version I can look at, that isn't my real
-site yet."
+**What it means to the owner:** "show me what it'll look like, before it touches my real site."
 
-**How it works:** the change goes onto the work branch and a pull request is opened. **Netlify
-automatically builds a Deploy Preview** at its own URL (e.g. `deploy-preview-12--<site>.netlify.app`),
-completely **separate from the live site**. On that preview, everything is real — fonts load,
-live weather works, geolocation works — so even the live-data pieces behave correctly. Give the
-owner that link.
+There are two ways to Preview. **The picture works today; the live link needs a one-time setup.**
 
-**Exact steps (for Claude):**
-
+**A. Static picture — works now, the current default.** A real Chromium is pre-installed. Render
+the changed page and screenshot it, **including a phone width (390px)** — mobile matters on this
+site — then send it with `SendUserFile`. A before/after pair is ideal.
 ```bash
-BRANCH=claude/repo-contents-h8pt8t
-git fetch origin main
-git checkout -B "$BRANCH" origin/main   # start from the current live state
-# ... make the edits (Edit/Write the files) ...
-git add -A
-git commit -m "Short, plain description of the change"
-git push -u origin "$BRANCH"
-# open the pull request (this is what triggers the Netlify preview build):
-#   create_pull_request  base=main  head=$BRANCH   (title = the plain description)
-# then read the PR's checks/statuses and pull out Netlify's preview link:
-#   pull_request_read (get_status) → find the context like "netlify/<site>/deploy-preview",
-#   use its target_url. Give that URL to the owner.
+SC="<scratchpad>"; cd "$SC" && npm init -y >/dev/null 2>&1 && npm install playwright-core >/dev/null 2>&1
+# shot.js: chromium under /opt/pw-browsers/<version>/chrome-linux/chrome, args ['--no-sandbox'],
+#          context viewport {width:390,height:844} for phone; ~1200 wide for desktop
+node "$SC/shot.js" /home/user/legendary-souffle-5af442/index.html "$SC/preview.png"
 ```
+A picture can't show motion or live data — but it's honest about layout and appearance and needs
+nothing set up. (For a non-visual change like this file, Preview doesn't really apply — just
+explain what changed and offer **Do**.)
 
-**Timing / fallbacks:**
-- The preview takes **~1–2 minutes** to build. If Netlify hasn't posted a link yet, tell the
-  owner it's building and check the PR again shortly.
-- If **no Netlify status ever appears**, Deploy Previews may be switched off in the Netlify
-  dashboard — tell the owner (they can enable it), and fall back to the **static picture** or
-  **inline interactive render** below.
-- **Quick local sanity-check (static picture):** a real Chromium is pre-installed. Render the
-  page and screenshot it, **including a phone width (390px)** — mobile matters on this site —
-  then send it with `SendUserFile`. Recipe:
-  ```bash
-  SC="<scratchpad>"; cd "$SC" && npm init -y >/dev/null 2>&1 && npm install playwright-core >/dev/null 2>&1
-  # shot.js: chromium under /opt/pw-browsers/<chromium-version>/chrome-linux/chrome, args ['--no-sandbox'],
-  #          context viewport {width:390,height:844} for phone; ~1200 wide for desktop
-  node "$SC/shot.js" /home/user/legendary-souffle-5af442/index.html "$SC/preview.png"
-  ```
-  Note the static picture can't show motion or live data — it's a sanity-check, not the real
-  Preview.
+**B. Netlify Deploy Preview — the real thing, once enabled.** When enabled, every open pull
+request gets its own hosted URL (e.g. `deploy-preview-12--<site>.netlify.app`), separate from the
+live site, where *everything* works — fonts, live weather, geolocation. Usage:
+```bash
+# after pushing the branch, open the PR — that's what triggers the preview build:
+#   create_pull_request  base=main  head=$BRANCH
+#   then: pull_request_read (get_status / get_check_runs) → find the "netlify/…/deploy-preview"
+#         entry and give its target_url to the owner (build takes ~1–2 min).
+```
+> **Status (as of this writing): NOT enabled for this repo.** A test PR produced no Netlify
+> status at all, so deploy previews aren't wired up yet. To turn them on, the **owner** connects
+> the repo in the Netlify dashboard (**Site configuration → Build & deploy → Continuous
+> deployment**, via the Netlify GitHub App) and enables **Deploy Previews** for pull requests.
+> Once that's done, method B becomes the default and method A stays as the instant fallback.
 
 ### ✅ Do — make the change live
 
@@ -129,18 +119,22 @@ git push -u origin "$BRANCH"
 Only act on an **explicit "Do"** from the owner, after they've had a Preview. This changes the
 live site — it's their call.
 
-**Exact steps (for Claude):** merge the pull request that Preview opened.
-
+**Exact steps (for Claude):**
 ```bash
-# merge_pull_request  (method: merge)  for the PR opened during Preview
+BRANCH=claude/repo-contents-h8pt8t
+# If the edits aren't committed yet, start from the live state and commit them:
+git fetch origin main
+git checkout -B "$BRANCH" origin/main   # (or: git reset --mixed origin/main to keep in-progress edits)
+git add -A && git commit -m "Short, plain description of the change"
+git push -u origin "$BRANCH"
+# Publish it:
+#   create_pull_request  base=main  head=$BRANCH   (title = the plain description)
+#     — if a preview PR from method B is already open, just reuse it (skip to merge)
+#   merge_pull_request   (method: merge)
 git fetch origin main   # confirm the change landed on main
 ```
-
 Netlify redeploys the live site from `main` (~1–2 minutes). Tell the owner plainly: *"Done —
 it's live."* Then remind them **Undo** is available if they change their mind.
-
-> If the owner says "Do" without a Preview open, just run the Preview steps first (push + open
-> PR), then merge.
 
 ### ↩ Undo — take the last change back
 
@@ -150,7 +144,6 @@ This matches how they think about it: **sync with the live site → reverse the 
 that reversal to the live site.**
 
 **Exact steps (for Claude) — when the last change is already live:**
-
 ```bash
 BRANCH=claude/repo-contents-h8pt8t
 git fetch origin main
@@ -160,14 +153,12 @@ git revert --no-edit <sha-of-last-change>   # a new "undo" change; never rewrite
 #   if the last change is a merge commit:   git revert --no-edit -m 1 <merge-sha>
 git push -u origin "$BRANCH"
 # create_pull_request  base=main  head=$BRANCH   (title: "Undo: <what it was>")
-# (optional) offer the Netlify preview of the undo, then:
 # merge_pull_request
 git fetch origin main   # confirm
 ```
-
-**If the last change was never made live** (still just a draft / an open Preview PR the owner
-decided against): there's nothing on the live site to reverse — just close the PR and discard
-the local edits (`git restore .`). Tell the owner it's been dropped.
+**If the last change was never made live** (still just a draft / an open PR the owner decided
+against): there's nothing on the live site to reverse — close the PR and discard the local edits
+(`git restore .`). Tell the owner it's been dropped.
 
 Undo is the safety net — run it as soon as the owner says "Undo", and always **report what you
 undid** in one sentence.
@@ -180,11 +171,10 @@ undid** in one sentence.
   without the owner's explicit OK.
 - Every **Do** merges the change into `main`, so **start each new change fresh from `main`** (as
   shown above) rather than building on old branch history.
-- **Netlify:** the **live site** deploys from `main`; **Deploy Previews** build from open pull
-  requests. Both take ~1–2 minutes. (The very first repo commit was tagged `[skip ci]`, but
-  normal merges deploy.)
-- A pull request is opened as part of **Preview** and merged as part of **Do** — the same PR. Don't
-  open PRs for anything else.
+- **Netlify:** the **live site** deploys from `main`. **Deploy Previews** on pull requests are
+  **not enabled yet** (see the Preview section) — until they are, Preview = the static picture.
+- A pull request is opened as part of **Do** (and merged) — or during **Preview** method B once
+  that's enabled. Don't open PRs for anything else.
 - **Pushing** goes through the session's git proxy. A **403** on push means a permissions /
   re-auth problem, not a code problem — tell the owner in plain terms ("I've lost permission to
   save to the website — can you re-check my access?") and **don't hammer retries**.
