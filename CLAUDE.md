@@ -121,7 +121,7 @@ live site — it's their call.
 
 **Exact steps (for Claude):**
 ```bash
-BRANCH=claude/repo-contents-h8pt8t
+BRANCH=claude/test-file-repo-root-f9duia
 # If the edits aren't committed yet, start from the live state and commit them:
 git fetch origin main
 git checkout -B "$BRANCH" origin/main   # (or: git reset --mixed origin/main to keep in-progress edits)
@@ -145,7 +145,7 @@ that reversal to the live site.**
 
 **Exact steps (for Claude) — when the last change is already live:**
 ```bash
-BRANCH=claude/repo-contents-h8pt8t
+BRANCH=claude/test-file-repo-root-f9duia
 git fetch origin main
 git checkout -B "$BRANCH" origin/main
 git log origin/main --oneline -6            # find what "the last change" was
@@ -167,8 +167,10 @@ undid** in one sentence.
 
 ## Branch & deploy notes (background for Claude)
 
-- **Work branch:** `claude/repo-contents-h8pt8t`. Do all work here. Never push to another branch
-  without the owner's explicit OK.
+- **Work branch:** `claude/test-file-repo-root-f9duia` — the authoritative branch. Do all work
+  here. Never push to another branch without the owner's explicit OK.
+  - `claude/repo-contents-h8pt8t` is a **specialist support branch** (help brought in for
+    specific tasks), not the main line of work — don't build on it by default.
 - Every **Do** merges the change into `main`, so **start each new change fresh from `main`** (as
   shown above) rather than building on old branch history.
 - **Netlify:** the **live site** deploys from `main`. **Deploy Previews** on pull requests are
