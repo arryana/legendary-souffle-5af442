@@ -67,7 +67,7 @@ screenshot can't show live weather.)
 - **warmler** finishes come in three files each:
   `warmler-plate-<finish>.png`, `warmler-swatch-<finish>.png`, `warmler-texture-<finish>.png`
   (finish = `brass, copper, aged-brass, aged-copper, gold, silver, diamond-plate`).
-- `favicon.svg` is the site icon. `files.zip` is a bundled archive — ignore it for normal edits.
+- `favicon.svg` is the site icon.
 - Reference assets by **relative path** (they sit next to the HTML). Match the existing naming
   when adding new ones.
 
