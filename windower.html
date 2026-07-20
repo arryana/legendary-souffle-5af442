@@ -679,7 +679,9 @@
     const ALT_LOW = -8, ALT_HIGH = 80;
     const altClamped = Math.max(ALT_LOW, Math.min(ALT_HIGH, altDeg));
     const t = (altClamped - ALT_LOW) / (ALT_HIGH - ALT_LOW);
-    const y = 92 - t * 80;
+    // horizon (alt 0) sits on the top of the centre green hill (~y76%), so
+    // the sun/moon rise and set at the ridge rather than down at the sill
+    const y = 83.3 - t * 80;
     return {x, y};
   }
 
