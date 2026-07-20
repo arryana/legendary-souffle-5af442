@@ -1410,19 +1410,14 @@ function render() {
 
   // the flame's seat, just under the rim once hollowed
   const wellFloorY = topY + wellDepth;
-  // Not a see-through window any more: the wax stays solid across the
-  // front. All that shows of the sunk flame is a small melt-hole bored at
-  // the centre of the top surface, warmly lit from the flame just inside
-  // it. Everything below the rim is opaque wax (see the flame clip below).
-  const wellShape = hollowT > 0.01 ? `
-    <ellipse cx="${CENTER_X}" cy="${topY}" rx="${halfW * 0.3}" ry="${halfW * 0.11}"
-             fill="#1a1109" opacity="${0.42 * hollowT}"/>
-    <ellipse cx="${CENTER_X}" cy="${topY}" rx="${halfW * 0.6}" ry="${halfW * 0.21}"
-             fill="url(#waxGlow)" opacity="${0.9 * hollowT}" style="mix-blend-mode:screen"/>
-  ` : '';
-  // the bright pooled-wax lip stays — the outer surface is still intact,
-  // unburned wax; only the small centre hole has opened up
-  const rimLipOpacity = 1;
+  // Seen straight-on, the hollowed top reads as nothing but a level rim
+  // with the flame tip above it — no melt-hole disc, no glow oval on the
+  // surface. The wax stays solid across the front; everything below the
+  // rim is opaque wax (the flame clip hides the sunk body).
+  const wellShape = '';
+  // the elliptical pooled-wax lip is a perspective cue for a flat top;
+  // once hollowed we want a plain level rim, so fade it out with hollowT
+  const rimLipOpacity = 1 - hollowT;
 
   candleBody.innerHTML = `
     <rect x="${CENTER_X - halfW}" y="${topY}" width="${halfW * 2}" height="${curH}"
@@ -1436,24 +1431,22 @@ function render() {
     <ellipse cx="${CENTER_X}" cy="${topY}" rx="${halfW * 0.94}" ry="${halfW * 0.16}"
              fill="var(--wax-edge)" opacity="${0.9 * rimLipOpacity}"/>
     <ellipse cx="${CENTER_X}" cy="${topY}" rx="${halfW * 0.94}" ry="${halfW * 0.16}"
-             fill="none" stroke="#5c4a30" stroke-width="0.7" opacity="0.35" filter="url(#inkWobble)"/>
+             fill="none" stroke="#5c4a30" stroke-width="0.7" opacity="${0.35 * rimLipOpacity}" filter="url(#inkWobble)"/>
     ${!state.extinguished ? `<rect x="${CENTER_X - halfW}" y="${topY}" width="${halfW * 2}" height="${curH}"
              rx="${halfW * 0.18}" fill="url(#waxBaseGlow)" style="mix-blend-mode:screen"/>` : ''}
     ${!state.extinguished ? `<rect x="${CENTER_X - halfW}" y="${topY}" width="${halfW * 2}" height="${curH}"
              rx="${halfW * 0.18}" fill="url(#waxGlow)" style="mix-blend-mode:screen"/>` : ''}
     ${wellShape}
     ${hollowT > 0.5
-        ? (!state.extinguished
-            ? `<ellipse cx="${CENTER_X}" cy="${topY}" rx="2" ry="1.3" fill="#1a1512"/>`
-            : `<ellipse cx="${CENTER_X}" cy="${topY}" rx="1.6" ry="1.1" fill="#1a1512"/>`)
+        ? '' /* hollowed pillar: wick is down in the wax, hidden behind the rim — show only rim + flame tip */
         : (!state.extinguished ? `<rect x="${CENTER_X - 1.5}" y="${wellFloorY - 12}" width="3" height="14" rx="1.4" fill="var(--wick)"/>`
                                : `<rect x="${CENTER_X - 1.3}" y="${wellFloorY - 4}" width="2.6" height="6" rx="1.2" fill="#1a1512"/>`)}
   `;
 
-  // hide the sunk flame behind the solid wax: clip its bottom to just
-  // inside the melt-hole once hollowed; parked far below otherwise so an
-  // ordinary flame is never clipped
-  const flameClipBottom = topY + halfW * 0.06 * hollowT + (1 - hollowT) * 10000;
+  // hide the sunk flame behind the solid wax: clip its bottom exactly to
+  // the level rim once hollowed, so only the tip shows above the edge;
+  // parked far below otherwise so an ordinary flame is never clipped
+  const flameClipBottom = topY + (1 - hollowT) * 10000;
   flameClipRect.setAttribute('y', -60);
   flameClipRect.setAttribute('height', flameClipBottom + 60);
 
