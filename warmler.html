@@ -122,6 +122,22 @@
   }
   .modeBtn.active{ opacity:1; border-color:var(--brass); box-shadow:0 0 8px rgba(201,151,78,.5); transform:scale(1.08); }
   .modeBtn:hover{ opacity:1; }
+
+  /* On a phone (portrait), a wide landscape plate is tiny. Stand it upright
+     so it fills most of the tall screen: size it by the viewport's shorter
+     way, then rotate 90°. The padding-bottom keeps it clear of the dock. */
+  @media (orientation:portrait){
+    #stage{ padding-bottom:96px; }
+    #plateWrap{
+      /* width here is the plate's pre-rotation length, which becomes its
+         on-screen height once rotated. flex-shrink:0 stops the flexbox
+         squashing it back down to the (narrow) viewport width. */
+      width:min(82vh, 168vw);
+      max-width:none;
+      flex-shrink:0;
+      transform:rotate(90deg);
+    }
+  }
 </style>
 </head>
 <body>
@@ -216,16 +232,22 @@
   const imgData = lowCtx.createImageData(GRID, GRID);
 
   let W = 0, H = 0, DPR = 1;
+  // on phones the plate is rotated upright (see the portrait media query) to
+  // fill the tall screen. offsetWidth/offsetHeight are the element's own
+  // layout size and stay correct under that CSS rotation, unlike
+  // getBoundingClientRect (which would report the rotated bounding box).
+  const portraitMQ = window.matchMedia('(orientation:portrait)');
+  function isRotated(){ return portraitMQ.matches; }
   function resize(){
     DPR = Math.min(window.devicePixelRatio || 1, 2);
-    const rect = plateWrap.getBoundingClientRect();
-    W = rect.width; H = rect.height;
+    W = plateWrap.offsetWidth; H = plateWrap.offsetHeight;
     canvas.width = W * DPR;
     canvas.height = H * DPR;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     updateSheenClip();
   }
   window.addEventListener('resize', resize);
+  portraitMQ.addEventListener('change', resize);
 
   // the current finish's oval, in actual on-screen canvas pixels
   function getOvalRect(){
@@ -305,7 +327,18 @@
   function pointToGrid(clientX, clientY){
     const rect = plateWrap.getBoundingClientRect();
     const oval = getOvalRect();
-    const px = clientX - rect.left, py = clientY - rect.top;
+    let px, py;
+    if (isRotated()){
+      // the plate is CSS-rotated 90° clockwise on phones. The element centre
+      // is rotation-invariant, so map the pointer's offset from centre back
+      // into the plate's own (unrotated) space: local = R(-90°)·screenOffset.
+      const ccx = rect.left + rect.width/2, ccy = rect.top + rect.height/2;
+      const dx = clientX - ccx, dy = clientY - ccy;
+      px = W/2 + dy;
+      py = H/2 - dx;
+    } else {
+      px = clientX - rect.left; py = clientY - rect.top;
+    }
     const nx = (px - oval.x) / oval.w;
     const ny = (py - oval.y) / oval.h;
     const insideEllipse = ((nx-0.5)*2)**2 + ((ny-0.5)*2)**2 <= 1;
