@@ -1450,7 +1450,9 @@ function render() {
   flameClipRect.setAttribute('y', -60);
   flameClipRect.setAttribute('height', flameClipBottom + 60);
 
-  glowCircle.setAttribute('cy', wellFloorY - 10);
+  // on the burned pillar, lift the glow's centre up toward the flame tip
+  // so the halo sits higher, above the rim rather than around the body
+  glowCircle.setAttribute('cy', wellFloorY - 10 - hollowT * 45);
   // the burned pillar hides most of the flame, so its warm halo above the
   // rim is the main light — make that glow noticeably larger than the
   // ordinary candle's
