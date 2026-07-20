@@ -221,6 +221,20 @@
     }
   });
 
+  // If the visitor starts their own music, hush the acorn's own sounds so the
+  // two don't compete — the music becomes the sound. We tick the "no sound" box
+  // (so it's visible and they can undo it) but don't overwrite their saved setting.
+  const musicEl = document.getElementById('musicEl');
+  if (musicEl) {
+    musicEl.addEventListener('play', () => {
+      if (!muted) {
+        muted = true;
+        muteCheckbox.checked = true;
+        if (rumbleGain && audioCtx) rumbleGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+      }
+    });
+  }
+
   // roll-sound volume — shared site-wide the same way mute is, so the
   // level carries over between sagnities rather than resetting each time
   const volumeSlider = document.getElementById('volumeSlider');
