@@ -65,20 +65,21 @@
   // the glass surface itself: fog regrows over cleared tracks; moving drops
   // wipe the fog away behind them and shed the odd bead into the trail
   function updateGlass(dt){
-    glassCtx.globalAlpha=Math.min(0.06,0.016*dt);        // re-fogging (trails linger a little, then heal)
+    glassCtx.globalAlpha=Math.min(0.07,0.020*dt);        // re-fogging — trails heal a touch faster so they don't pile up
     glassCtx.drawImage(mistCanvas,0,0,W,H);
     glassCtx.globalAlpha=1;
-    const beads=[];
     for(const d of drops){
-      if(d.moving && d.vy>0.25){
+      if(d.moving && d.vy>0.2){
+        const w=d.r*0.72;
         glassCtx.save();
-        glassCtx.beginPath(); glassCtx.ellipse(d.x,d.y,d.r*0.78,d.r*0.92,0,0,Math.PI*2); glassCtx.clip();
+        glassCtx.beginPath();
+        glassCtx.rect(d.x-w, Math.min(d.py,d.y), w*2, Math.abs(d.y-d.py)+0.6);   // continuous track from last position to now
+        glassCtx.ellipse(d.x,d.y,w,w*1.05,0,0,Math.PI*2);                         // rounded head
+        glassCtx.clip();
         glassCtx.drawImage(bgCanvas,0,0,W,H);          // reveal the clear garden along the track
         glassCtx.restore();
-        if(Math.random()<0.04 && drops.length<200) beads.push(newDrop(d.x+(Math.random()-0.5)*d.r*1.1, d.y-d.r*1.1, 1.0+Math.random()*1.3));
       }
     }
-    for(const bd of beads) drops.push(bd);
   }
   function resize(){
     DPR=Math.min(window.devicePixelRatio||1,2);
@@ -91,37 +92,37 @@
   tiltSlider.addEventListener('input',()=>{ tilt=tiltSlider.value/100; });
 
   let drops=[];
-  function newDrop(x,y,r){ return {x,y,r,vy:0,moving:false}; }
+  function newDrop(x,y,r){ return {x,y,r,vy:0,moving:false,py:y}; }
   // a raindrop lands somewhere on the glass and sticks where it hits;
   // occasionally a fatter one lands that will run before long
-  function spawnDrop(){ const big=Math.random()<0.12; drops.push(newDrop(Math.random()*W, Math.random()*H, big?4.2+Math.random()*3.4:1.7+Math.random()*2.3)); }
-  for(let i=0;i<52;i++) drops.push(newDrop(Math.random()*W, Math.random()*H, 1.7+Math.random()*3.2));
+  function spawnDrop(){ const big=Math.random()<0.10; drops.push(newDrop(Math.random()*W, Math.random()*H, big?3.2+Math.random()*2.0:1.5+Math.random()*1.6)); }
+  for(let i=0;i<30;i++) drops.push(newDrop(Math.random()*W, Math.random()*H, 1.5+Math.random()*2.4));
 
   let spawnAccum=0;
   function stepDrops(dt){
     const g = 0.85*tilt + 0.02;                 // along-pane gravity from tilt
     spawnAccum+=dt;
-    while(spawnAccum>0.16){ spawnAccum-=0.16; if(drops.length<170) spawnDrop(); }  // steady drizzle
+    while(spawnAccum>0.30){ spawnAccum-=0.30; if(drops.length<105) spawnDrop(); }  // lighter drizzle — most drops sit
     for(const d of drops){
       const mass = d.r*d.r;
       const pull = g*mass;                       // gravity pull grows with size
-      const pinStatic = 2.7*d.r;                 // surface tension pins by contact width
+      const pinStatic = 1.6*d.r;                 // surface tension pins by contact width — breaks free at a realistic (smaller) size
       if(!d.moving && pull>pinStatic) d.moving=true;   // only breaks free once heavy enough
       if(d.moving){
-        const pinKinetic = 1.0*d.r;              // weaker grip once it's sliding (hysteresis)
+        const pinKinetic = 0.6*d.r;              // weaker grip once it's sliding (hysteresis)
         d.vy += ((pull-pinKinetic)/mass)*dt*2.4;
         d.vy *= 0.94;
         if(d.vy<0) d.vy=0;
-        d.y  += d.vy*dt;
+        d.py=d.y; d.y += d.vy*dt;                 // remember where it was, for a continuous trail
         if(d.vy>0.4) d.r=Math.max(2.6, d.r-0.006*dt);   // sheds slowly — stays visible leading its own trail
         if(d.vy<0.06 && pull<=pinStatic){ d.moving=false; d.vy=0; }  // re-pins if it slows & is light
       } else {                                    // stalled — condensation slowly feeds it
-        d.vy=0; if(d.r<13) d.r += (0.009 + 0.007*tilt)*dt;
+        d.vy=0; d.py=d.y; if(d.r<11) d.r += (0.0026 + 0.0016*tilt)*dt;  // gentle condensation; runs mostly triggered by rain landing & merging
       }
     }
     // a moving drop swallows the beads it passes, growing and speeding on
     for(let i=0;i<drops.length;i++){ for(let j=drops.length-1;j>i;j--){ const a=drops[i],b=drops[j];
-      if(Math.hypot(a.x-b.x,a.y-b.y) < (a.r+b.r)*0.82){ const R=Math.sqrt(a.r*a.r+b.r*b.r);
+      if(Math.hypot(a.x-b.x,a.y-b.y) < (a.r+b.r)*0.95){ const R=Math.sqrt(a.r*a.r+b.r*b.r);   // merge as soon as they touch — no overlapping drops
         a.x=(a.x*a.r+b.x*b.r)/(a.r+b.r); a.y=Math.max(a.y,b.y);
         a.vy=(a.vy*a.r+b.vy*b.r)/(a.r+b.r); a.r=R; a.moving=a.moving||b.moving; drops.splice(j,1);} } }
     drops=drops.filter(d=>d.y-d.r<H+20);
