@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>gyre — sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  :root{ --bg1:#0f1420; --bg2:#1c2433; --brass:#c9974e; --parchment:#f2e9d8; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{ height:100%; margin:0; overflow:hidden;
+    background: radial-gradient(ellipse at 50% 40%, var(--bg2) 0%, var(--bg1) 80%);
+    font-family: Georgia, serif; color:var(--parchment); }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:var(--parchment); opacity:.5; text-decoration:none; font-size:14px; letter-spacing:.04em; transition:opacity .3s ease; }
+  #backlink:hover{opacity:.9;}
+  canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  #hint{ position:fixed; top:52px; left:0; right:0; text-align:center; font-size:13px; opacity:.4; pointer-events:none; letter-spacing:.03em; }
+  #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:center; gap:16px;
+    padding:14px 18px 24px; background:linear-gradient(to top, rgba(10,13,20,.9), rgba(10,13,20,0)); z-index:40; }
+  .toggle{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .toggle input{ appearance:none; -webkit-appearance:none; width:40px; height:22px; border-radius:11px; background:rgba(242,233,216,.2); position:relative; cursor:pointer; transition:background .25s; outline:none; }
+  .toggle input:checked{ background:rgba(201,151,78,.55); }
+  .toggle input::after{ content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--parchment); transition:left .22s; }
+  .toggle input:checked::after{ left:20px; background:#fff2d8; }
+  .glyph{ font-size:15px; opacity:.85; }
+  .divider{ width:1px; height:24px; background:rgba(242,233,216,.2); }
+  #speedRow{ display:flex; align-items:center; gap:10px; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; width:160px; height:3px; border-radius:3px; background:rgba(242,233,216,.25); outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--brass); cursor:pointer; box-shadow:0 0 6px rgba(201,151,78,.6); }
+</style>
+</head>
+<body>
+<a id="backlink" href="index.html">← sagne</a>
+<canvas id="scene"></canvas>
+<div id="hint">drag a gear down from the tray · drop one back up top to remove it</div>
+<div id="dock">
+  <label class="toggle" title="run"><span class="glyph">⚙</span><input type="checkbox" id="runChk" checked></label>
+  <div class="divider"></div>
+  <div id="speedRow"><span class="glyph">🐢</span><input type="range" id="speedSlider" min="0" max="100" value="42"><span class="glyph">🐇</span></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
+  const runChk=document.getElementById('runChk'), speedSlider=document.getElementById('speedSlider');
+  let W=0,H=0,DPR=1;
+
+  const MODULE=5.4, ADD=MODULE, DED=1.25*MODULE;
+  const pitchR=N=>MODULE*N/2, outerR=N=>pitchR(N)+ADD;
+  const MESH_TOL=7;      // teeth engage within this of the exact centre distance
+  const SNAP_TOL=18;     // on drop, if this close to a valid mesh, nudge to exact distance
+
+  let gears=[], idc=0;
+  const mk=(N,x,y,fixed)=>({id:idc++,N,x,y,angle:0,fixed:!!fixed});
+
+  const TRAY=[8,12,16,22,30,40];
+  let trayRects=[];
+  function layoutTray(){
+    const n=TRAY.length, slot=Math.min(70,(W*0.82)/n), x0=W/2-(n*slot)/2, y=92;
+    trayRects=TRAY.map((N,i)=>({N,cx:x0+slot*i+slot/2,cy:y,hit:slot*0.42}));
+  }
+  let inited=false;
+  function initGears(){
+    if(inited) return; inited=true;
+    const cx=W*0.5, cy=H*0.5;
+    const D=mk(20,cx,cy,true);           // driver
+    const B=mk(12,cx+(pitchR(20)+pitchR(12)),cy,false);                                        // right
+    const C=mk(30,cx-(pitchR(20)+pitchR(30))*0.5, cy+(pitchR(20)+pitchR(30))*0.866, false);    // lower-left
+    const E=mk(16,cx, cy-(pitchR(20)+pitchR(16)), false);                                      // top
+    gears=[D,B,C,E];
+  }
+  function resize(){
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    W=window.innerWidth; H=window.innerHeight;
+    canvas.width=W*DPR; canvas.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    layoutTray(); initGears();
+  }
+  window.addEventListener('resize',resize);
+
+  // ---- gear shape (drawn at current transform origin) ----
+  function gearOutline(N){
+    const R=pitchR(N), Ra=R+ADD, Rd=R-DED, pitch=2*Math.PI/N, tRoot=pitch*0.30, tTip=pitch*0.17;
+    ctx.beginPath();
+    for(let k=0;k<N;k++){ const a=k*pitch; const L=(r,g)=>ctx.lineTo(r*Math.cos(g),r*Math.sin(g));
+      if(k===0) ctx.moveTo(Rd*Math.cos(a-pitch*0.5),Rd*Math.sin(a-pitch*0.5));
+      L(Rd,a-tRoot); L(Ra,a-tTip); L(Ra,a+tTip); L(Rd,a+tRoot); L(Rd,a+pitch*0.5); }
+    ctx.closePath();
+  }
+  function gearBody(N, driver, dim){
+    const R=pitchR(N);
+    gearOutline(N);
+    const grad=ctx.createRadialGradient(-R*0.32,-R*0.32,R*0.12,0,0,R+ADD);
+    if(dim){ grad.addColorStop(0,'#8f7c56'); grad.addColorStop(0.5,'#7a6338'); grad.addColorStop(1,'#4f3f22'); }
+    else   { grad.addColorStop(0,'#eccd8f'); grad.addColorStop(0.45,'#c9974e'); grad.addColorStop(1,'#87672f'); }
+    ctx.fillStyle=grad; ctx.fill();
+    ctx.lineWidth=1.3; ctx.strokeStyle='rgba(55,38,14,0.65)'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,R-DED-3,0,7); ctx.lineWidth=2; ctx.strokeStyle='rgba(80,55,22,0.4)'; ctx.stroke();
+    if(N>=15){ const hn=Math.min(6,Math.floor(N/4)), hr=(R-DED)*0.55, hrad=R*0.13;
+      for(let i=0;i<hn;i++){ const ha=i/hn*2*Math.PI; ctx.beginPath(); ctx.arc(hr*Math.cos(ha),hr*Math.sin(ha),hrad,0,7);
+        ctx.fillStyle='#241b12'; ctx.fill(); ctx.lineWidth=1; ctx.strokeStyle='rgba(90,62,26,0.45)'; ctx.stroke(); } }
+    ctx.beginPath(); ctx.arc(0,0,R*0.24,0,7); ctx.fillStyle=dim?'#7a5c30':'#bd8f48'; ctx.fill(); ctx.lineWidth=1.1; ctx.strokeStyle='rgba(55,38,14,0.6)'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,R*0.10,0,7); ctx.fillStyle='#20170f'; ctx.fill();
+    if(driver){ // a little crank knob so the motor gear is obvious
+      ctx.beginPath(); ctx.arc(R*0.42,0,R*0.11,0,7); ctx.fillStyle='#e7d7a8'; ctx.fill(); ctx.strokeStyle='rgba(55,38,14,0.6)'; ctx.stroke(); }
+  }
+  function drawGear(g,dim){
+    const R=pitchR(g.N);
+    ctx.save(); ctx.translate(g.x,g.y);
+    ctx.save(); ctx.rotate(g.angle); ctx.translate(2,3); gearOutline(g.N); ctx.fillStyle='rgba(0,0,0,0.32)'; ctx.fill(); ctx.restore();
+    ctx.rotate(g.angle); gearBody(g.N, g.fixed, dim); ctx.restore();
+  }
+
+  // ---- meshing train from the driver ----
+  function buildTrain(){
+    const n=gears.length, adj=Array.from({length:n},()=>[]);
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){ const a=gears[i],b=gears[j];
+      const d=Math.hypot(a.x-b.x,a.y-b.y), t=pitchR(a.N)+pitchR(b.N);
+      if(Math.abs(d-t)<MESH_TOL){ adj[i].push(j); adj[j].push(i); } }
+    const parent=new Array(n).fill(-2), order=[]; if(n){ parent[0]=-1; const q=[0];
+      while(q.length){ const u=q.shift(); order.push(u); for(const v of adj[u]) if(parent[v]===-2){ parent[v]=u; q.push(v);} } }
+    return {parent,order};
+  }
+
+  // ---- drag / place / remove ----
+  let drag=null;
+  const P=e=>({x:e.clientX,y:e.clientY});
+  canvas.addEventListener('pointerdown',e=>{ const {x,y}=P(e);
+    for(const t of trayRects){ if(Math.hypot(x-t.cx,y-t.cy)<t.hit){ const g=mk(t.N,x,y,false); gears.push(g); drag={g,ox:0,oy:0}; canvas.setPointerCapture(e.pointerId); return; } }
+    for(let i=gears.length-1;i>=0;i--){ const g=gears[i]; if(g.fixed) continue; if(Math.hypot(x-g.x,y-g.y)<outerR(g.N)){ drag={g,ox:x-g.x,oy:y-g.y}; canvas.setPointerCapture(e.pointerId); return; } }
+  });
+  canvas.addEventListener('pointermove',e=>{ if(!drag) return; const {x,y}=P(e); drag.g.x=x-drag.ox; drag.g.y=y-drag.oy; });
+  function endDrag(e){ if(!drag) return; const g=drag.g, {x,y}=P(e);
+    if(y<130){ gears=gears.filter(k=>k!==g); }        // dropped back in the tray band -> remove
+    else {                                              // nudge to exact mesh distance if close to a neighbour
+      let best=null,err=1e9; for(const o of gears){ if(o===g) continue; const t=pitchR(g.N)+pitchR(o.N); const e2=Math.abs(Math.hypot(g.x-o.x,g.y-o.y)-t); if(e2<err){err=e2;best=o;} }
+      if(best&&err<SNAP_TOL){ const t=pitchR(g.N)+pitchR(best.N), a=Math.atan2(g.y-best.y,g.x-best.x); g.x=best.x+Math.cos(a)*t; g.y=best.y+Math.sin(a)*t; }
+    }
+    drag=null;
+  }
+  canvas.addEventListener('pointerup',endDrag);
+  canvas.addEventListener('pointercancel',endDrag);
+
+  // ---- loop ----
+  let last=performance.now();
+  function tick(now){
+    const dt=Math.min(now-last,50)/1000; last=now;
+    const {parent,order}=buildTrain();
+    const speed=speedSlider.value/50;
+    if(runChk.checked) gears[0].angle += speed*1.05*dt;
+    for(const idx of order){ if(idx===0) continue; const g=gears[idx], p=gears[parent[idx]];
+      const conn=Math.atan2(g.y-p.y,g.x-p.x);
+      g.angle=-(p.N/g.N)*(p.angle-conn)+conn+Math.PI+Math.PI/g.N; }
+    const connected=new Set(order);
+
+    ctx.clearRect(0,0,W,H);
+    // tray
+    for(const t of trayRects){ ctx.save(); ctx.translate(t.cx,t.cy); const s=Math.min(1,(t.hit*0.95)/outerR(t.N)); ctx.scale(s,s); gearBody(t.N,false,false); ctx.restore(); }
+    // board gears — dim the ones not part of the running train
+    for(let i=0;i<gears.length;i++){ const g=gears[i]; drawGear(g, !connected.has(i) && !g.fixed); }
+    requestAnimationFrame(tick);
+  }
+  resize(); requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
