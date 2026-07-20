@@ -1451,7 +1451,10 @@ function render() {
   flameClipRect.setAttribute('height', flameClipBottom + 60);
 
   glowCircle.setAttribute('cy', wellFloorY - 10);
-  glowCircle.setAttribute('r', state.extinguished ? 0 : 90 + (state.timerMode ? 0 : state.wind) * 35);
+  // the burned pillar hides most of the flame, so its warm halo above the
+  // rim is the main light — make that glow noticeably larger than the
+  // ordinary candle's
+  glowCircle.setAttribute('r', state.extinguished ? 0 : 90 + (state.timerMode ? 0 : state.wind) * 35 + hollowT * 85);
 
   // flame — timer mode locks wind to zero: "burn rate locks to the
   // candle's true, unaided speed at its set size"
