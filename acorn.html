@@ -131,6 +131,37 @@
 <body>
 
 <a id="backlink" href="index.html">← sagne</a>
+<!-- bring-your-own-music: plays a file the visitor picks from their own device; nothing is uploaded -->
+<style>
+  #music{ position:fixed; left:18px; bottom:16px; z-index:60; display:flex; align-items:center; gap:9px; }
+  #musicBtn{ width:34px; height:34px; border-radius:50%; border:1px solid rgba(242,233,216,.25); background:rgba(20,24,34,.55); color:#f2e9d8; font-size:15px; line-height:1; cursor:pointer; opacity:.55; transition:opacity .3s, color .3s, border-color .3s; -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
+  #musicBtn:hover{ opacity:1; }
+  #musicBtn.playing{ color:#f0d69a; border-color:rgba(201,151,78,.6); opacity:.9; }
+  #musicName{ max-width:40vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:#f2e9d8; opacity:0; transition:opacity .3s; letter-spacing:.02em; cursor:pointer; }
+  #music:hover #musicName{ opacity:.55; }
+</style>
+<div id="music" title="play your own music">
+  <button id="musicBtn" aria-label="play your own music">♪</button>
+  <span id="musicName"></span>
+</div>
+<input type="file" id="musicPick" accept="audio/*" multiple hidden>
+<audio id="musicEl"></audio>
+<script>
+(function(){
+  const pick=document.getElementById('musicPick'), el=document.getElementById('musicEl'),
+        btn=document.getElementById('musicBtn'), name=document.getElementById('musicName');
+  let list=[], idx=0;
+  const label=f=> f ? f.name.replace(/\.[^.]+$/,'') : '';
+  function load(i){ if(el.src) URL.revokeObjectURL(el.src); el.src=URL.createObjectURL(list[i]); name.textContent=label(list[i]); }
+  function sync(){ btn.textContent = !el.src ? '♪' : (el.paused ? '▶' : '❚❚'); btn.classList.toggle('playing', !!el.src && !el.paused); }
+  btn.addEventListener('click', ()=>{ if(!list.length){ pick.click(); return; } el.paused ? el.play() : el.pause(); });
+  name.addEventListener('click', ()=> pick.click());
+  pick.addEventListener('change', ()=>{ if(!pick.files.length) return; list=[...pick.files]; idx=0; el.loop=(list.length===1); load(0); el.play(); });
+  el.addEventListener('ended', ()=>{ if(list.length>1){ idx=(idx+1)%list.length; load(idx); el.play(); } });
+  el.addEventListener('play', sync); el.addEventListener('pause', sync); el.addEventListener('loadeddata', sync);
+  sync();
+})();
+</script>
 <div id="hint">tilt your device<br>or move your mouse</div>
 
 <div id="permissionGate">
@@ -189,6 +220,20 @@
       rumbleGain.gain.setTargetAtTime(muted ? 0 : rumbleGain.gain.value, audioCtx.currentTime, 0.05);
     }
   });
+
+  // If the visitor starts their own music, hush the acorn's own sounds so the
+  // two don't compete — the music becomes the sound. We tick the "no sound" box
+  // (so it's visible and they can undo it) but don't overwrite their saved setting.
+  const musicEl = document.getElementById('musicEl');
+  if (musicEl) {
+    musicEl.addEventListener('play', () => {
+      if (!muted) {
+        muted = true;
+        muteCheckbox.checked = true;
+        if (rumbleGain && audioCtx) rumbleGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+      }
+    });
+  }
 
   // roll-sound volume — shared site-wide the same way mute is, so the
   // level carries over between sagnities rather than resetting each time
