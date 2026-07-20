@@ -430,6 +430,15 @@
           <feColorMatrix in="grain" type="matrix"
             values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.5 0.5 0.5 0 0"/>
         </filter>
+        <!-- once the big-pillar burn hollows out, the flame has sunk into
+             the wax; this clip hides everything below the wax rim so the
+             solid, unburned wax reads as being in front of the flame and
+             only its very tip clears the surface. render() moves the bottom
+             edge each frame — parked far below the scene when not hollowed,
+             so it has no effect on an ordinary flame. -->
+        <clipPath id="flameClip">
+          <rect id="flameClipRect" x="0" y="-60" width="380" height="9999"/>
+        </clipPath>
       </defs>
 
       <!-- soft grounding shadow -->
@@ -583,6 +592,8 @@ const iconPopup      = document.getElementById('iconPopup');
 const pinList        = document.getElementById('pinList');
 const candleBody     = document.getElementById('candleBody');
 const flameGroup     = document.getElementById('flameGroup');
+const flameClipRect  = document.getElementById('flameClipRect');
+flameGroup.setAttribute('clip-path', 'url(#flameClip)');
 const pinsGroup      = document.getElementById('pinsGroup');
 const glowCircle     = document.getElementById('glowCircle');
 const readout        = document.getElementById('readout');
@@ -1383,7 +1394,12 @@ function render() {
   const hollowT = state.pillarMode
     ? smoothstep(HOLLOW_START_FRACTION, HOLLOW_START_FRACTION + 0.04, elapsedFraction)
     : 0;
-  const wellDepth = fullH * 0.22 * hollowT;
+  // The flame bores a narrow well straight down into the pillar. The seat
+  // only drops a little below the rim — just far enough that the front
+  // wall of unburned wax hides the flame's body and only its tip crests
+  // the surface. (Earlier this was fullH*0.22, which sank the flame so
+  // deep the wax towered above it.)
+  const wellDepth = fullH * 0.09 * hollowT;
 
   // wax body — flat top, slightly rounded corners, subtle pooled-wax lip at top
   const waxStriations = [-0.62, -0.28, 0.05, 0.4, 0.7].map((f, i) => {
@@ -1392,17 +1408,15 @@ function render() {
               stroke="var(--wax-shadow)" stroke-width="${0.5 + (i % 2) * 0.4}" opacity="${0.1 + (i % 3) * 0.05}"/>`;
   }).join('');
 
-  // the hollow well itself — a darker inset at the top of the body,
-  // warmly lit from the flame sunk inside it, only present once hollowT>0
+  // the flame's seat, just under the rim once hollowed
   const wellFloorY = topY + wellDepth;
-  const wellShape = hollowT > 0.01 ? `
-    <rect x="${CENTER_X - halfW * 0.82}" y="${topY}" width="${halfW * 1.64}" height="${wellDepth}"
-          rx="${halfW * 0.15}" fill="#120d08" opacity="${0.55 * hollowT}"/>
-    <ellipse cx="${CENTER_X}" cy="${wellFloorY}" rx="${halfW * 0.7}" ry="${halfW * 0.14}"
-             fill="url(#waxGlow)" opacity="${0.9 * hollowT}" style="mix-blend-mode:screen"/>
-  ` : '';
-  // the bright pooled-wax lip only makes sense on an intact flat surface —
-  // once hollowed, that same edge reads as the dark rim of the opening instead
+  // Seen straight-on, the hollowed top reads as nothing but a level rim
+  // with the flame tip above it — no melt-hole disc, no glow oval on the
+  // surface. The wax stays solid across the front; everything below the
+  // rim is opaque wax (the flame clip hides the sunk body).
+  const wellShape = '';
+  // the elliptical pooled-wax lip is a perspective cue for a flat top;
+  // once hollowed we want a plain level rim, so fade it out with hollowT
   const rimLipOpacity = 1 - hollowT;
 
   candleBody.innerHTML = `
@@ -1417,18 +1431,32 @@ function render() {
     <ellipse cx="${CENTER_X}" cy="${topY}" rx="${halfW * 0.94}" ry="${halfW * 0.16}"
              fill="var(--wax-edge)" opacity="${0.9 * rimLipOpacity}"/>
     <ellipse cx="${CENTER_X}" cy="${topY}" rx="${halfW * 0.94}" ry="${halfW * 0.16}"
-             fill="none" stroke="#5c4a30" stroke-width="0.7" opacity="0.35" filter="url(#inkWobble)"/>
+             fill="none" stroke="#5c4a30" stroke-width="0.7" opacity="${0.35 * rimLipOpacity}" filter="url(#inkWobble)"/>
     ${!state.extinguished ? `<rect x="${CENTER_X - halfW}" y="${topY}" width="${halfW * 2}" height="${curH}"
              rx="${halfW * 0.18}" fill="url(#waxBaseGlow)" style="mix-blend-mode:screen"/>` : ''}
     ${!state.extinguished ? `<rect x="${CENTER_X - halfW}" y="${topY}" width="${halfW * 2}" height="${curH}"
              rx="${halfW * 0.18}" fill="url(#waxGlow)" style="mix-blend-mode:screen"/>` : ''}
     ${wellShape}
-    ${!state.extinguished ? `<rect x="${CENTER_X - 1.5}" y="${wellFloorY - 12}" width="3" height="14" rx="1.4" fill="var(--wick)"/>`
-                           : `<rect x="${CENTER_X - 1.3}" y="${wellFloorY - 4}" width="2.6" height="6" rx="1.2" fill="#1a1512"/>`}
+    ${hollowT > 0.5
+        ? '' /* hollowed pillar: wick is down in the wax, hidden behind the rim — show only rim + flame tip */
+        : (!state.extinguished ? `<rect x="${CENTER_X - 1.5}" y="${wellFloorY - 12}" width="3" height="14" rx="1.4" fill="var(--wick)"/>`
+                               : `<rect x="${CENTER_X - 1.3}" y="${wellFloorY - 4}" width="2.6" height="6" rx="1.2" fill="#1a1512"/>`)}
   `;
 
-  glowCircle.setAttribute('cy', wellFloorY - 10);
-  glowCircle.setAttribute('r', state.extinguished ? 0 : 90 + (state.timerMode ? 0 : state.wind) * 35);
+  // hide the sunk flame behind the solid wax: clip its bottom exactly to
+  // the level rim once hollowed, so only the tip shows above the edge;
+  // parked far below otherwise so an ordinary flame is never clipped
+  const flameClipBottom = topY + (1 - hollowT) * 10000;
+  flameClipRect.setAttribute('y', -60);
+  flameClipRect.setAttribute('height', flameClipBottom + 60);
+
+  // on the burned pillar, lift the glow's centre up toward the flame tip
+  // so the halo sits higher, above the rim rather than around the body
+  glowCircle.setAttribute('cy', wellFloorY - 10 - hollowT * 45);
+  // the burned pillar hides most of the flame, so its warm halo above the
+  // rim is the main light — make that glow noticeably larger than the
+  // ordinary candle's
+  glowCircle.setAttribute('r', state.extinguished ? 0 : 90 + (state.timerMode ? 0 : state.wind) * 35 + hollowT * 85);
 
   // flame — timer mode locks wind to zero: "burn rate locks to the
   // candle's true, unaided speed at its set size"
@@ -1446,11 +1474,12 @@ function render() {
     const idleAsymmetry = 1.4;
 
     const windLean = state.lean * (10 + effWind * 34) + idleAsymmetry;
-    // a flame sunk into a well is shielded from any draft at all, and
-    // reads smaller/dimmer from outside than one burning in the open
-    const heightScale = (1 - effWind * 0.35) * heightPulse * (1 - hollowT * 0.3);
+    // a flame sunk into the wax is shielded from any draft — barely
+    // shrunk, but with most of its body hidden behind the front wall of
+    // wax (the flame clip), so only its top crests the rim
+    const heightScale = (1 - effWind * 0.35) * heightPulse * (1 - hollowT * 0.12);
     const flameH = 48 * heightScale;
-    const flameW = 14 * (1 - effWind * 0.22) * (1 - hollowT * 0.15);
+    const flameW = 14 * (1 - effWind * 0.22) * (1 - hollowT * 0.08);
     const baseY = wellFloorY - 12;
     const tipX = CENTER_X + windLean + tipWobble * 3;
     const tipY = baseY - flameH;
