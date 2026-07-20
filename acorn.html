@@ -408,13 +408,24 @@
   // entirely — there's nothing on it that could catch.
   const OBJECTS = {
     pebble:    { friction: 0.985, radius: 30, wobble: 0 },
-    acorn:     { friction: 0.972, radius: 60, wobble: 1, catchInterval: 290, curlRate: 0.012 },
+    // acorn cone-roll derived from the real photo: cap outer edge ~441px (R),
+    // nut's rounded bottom ~217px (r), axial length ~318px between them.
+    // A tapered object rolls in a circle; curl per px = 2(R-r)/(L(R+r)).
+    // catchInterval 1e9 disables the old random stick-slip kick so the arc
+    // reads as a clean, steady cone curve rather than a wavy ball.
+    acorn:     { friction: 0.974, radius: 62, wobble: 1, catchInterval: 1e9, curlRate: 0.0040 },
     disc:      { friction: 0.976, radius: 34, wobble: 0, spinOnImpact: 1 },
     jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.0022 },
   };
 
   let activeType = 'pebble';
-  let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0 };
+  let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0, acornAngle: 0 };
+
+  // the real acorn photo, used as the rolling sprite
+  const acornImg = new Image();
+  let acornReady = false;
+  acornImg.onload = () => { acornReady = true; };
+  acornImg.src = 'acorn.png';
 
   function resetObject(){
     obj.x = W / 2;
@@ -431,6 +442,9 @@
     obj.curlDir = Math.random() < 0.5 ? 1 : -1;
     obj.discSpin = Math.random() * Math.PI * 2;
     obj.discAngVel = 0;
+    // start lying naturally on its side (long axis horizontal), tipped the
+    // way it will curl, rather than at a random angle
+    obj.acornAngle = obj.curlDir * Math.PI / 2 + (Math.random() - 0.5) * 0.4;
   }
 
   objBtns.forEach((btn) => {
@@ -541,6 +555,19 @@
     if (obj.y < r) { obj.y = r; obj.vy = -obj.vy * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel -= obj.vx * 0.05; }
     if (obj.y > H - r) { obj.y = H - r; obj.vy = -obj.vy * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel += obj.vx * 0.05; }
     if (clacked && clackIntensity > 0.6) playClack(clackIntensity);
+
+    // acorn sprite orientation: a rolling cone keeps its long axis across the
+    // direction of travel and leans its narrow (tip) end toward the inside of
+    // the curve — the point it's circling around. Track the heading and turn
+    // the sprite to match, smoothed so it reads as rolling rather than snapping.
+    if (activeType === 'acorn' && speed > 0.25) {
+      const headV = Math.atan2(obj.vy, obj.vx);
+      const tipDir = headV - obj.curlDir * Math.PI / 2;  // tip points to inside of arc
+      const target = tipDir - Math.PI / 2;               // sprite's tip is local +y
+      let d = ((target - obj.acornAngle + Math.PI) % (2 * Math.PI)) - Math.PI;
+      if (d < -Math.PI) d += 2 * Math.PI;
+      obj.acornAngle += d * 0.18;
+    }
 
     setRumble(speed, activeType);
   }
@@ -841,84 +868,21 @@
     const r = OBJECTS.acorn.radius;
     ctx.save();
     ctx.translate(obj.x, obj.y);
-    // shadow
+
+    // soft contact shadow — screen-aligned, so it stays beneath the acorn
+    // as the sprite turns through its arc
     ctx.beginPath();
-    ctx.ellipse(1, r*0.85, r*0.78, r*0.3, 0, 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(20,12,4,0.3)';
+    ctx.ellipse(1, r*0.5, r*1.0, r*0.42, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(20,12,4,0.28)';
     ctx.fill();
 
-    ctx.rotate(obj.spin);
-
-    // soft watercolor bloom just under the surface, slightly offset —
-    // a translucent second wash reads as pigment pooling at the edges
-    ctx.save();
-    ctx.globalAlpha = 0.35;
-    pathFromPoints(ctx, ACORN_BODY, r*0.04, r*0.04, r, r);
-    ctx.fillStyle = '#8a5a28';
-    ctx.fill();
-    ctx.restore();
-
-    // body — the nut itself, elongated and tapering to a rounded point
-    const bodyG = ctx.createRadialGradient(-r*0.22, -r*0.15, r*0.1, 0, r*0.1, r*1.05);
-    bodyG.addColorStop(0, '#dba669');
-    bodyG.addColorStop(0.55, '#b97f3e');
-    bodyG.addColorStop(1, '#7c5225');
-    pathFromPoints(ctx, ACORN_BODY, 0, 0, r, r);
-    ctx.fillStyle = bodyG;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(60,38,14,0.5)';
-    ctx.lineWidth = Math.max(1, r*0.02);
-    ctx.stroke();
-
-    // a couple of soft highlight strokes down the body, like brushed
-    // watercolor shading rather than a flat gradient alone
-    ctx.save();
-    pathFromPoints(ctx, ACORN_BODY, 0, 0, r, r);
-    ctx.clip();
-    ctx.strokeStyle = 'rgba(255,235,200,0.25)';
-    ctx.lineWidth = r*0.1;
-    ctx.beginPath();
-    ctx.moveTo(-r*0.2, -r*0.5);
-    ctx.quadraticCurveTo(-r*0.35, r*0.1, -r*0.15, r*0.7);
-    ctx.stroke();
-    ctx.restore();
-
-    // cap — textured, scalloped where it meets the nut
-    const capG = ctx.createLinearGradient(0, -r*0.95, 0, -r*0.4);
-    capG.addColorStop(0, '#93714a');
-    capG.addColorStop(1, '#5c4326');
-    pathFromPoints(ctx, ACORN_CAP, 0, 0, r, r);
-    ctx.fillStyle = capG;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(45,30,14,0.55)';
-    ctx.lineWidth = Math.max(1, r*0.018);
-    ctx.stroke();
-
-    // scale texture: small curved dashes, the thing that actually reads
-    // as "cap" rather than a smooth brown dome
-    ctx.save();
-    pathFromPoints(ctx, ACORN_CAP, 0, 0, r, r);
-    ctx.clip();
-    ctx.strokeStyle = 'rgba(35,22,10,0.4)';
-    ctx.lineWidth = Math.max(0.7, r*0.014);
-    CAP_SCALES.forEach(([sx, sy, curve]) => {
-      const x = sx*r, y = sy*r;
-      ctx.beginPath();
-      ctx.moveTo(x - r*0.06, y);
-      ctx.quadraticCurveTo(x, y + curve*r*0.3, x + r*0.06, y);
-      ctx.stroke();
-    });
-    ctx.restore();
-
-    // stem — short, a real twig snapped off close to the cap rather than
-    // a long stick
-    ctx.strokeStyle = '#4a3016';
-    ctx.lineWidth = Math.max(1.4, r*0.05);
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(r*0.08, -r*0.92);
-    ctx.quadraticCurveTo(r*0.16, -r*1.05, r*0.14, -r*1.14);
-    ctx.stroke();
+    // the real acorn photo, turned to match how it's rolling
+    ctx.rotate(obj.acornAngle);
+    if (acornReady) {
+      const dh = r * 2.7;
+      const dw = dh * acornImg.naturalWidth / acornImg.naturalHeight;
+      ctx.drawImage(acornImg, -dw/2, -dh/2, dw, dh);
+    }
 
     ctx.restore();
   }
