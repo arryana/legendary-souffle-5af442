@@ -125,11 +125,11 @@
   const P=e=>({x:e.clientX,y:e.clientY});
   canvas.addEventListener('pointerdown',e=>{ const {x,y}=P(e);
     for(const t of trayRects){ if(Math.hypot(x-t.cx,y-t.cy)<t.hit){ const g=mk(t.N,x,y,false); gears.push(g); drag={g,ox:0,oy:0}; canvas.setPointerCapture(e.pointerId); return; } }
-    for(let i=gears.length-1;i>=0;i--){ const g=gears[i]; if(g.fixed) continue; if(Math.hypot(x-g.x,y-g.y)<outerR(g.N)){ drag={g,ox:x-g.x,oy:y-g.y}; canvas.setPointerCapture(e.pointerId); return; } }
+    for(let i=gears.length-1;i>=0;i--){ const g=gears[i]; if(Math.hypot(x-g.x,y-g.y)<outerR(g.N)){ drag={g,ox:x-g.x,oy:y-g.y}; canvas.setPointerCapture(e.pointerId); return; } }
   });
   canvas.addEventListener('pointermove',e=>{ if(!drag) return; const {x,y}=P(e); drag.g.x=x-drag.ox; drag.g.y=y-drag.oy; });
   function endDrag(e){ if(!drag) return; const g=drag.g, {x,y}=P(e);
-    if(y<130){ gears=gears.filter(k=>k!==g); }        // dropped back in the tray band -> remove
+    if(y<130 && !g.fixed){ gears=gears.filter(k=>k!==g); }   // dropped in the tray band -> remove (never the driver)
     else {                                              // nudge to exact mesh distance if close to a neighbour
       let best=null,err=1e9; for(const o of gears){ if(o===g) continue; const t=pitchR(g.N)+pitchR(o.N); const e2=Math.abs(Math.hypot(g.x-o.x,g.y-o.y)-t); if(e2<err){err=e2;best=o;} }
       if(best&&err<SNAP_TOL){ const t=pitchR(g.N)+pitchR(best.N), a=Math.atan2(g.y-best.y,g.x-best.x); g.x=best.x+Math.cos(a)*t; g.y=best.y+Math.sin(a)*t; }
