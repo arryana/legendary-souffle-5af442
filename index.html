@@ -62,14 +62,18 @@
   #cards.dice5 a:nth-child(4){ grid-area: bl; }
   #cards.dice5 a:nth-child(5){ grid-area: br; }
   #cards.dice6{
-    display:grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 200px));
+    display:flex;
+    flex-wrap:wrap;
     justify-content:center;
     gap:22px;
-    max-width:none;
     width:100%;
+    /* caps a row at 5 cards (5*200 + 4*22), so 10 pieces read as a tidy 5 x 2 block;
+       as the window narrows the rows re-flow and stay centred, never left-stranded */
+    max-width:1088px;
+    margin-inline:auto;
   }
-  #cards.dice5 .card, #cards.dice6 .card{ width:100%; height:auto; aspect-ratio: 11 / 16; }
+  #cards.dice6 .card{ width:200px; height:auto; aspect-ratio:11/16; }
+  #cards.dice5 .card{ width:100%; height:auto; aspect-ratio: 11 / 16; }
   .card{
     position:relative;
     width:220px; height:320px;
@@ -108,17 +112,10 @@
     #wrap{ padding: 28px 14px; justify-content:flex-start; }
     h1{ font-size: clamp(28px, 8vw, 40px); margin: 0 0 32px; }
     #cards.dice6{
-      grid-template-columns: repeat(2, 1fr);
       gap: 16px;
-      width: 100%;
       max-width: 460px;
     }
-    /* Center the last card when it's alone on an odd-numbered final row */
-    #cards.dice6 a:last-child:nth-child(odd){
-      grid-column: 1 / -1;
-      width: calc(50% - 8px);
-      justify-self: center;
-    }
+    #cards.dice6 .card{ width: calc(50% - 8px); }
   }
 </style>
 </head>
