@@ -137,6 +137,78 @@
     return { vx:(psi(x,y+e,t)-psi(x,y-e,t))/(2*e),
              vy:-(psi(x+e,y,t)-psi(x-e,y,t))/(2*e) };
   }
+  // ===== FLUID (replaces the ribbon above; ribbon helpers kept unused) =====
+  const NX=132, NY=99, NN=NX*NY, GS=14;
+  const IXf=(i,j)=>i+j*NX;
+  const F=()=>new Float32Array(NN);
+  let fu=F(),fv=F(),fu0=F(),fv0=F(),dens=F(),dens0=F(),ftmp=F(),ftmp0=F(),curlF=F();
+  let densCanvas=null, dctx=null, densImg=null;
+  function setBnd(b,x){
+    for(let i=0;i<NX;i++){ x[IXf(i,0)]=x[IXf(i,1)]; x[IXf(i,NY-1)]=x[IXf(i,NY-2)]; }
+    for(let j=0;j<NY;j++){ x[IXf(0,j)]=x[IXf(1,j)]; x[IXf(NX-1,j)]=x[IXf(NX-2,j)]; }
+  }
+  function linSolve(b,x,x0,a,c){ const inv=1/c;
+    for(let k=0;k<GS;k++){
+      for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++)
+        x[IXf(i,j)]=(x0[IXf(i,j)]+a*(x[IXf(i-1,j)]+x[IXf(i+1,j)]+x[IXf(i,j-1)]+x[IXf(i,j+1)]))*inv;
+      setBnd(b,x);
+    }
+  }
+  function advectF(b,d,d0,uu,vv){
+    for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++){
+      let x=i-uu[IXf(i,j)], y=j-vv[IXf(i,j)];
+      if(x<0.5)x=0.5; else if(x>NX-1.5)x=NX-1.5;
+      if(y<0.5)y=0.5; else if(y>NY-1.5)y=NY-1.5;
+      const i0=x|0,i1=i0+1,j0=y|0,j1=j0+1, s1=x-i0,s0=1-s1,t1=y-j0,t0=1-t1;
+      d[IXf(i,j)]=s0*(t0*d0[IXf(i0,j0)]+t1*d0[IXf(i0,j1)])+s1*(t0*d0[IXf(i1,j0)]+t1*d0[IXf(i1,j1)]);
+    }
+    setBnd(b,d);
+  }
+  function projectF(uu,vv,p,div){
+    for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++){
+      div[IXf(i,j)]=-0.5*((uu[IXf(i+1,j)]-uu[IXf(i-1,j)])+(vv[IXf(i,j+1)]-vv[IXf(i,j-1)]));
+      p[IXf(i,j)]=0;
+    }
+    setBnd(0,div); setBnd(0,p); linSolve(0,p,div,1,4);
+    for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++){
+      uu[IXf(i,j)]-=0.5*(p[IXf(i+1,j)]-p[IXf(i-1,j)]);
+      vv[IXf(i,j)]-=0.5*(p[IXf(i,j+1)]-p[IXf(i,j-1)]);
+    }
+    setBnd(1,uu); setBnd(2,vv);
+  }
+  function vorticityF(eps){
+    for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++)
+      curlF[IXf(i,j)]=0.5*((fv[IXf(i+1,j)]-fv[IXf(i-1,j)])-(fu[IXf(i,j+1)]-fu[IXf(i,j-1)]));
+    for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++){
+      let gx=0.5*(Math.abs(curlF[IXf(i+1,j)])-Math.abs(curlF[IXf(i-1,j)]));
+      let gy=0.5*(Math.abs(curlF[IXf(i,j+1)])-Math.abs(curlF[IXf(i,j-1)]));
+      const L=Math.hypot(gx,gy)+1e-5; gx/=L; gy/=L;
+      const w=curlF[IXf(i,j)];
+      fu[IXf(i,j)]+=eps*gy*w; fv[IXf(i,j)]-=eps*gx*w;
+    }
+  }
+  const BUOY=0.0006, TBUOY=0.014, VORT=0.11;
+  function addSmoke(px,py){
+    const ci=Math.round(px/W*NX), cj=Math.round(py/H*NY);
+    for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){    // tighter source → thinner stem
+      const i=ci+di, j=cj+dj; if(i<1||j<1||i>=NX-1||j>=NY-1) continue;
+      const w=Math.exp(-(di*di+dj*dj)/1.6);
+      dens[IXf(i,j)]+=6*w; ftmp[IXf(i,j)]+=6*w; fv[IXf(i,j)]-=0.8*w;
+      fu[IXf(i,j)]+=(Math.random()-0.5)*0.18*w;
+    }
+  }
+  function fluidStep(){
+    for(let k=0;k<NN;k++) fv[k]-=dens[k]*BUOY + ftmp[k]*TBUOY;
+    vorticityF(VORT);
+    projectF(fu,fv,fu0,fv0);
+    fu0.set(fu); fv0.set(fv);
+    advectF(1,fu,fu0,fu0,fv0); advectF(2,fv,fv0,fu0,fv0);
+    projectF(fu,fv,fu0,fv0);
+    dens0.set(dens); advectF(0,dens,dens0,fu,fv);
+    ftmp0.set(ftmp); advectF(0,ftmp,ftmp0,fu,fv);
+    // damp sideways drift (keeps the plume rising rather than migrating), gentle on the rise
+    for(let k=0;k<NN;k++){ fu[k]*=0.984; fv[k]*=0.997; dens[k]*=0.988; ftmp[k]*=0.974; }
+  }
 
   // dust motes drifting in the beams
   const dust=[]; function buildDust(){ dust.length=0; for(let i=0;i<90;i++){
@@ -146,8 +218,8 @@
     DPR=Math.min(window.devicePixelRatio||1,2);
     W=window.innerWidth; H=window.innerHeight;
     canvas.width=W*DPR; canvas.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
-    if(!smokeBuf){ smokeBuf=document.createElement('canvas'); sctx=smokeBuf.getContext('2d'); }
-    smokeBuf.width=W; smokeBuf.height=H;
+    if(!densCanvas){ densCanvas=document.createElement('canvas'); densCanvas.width=NX; densCanvas.height=NY;
+      dctx=densCanvas.getContext('2d'); densImg=dctx.createImageData(NX,NY); }
     buildWall(); buildLightMap(); buildDust();
   }
   window.addEventListener('resize',resize);
@@ -156,7 +228,6 @@
   let drawing=false, px=0,py=0, hidHint=false;
   const P=e=>({x:e.clientX,y:e.clientY});
   canvas.addEventListener('pointerdown',e=>{ const {x,y}=P(e); drawing=true; px=x;py=y;
-    pendingBreak=true;                        // start a fresh ribbon, don't bridge from the old one
     canvas.setPointerCapture(e.pointerId);
     if(!hidHint){ hint.style.opacity=0; hidHint=true; }
   });
@@ -170,8 +241,9 @@
   let last=performance.now();
   function tick(now){
     const dt=Math.min(now-last,50)/1000; last=now; const t=now*0.001;
-    // a fresh node at the source each frame while drawing
-    if(drawing) addNode(px,py);
+    // feed smoke in while drawing, then advance the fluid one step
+    if(drawing) addSmoke(px,py);
+    fluidStep();
 
     // wall + visible light shafts
     ctx.globalCompositeOperation='source-over';
@@ -191,62 +263,30 @@
     }
     ctx.globalAlpha=1;
 
-    // advect the spine: steady buoyant rise, a slow serpentine meander, and
-    // curl-noise turbulence that ramps in once the ribbon has risen a good way
-    for(const n of spine){
-      n.age += dt*60;
-      const turbAmp=Math.min(1,Math.max(0,(n.age-95)/110));
-      n.vy -= 0.024;
-      // straighter through the tight stem, snakier once it starts to let go
-      const meander=0.025 + 0.16*Math.max(0,(n.age-70)/160);
-      n.vx += Math.sin(n.y*0.017 + t*1.5)*meander;
-      const f=curlAt(n.x,n.y,t);
-      n.vx += f.vx*4.0*turbAmp;                          // finer curls on break-up (from scale, not brute force)
-      n.vy += f.vy*4.0*turbAmp;
-      n.vx *= (0.90 + 0.07*turbAmp);
-      n.vy *= 0.987;
-      n.x+=n.vx; n.y+=n.vy;
-      n.hw=nodeWidth(n.age); n.fade=nodeFade(n.age); n.L=lightAt(n.x,n.y); n.turb=turbAmp;
+    // render the smoke volume: density → soft luminous haze. A top-down self-shadow
+    // (light attenuated by the density above a cell) gives it three-dimensional body;
+    // warm and bright where it crosses a beam, dim grey in shadow.
+    const data=densImg.data;
+    for(let i=0;i<NX;i++){
+      let acc=0;
+      for(let j=0;j<NY;j++){
+        const k=IXf(i,j), idx=k*4, d=dens[k];
+        const o=d*0.22;                                  // density → coverage
+        if(o<0.008){ data[idx+3]=0; acc+=d; continue; }
+        const illumV=Math.exp(-0.09*acc); acc+=d;        // shadowed beneath denser smoke above
+        const sx=(i+0.5)/NX*W, sy=(j+0.5)/NY*H, L=lightAt(sx,sy);
+        const lum=(0.55+0.45*L)*(0.55+0.45*illumV);      // beam brightness × self-shadow
+        data[idx]  =Math.min(255,(200+55*L)*lum);
+        data[idx+1]=Math.min(255,(204+42*L)*lum);
+        data[idx+2]=Math.min(255,212*lum);
+        data[idx+3]=Math.min(255,o*255);
+      }
     }
-    spine=spine.filter(n=>n.age<AGE_MAX);
-
-    // perpendicular at each node, from the local spine tangent
-    const NS=spine.length;
-    for(let i=0;i<NS;i++){
-      const a=spine[Math.max(0,i-2)], b=spine[Math.min(NS-1,i+2)];   // smoothed tangent, fewer facets
-      let tx=b.x-a.x, ty=b.y-a.y; const tl=Math.hypot(tx,ty)||1;
-      spine[i].px=-ty/tl; spine[i].py=tx/tl;
-    }
-
-    // draw the ribbon into the offscreen buffer — one gradient quad per segment.
-    // Cross-section: crisp dense-edge / light-core while laminar, melting to a soft
-    // filled core as it turns turbulent (the sheet structure only survives in the stem).
-    sctx.clearRect(0,0,W,H);
-    sctx.globalCompositeOperation='source-over';
-    for(let i=0;i<NS-1;i++){
-      const n=spine[i], m=spine[i+1];
-      if(m.brk) continue;                        // don't bridge across a stroke break
-      const fade=n.fade; if(fade<0.01) continue;
-      const L=n.L, tb=n.turb||0;
-      const c=Math.round(206+49*L)+','+Math.round(208+39*L)+','+214;
-      const A=fade*(0.5 + L*0.5);
-      const edge=A*(1-0.78*tb);                  // edge-bands strong in stem, gone in break-up
-      const core=A*(0.16 + 0.62*tb);             // core light in stem, filled in break-up
-      const lx1=n.x+n.px*n.hw, ly1=n.y+n.py*n.hw, rx1=n.x-n.px*n.hw, ry1=n.y-n.py*n.hw;
-      const lx2=m.x+m.px*m.hw, ly2=m.y+m.py*m.hw, rx2=m.x-m.px*m.hw, ry2=m.y-m.py*m.hw;
-      const g=sctx.createLinearGradient(lx1,ly1,rx1,ry1);
-      g.addColorStop(0.00,'rgba('+c+',0)');
-      g.addColorStop(0.18,'rgba('+c+','+edge+')');
-      g.addColorStop(0.50,'rgba('+c+','+core+')');
-      g.addColorStop(0.82,'rgba('+c+','+edge+')');
-      g.addColorStop(1.00,'rgba('+c+',0)');
-      sctx.fillStyle=g;
-      sctx.beginPath(); sctx.moveTo(lx1,ly1); sctx.lineTo(lx2,ly2); sctx.lineTo(rx2,ry2); sctx.lineTo(rx1,ry1); sctx.closePath(); sctx.fill();
-    }
-    // composite the smoke back through a soft blur so seams/facets dissolve into haze
+    dctx.putImageData(densImg,0,0);
     ctx.globalCompositeOperation='source-over';
-    ctx.filter='blur(1.0px)';
-    ctx.drawImage(smokeBuf,0,0,W,H);
+    ctx.imageSmoothingEnabled=true;
+    ctx.filter='blur(1.4px)';
+    ctx.drawImage(densCanvas,0,0,W,H);                   // upscale the coarse grid → soft volume
     ctx.filter='none';
     ctx.globalAlpha=1;
     requestAnimationFrame(tick);
