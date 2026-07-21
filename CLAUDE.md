@@ -97,20 +97,16 @@ A picture can't show motion or live data — but it's honest about layout and ap
 nothing set up. (For a non-visual change like this file, Preview doesn't really apply — just
 explain what changed and offer **Do**.)
 
-**B. Netlify Deploy Preview — the real thing, once enabled.** When enabled, every open pull
-request gets its own hosted URL (e.g. `deploy-preview-12--<site>.netlify.app`), separate from the
-live site, where *everything* works — fonts, live weather, geolocation. Usage:
-```bash
-# after pushing the branch, open the PR — that's what triggers the preview build:
-#   create_pull_request  base=main  head=$BRANCH
-#   then: pull_request_read (get_status / get_check_runs) → find the "netlify/…/deploy-preview"
-#         entry and give its target_url to the owner (build takes ~1–2 min).
-```
-> **Status (as of this writing): NOT enabled for this repo.** A test PR produced no Netlify
-> status at all, so deploy previews aren't wired up yet. To turn them on, the **owner** connects
-> the repo in the Netlify dashboard (**Site configuration → Build & deploy → Continuous
-> deployment**, via the Netlify GitHub App) and enables **Deploy Previews** for pull requests.
-> Once that's done, method B becomes the default and method A stays as the instant fallback.
+**B. Netlify Deploy Preview — deliberately switched off.** Netlify can give every open pull
+request its own hosted preview URL, but that means **two builds per change** (one for the PR
+preview, one for the production merge) — and a run of small iterative edits burns build minutes
+fast for no real benefit, since local screenshots already cover the review step.
+> **Current settings (by design):** Deploy Previews → *"Don't deploy pull requests."* Branch
+> deploys → *"Deploy only the production branch."* Together, the **only** thing that ever
+> triggers a Netlify build is a merge to `main` — one build per **Do**, never more. Method A (the
+> static picture) is the permanent Preview method here, not a fallback. Don't re-enable Deploy
+> Previews or branch deploys without the owner's explicit request — it directly costs build
+> minutes.
 
 ### ✅ Do — make the change live
 
@@ -173,13 +169,17 @@ undid** in one sentence.
     specific tasks), not the main line of work — don't build on it by default.
 - Every **Do** merges the change into `main`, so **start each new change fresh from `main`** (as
   shown above) rather than building on old branch history.
-- **Netlify:** the **live site** deploys from `main`. **Deploy Previews** on pull requests are
-  **not enabled yet** (see the Preview section) — until they are, Preview = the static picture.
-- A pull request is opened as part of **Do** (and merged) — or during **Preview** method B once
-  that's enabled. Don't open PRs for anything else.
+- **Netlify:** the **live site** deploys from `main`, and only from `main` — Deploy Previews and
+  branch deploys are both switched off on purpose (see the Preview section), so PRs and
+  work-branch pushes never trigger a build. The only build-triggering event is a merge to `main`,
+  i.e. a **Do**. Don't change these Netlify settings without the owner's explicit say-so.
+- A pull request is opened as part of **Do** (and merged). Don't open PRs for anything else.
 - **Pushing** goes through the session's git proxy. A **403** on push means a permissions /
   re-auth problem, not a code problem — tell the owner in plain terms ("I've lost permission to
   save to the website — can you re-check my access?") and **don't hammer retries**.
+- **If a Netlify deploy itself fails** (e.g. "unable to access repository"), that's a
+  Netlify↔GitHub permissions/connection problem, not a code problem — same rule applies: explain
+  it in plain terms once, don't loop on fixes yourself, and see the escalation guardrail below.
 
 ## Guardrails
 
@@ -187,3 +187,10 @@ undid** in one sentence.
 - **Preview → Do.** Never make a visual change live that the owner hasn't seen.
 - **Do** and **Undo** both change the **real, live site** — treat them as the deliberate,
   owner-approved moments they are.
+- **When to hand off to a human:** the trigger is **any sign of frustration** from the owner —
+  not a count of attempts. Pure learning/curiosity ("what happened there?", "how does that
+  work?") is fine to keep exploring together. But the moment frustration shows, even mildly,
+  stop troubleshooting and say plainly: *"This one needs a hand — could you press **The Help
+  Button** in your bookmarks bar?"* Don't offer another explanation or workaround first. To the
+  owner, **Netlify + Claude Code + git are just "the box of stuff" behind the site** — never
+  expect her to sort out which piece is misbehaving; that's not her job.
