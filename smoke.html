@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>smoke — sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{ height:100%; margin:0; overflow:hidden; background:#0b0a08; color:#e7ddc9;
+    font-family:Georgia, serif; user-select:none; }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#e7ddc9; opacity:.5;
+    text-decoration:none; font-size:14px; letter-spacing:.04em; transition:opacity .3s ease; }
+  #backlink:hover{ opacity:.9; }
+  canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  #hint{ position:fixed; top:52px; left:0; right:0; text-align:center; font-size:13px; opacity:.35;
+    pointer-events:none; letter-spacing:.03em; transition:opacity 1.2s ease; }
+  #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:center;
+    gap:12px; padding:16px 18px 26px; z-index:40;
+    background:linear-gradient(to top, rgba(8,7,5,.85), rgba(8,7,5,0)); }
+  .glyph{ font-size:15px; opacity:.7; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; width:150px; height:3px; border-radius:3px;
+    background:rgba(231,221,201,.25); outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+    background:#e9d9a8; cursor:pointer; box-shadow:0 0 8px rgba(233,217,168,.6); }
+  input[type=range]::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:#e9d9a8; cursor:pointer; }
+</style>
+</head>
+<body>
+<a id="backlink" href="index.html">← sagne</a>
+<canvas id="scene"></canvas>
+<div id="hint">draw smoke with your finger — watch it catch the light</div>
+<div id="dock">
+  <span class="glyph" title="light">☀</span>
+  <input type="range" id="lightSlider" min="20" max="130" value="100" aria-label="light intensity">
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
+  const lightSlider=document.getElementById('lightSlider'), hint=document.getElementById('hint');
+  let W=0,H=0,DPR=1;
+  let lightMap=null, lightData=null, LW=0, LH=0;   // static light field (half-res)
+  let smokeBuf=null, sctx=null;                    // offscreen smoke layer (blurred on composite)
+  let intensity=1.0;
+
+  // ---------- light field: a window off the upper-left throwing angled shafts ----------
+  const ANG = 0.62;                       // ray tilt (radians) — down-to-the-right
+  function buildLightMap(){
+    LW=Math.max(2,Math.floor(W/2)); LH=Math.max(2,Math.floor(H/2));
+    if(!lightMap){ lightMap=document.createElement('canvas'); }
+    lightMap.width=LW; lightMap.height=LH;
+    const lc=lightMap.getContext('2d');
+    lc.clearRect(0,0,LW,LH); lc.fillStyle='#000'; lc.fillRect(0,0,LW,LH);
+    // origin near the left edge, upper third — where the window sits
+    const ox=-LW*0.12, oy=LH*0.18;
+    lc.save();
+    lc.translate(ox,oy); lc.rotate(ANG);
+    lc.globalCompositeOperation='lighter';
+    lc.filter='blur('+Math.max(3,LW*0.012)+'px)';
+    // several shafts (the window's openings), with darker bars between
+    const span=LW*1.7;                    // how far the shafts travel across the wall
+    const shafts=[ {o:-LH*0.02,w:LH*0.16,b:1.0},
+                   {o:LH*0.20, w:LH*0.13,b:0.85},
+                   {o:LH*0.40, w:LH*0.17,b:0.95},
+                   {o:LH*0.66, w:LH*0.12,b:0.7} ];
+    for(const s of shafts){
+      const g=lc.createLinearGradient(0,0,span,0);
+      g.addColorStop(0,'rgba(255,245,203,'+(0.52*s.b)+')');   // pale yellow window light
+      g.addColorStop(0.4,'rgba(252,237,183,'+(0.32*s.b)+')');
+      g.addColorStop(1,'rgba(248,231,176,0)');
+      lc.fillStyle=g;
+      // a shaft: a long soft wedge, slightly widening as it travels
+      lc.beginPath();
+      lc.moveTo(0, s.o);
+      lc.lineTo(span, s.o - s.w*0.5);
+      lc.lineTo(span, s.o + s.w*1.4);
+      lc.lineTo(0, s.o + s.w);
+      lc.closePath(); lc.fill();
+    }
+    lc.restore();
+    lc.filter='none';
+    // cache luminance for fast per-particle sampling
+    lightData=lc.getImageData(0,0,LW,LH).data;
+  }
+  function lightAt(x,y){
+    let lx=(x/W*LW)|0, ly=(y/H*LH)|0;
+    if(lx<0||ly<0||lx>=LW||ly>=LH) return 0;
+    const i=(ly*LW+lx)*4;
+    // approx luminance of the (blue-ish) light, normalised
+    return Math.min(1,(lightData[i]*0.5+lightData[i+1]*0.5)/200)*intensity;
+  }
+
+  // ---------- wall ----------
+  let wall=null;
+  function buildWall(){
+    wall=document.createElement('canvas'); wall.width=W; wall.height=H;
+    const wc=wall.getContext('2d');
+    const g=wc.createLinearGradient(0,0,W*0.6,H);
+    g.addColorStop(0,'#2b2620'); g.addColorStop(0.5,'#211d18'); g.addColorStop(1,'#17130f');
+    wc.fillStyle=g; wc.fillRect(0,0,W,H);
+    // soft speckle grain, drawn once
+    for(let i=0;i<W*H/900;i++){
+      const x=Math.random()*W, y=Math.random()*H, r=Math.random()*1.6+0.3;
+      const v=Math.random(); wc.fillStyle='rgba('+(v<0.5?'20,16,12':'70,62,50')+','+(0.05+Math.random()*0.10)+')';
+      wc.beginPath(); wc.arc(x,y,r,0,7); wc.fill();
+    }
+    // vignette
+    const vg=wc.createRadialGradient(W*0.5,H*0.5,Math.min(W,H)*0.2,W*0.5,H*0.5,Math.max(W,H)*0.7);
+    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.55)');
+    wc.fillStyle=vg; wc.fillRect(0,0,W,H);
+  }
+
+  // ---------- smoke: a snaking ribbon ----------
+  // The smoke is a spine (a centreline of nodes) advected by the flow, drawn as a
+  // translucent sheet: each segment is a gradient-filled quad whose across-the-width
+  // profile is dense at the two edges and light in the core — a real ribbon.
+  let spine=[]; const NODE_MAX=380, AGE_MAX=320;
+  let pendingBreak=true;
+  function addNode(x,y){
+    spine.push({x, y:y+(Math.random()-0.5)*1.0, vx:0, vy:-0.5, age:0, brk:pendingBreak,
+                px:0, py:0, hw:3, L:0, fade:0});
+    pendingBreak=false;
+    if(spine.length>NODE_MAX) spine.shift();
+  }
+  // stays thin for the first stretch (the tight stem), then opens out as it breaks up
+  const nodeWidth=age=>{ const k=age/AGE_MAX; const s=Math.max(0,(k-0.34)/0.66); return 6.0 + 13*s*s; };
+  const nodeFade =age=>{ const k=age/AGE_MAX; return Math.min(1,age/12)*Math.pow(1-k,0.95); };
+  // curl-noise flow: divergence-free swirling velocity from a scalar potential, with
+  // a finer second scale so the break-up has smaller, more numerous eddies
+  function psi(x,y,t){
+    return Math.sin(x*0.020 + t*0.55) * Math.cos(y*0.017 - t*0.40)
+         + 0.55*Math.sin(x*0.047 - t*0.30 + 1.7) * Math.cos(y*0.052 + t*0.33)
+         + 0.45*Math.sin(x*0.090 + t*0.62 + 3.0) * Math.cos(y*0.086 - t*0.50);
+  }
+  function curlAt(x,y,t){
+    const e=1.6;
+    return { vx:(psi(x,y+e,t)-psi(x,y-e,t))/(2*e),
+             vy:-(psi(x+e,y,t)-psi(x-e,y,t))/(2*e) };
+  }
+  // ===== FLUID (replaces the ribbon above; ribbon helpers kept unused) =====
+  const NX=132, NY=99, NN=NX*NY, GS=14;
+  const IXf=(i,j)=>i+j*NX;
+  const F=()=>new Float32Array(NN);
+  let fu=F(),fv=F(),fu0=F(),fv0=F(),dens=F(),dens0=F(),ftmp=F(),ftmp0=F(),curlF=F();
+  let densCanvas=null, dctx=null, densImg=null;
+  function setBnd(b,x){
+    for(let i=0;i<NX;i++){ x[IXf(i,0)]=x[IXf(i,1)]; x[IXf(i,NY-1)]=x[IXf(i,NY-2)]; }
+    for(let j=0;j<NY;j++){ x[IXf(0,j)]=x[IXf(1,j)]; x[IXf(NX-1,j)]=x[IXf(NX-2,j)]; }
+  }
+  function linSolve(b,x,x0,a,c){ const inv=1/c;
+    for(let k=0;k<GS;k++){
+      for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++)
+        x[IXf(i,j)]=(x0[IXf(i,j)]+a*(x[IXf(i-1,j)]+x[IXf(i+1,j)]+x[IXf(i,j-1)]+x[IXf(i,j+1)]))*inv;
+      setBnd(b,x);
+    }
+  }
+  function advectF(b,d,d0,uu,vv){
+    for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++){
+      let x=i-uu[IXf(i,j)], y=j-vv[IXf(i,j)];
+      if(x<0.5)x=0.5; else if(x>NX-1.5)x=NX-1.5;
+      if(y<0.5)y=0.5; else if(y>NY-1.5)y=NY-1.5;
+      const i0=x|0,i1=i0+1,j0=y|0,j1=j0+1, s1=x-i0,s0=1-s1,t1=y-j0,t0=1-t1;
+      d[IXf(i,j)]=s0*(t0*d0[IXf(i0,j0)]+t1*d0[IXf(i0,j1)])+s1*(t0*d0[IXf(i1,j0)]+t1*d0[IXf(i1,j1)]);
+    }
+    setBnd(b,d);
+  }
+  function projectF(uu,vv,p,div){
+    for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++){
+      div[IXf(i,j)]=-0.5*((uu[IXf(i+1,j)]-uu[IXf(i-1,j)])+(vv[IXf(i,j+1)]-vv[IXf(i,j-1)]));
+      p[IXf(i,j)]=0;
+    }
+    setBnd(0,div); setBnd(0,p); linSolve(0,p,div,1,4);
+    for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++){
+      uu[IXf(i,j)]-=0.5*(p[IXf(i+1,j)]-p[IXf(i-1,j)]);
+      vv[IXf(i,j)]-=0.5*(p[IXf(i,j+1)]-p[IXf(i,j-1)]);
+    }
+    setBnd(1,uu); setBnd(2,vv);
+  }
+  function vorticityF(eps){
+    for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++)
+      curlF[IXf(i,j)]=0.5*((fv[IXf(i+1,j)]-fv[IXf(i-1,j)])-(fu[IXf(i,j+1)]-fu[IXf(i,j-1)]));
+    for(let j=1;j<NY-1;j++)for(let i=1;i<NX-1;i++){
+      let gx=0.5*(Math.abs(curlF[IXf(i+1,j)])-Math.abs(curlF[IXf(i-1,j)]));
+      let gy=0.5*(Math.abs(curlF[IXf(i,j+1)])-Math.abs(curlF[IXf(i,j-1)]));
+      const L=Math.hypot(gx,gy)+1e-5; gx/=L; gy/=L;
+      const w=curlF[IXf(i,j)];
+      fu[IXf(i,j)]+=eps*gy*w; fv[IXf(i,j)]-=eps*gx*w;
+    }
+  }
+  const BUOY=0.0006, TBUOY=0.014, VORT=0.11;
+  function addSmoke(px,py){
+    const ci=Math.round(px/W*NX), cj=Math.round(py/H*NY);
+    for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){    // tighter source → thinner stem
+      const i=ci+di, j=cj+dj; if(i<1||j<1||i>=NX-1||j>=NY-1) continue;
+      const w=Math.exp(-(di*di+dj*dj)/1.6);
+      dens[IXf(i,j)]+=6*w; ftmp[IXf(i,j)]+=6*w; fv[IXf(i,j)]-=0.8*w;
+      fu[IXf(i,j)]+=(Math.random()-0.5)*0.18*w;
+    }
+  }
+  function fluidStep(){
+    for(let k=0;k<NN;k++) fv[k]-=dens[k]*BUOY + ftmp[k]*TBUOY;
+    vorticityF(VORT);
+    projectF(fu,fv,fu0,fv0);
+    fu0.set(fu); fv0.set(fv);
+    advectF(1,fu,fu0,fu0,fv0); advectF(2,fv,fv0,fu0,fv0);
+    projectF(fu,fv,fu0,fv0);
+    dens0.set(dens); advectF(0,dens,dens0,fu,fv);
+    ftmp0.set(ftmp); advectF(0,ftmp,ftmp0,fu,fv);
+    // damp sideways drift (keeps the plume rising rather than migrating), gentle on the rise
+    for(let k=0;k<NN;k++){ fu[k]*=0.984; fv[k]*=0.997; dens[k]*=0.988; ftmp[k]*=0.974; }
+  }
+
+  // dust motes drifting in the beams
+  const dust=[]; function buildDust(){ dust.length=0; for(let i=0;i<90;i++){
+    dust.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.3)*0.12,vy:(Math.random()-0.5)*0.06,ph:Math.random()*6,sp:0.4+Math.random()*0.8}); } }
+
+  function resize(){
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    W=window.innerWidth; H=window.innerHeight;
+    canvas.width=W*DPR; canvas.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    if(!densCanvas){ densCanvas=document.createElement('canvas'); densCanvas.width=NX; densCanvas.height=NY;
+      dctx=densCanvas.getContext('2d'); densImg=dctx.createImageData(NX,NY); }
+    buildWall(); buildLightMap(); buildDust();
+  }
+  window.addEventListener('resize',resize);
+
+  // ---------- input ----------
+  let drawing=false, px=0,py=0, hidHint=false;
+  const P=e=>({x:e.clientX,y:e.clientY});
+  canvas.addEventListener('pointerdown',e=>{ const {x,y}=P(e); drawing=true; px=x;py=y;
+    canvas.setPointerCapture(e.pointerId);
+    if(!hidHint){ hint.style.opacity=0; hidHint=true; }
+  });
+  canvas.addEventListener('pointermove',e=>{ if(!drawing) return; const {x,y}=P(e); px=x; py=y; });
+  function endDraw(){ drawing=false; }
+  canvas.addEventListener('pointerup',endDraw);
+  canvas.addEventListener('pointercancel',endDraw);
+  lightSlider.addEventListener('input',()=>{ intensity=lightSlider.value/100; });
+
+  // ---------- loop ----------
+  let last=performance.now();
+  function tick(now){
+    const dt=Math.min(now-last,50)/1000; last=now; const t=now*0.001;
+    // feed smoke in while drawing, then advance the fluid one step
+    if(drawing) addSmoke(px,py);
+    fluidStep();
+
+    // wall + visible light shafts
+    ctx.globalCompositeOperation='source-over';
+    ctx.drawImage(wall,0,0,W,H);
+    ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha=0.9*intensity;
+    ctx.drawImage(lightMap,0,0,W,H);
+    ctx.globalAlpha=1;
+
+    // dust motes — only visible where the light is
+    for(const m of dust){
+      m.x+=m.vx; m.y+=m.vy; m.ph+=0.02;
+      if(m.x<0)m.x+=W; if(m.x>W)m.x-=W; if(m.y<0)m.y+=H; if(m.y>H)m.y-=H;
+      const L=lightAt(m.x,m.y); if(L<0.06) continue;
+      ctx.globalAlpha=Math.min(0.8,L*0.9)*(0.5+0.5*Math.sin(m.ph));
+      ctx.fillStyle='#fff4d2'; ctx.beginPath(); ctx.arc(m.x,m.y,m.sp,0,7); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+
+    // render the smoke volume: density → soft luminous haze. A top-down self-shadow
+    // (light attenuated by the density above a cell) gives it three-dimensional body;
+    // warm and bright where it crosses a beam, dim grey in shadow.
+    const data=densImg.data;
+    for(let i=0;i<NX;i++){
+      let acc=0;
+      for(let j=0;j<NY;j++){
+        const k=IXf(i,j), idx=k*4, d=dens[k];
+        const o=d*0.22;                                  // density → coverage
+        if(o<0.008){ data[idx+3]=0; acc+=d; continue; }
+        const illumV=Math.exp(-0.09*acc); acc+=d;        // shadowed beneath denser smoke above
+        const sx=(i+0.5)/NX*W, sy=(j+0.5)/NY*H, L=lightAt(sx,sy);
+        const lum=(0.55+1.5*L)*(0.55+0.45*illumV);       // shadow unchanged; lit smoke glows much brighter
+        data[idx]  =Math.min(255,(200+55*L)*lum);
+        data[idx+1]=Math.min(255,(204+42*L)*lum);
+        data[idx+2]=Math.min(255,212*lum);
+        data[idx+3]=Math.min(255,o*(1+1.5*L)*255);       // and reads more solid in the beam
+      }
+    }
+    dctx.putImageData(densImg,0,0);
+    ctx.globalCompositeOperation='source-over';
+    ctx.imageSmoothingEnabled=true;
+    ctx.filter='blur(1.4px)';
+    ctx.drawImage(densCanvas,0,0,W,H);                   // upscale the coarse grid → soft volume
+    ctx.filter='none';
+    ctx.globalAlpha=1;
+    requestAnimationFrame(tick);
+  }
+  resize(); requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
