@@ -275,11 +275,11 @@
         if(o<0.008){ data[idx+3]=0; acc+=d; continue; }
         const illumV=Math.exp(-0.09*acc); acc+=d;        // shadowed beneath denser smoke above
         const sx=(i+0.5)/NX*W, sy=(j+0.5)/NY*H, L=lightAt(sx,sy);
-        const lum=(0.55+0.45*L)*(0.55+0.45*illumV);      // beam brightness × self-shadow
+        const lum=(0.55+1.5*L)*(0.55+0.45*illumV);       // shadow unchanged; lit smoke glows much brighter
         data[idx]  =Math.min(255,(200+55*L)*lum);
         data[idx+1]=Math.min(255,(204+42*L)*lum);
         data[idx+2]=Math.min(255,212*lum);
-        data[idx+3]=Math.min(255,o*255);
+        data[idx+3]=Math.min(255,o*(1+1.5*L)*255);       // and reads more solid in the beam
       }
     }
     dctx.putImageData(densImg,0,0);
