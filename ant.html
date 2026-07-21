@@ -596,15 +596,30 @@
       ctx.restore();
     });
 
-    // ants
+    // ants — three body segments, six legs and antennae, so they read as ants
+    // rather than specks. Heading points along +x (forward).
     ants.forEach(a => {
       ctx.save();
       ctx.translate(a.x,a.y);
       ctx.rotate(a.heading);
-      ctx.fillStyle = a.state==='return' ? `rgba(154,85,189,${lightLevel})` : `rgba(20,14,8,${lightLevel})`;
+      const s = antSizeMult;
+      const col = a.state==='return' ? `rgba(154,85,189,${lightLevel})` : `rgba(24,16,10,${lightLevel})`;
+      ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineCap='round'; ctx.lineWidth = 0.55*s;
+      // legs: three pairs from the thorax, splayed (foot x,y for one side, mirrored)
+      const legs = [[1.5,1.9],[0.1,2.3],[-1.3,2.0]];
       ctx.beginPath();
-      ctx.ellipse(0,0,3.6*antSizeMult,2.0*antSizeMult,0,0,Math.PI*2);
-      ctx.fill();
+      for(const [fx,fy] of legs){
+        ctx.moveTo(0,0); ctx.lineTo(fx*s, fy*s);
+        ctx.moveTo(0,0); ctx.lineTo(fx*s,-fy*s);
+      }
+      // antennae from the head
+      ctx.moveTo(2.3*s,0); ctx.lineTo(3.7*s,-1.3*s);
+      ctx.moveTo(2.3*s,0); ctx.lineTo(3.7*s, 1.3*s);
+      ctx.stroke();
+      // body: abdomen (rear), thorax (middle), head (front), with waist gaps
+      ctx.beginPath(); ctx.ellipse(-2.4*s,0, 2.3*s,1.7*s, 0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0.1*s,0, 1.2*s,0.95*s, 0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(2.3*s,0, 1.3*s,1.15*s, 0,0,Math.PI*2); ctx.fill();
       ctx.restore();
     });
   }
