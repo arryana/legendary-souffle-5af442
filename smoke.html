@@ -110,20 +110,39 @@
   }
 
   // ---------- particles ----------
-  const MAX=760; let parts=[]; let head=0;
+  const MAX=920; let parts=[]; let head=0;
   function emit(x,y,vx,vy){
     const p = parts[head] || (parts[head]={});
-    p.x=x + (Math.random()-0.5)*2;            // tight source — a thin column, not a puff
+    p.x=x + (Math.random()-0.5)*1.6;          // tight source — a thin column, not a puff
     p.y=y;
-    p.vx=(Math.random()-0.5)*0.12 + vx*0.35;  // almost straight up to start
-    p.vy=-0.55 - Math.random()*0.25 + vy*0.35;
-    p.life=0; p.max=170+Math.random()*120;
-    p.size=2.4+Math.random()*1.4;
+    p.vx=(Math.random()-0.5)*0.10 + vx*0.35;  // almost straight up to start
+    p.vy=-0.5 - Math.random()*0.2 + vy*0.35;
+    p.life=0; p.max=260+Math.random()*150;    // long-lived so the ribbon reaches full height
+    p.size=2.2+Math.random()*1.2;
     p.seed=Math.random()*1000; p.on=true;
     head=(head+1)%MAX;
   }
-  // cheap flowing turbulence
-  function turb(x,y,t){ return Math.sin(x*0.012 + t*0.7 + Math.cos(y*0.013 - t*0.5)*2.0); }
+  // curl-noise flow: divergence-free swirling velocity from a scalar potential,
+  // so particles roll into real vortices/eddies rather than just wandering
+  function psi(x,y,t){
+    return Math.sin(x*0.020 + t*0.55) * Math.cos(y*0.017 - t*0.40)
+         + 0.55*Math.sin(x*0.047 - t*0.30 + 1.7) * Math.cos(y*0.052 + t*0.33);
+  }
+  function curlAt(x,y,t){
+    const e=1.6;
+    return { vx:(psi(x,y+e,t)-psi(x,y-e,t))/(2*e),
+             vy:-(psi(x+e,y,t)-psi(x-e,y,t))/(2*e) };
+  }
+  // two soft sprites: a neutral grey for the ever-present smoke body, and a
+  // warm one added on top where the smoke crosses a light beam
+  function makeSprite(inner,mid,outer){
+    const c=document.createElement('canvas'); c.width=c.height=64;
+    const s=c.getContext('2d'); const g=s.createRadialGradient(32,32,0,32,32,32);
+    g.addColorStop(0,inner); g.addColorStop(0.5,mid); g.addColorStop(1,outer);
+    s.fillStyle=g; s.fillRect(0,0,64,64); return c;
+  }
+  const greySprite=makeSprite('rgba(206,208,214,1)','rgba(198,200,206,0.4)','rgba(190,192,200,0)');
+  const warmSprite=makeSprite('rgba(255,247,214,1)','rgba(252,240,206,0.42)','rgba(248,234,198,0)');
 
   // dust motes drifting in the beams
   const dust=[]; function buildDust(){ dust.length=0; for(let i=0;i<90;i++){
@@ -179,39 +198,41 @@
     }
     ctx.globalAlpha=1;
 
-    // smoke — a soft translucent haze that brightens where it crosses a shaft
-    // and fades to near-nothing in shadow. Source-over (not additive) so a dense
-    // plume settles to soft grey rather than blowing out to white.
+    // smoke — pass 1: the ever-present soft grey ribbon body (visible even in
+    // shadow, so the curls always read), with opacity thinning as it dissipates
     ctx.globalCompositeOperation='source-over';
     for(const p of parts){
       if(!p||!p.on) continue;
       p.life+=dt*60; if(p.life>=p.max){ p.on=false; continue; }
       const k=p.life/p.max;
-      // laminar near the source, turbulent higher up: turbulence ramps in after
-      // the column has risen an inch or two (~55 life units)
-      const turbAmp=Math.min(1,Math.max(0,(p.life-55)/70));
-      const a=turb(p.x,p.y,t);
-      p.vy -= 0.03;                                       // steady buoyant rise
-      p.vx += a*0.12*turbAmp;                             // sideways curl grows with height
-      p.vy += Math.cos(a*3.1+p.seed)*0.05*turbAmp;
-      const latDamp=0.80+0.17*turbAmp;                   // tight/straight low, looser as it curls
-      p.vx*=latDamp; p.vy*=0.976;
+      // long laminar column, then turbulence ramps in once it's risen a good way
+      const turbAmp=Math.min(1,Math.max(0,(p.life-110)/110));
+      p.vy -= 0.024;                                     // steady buoyant rise
+      const f=curlAt(p.x,p.y,t);                         // swirling flow → real eddies
+      p.vx += f.vx*3.6*turbAmp;
+      p.vy += f.vy*3.6*turbAmp;
+      p.vx *= (0.86 + 0.11*turbAmp);                     // tight/straight low, freer up top
+      p.vy *= 0.986;
       p.x+=p.vx; p.y+=p.vy;
-      p.size += 0.045 + turbAmp*0.34;                    // narrow ribbon at base, spreads up top
-      // opacity thins upward as it dissipates, plus a quick fade-in at the source
-      const fade=Math.min(1,p.life/8)*Math.pow(1-k,0.85);
-      const L=lightAt(p.x,p.y);
-      const alpha=fade*(0.03 + L*0.55);
-      if(alpha<0.004) continue;
-      const gv=Math.round(92 + L*140);                          // dim grey → lit, warm pale
-      const col=Math.round(gv+L*20)+','+Math.round(gv+L*8)+','+Math.round(gv-L*8);
-      const r=p.size;
-      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
-      g.addColorStop(0,'rgba('+col+','+alpha+')');
-      g.addColorStop(0.55,'rgba('+col+','+(alpha*0.45)+')');
-      g.addColorStop(1,'rgba('+col+',0)');
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,r,0,7); ctx.fill();
+      p.size += 0.04 + turbAmp*0.26;                     // narrow at base, billows as it curls
+      p.fade=Math.min(1,p.life/8)*Math.pow(1-k,0.9);
+      p.L=lightAt(p.x,p.y);
+      const r=p.size, a=p.fade*0.2;                       // soft grey body
+      if(a<0.004) continue;
+      ctx.globalAlpha=Math.min(0.6,a);
+      ctx.drawImage(greySprite, p.x-r, p.y-r, r*2, r*2);
     }
+    // pass 2: where the smoke sits in a beam, tint it warm and bright — source-over
+    // (not additive) so a dense lit knot settles to warm-pale instead of blowing white
+    ctx.globalCompositeOperation='source-over';
+    for(const p of parts){
+      if(!p||!p.on||p.L<0.05) continue;
+      const r=p.size, a=p.fade*p.L*0.55;
+      if(a<0.004) continue;
+      ctx.globalAlpha=Math.min(0.7,a);
+      ctx.drawImage(warmSprite, p.x-r, p.y-r, r*2, r*2);
+    }
+    ctx.globalAlpha=1;
     requestAnimationFrame(tick);
   }
   resize(); requestAnimationFrame(tick);
