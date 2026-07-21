@@ -110,15 +110,19 @@
   }
 
   // ---------- particles ----------
-  const MAX=920; let parts=[]; let head=0;
+  const MAX=1650; let parts=[]; let head=0;
   function emit(x,y,vx,vy){
     const p = parts[head] || (parts[head]={});
-    p.x=x + (Math.random()-0.5)*1.6;          // tight source — a thin column, not a puff
-    p.y=y;
-    p.vx=(Math.random()-0.5)*0.10 + vx*0.35;  // almost straight up to start
-    p.vy=-0.5 - Math.random()*0.2 + vy*0.35;
-    p.life=0; p.max=260+Math.random()*150;    // long-lived so the ribbon reaches full height
-    p.size=2.2+Math.random()*1.2;
+    // ribbon cross-section: two dense edge-bands with a lighter (not empty) core,
+    // so the column reads as a translucent sheet, denser at its edges
+    const W0=6.5; let off;
+    if(Math.random()<0.62){ const edge=Math.random()<0.5?-1:1; off=edge*W0*(0.7+0.3*Math.random()); } // edges
+    else { off=(Math.random()-0.5)*1.7*W0; }                                                          // faint core
+    p.x=x+off; p.y=y+(Math.random()-0.5)*2;
+    p.vx=(Math.random()-0.5)*0.05 + vx*0.3;
+    p.vy=-0.5 - Math.random()*0.18 + vy*0.3;
+    p.life=0; p.max=250+Math.random()*140;    // long-lived so the ribbon reaches full height
+    p.size=2.3+Math.random()*1.3;
     p.seed=Math.random()*1000; p.on=true;
     head=(head+1)%MAX;
   }
@@ -178,7 +182,7 @@
   function tick(now){
     const dt=Math.min(now-last,50)/1000; last=now; const t=now*0.001;
     // hold to keep emitting a gentle plume at the last point
-    if(drawing){ for(let i=0;i<3;i++) emit(px+(Math.random()-0.5)*2, py, 0, 0); }
+    if(drawing){ for(let i=0;i<5;i++) emit(px+(Math.random()-0.5)*2, py, 0, 0); }
 
     // wall + visible light shafts
     ctx.globalCompositeOperation='source-over';
@@ -208,13 +212,17 @@
       // long laminar column, then turbulence ramps in once it's risen a good way
       const turbAmp=Math.min(1,Math.max(0,(p.life-110)/110));
       p.vy -= 0.024;                                     // steady buoyant rise
+      // smooth serpentine sway (a slow traveling wave up the column) — grows with
+      // height so the ribbon snakes gently low down and more freely higher up
+      const meander=0.05 + 0.14*Math.min(1,p.life/150);
+      p.vx += Math.sin(p.y*0.017 + t*1.5)*meander;
       const f=curlAt(p.x,p.y,t);                         // swirling flow → real eddies
-      p.vx += f.vx*3.6*turbAmp;
-      p.vy += f.vy*3.6*turbAmp;
-      p.vx *= (0.86 + 0.11*turbAmp);                     // tight/straight low, freer up top
-      p.vy *= 0.986;
+      p.vx += f.vx*3.4*turbAmp;
+      p.vy += f.vy*3.4*turbAmp;
+      p.vx *= (0.90 + 0.07*turbAmp);                     // hold the ribbon together, freer up top
+      p.vy *= 0.987;
       p.x+=p.vx; p.y+=p.vy;
-      p.size += 0.04 + turbAmp*0.26;                     // narrow at base, billows as it curls
+      p.size += 0.028 + turbAmp*0.22;                    // narrow at base, billows as it curls
       p.fade=Math.min(1,p.life/8)*Math.pow(1-k,0.9);
       p.L=lightAt(p.x,p.y);
       const r=p.size, a=p.fade*0.2;                       // soft grey body
