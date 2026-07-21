@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>smoke — sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{ height:100%; margin:0; overflow:hidden; background:#0b0a08; color:#e7ddc9;
+    font-family:Georgia, serif; user-select:none; }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#e7ddc9; opacity:.5;
+    text-decoration:none; font-size:14px; letter-spacing:.04em; transition:opacity .3s ease; }
+  #backlink:hover{ opacity:.9; }
+  canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  #hint{ position:fixed; top:52px; left:0; right:0; text-align:center; font-size:13px; opacity:.35;
+    pointer-events:none; letter-spacing:.03em; transition:opacity 1.2s ease; }
+  #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:center;
+    gap:12px; padding:16px 18px 26px; z-index:40;
+    background:linear-gradient(to top, rgba(8,7,5,.85), rgba(8,7,5,0)); }
+  .glyph{ font-size:15px; opacity:.7; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; width:150px; height:3px; border-radius:3px;
+    background:rgba(231,221,201,.25); outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+    background:#e9d9a8; cursor:pointer; box-shadow:0 0 8px rgba(233,217,168,.6); }
+  input[type=range]::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:#e9d9a8; cursor:pointer; }
+</style>
+</head>
+<body>
+<a id="backlink" href="index.html">← sagne</a>
+<canvas id="scene"></canvas>
+<div id="hint">draw smoke with your finger — watch it catch the light</div>
+<div id="dock">
+  <span class="glyph" title="light">☀</span>
+  <input type="range" id="lightSlider" min="20" max="130" value="100" aria-label="light intensity">
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
+  const lightSlider=document.getElementById('lightSlider'), hint=document.getElementById('hint');
+  let W=0,H=0,DPR=1;
+  let lightMap=null, lightData=null, LW=0, LH=0;   // static light field (half-res)
+  let intensity=1.0;
+
+  // ---------- light field: a window off the upper-left throwing angled shafts ----------
+  const ANG = 0.62;                       // ray tilt (radians) — down-to-the-right
+  function buildLightMap(){
+    LW=Math.max(2,Math.floor(W/2)); LH=Math.max(2,Math.floor(H/2));
+    if(!lightMap){ lightMap=document.createElement('canvas'); }
+    lightMap.width=LW; lightMap.height=LH;
+    const lc=lightMap.getContext('2d');
+    lc.clearRect(0,0,LW,LH); lc.fillStyle='#000'; lc.fillRect(0,0,LW,LH);
+    // origin near the left edge, upper third — where the window sits
+    const ox=-LW*0.12, oy=LH*0.18;
+    lc.save();
+    lc.translate(ox,oy); lc.rotate(ANG);
+    lc.globalCompositeOperation='lighter';
+    lc.filter='blur('+Math.max(3,LW*0.012)+'px)';
+    // several shafts (the window's openings), with darker bars between
+    const span=LW*1.7;                    // how far the shafts travel across the wall
+    const shafts=[ {o:-LH*0.02,w:LH*0.16,b:1.0},
+                   {o:LH*0.20, w:LH*0.13,b:0.85},
+                   {o:LH*0.40, w:LH*0.17,b:0.95},
+                   {o:LH*0.66, w:LH*0.12,b:0.7} ];
+    for(const s of shafts){
+      const g=lc.createLinearGradient(0,0,span,0);
+      g.addColorStop(0,'rgba(255,245,203,'+(0.52*s.b)+')');   // pale yellow window light
+      g.addColorStop(0.4,'rgba(252,237,183,'+(0.32*s.b)+')');
+      g.addColorStop(1,'rgba(248,231,176,0)');
+      lc.fillStyle=g;
+      // a shaft: a long soft wedge, slightly widening as it travels
+      lc.beginPath();
+      lc.moveTo(0, s.o);
+      lc.lineTo(span, s.o - s.w*0.5);
+      lc.lineTo(span, s.o + s.w*1.4);
+      lc.lineTo(0, s.o + s.w);
+      lc.closePath(); lc.fill();
+    }
+    lc.restore();
+    lc.filter='none';
+    // cache luminance for fast per-particle sampling
+    lightData=lc.getImageData(0,0,LW,LH).data;
+  }
+  function lightAt(x,y){
+    let lx=(x/W*LW)|0, ly=(y/H*LH)|0;
+    if(lx<0||ly<0||lx>=LW||ly>=LH) return 0;
+    const i=(ly*LW+lx)*4;
+    // approx luminance of the (blue-ish) light, normalised
+    return Math.min(1,(lightData[i]*0.5+lightData[i+1]*0.5)/200)*intensity;
+  }
+
+  // ---------- wall ----------
+  let wall=null;
+  function buildWall(){
+    wall=document.createElement('canvas'); wall.width=W; wall.height=H;
+    const wc=wall.getContext('2d');
+    const g=wc.createLinearGradient(0,0,W*0.6,H);
+    g.addColorStop(0,'#2b2620'); g.addColorStop(0.5,'#211d18'); g.addColorStop(1,'#17130f');
+    wc.fillStyle=g; wc.fillRect(0,0,W,H);
+    // soft speckle grain, drawn once
+    for(let i=0;i<W*H/900;i++){
+      const x=Math.random()*W, y=Math.random()*H, r=Math.random()*1.6+0.3;
+      const v=Math.random(); wc.fillStyle='rgba('+(v<0.5?'20,16,12':'70,62,50')+','+(0.05+Math.random()*0.10)+')';
+      wc.beginPath(); wc.arc(x,y,r,0,7); wc.fill();
+    }
+    // vignette
+    const vg=wc.createRadialGradient(W*0.5,H*0.5,Math.min(W,H)*0.2,W*0.5,H*0.5,Math.max(W,H)*0.7);
+    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.55)');
+    wc.fillStyle=vg; wc.fillRect(0,0,W,H);
+  }
+
+  // ---------- particles ----------
+  const MAX=620; let parts=[]; let head=0;
+  function emit(x,y,vx,vy){
+    const p = parts[head] || (parts[head]={});
+    p.x=x; p.y=y;
+    p.vx=vx + (Math.random()-0.5)*0.3;
+    p.vy=vy - 0.2 - Math.random()*0.3;
+    p.life=0; p.max=180+Math.random()*160;
+    p.size=6+Math.random()*6; p.grow=0.18+Math.random()*0.12;
+    p.seed=Math.random()*1000; p.on=true;
+    head=(head+1)%MAX;
+  }
+  // cheap flowing turbulence
+  function turb(x,y,t){ return Math.sin(x*0.012 + t*0.7 + Math.cos(y*0.013 - t*0.5)*2.0); }
+
+  // dust motes drifting in the beams
+  const dust=[]; function buildDust(){ dust.length=0; for(let i=0;i<90;i++){
+    dust.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.3)*0.12,vy:(Math.random()-0.5)*0.06,ph:Math.random()*6,sp:0.4+Math.random()*0.8}); } }
+
+  function resize(){
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    W=window.innerWidth; H=window.innerHeight;
+    canvas.width=W*DPR; canvas.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    buildWall(); buildLightMap(); buildDust();
+  }
+  window.addEventListener('resize',resize);
+
+  // ---------- input ----------
+  let drawing=false, px=0,py=0, hidHint=false;
+  const P=e=>({x:e.clientX,y:e.clientY});
+  canvas.addEventListener('pointerdown',e=>{ const {x,y}=P(e); drawing=true; px=x;py=y;
+    canvas.setPointerCapture(e.pointerId);
+    if(!hidHint){ hint.style.opacity=0; hidHint=true; }
+  });
+  canvas.addEventListener('pointermove',e=>{ if(!drawing) return; const {x,y}=P(e);
+    const dx=x-px, dy=y-py, d=Math.hypot(dx,dy), steps=Math.max(1,Math.min(6,d/6));
+    for(let i=0;i<steps;i++){ const t=i/steps; emit(px+dx*t, py+dy*t, dx*0.06, dy*0.06); }
+    px=x; py=y;
+  });
+  function endDraw(){ drawing=false; }
+  canvas.addEventListener('pointerup',endDraw);
+  canvas.addEventListener('pointercancel',endDraw);
+  lightSlider.addEventListener('input',()=>{ intensity=lightSlider.value/100; });
+
+  // ---------- loop ----------
+  let last=performance.now();
+  function tick(now){
+    const dt=Math.min(now-last,50)/1000; last=now; const t=now*0.001;
+    // hold to keep emitting a gentle plume at the last point
+    if(drawing){ for(let i=0;i<2;i++) emit(px+(Math.random()-0.5)*6, py+(Math.random()-0.5)*6, 0, 0); }
+
+    // wall + visible light shafts
+    ctx.globalCompositeOperation='source-over';
+    ctx.drawImage(wall,0,0,W,H);
+    ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha=0.9*intensity;
+    ctx.drawImage(lightMap,0,0,W,H);
+    ctx.globalAlpha=1;
+
+    // dust motes — only visible where the light is
+    for(const m of dust){
+      m.x+=m.vx; m.y+=m.vy; m.ph+=0.02;
+      if(m.x<0)m.x+=W; if(m.x>W)m.x-=W; if(m.y<0)m.y+=H; if(m.y>H)m.y-=H;
+      const L=lightAt(m.x,m.y); if(L<0.06) continue;
+      ctx.globalAlpha=Math.min(0.8,L*0.9)*(0.5+0.5*Math.sin(m.ph));
+      ctx.fillStyle='#fff4d2'; ctx.beginPath(); ctx.arc(m.x,m.y,m.sp,0,7); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+
+    // smoke — a soft translucent haze that brightens where it crosses a shaft
+    // and fades to near-nothing in shadow. Source-over (not additive) so a dense
+    // plume settles to soft grey rather than blowing out to white.
+    ctx.globalCompositeOperation='source-over';
+    for(const p of parts){
+      if(!p||!p.on) continue;
+      p.life+=dt*60; if(p.life>=p.max){ p.on=false; continue; }
+      const a=turb(p.x,p.y,t);
+      p.vx += a*0.06; p.vy += Math.cos(a*3.1)*0.035 - 0.012;   // curl + buoyancy
+      p.vx*=0.965; p.vy*=0.965;
+      p.x+=p.vx; p.y+=p.vy; p.size+=p.grow;
+      const k=p.life/p.max, fade=Math.sin(Math.min(1,k*1.1)*Math.PI); // in then out
+      const L=lightAt(p.x,p.y);
+      const alpha=fade*(0.035 + L*0.42);
+      if(alpha<0.004) continue;
+      const gv=Math.round(92 + L*140);                          // dim grey → lit, warm pale
+      const col=Math.round(gv+L*20)+','+Math.round(gv+L*8)+','+Math.round(gv-L*8);
+      const r=p.size;
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
+      g.addColorStop(0,'rgba('+col+','+alpha+')');
+      g.addColorStop(0.55,'rgba('+col+','+(alpha*0.45)+')');
+      g.addColorStop(1,'rgba('+col+',0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,r,0,7); ctx.fill();
+    }
+    requestAnimationFrame(tick);
+  }
+  resize(); requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
