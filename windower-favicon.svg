@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <radialGradient id="moonlit" cx="40%" cy="36%" r="78%">
+      <stop offset="0%" stop-color="#fdfbf5"/>
+      <stop offset="60%" stop-color="#e9e5da"/>
+      <stop offset="100%" stop-color="#c3bfb2"/>
+    </radialGradient>
+    <filter id="moonglow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="1.1"/>
+    </filter>
+    <filter id="edge" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="0.55" flood-color="#3a3a44" flood-opacity="0.6"/>
+    </filter>
+    <mask id="crescent">
+      <rect width="32" height="32" fill="black"/>
+      <circle cx="15" cy="16" r="12" fill="white"/>
+      <circle cx="21" cy="12.6" r="11" fill="black"/>
+    </mask>
+  </defs>
+  <!-- soft halo (reads on dark tabs) -->
+  <circle cx="15" cy="16" r="12" fill="url(#moonlit)" mask="url(#crescent)" filter="url(#moonglow)" opacity="0.55"/>
+  <!-- crescent, with a faint edge so it holds up on light tabs -->
+  <circle cx="15" cy="16" r="12" fill="url(#moonlit)" mask="url(#crescent)" filter="url(#edge)"/>
+</svg>
