@@ -92,6 +92,31 @@
     z-index:10;
   }
 
+  /* the light patch on the sill — warm sunlight by day, cool moonlight by night,
+     scaled by the real moon phase. Same reusable mask, tinted two ways, opacity
+     driven entirely from render(). Sized like #frame-img's own object-fit:cover
+     so the two stay in registration at any window shape. */
+  #beam-sun, #beam-moon{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+    z-index:11;
+    opacity:0;
+    mask-image:url('windower-beam-mask.png');
+    mask-size:cover;
+    mask-position:center;
+    mask-repeat:no-repeat;
+    -webkit-mask-image:url('windower-beam-mask.png');
+    -webkit-mask-size:cover;
+    -webkit-mask-position:center;
+    -webkit-mask-repeat:no-repeat;
+    transition:opacity 2s ease;
+  }
+  #beam-sun{ background:#ffe8b0; }
+  #beam-moon{ background:#cfe0ff; }
+
   #glass{
     position:relative;
     width:100%;
@@ -313,7 +338,7 @@
 </head>
 <body>
 <style>
-  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#f2e9d8; opacity:.5; text-decoration:none; font-size:14px; letter-spacing:.04em; transition:opacity .3s ease; }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#f2e9d8; opacity:.5; text-decoration:none; font-size:14px; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); transition:opacity .3s ease; }
   #backlink:hover{ opacity:.9; }
 </style>
 <a id="backlink" href="index.html">← sagne</a>
@@ -334,6 +359,8 @@
       <div id="moon-disc-wrap"><svg viewBox="0 0 100 100" id="moon-disc-svg"></svg></div>
     </div>
     <img id="frame-img" src="windower-frame.png" alt="">
+    <div id="beam-sun"></div>
+    <div id="beam-moon"></div>
   </div>
 
   <div id="chart-wrap">
@@ -454,6 +481,8 @@
     skySun: document.getElementById('sky-sun'),
     skyMoon: document.getElementById('sky-moon'),
     hills: document.getElementById('hills'),
+    beamSun: document.getElementById('beam-sun'),
+    beamMoon: document.getElementById('beam-moon'),
     moonWrap: document.getElementById('moon-disc-wrap'),
     moonSvg: document.getElementById('moon-disc-svg'),
     chart: document.getElementById('chart'),
@@ -754,6 +783,19 @@
     const saturation = (0.65 + 0.55 * dayF).toFixed(3);
     const sepia = (0.4 * warmF).toFixed(3);
     els.hills.style.filter = `brightness(${brightness}) saturate(${saturation}) sepia(${sepia})`;
+
+    // the sill light: a warm sunbeam by day, or — once the sun's down — cool
+    // moonlight scaled by the real moon phase (bright near full, all but gone
+    // near new), reusing the same day/moon factors as the hills and stars above
+    const beamSunOpacity = Math.max(0, Math.min(1, (sunAltDeg + 4) / 14));
+    // beam-specific altitude factor — a wide ramp so the moon has to climb well clear of
+    // the horizon before the beam reaches full strength, staying dim through moonrise/set
+    // the way real low-angle moonlight does; a steep gamma on the phase fraction means only
+    // a genuinely full-ish moon lights the floor plainly — a thin crescent is barely there
+    const beamMoonAlt = Math.max(0, Math.min(1, moonAltDeg / 35));
+    const beamMoonOpacity = Math.pow(illum.fraction, 1.8) * beamMoonAlt * (1 - dayF) * 0.85;
+    els.beamSun.style.opacity = beamSunOpacity;
+    els.beamMoon.style.opacity = beamMoonOpacity;
 
     els.moonWrap.classList.toggle('active', moonOnly);
     if (moonOnly){
