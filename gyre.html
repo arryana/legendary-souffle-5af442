@@ -267,7 +267,7 @@
     ctx.rotate(g.angle);
     const sp=getGearSprite(g);
     if(dim) ctx.filter='saturate(0.42) brightness(0.68)';
-    ctx.drawImage(sp.canvas, -sp.half, -sp.half, sp.size, sp.size);
+    ctx.drawImage(sp.canvas, -sp.half/2, -sp.half/2, sp.half, sp.half);
     if(dim) ctx.filter='none';
     ctx.restore();
   }
