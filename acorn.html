@@ -876,8 +876,11 @@
     ctx.fillStyle = 'rgba(20,12,4,0.28)';
     ctx.fill();
 
-    // the real acorn photo, turned to match how it's rolling
-    ctx.rotate(obj.acornAngle);
+    // the real acorn photo, turned to match how it's rolling — acornAngle is the slow lean
+    // (tip toward the centre of the arc, like a real cone), obj.spin is the actual continuous
+    // wheel-style rotation (radians = distance travelled / radius) that makes it visibly
+    // tumble rather than just glide along re-steering to face forward
+    ctx.rotate(obj.acornAngle + obj.spin);
     if (acornReady) {
       const dh = r * 2.7;
       const dw = dh * acornImg.naturalWidth / acornImg.naturalHeight;
