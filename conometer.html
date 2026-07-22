@@ -163,12 +163,16 @@
   @media (max-width:700px){
     #controls{ flex-direction:column; align-items:stretch; gap:16px; }
     #slider-wrap{ max-width:none; }
+    /* on a phone, a landscape scene at 94vw leaves the tall screen mostly empty above and
+       below it — switch to a portrait frame (matching the landing card's own proportions)
+       so it actually fills the screen; object-fit:cover on #bg-img reframes automatically */
+    #scene-wrap{ width:min(94vw, calc(74vh * 11 / 16)); aspect-ratio:11 / 16; }
   }
 </style>
 </head>
 <body>
 <style>
-  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#f2e9d8; opacity:.5; text-decoration:none; font-size:14px; letter-spacing:.04em; transition:opacity .3s ease; }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#f2e9d8; opacity:.5; text-decoration:none; font-size:14px; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); transition:opacity .3s ease; }
   #backlink:hover{ opacity:.9; }
 </style>
 <a id="backlink" href="index.html">← sagne</a>
