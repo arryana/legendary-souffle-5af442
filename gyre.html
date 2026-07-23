@@ -81,11 +81,17 @@
   let gears=[], idc=0;
   const mk=(N,x,y,fixed)=>({id:idc++,N,x,y,angle:0,fixed:!!fixed});
 
+  // ---- signal-lamp: a real-photo box+lights piece whose screw is its only connection to
+  // the gear train (see lamp geometry block below, near the sprite/drawing code)
+  let lamps=[], lampIdc=0;
+  const mkLamp=(x,y)=>({id:lampIdc++,x,y,facing:0,bigAngle:-0.113,smallAngle:Math.PI/10,phase:0,speed:0,engaged:false});
+
   const TRAY=[8,12,16,22,30,40];
-  let trayRects=[];
+  let trayRects=[], lampTrayRect=null;
   function layoutTray(){
-    const n=TRAY.length, slot=Math.min(70,(W*0.82)/n), x0=W/2-(n*slot)/2, y=92;
+    const n=TRAY.length+1, slot=Math.min(70,(W*0.82)/n), x0=W/2-(n*slot)/2, y=92;
     trayRects=TRAY.map((N,i)=>({N,cx:x0+slot*i+slot/2,cy:y,hit:slot*0.42}));
+    lampTrayRect={cx:x0+slot*TRAY.length+slot/2, cy:y, hit:slot*0.42};
   }
   let inited=false;
   function initGears(){
@@ -272,6 +278,92 @@
     ctx.restore();
   }
 
+  // ---- signal-lamp piece: a real photo (box + red/blue lights) with two drawn gears and a
+  // real-photo screw. The screw is its only connection point to the rest of the train — click
+  // it to spin the whole tile 90° so it can face whichever side has a neighbour. Everything
+  // below is measured in the box photo's own raw pixel space (LAMP_GS was the scale used to
+  // work out proportions against the reference photo); it's converted to true board scale by
+  // dividing by LAMP_GS once, at draw/hit-test time, so the lamp's own gears end up sized to
+  // match every other gear on the board exactly — same MODULE, same pitchR/outerR maths.
+  const LAMP_BIG_N=20, LAMP_SMALL_N=10, LAMP_GS=2.475;
+  const LB_bx0=114, LB_by0=93, LB_bw=987-114, LB_bh=772-93;      // box bounds, measured on the photo
+  const LB_cx=LB_bx0+LB_bw/2, LB_cy=LB_by0+LB_bh/2;               // box's own visual centre -> local origin
+  const lampBigLocalRaw={x:LB_bx0+0.522*LB_bw-LB_cx, y:LB_by0+0.670*LB_bh-LB_cy};
+  const lampMeshAngle=1.176;
+  const lampSmallDistRaw=LAMP_GS*(pitchR(LAMP_BIG_N)+pitchR(LAMP_SMALL_N));
+  const lampSmallLocalRaw={x:lampBigLocalRaw.x+lampSmallDistRaw*Math.cos(lampMeshAngle), y:lampBigLocalRaw.y+lampSmallDistRaw*Math.sin(lampMeshAngle)};
+  const lampRaRaw=LAMP_GS*outerR(LAMP_SMALL_N), lampWormHalfHRaw=lampRaRaw*0.52;
+  const LAMP_CAPL_W=158, LAMP_CAPR_W=78, LAMP_THREAD_W=294, LAMP_PHOTO_H=127;   // real screw-photo dimensions
+  const lampWormScale=(lampWormHalfHRaw*2)/LAMP_PHOTO_H;
+  const lampCapLW=LAMP_CAPL_W*lampWormScale, lampCapRW=LAMP_CAPR_W*lampWormScale, lampThreadW=LAMP_THREAD_W*lampWormScale;
+  const lampWormHalfLenRaw=(lampCapLW+lampThreadW+lampCapRW)/2;
+  const lampScrewLocalRaw={x:lampSmallLocalRaw.x, y:lampSmallLocalRaw.y+lampRaRaw+lampWormHalfHRaw*0.68};
+  const redJewelLocalRaw={x:385-LB_cx,y:216-LB_cy}, blueJewelLocalRaw={x:735-LB_cx,y:216-LB_cy}, jewelRRaw=95;
+  // true board-scale conversions (divide the raw-photo lengths above by LAMP_GS)
+  const lampScrewLocalTrue={x:lampScrewLocalRaw.x/LAMP_GS, y:lampScrewLocalRaw.y/LAMP_GS};
+  const LAMP_SCREW_ENGAGE_R=lampWormHalfHRaw/LAMP_GS;
+  const LAMP_HIT_R=Math.hypot(LB_bw,LB_bh)/2/LAMP_GS;
+
+  function loadImg(src){ const im=new Image(); im.src=src; return im; }
+  const lampBoxImg=loadImg('gyre-lamp-box.png'), lampCapL=loadImg('gyre-lamp-screw-capL.png'),
+        lampThread=loadImg('gyre-lamp-screw-thread.png'), lampCapR=loadImg('gyre-lamp-screw-capR.png');
+
+  const lampSpriteCache=new Map();
+  function getLampSprites(lamp){
+    let s=lampSpriteCache.get(lamp.id);
+    if(!s){ s={big:buildGearSprite(LAMP_BIG_N,false,lamp.id*7+3), small:buildGearSprite(LAMP_SMALL_N,false,lamp.id*7+5)}; lampSpriteCache.set(lamp.id,s); }
+    return s;
+  }
+  function lampFacingAngle(lamp){ return lamp.facing*Math.PI/2; }
+  function lampScrewWorld(lamp){
+    const ang=lampFacingAngle(lamp), c=Math.cos(ang), s=Math.sin(ang), lx=lampScrewLocalTrue.x, ly=lampScrewLocalTrue.y;
+    return {x:lamp.x+lx*c-ly*s, y:lamp.y+lx*s+ly*c};
+  }
+  function drawLamp(lamp, dim){
+    ctx.save();
+    ctx.translate(lamp.x,lamp.y); ctx.rotate(lampFacingAngle(lamp)); ctx.scale(1/LAMP_GS,1/LAMP_GS);
+    if(dim) ctx.filter='saturate(0.42) brightness(0.68)';
+    ctx.drawImage(lampBoxImg, -LB_cx, -LB_cy);
+
+    if(!dim && Math.abs(lamp.speed)>0.001){
+      const glowJewel = lamp.speed>=0 ? blueJewelLocalRaw : redJewelLocalRaw;
+      const glowColor = lamp.speed>=0 ? '80,170,255' : '255,60,60';
+      const glowAlpha = Math.min(1, Math.abs(lamp.speed)/1.0);
+      ctx.save(); ctx.globalCompositeOperation='lighter';
+      const g=ctx.createRadialGradient(glowJewel.x,glowJewel.y,0,glowJewel.x,glowJewel.y,jewelRRaw*1.3);
+      g.addColorStop(0, `rgba(255,255,255,${0.9*glowAlpha})`);
+      g.addColorStop(0.22, `rgba(${glowColor},${1.0*glowAlpha})`);
+      g.addColorStop(0.55, `rgba(${glowColor},${0.7*glowAlpha})`);
+      g.addColorStop(1, `rgba(${glowColor},0)`);
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(glowJewel.x,glowJewel.y,jewelRRaw*1.3,0,7); ctx.fill();
+      ctx.restore();
+    }
+
+    const sprites=getLampSprites(lamp);
+    ctx.save(); ctx.translate(lampSmallLocalRaw.x,lampSmallLocalRaw.y); ctx.rotate(lamp.smallAngle);
+    ctx.drawImage(sprites.small.canvas,-sprites.small.half*LAMP_GS/2,-sprites.small.half*LAMP_GS/2,sprites.small.half*LAMP_GS,sprites.small.half*LAMP_GS);
+    ctx.restore();
+
+    ctx.save(); ctx.translate(lampSmallLocalRaw.x, lampSmallLocalRaw.y+lampRaRaw+lampWormHalfHRaw*0.68);
+    const ox=-lampWormHalfLenRaw, oy=-lampWormHalfHRaw;
+    ctx.drawImage(lampCapL, ox, oy, lampCapLW, lampWormHalfHRaw*2);
+    ctx.save(); ctx.beginPath(); ctx.rect(ox+lampCapLW, oy, lampThreadW, lampWormHalfHRaw*2); ctx.clip();
+    let ph=((lamp.phase%lampThreadW)+lampThreadW)%lampThreadW;
+    for(let x=ox+lampCapLW-lampThreadW+ph; x<ox+lampCapLW+lampThreadW+lampThreadW; x+=lampThreadW){
+      ctx.drawImage(lampThread, x, oy, lampThreadW, lampWormHalfHRaw*2);
+    }
+    ctx.restore();
+    ctx.drawImage(lampCapR, ox+lampCapLW+lampThreadW, oy, lampCapRW, lampWormHalfHRaw*2);
+    ctx.restore();
+
+    ctx.save(); ctx.translate(lampBigLocalRaw.x,lampBigLocalRaw.y); ctx.rotate(lamp.bigAngle);
+    ctx.drawImage(sprites.big.canvas,-sprites.big.half*LAMP_GS/2,-sprites.big.half*LAMP_GS/2,sprites.big.half*LAMP_GS,sprites.big.half*LAMP_GS);
+    ctx.restore();
+
+    if(dim) ctx.filter='none';
+    ctx.restore();
+  }
+
   // ---- meshing train from the driver ----
   function buildTrain(){
     const n=gears.length, adj=Array.from({length:n},()=>[]);
@@ -286,10 +378,6 @@
   // ---- drag / place / remove ----
   let drag=null;
   const P=e=>({x:e.clientX,y:e.clientY});
-  canvas.addEventListener('pointerdown',e=>{ const {x,y}=P(e);
-    for(const t of trayRects){ if(Math.hypot(x-t.cx,y-t.cy)<t.hit){ const g=mk(t.N,x,y,false); gears.push(g); drag={g,ox:0,oy:0}; canvas.setPointerCapture(e.pointerId); return; } }
-    for(let i=gears.length-1;i>=0;i--){ const g=gears[i]; if(Math.hypot(x-g.x,y-g.y)<outerR(g.N)){ drag={g,ox:x-g.x,oy:y-g.y}; canvas.setPointerCapture(e.pointerId); return; } }
-  });
   // gears are solid — dragged one can reach exact meshing distance against a neighbour
   // (teeth touching) but never closer than that; push it back out if the cursor tries to
   // shove it through another gear
@@ -301,17 +389,53 @@
           g.x=o.x+Math.cos(a)*minD; g.y=o.y+Math.sin(a)*minD; moved=true; } }
       if(!moved) break; }
   }
-  canvas.addEventListener('pointermove',e=>{ if(!drag) return; const {x,y}=P(e); drag.g.x=x-drag.ox; drag.g.y=y-drag.oy; resolveOverlap(drag.g); });
-  function endDrag(e){ if(!drag) return; const g=drag.g, {x,y}=P(e);
-    if(y<130 && !g.fixed){ gears=gears.filter(k=>k!==g); }   // dropped in the tray band -> remove (never the driver)
-    else {                                              // nudge to exact mesh distance if close to a neighbour
-      let best=null,err=1e9; for(const o of gears){ if(o===g) continue; const t=pitchR(g.N)+pitchR(o.N); const e2=Math.abs(Math.hypot(g.x-o.x,g.y-o.y)-t); if(e2<err){err=e2;best=o;} }
-      if(best&&err<SNAP_TOL){ const t=pitchR(g.N)+pitchR(best.N), a=Math.atan2(g.y-best.y,g.x-best.x); g.x=best.x+Math.cos(a)*t; g.y=best.y+Math.sin(a)*t; }
+  canvas.addEventListener('pointerdown',e=>{ const {x,y}=P(e);
+    for(const t of trayRects){ if(Math.hypot(x-t.cx,y-t.cy)<t.hit){ const g=mk(t.N,x,y,false); gears.push(g); drag={kind:'gear',obj:g,ox:0,oy:0}; canvas.setPointerCapture(e.pointerId); return; } }
+    if(lampTrayRect && Math.hypot(x-lampTrayRect.cx,y-lampTrayRect.cy)<lampTrayRect.hit){
+      const lamp=mkLamp(x,y); lamps.push(lamp);
+      drag={kind:'lamp',obj:lamp,ox:0,oy:0,downX:x,downY:y,downOnScrew:false};
+      canvas.setPointerCapture(e.pointerId); return;
+    }
+    for(let i=gears.length-1;i>=0;i--){ const g=gears[i]; if(Math.hypot(x-g.x,y-g.y)<outerR(g.N)){ drag={kind:'gear',obj:g,ox:x-g.x,oy:y-g.y}; canvas.setPointerCapture(e.pointerId); return; } }
+    for(let i=lamps.length-1;i>=0;i--){ const lamp=lamps[i]; if(Math.hypot(x-lamp.x,y-lamp.y)<LAMP_HIT_R){
+      const screwPos=lampScrewWorld(lamp), downOnScrew=Math.hypot(x-screwPos.x,y-screwPos.y)<Math.max(LAMP_SCREW_ENGAGE_R*2,16);
+      drag={kind:'lamp',obj:lamp,ox:x-lamp.x,oy:y-lamp.y,downX:x,downY:y,downOnScrew};
+      canvas.setPointerCapture(e.pointerId); return;
+    } }
+  });
+  canvas.addEventListener('pointermove',e=>{ if(!drag) return; const {x,y}=P(e); drag.obj.x=x-drag.ox; drag.obj.y=y-drag.oy;
+    if(drag.kind==='gear') resolveOverlap(drag.obj); });
+  function endDrag(e){ if(!drag) return; const {x,y}=P(e);
+    if(drag.kind==='gear'){ const g=drag.obj;
+      if(y<130 && !g.fixed){ gears=gears.filter(k=>k!==g); }   // dropped in the tray band -> remove (never the driver)
+      else {                                              // nudge to exact mesh distance if close to a neighbour
+        let best=null,err=1e9; for(const o of gears){ if(o===g) continue; const t=pitchR(g.N)+pitchR(o.N); const e2=Math.abs(Math.hypot(g.x-o.x,g.y-o.y)-t); if(e2<err){err=e2;best=o;} }
+        if(best&&err<SNAP_TOL){ const t=pitchR(g.N)+pitchR(best.N), a=Math.atan2(g.y-best.y,g.x-best.x); g.x=best.x+Math.cos(a)*t; g.y=best.y+Math.sin(a)*t; }
+      }
+    } else { const lamp=drag.obj, moved=Math.hypot(x-drag.downX,y-drag.downY);
+      if(moved<8 && drag.downOnScrew){ lamp.facing=(lamp.facing+1)%4; }   // a click on the screw spins the tile 90°
+      else if(y<130){ lamps=lamps.filter(k=>k!==lamp); }                  // dropped in the tray band -> remove
+      else {                                        // nudge so the screw lands exactly on a neighbour, if close enough
+        const screwPos=lampScrewWorld(lamp);
+        let best=null,err=1e9; for(const o of gears){ const reqD=pitchR(o.N)+LAMP_SCREW_ENGAGE_R; const e2=Math.abs(Math.hypot(screwPos.x-o.x,screwPos.y-o.y)-reqD); if(e2<err){err=e2;best=o;} }
+        if(best&&err<SNAP_TOL){ const reqD=pitchR(best.N)+LAMP_SCREW_ENGAGE_R, a=Math.atan2(screwPos.y-best.y,screwPos.x-best.x);
+          const tx=best.x+Math.cos(a)*reqD, ty=best.y+Math.sin(a)*reqD; lamp.x+=tx-screwPos.x; lamp.y+=ty-screwPos.y; }
+      }
     }
     drag=null;
   }
   canvas.addEventListener('pointerup',endDrag);
   canvas.addEventListener('pointercancel',endDrag);
+
+  // which gear (if any) is currently touching this lamp's screw at proper meshing distance,
+  // and is itself actually part of the live, running train (not just sitting there unpowered)
+  function lampEngagement(lamp, connected){
+    const screwPos=lampScrewWorld(lamp);
+    let best=-1, bestErr=1e9;
+    for(let i=0;i<gears.length;i++){ const o=gears[i], reqD=pitchR(o.N)+LAMP_SCREW_ENGAGE_R;
+      const e2=Math.abs(Math.hypot(screwPos.x-o.x,screwPos.y-o.y)-reqD); if(e2<bestErr){bestErr=e2;best=i;} }
+    return (best>=0 && bestErr<MESH_TOL && connected.has(best)) ? best : -1;
+  }
 
   // ---- loop ----
   let last=performance.now();
@@ -320,16 +444,33 @@
     const {parent,order}=buildTrain();
     const speed=speedSlider.value/50;
     if(runChk.checked) gears[0].angle += speed*1.05*dt;
+    const angVel=new Array(gears.length).fill(0);
+    if(order.length) angVel[order[0]] = runChk.checked ? speed*1.05 : 0;
     for(const idx of order){ if(idx===0) continue; const g=gears[idx], p=gears[parent[idx]];
       const conn=Math.atan2(g.y-p.y,g.x-p.x);
-      g.angle=-(p.N/g.N)*(p.angle-conn)+conn+Math.PI+Math.PI/g.N; }
+      g.angle=-(p.N/g.N)*(p.angle-conn)+conn+Math.PI+Math.PI/g.N;
+      angVel[idx]=-(p.N/g.N)*angVel[parent[idx]]; }
     const connected=new Set(order);
+
+    // drive each lamp from whatever live gear its screw is currently touching, if any —
+    // idle (nothing engaged, or the neighbour itself isn't powered) means dark and still
+    for(const lamp of lamps){
+      const ni=lampEngagement(lamp,connected);
+      const bigSpeed = ni>=0 ? -angVel[ni]*(gears[ni].N/LAMP_BIG_N) : 0;
+      lamp.bigAngle += bigSpeed*dt;
+      lamp.smallAngle -= (LAMP_BIG_N/LAMP_SMALL_N)*bigSpeed*dt;
+      lamp.phase -= outerR(LAMP_SMALL_N)*(LAMP_BIG_N/LAMP_SMALL_N)*bigSpeed*dt;
+      lamp.speed=bigSpeed; lamp.engaged=ni>=0;
+    }
 
     ctx.clearRect(0,0,W,H);
     // tray
     for(const t of trayRects){ ctx.save(); ctx.translate(t.cx,t.cy); const s=Math.min(1,(t.hit*0.95)/outerR(t.N)); ctx.scale(s,s); gearBody(t.N,false,false); ctx.restore(); }
+    if(lampTrayRect){ ctx.save(); ctx.translate(lampTrayRect.cx,lampTrayRect.cy);
+      const s=Math.min(1,(lampTrayRect.hit*1.7)/Math.max(LB_bw,LB_bh)); ctx.scale(s,s); ctx.drawImage(lampBoxImg,-LB_cx,-LB_cy); ctx.restore(); }
     // board gears — dim the ones not part of the running train
     for(let i=0;i<gears.length;i++){ const g=gears[i]; drawGear(g, !connected.has(i) && !g.fixed); }
+    for(const lamp of lamps) drawLamp(lamp, !lamp.engaged);
     requestAnimationFrame(tick);
   }
   resize(); requestAnimationFrame(tick);
