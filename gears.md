@@ -385,3 +385,49 @@ hand-measurements baked in as constants.
   tiling loop keyed off the poisoned value (a `NaN` loop bound never satisfies its comparison,
   so the loop body silently never runs — this is exactly how the signal-lamp's screw thread
   went completely missing the first time this bug was hit).
+
+---
+
+## 9. Known gaps — things this doesn't do (yet)
+
+- **The lamp isn't covered by overlap prevention.** `resolveOverlap` (§6) only runs for
+  `kind==='gear'` drags. A lamp can currently be dragged to fully overlap another lamp, or sit
+  on top of a gear's body, with nothing pushing it back out. This is the exact same category of
+  problem that `resolveOverlap` was written to fix for gears — it just hasn't been extended to
+  lamps. If a future session is asked "gears can't overlap, but I just stacked two lamps," this
+  is why, and the fix is the same shape: give lamps their own solidity radius (`LAMP_HIT_R` is
+  already computed and used for click hit-testing, so it's the natural candidate) and resolve
+  against it the same way, likely in the shared `pointermove` handler regardless of `drag.kind`.
+- **A lamp can never drive anything else.** It's a pure leaf/consumer: gears mesh with gears
+  (`buildTrain`, §5), and separately a lamp's screw can mesh with a gear (`lampEngagement`,
+  §7) — but nothing ever meshes *against* a lamp. `lamps[]` never participates in `buildTrain`'s
+  adjacency graph at all. If a future piece needs to relay power onward (a lamp that also drives
+  a downstream gear, or two lamps chained together), that's new mechanism, not a small tweak.
+- **No exclusivity on a gear's connection points.** Nothing stops two (or five) lamps all
+  meshing onto the same single gear simultaneously — there's no capacity limit modeling that a
+  gear only has so much usable circumference. Physically-plausible spacing between multiple
+  things meshed to one gear isn't enforced anywhere.
+
+## 10. Testing changes locally
+
+`file://` URLs break this page — canvas `drawImage` calls against locally-loaded images run
+into browser security restrictions that don't apply over `http://`. Serve the repo root instead:
+
+```bash
+python3 -m http.server 8794   # from the repo root; pick any free port
+```
+
+Then load `http://127.0.0.1:8794/gyre.html`. For repeated automated checks (screenshots,
+scripted drag/drop via Playwright), a pre-installed Chromium is available in this environment
+at `/opt/pw-browsers/<version>/chrome-linux/chrome` — launch it with `playwright-core`'s
+`chromium.launch({executablePath: ..., args:['--no-sandbox']})` rather than trying to install a
+browser. A background `python3 -m http.server` process can go stale/get dropped between tool
+calls (symptom: `ERR_CONNECTION_REFUSED` on a page that loaded fine a minute earlier) — if that
+happens, just restart it, it isn't a sign anything else is wrong.
+
+The `window.__gyreDebug` pattern in §8 pairs well with this: drive the scene via
+`page.mouse.move/down/up`, then reach into state through `page.evaluate` to assert on exact
+numbers (mesh distance, engagement state, lamp speed/sign) rather than eyeballing a screenshot
+— eyeballing is what produced the wrong gear-mesh-angle fix earlier in this piece's history
+(see the tooth-phase gotcha in §1); a real polygon-overlap or state check catches that class of
+mistake before it ships.
