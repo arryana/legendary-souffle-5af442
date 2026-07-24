@@ -72,6 +72,43 @@
     return p0.y+(p1.y-p0.y)*lt;
   }
 
+  // ---- sky: a warm sunset backdrop, purely decorative behind everything else — nothing
+  // here touches the poles/wire/bird logic at all ----
+  let cloudPuffs=null, skylinePts=null, skyInitW=-1;
+  function initSky(){
+    cloudPuffs=[];
+    for(let i=0;i<7;i++){ cloudPuffs.push({
+      x:Math.random()*W, y:H*(0.08+Math.random()*0.32), rx:W*(0.09+Math.random()*0.10),
+      ry:H*(0.018+Math.random()*0.02), a:0.10+Math.random()*0.14 }); }
+    skylinePts=[]; let x=0;
+    while(x<W){ const w=40+Math.random()*70, h=H*0.02+Math.random()*H*0.05;
+      skylinePts.push({x,h}); x+=w; skylinePts.push({x,h:h*0.6}); }
+  }
+  function drawSky(){
+    if(!cloudPuffs || skyInitW!==W){ initSky(); skyInitW=W; }
+    const sky=ctx.createLinearGradient(0,0,0,H);
+    sky.addColorStop(0,'#4a4368'); sky.addColorStop(0.35,'#c1667e');
+    sky.addColorStop(0.62,'#e8935a'); sky.addColorStop(0.82,'#f5b876'); sky.addColorStop(1,'#fbdca0');
+    ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+    // the sun, low on the horizon, with a soft glow
+    const sunX=W*0.62, sunY=H*0.88, sunR=H*0.09;
+    const glow=ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,sunR*3.2);
+    glow.addColorStop(0,'rgba(255,244,214,0.9)'); glow.addColorStop(0.25,'rgba(255,214,150,0.45)'); glow.addColorStop(1,'rgba(255,214,150,0)');
+    ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(sunX,sunY,sunR*3.2,0,7); ctx.fill();
+    ctx.fillStyle='rgba(255,248,228,0.85)'; ctx.beginPath(); ctx.arc(sunX,sunY,sunR,0,7); ctx.fill();
+
+    // a few soft, low clouds catching the warm light
+    for(const c of cloudPuffs){ ctx.fillStyle=`rgba(70,45,55,${c.a})`;
+      ctx.beginPath(); ctx.ellipse(c.x,c.y,c.rx,c.ry,0,0,7); ctx.fill(); }
+
+    // a dark, distant skyline along the bottom edge — hills and rooftops, pure silhouette
+    ctx.fillStyle='rgba(28,22,26,0.9)';
+    ctx.beginPath(); ctx.moveTo(0,H);
+    for(const p of skylinePts) ctx.lineTo(p.x,H-p.h);
+    ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
+  }
+
   // ---- poles: real telephone-pole bulk, not a tightrope line — a tapered timber trunk,
   // a proper crossbar, and a couple of insulator nubs where the wire actually attaches ----
   function drawPoles(){
@@ -229,9 +266,7 @@
     updateSparrows(dt);
 
     ctx.clearRect(0,0,W,H);
-    const sky=ctx.createLinearGradient(0,0,0,H);
-    sky.addColorStop(0,'#5f8fc7'); sky.addColorStop(0.6,'#8fb4d6'); sky.addColorStop(1,'#c3d8e6');
-    ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+    drawSky();
 
     drawPoles(); drawWire();
     const order=[...sparrows].sort((a,b)=>a.y-b.y);
