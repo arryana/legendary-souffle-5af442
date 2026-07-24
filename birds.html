@@ -38,9 +38,12 @@
   // draw the image, so the wire's attach points track the actual poles at any window size.
   const bgImg=new Image(); bgImg.src='birds-background.png';
   const BG_W=1408, BG_H=768;
-  // wires attach a bit below the actual tip of a real pole (on a crossbar or insulator), not
-  // at the very top — offset down from the measured pole-top pixels
-  const POLE_IMG=[{x:170,y:240+22},{x:1290,y:188+18}];   // left pole attach, right pole attach
+  // two wires, both strung on the same poles but attaching further down the timber — real
+  // poles carry more than one crossarm. Offsets are down from the measured pole-top pixels.
+  const POLE_IMG_SETS=[
+    [{x:170,y:240+50},{x:1290,y:188+42}],    // upper wire
+    [{x:170,y:240+100},{x:1290,y:188+85}],   // lower wire
+  ];
   let bgScale=1, bgOX=0, bgOY=0;
   function fitBackground(){
     bgScale=Math.max(W/BG_W,H/BG_H);
@@ -52,24 +55,27 @@
     else { ctx.fillStyle='#e8935a'; ctx.fillRect(0,0,W,H); }   // plain fallback while it loads
   }
 
-  // ---- wire: a chain of sample points strung between the two poles in the photo, spring-
-  // damped toward a target height that's the wire's own catenary sag plus a localized dip
-  // under each bird currently sitting near that point — landing/departure naturally produces
-  // a dip-and-settle or a spring-back-and-oscillate, since it's just this spring chasing a
-  // moving target
+  // ---- wires: each one a chain of sample points strung between the two poles in the photo,
+  // spring-damped toward a target height that's its own catenary sag plus a localized dip
+  // under each bird currently sitting on THAT wire — landing/departure naturally produces a
+  // dip-and-settle or a spring-back-and-oscillate, since it's just this spring chasing a
+  // moving target. Two wires, same poles, independent of each other.
   const WIRE_N=48;
-  let poleX0=0, poleY0=0, poleX1=0, poleY1=0, wire=[];
+  let wires=[];
   function layout(){
     fitBackground();
-    const p0=imgToScreen(POLE_IMG[0]), p1=imgToScreen(POLE_IMG[1]);
-    poleX0=p0.x; poleY0=p0.y; poleX1=p1.x; poleY1=p1.y;
-    wire=[]; for(let i=0;i<WIRE_N;i++){ const t=i/(WIRE_N-1);
-      wire.push({t, x:poleX0+(poleX1-poleX0)*t, y:poleY0+(poleY1-poleY0)*t, vy:0}); }
+    wires=POLE_IMG_SETS.map(([pi0,pi1])=>{
+      const p0=imgToScreen(pi0), p1=imgToScreen(pi1);
+      const w={poleX0:p0.x, poleY0:p0.y, poleX1:p1.x, poleY1:p1.y, pts:[]};
+      for(let i=0;i<WIRE_N;i++){ const t=i/(WIRE_N-1);
+        w.pts.push({t, x:w.poleX0+(w.poleX1-w.poleX0)*t, y:w.poleY0+(w.poleY1-w.poleY0)*t, vy:0}); }
+      return w;
+    });
   }
-  // The wire's shape comes from ONE physical process — a distributed load w(x) (the wire's
-  // own constant self-weight, plus extra weight wherever a bird is sitting), integrated twice
-  // to get a deflection curve. This is the actual math for how a loaded cable hangs. It's the
-  // reason a real wire never looks like two different kinds of bend stitched together: the
+  // Each wire's shape comes from ONE physical process — a distributed load (the wire's own
+  // constant self-weight, plus extra weight wherever a bird sitting on THAT wire is), integrated
+  // twice to get a deflection curve. This is the actual math for how a loaded cable hangs. It's
+  // the reason a real wire never looks like two different kinds of bend stitched together: the
   // gentle sag between birds and the deeper sag under them are the same curve family, just
   // reading different amounts of load — not a separate hand-shaped "dip" added on top of a
   // separate hand-shaped "sag".
@@ -77,57 +83,66 @@
   const BIRD_LOAD=8;       // how much heavier a bird makes the wire feel at its own position
   const DIP_SIGMA=70;      // how far a bird's weight is felt along the wire from where it sits
   const SAG_K=0.011;       // overall sag strength — tuned by eye against the unloaded droop
-  function wireShape(){
-    const n=wire.length, w=new Array(n);
-    for(let i=0;i<n;i++){ const x=wire[i].x; let load=BASE_LOAD;
-      for(const b of sparrows){ if(b.state==='perched'||b.state==='landing'||b.state==='shuffling'||b.state==='flapping'){
-        const d=x-b.x; load += BIRD_LOAD*Math.exp(-(d*d)/(2*DIP_SIGMA*DIP_SIGMA)); } }
-      w[i]=load; }
-    const s=new Array(n); s[0]=0; for(let i=1;i<n;i++) s[i]=s[i-1]+w[i];       // first integral
+  function wireShape(w, wireIdx){
+    const n=w.pts.length, load=new Array(n);
+    for(let i=0;i<n;i++){ const x=w.pts[i].x; let l=BASE_LOAD;
+      for(const b of sparrows){ if(b.wireIdx===wireIdx && (b.state==='perched'||b.state==='landing'||b.state==='shuffling'||b.state==='flapping')){
+        const d=x-b.x; l += BIRD_LOAD*Math.exp(-(d*d)/(2*DIP_SIGMA*DIP_SIGMA)); } }
+      load[i]=l; }
+    const s=new Array(n); s[0]=0; for(let i=1;i<n;i++) s[i]=s[i-1]+load[i];    // first integral
     const c=new Array(n); c[0]=0; for(let i=1;i<n;i++) c[i]=c[i-1]+s[i];      // second integral
     const cEnd=c[n-1], target=new Array(n);
-    for(let i=0;i<n;i++){ const t=wire[i].t;
-      target[i]=poleY0+(poleY1-poleY0)*t + SAG_K*(cEnd*t-c[i]); }             // pin both ends back to the poles, sagging down
+    for(let i=0;i<n;i++){ const t=w.pts[i].t;
+      target[i]=w.poleY0+(w.poleY1-w.poleY0)*t + SAG_K*(cEnd*t-c[i]); }       // pin both ends back to the poles, sagging down
     return target;
   }
   function stepWire(dt){
-    const k=90, damp=8.5, target=wireShape();
-    for(let i=0;i<wire.length;i++){ const p=wire[i], ty=target[i];
-      const acc=(ty-p.y)*k - p.vy*damp;
-      p.vy+=acc*dt; p.y+=p.vy*dt; }
+    const k=90, damp=8.5;
+    wires.forEach((w,wireIdx)=>{
+      const target=wireShape(w,wireIdx);
+      for(let i=0;i<w.pts.length;i++){ const p=w.pts[i], ty=target[i];
+        const acc=(ty-p.y)*k - p.vy*damp;
+        p.vy+=acc*dt; p.y+=p.vy*dt; }
+    });
   }
-  function wireYAt(x){
-    const t=Math.max(0,Math.min(1,(x-poleX0)/(poleX1-poleX0)));
+  function wireYAt(wireIdx, x){
+    const w=wires[wireIdx], t=Math.max(0,Math.min(1,(x-w.poleX0)/(w.poleX1-w.poleX0)));
     const i=Math.min(WIRE_N-2, Math.floor(t*(WIRE_N-1)));
-    const p0=wire[i], p1=wire[i+1], lt=(t*(WIRE_N-1))-i;
+    const p0=w.pts[i], p1=w.pts[i+1], lt=(t*(WIRE_N-1))-i;
     return p0.y+(p1.y-p0.y)*lt;
   }
 
-  function drawWire(){
+  function drawWires(){
     ctx.strokeStyle='rgba(30,24,18,0.75)'; ctx.lineWidth=2; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(wire[0].x,wire[0].y);
-    for(let i=1;i<wire.length;i++) ctx.lineTo(wire[i].x,wire[i].y);
-    ctx.stroke();
+    for(const w of wires){
+      ctx.beginPath(); ctx.moveTo(w.pts[0].x,w.pts[0].y);
+      for(let i=1;i<w.pts.length;i++) ctx.lineTo(w.pts[i].x,w.pts[i].y);
+      ctx.stroke();
+    }
   }
 
   // ---- sparrows ----
   let sparrows=[], idc=0;
   const PSR=34;           // personal-space radius along the wire
   const FLAP_HZ=11;       // wing-beat rate while actually flying
-  function pickLandingX(){
-    // prefer landing near an existing sparrow, otherwise near centre, with a little randomness
-    if(sparrows.some(b=>b.state!=='departing'&&b.state!=='arriving')){
-      const anchor=sparrows[Math.floor(Math.random()*sparrows.length)];
+  function pickLanding(){
+    // prefer landing near an existing sparrow (on whichever wire it's on), otherwise pick
+    // a wire at random and land near its centre, with a little randomness either way
+    const settled=sparrows.filter(b=>b.state!=='departing'&&b.state!=='arriving');
+    if(settled.length){
+      const anchor=settled[Math.floor(Math.random()*settled.length)];
+      const w=wires[anchor.wireIdx];
       let x=anchor.x+(Math.random()<0.5?-1:1)*(PSR*0.7+Math.random()*PSR*0.6);
-      return Math.max(poleX0+30,Math.min(poleX1-30,x));
+      return {wireIdx:anchor.wireIdx, x:Math.max(w.poleX0+30,Math.min(w.poleX1-30,x))};
     }
-    return (poleX0+poleX1)/2 + (Math.random()-0.5)*60;
+    const wireIdx=Math.floor(Math.random()*wires.length), w=wires[wireIdx];
+    return {wireIdx, x:(w.poleX0+w.poleX1)/2 + (Math.random()-0.5)*60};
   }
   function spawnSparrow(){
     const fromLeft=Math.random()<0.5;
-    const targetX=pickLandingX();
+    const {wireIdx,x:targetX}=pickLanding();
     const b={id:idc++, state:'arriving', x: fromLeft?-40:W+40, y:H*0.25+Math.random()*60,
-      targetX, facing: fromLeft?1:-1, wingPhase:Math.random()*7, t:0, shuffleFrom:0, shuffleTo:0, shuffleT:0};
+      targetX, wireIdx, facing: fromLeft?1:-1, wingPhase:Math.random()*7, t:0, shuffleFrom:0, shuffleTo:0, shuffleT:0};
     sparrows.push(b);
   }
   function removeSparrow(){
@@ -138,16 +153,17 @@
   }
 
   // when a bird lands near others, give crowded neighbours a chance to shuffle away, or
-  // flap in place if there's nowhere to go
-  function settleCrowding(landedX){
+  // flap in place if there's nowhere to go — only ever affects birds on the same wire
+  function settleCrowding(wireIdx, landedX){
+    const w=wires[wireIdx];
     for(const n of sparrows){
-      if(n.state!=='perched') continue;
+      if(n.state!=='perched' || n.wireIdx!==wireIdx) continue;
       const d=n.x-landedX;
       if(Math.abs(d)<PSR){
         const dir=d>=0?1:-1;
         const roomTo=n.x+dir*PSR*1.15;
-        const blocked = sparrows.some(o=>o!==n && (o.state==='perched'||o.state==='shuffling') && Math.abs(o.x-roomTo)<PSR*0.55)
-          || roomTo<poleX0+30 || roomTo>poleX1-30;
+        const blocked = sparrows.some(o=>o!==n && o.wireIdx===wireIdx && (o.state==='perched'||o.state==='shuffling') && Math.abs(o.x-roomTo)<PSR*0.55)
+          || roomTo<w.poleX0+30 || roomTo>w.poleX1-30;
         if(!blocked){ n.state='shuffling'; n.shuffleFrom=n.x; n.shuffleTo=roomTo; n.shuffleT=0; n.facing=dir; }
         else { n.state='flapping'; n.t=0; }
       }
@@ -158,24 +174,24 @@
     for(const b of sparrows){
       b.t+=dt; b.wingPhase+=dt*FLAP_HZ*2*Math.PI;
       if(b.state==='arriving'){
-        const landY=wireYAt(b.targetX)-9;
+        const landY=wireYAt(b.wireIdx,b.targetX)-9;
         const dx=b.targetX-b.x, dy=landY-b.y, dist=Math.hypot(dx,dy);
         const speed=220;
-        if(dist<6){ b.state='landing'; b.t=0; b.x=b.targetX; b.y=landY; settleCrowding(b.targetX); }
+        if(dist<6){ b.state='landing'; b.t=0; b.x=b.targetX; b.y=landY; settleCrowding(b.wireIdx,b.targetX); }
         else { b.x+=dx/dist*speed*dt; b.y+=dy/dist*speed*dt; b.facing=dx>=0?1:-1; }
       } else if(b.state==='landing'){
-        b.y=wireYAt(b.x)-9;
+        b.y=wireYAt(b.wireIdx,b.x)-9;
         if(b.t>0.28) b.state='perched';
       } else if(b.state==='perched'){
-        b.y=wireYAt(b.x)-9;
+        b.y=wireYAt(b.wireIdx,b.x)-9;
       } else if(b.state==='shuffling'){
         b.shuffleT+=dt/0.5;
         const s=Math.min(1,b.shuffleT), e=s<0.5?2*s*s:1-Math.pow(-2*s+2,2)/2;
         b.x=b.shuffleFrom+(b.shuffleTo-b.shuffleFrom)*e;
-        b.y=wireYAt(b.x)-9;
+        b.y=wireYAt(b.wireIdx,b.x)-9;
         if(s>=1) b.state='perched';
       } else if(b.state==='flapping'){
-        b.y=wireYAt(b.x)-9-Math.abs(Math.sin(b.wingPhase*0.5))*2;
+        b.y=wireYAt(b.wireIdx,b.x)-9-Math.abs(Math.sin(b.wingPhase*0.5))*2;
         if(b.t>0.45) b.state='perched';
       } else if(b.state==='departing'){
         b.y-=70*dt; b.x+=b.facing*160*dt;
@@ -236,7 +252,7 @@
 
     ctx.clearRect(0,0,W,H);
     drawBackground();
-    drawWire();
+    drawWires();
     const order=[...sparrows].sort((a,b)=>a.y-b.y);
     for(const b of order) drawSparrow(b);
 
