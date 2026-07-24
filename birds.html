@@ -80,7 +80,8 @@
   // reading different amounts of load — not a separate hand-shaped "dip" added on top of a
   // separate hand-shaped "sag".
   const BASE_LOAD=1;       // the wire's own weight, per unit length
-  const BIRD_LOAD=8;       // how much heavier a bird makes the wire feel at its own position
+  const BIRD_LOAD=2.5;     // how much heavier a bird makes the wire feel at its own position —
+                           // a sparrow barely weighs anything next to the wire's own tension
   const DIP_SIGMA=70;      // how far a bird's weight is felt along the wire from where it sits
   const SAG_K=0.011;       // overall sag strength — tuned by eye against the unloaded droop
   function wireShape(w, wireIdx){
@@ -202,6 +203,24 @@
     // clear, searching outward if the first guess is already taken. Landing inside another
     // bird's PSR (but outside MIN_SEP) is fine and expected — that's what triggers a shuffle.
     const settled=sparrows.filter(b=>b.state!=='departing');
+    // left unchecked, "anchor near any settled bird" is self-reinforcing — the first couple
+    // of birds landing on one wire by chance makes every later bird more likely to join them
+    // there too, and the other wire stays empty. Force a landing on whichever wire currently
+    // has fewer birds whenever the gap between them grows, so both wires actually get used —
+    // a bird still lands near a neighbour on that wire when one's already there.
+    const counts=wires.map((_,i)=>settled.filter(b=>b.wireIdx===i).length);
+    if(Math.random()<0.4 || Math.max(...counts)-Math.min(...counts)>=2){
+      const wireIdx=counts.indexOf(Math.min(...counts)), w=wires[wireIdx];
+      const onThisWire=settled.filter(b=>b.wireIdx===wireIdx);
+      for(let attempt=0; attempt<16; attempt++){
+        let x;
+        if(onThisWire.length){ const anchor=onThisWire[Math.floor(Math.random()*onThisWire.length)];
+          const side=Math.random()<0.5?-1:1;
+          x=Math.max(w.poleX0+30,Math.min(w.poleX1-30, anchor.x+side*(MIN_SEP+Math.random()*PSR*0.9)));
+        } else { x=(w.poleX0+w.poleX1)/2 + (Math.random()-0.5)*60; }
+        if(spotFree(wireIdx,x)) return {wireIdx,x};
+      }
+    }
     for(let attempt=0; attempt<16 && settled.length; attempt++){
       const anchor=settled[Math.floor(Math.random()*settled.length)];
       const w=wires[anchor.wireIdx];
