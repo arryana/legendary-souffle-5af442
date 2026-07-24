@@ -38,7 +38,9 @@
   // draw the image, so the wire's attach points track the actual poles at any window size.
   const bgImg=new Image(); bgImg.src='birds-background.png';
   const BG_W=1408, BG_H=768;
-  const POLE_IMG=[{x:170,y:240},{x:1290,y:188}];   // left pole top, right pole top — on the photo
+  // wires attach a bit below the actual tip of a real pole (on a crossbar or insulator), not
+  // at the very top — offset down from the measured pole-top pixels
+  const POLE_IMG=[{x:170,y:240+22},{x:1290,y:188+18}];   // left pole attach, right pole attach
   let bgScale=1, bgOX=0, bgOY=0;
   function fitBackground(){
     bgScale=Math.max(W/BG_W,H/BG_H);
@@ -64,25 +66,33 @@
     wire=[]; for(let i=0;i<WIRE_N;i++){ const t=i/(WIRE_N-1);
       wire.push({t, x:poleX0+(poleX1-poleX0)*t, y:poleY0+(poleY1-poleY0)*t, vy:0}); }
   }
-  const SAG=85;            // how much the unloaded wire sags at its centre — a real catenary
-                            // droop across the whole span, not just a pinch under the birds
-  const DIP_SIGMA=85;      // wide enough that several nearby birds blend into one smooth
-                            // basin instead of a sum of narrow overlapping spikes
-  const DIP_DEPTH=11;      // how far a single sparrow's weight dips the wire under it
-  const MAX_DIP=60;        // a cluster's dip saturates instead of stacking without limit —
-                            // ten birds shouldn't dig ten times deeper than one
-  function restY(t){ return poleY0+(poleY1-poleY0)*t + SAG*4*t*(1-t); }   // straight line between the poles, plus sag
-  function targetY(x){
-    const t=(x-poleX0)/(poleX1-poleX0), base=restY(t);
-    let raw=0;
-    for(const b of sparrows){ if(b.state==='perched'||b.state==='landing'||b.state==='shuffling'||b.state==='flapping'){
-      const d=x-b.x; raw += DIP_DEPTH*Math.exp(-(d*d)/(2*DIP_SIGMA*DIP_SIGMA)); } }
-    const dip = MAX_DIP*(1-Math.exp(-raw/MAX_DIP));
-    return base+dip;
+  // The wire's shape comes from ONE physical process — a distributed load w(x) (the wire's
+  // own constant self-weight, plus extra weight wherever a bird is sitting), integrated twice
+  // to get a deflection curve. This is the actual math for how a loaded cable hangs. It's the
+  // reason a real wire never looks like two different kinds of bend stitched together: the
+  // gentle sag between birds and the deeper sag under them are the same curve family, just
+  // reading different amounts of load — not a separate hand-shaped "dip" added on top of a
+  // separate hand-shaped "sag".
+  const BASE_LOAD=1;       // the wire's own weight, per unit length
+  const BIRD_LOAD=8;       // how much heavier a bird makes the wire feel at its own position
+  const DIP_SIGMA=70;      // how far a bird's weight is felt along the wire from where it sits
+  const SAG_K=0.011;       // overall sag strength — tuned by eye against the unloaded droop
+  function wireShape(){
+    const n=wire.length, w=new Array(n);
+    for(let i=0;i<n;i++){ const x=wire[i].x; let load=BASE_LOAD;
+      for(const b of sparrows){ if(b.state==='perched'||b.state==='landing'||b.state==='shuffling'||b.state==='flapping'){
+        const d=x-b.x; load += BIRD_LOAD*Math.exp(-(d*d)/(2*DIP_SIGMA*DIP_SIGMA)); } }
+      w[i]=load; }
+    const s=new Array(n); s[0]=0; for(let i=1;i<n;i++) s[i]=s[i-1]+w[i];       // first integral
+    const c=new Array(n); c[0]=0; for(let i=1;i<n;i++) c[i]=c[i-1]+s[i];      // second integral
+    const cEnd=c[n-1], target=new Array(n);
+    for(let i=0;i<n;i++){ const t=wire[i].t;
+      target[i]=poleY0+(poleY1-poleY0)*t + SAG_K*(cEnd*t-c[i]); }             // pin both ends back to the poles, sagging down
+    return target;
   }
   function stepWire(dt){
-    const k=90, damp=8.5;
-    for(const p of wire){ const ty=targetY(p.x);
+    const k=90, damp=8.5, target=wireShape();
+    for(let i=0;i<wire.length;i++){ const p=wire[i], ty=target[i];
       const acc=(ty-p.y)*k - p.vy*damp;
       p.vy+=acc*dt; p.y+=p.vy*dt; }
   }
