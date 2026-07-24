@@ -254,6 +254,15 @@
       for(let i=0;i<hn;i++){ const ha=i/hn*2*Math.PI; c.beginPath(); c.arc(hr*Math.cos(ha),hr*Math.sin(ha),hrad,0,7);
         c.fillStyle='#241b12'; c.fill(); c.lineWidth=1; c.strokeStyle='rgba(90,62,26,0.45)'; c.stroke(); } }
     c.beginPath(); c.arc(0,0,R*0.24,0,7); c.fillStyle='#bd8f48'; c.fill(); c.lineWidth=1.1; c.strokeStyle='rgba(55,38,14,0.6)'; c.stroke();
+    // real turned-brass bosses read as faceted, not a flat wash of one tone — four wedges
+    // alternating light/dark, anchored to the same light direction as everything else, standing
+    // in for a collar with flat sides instead of a smooth cone
+    c.save(); c.beginPath(); c.arc(0,0,R*0.24,0,7); c.clip();
+    const bossAng=Math.atan2(LY,LX);
+    for(let k=0;k<4;k++){ const a0=bossAng+k*Math.PI/2-Math.PI/4, a1=a0+Math.PI/2;
+      c.beginPath(); c.moveTo(0,0); c.arc(0,0,R*0.24,a0,a1); c.closePath();
+      c.fillStyle = (k%2===0) ? 'rgba(255,244,214,0.24)' : 'rgba(20,13,5,0.24)'; c.fill(); }
+    c.restore();
     // a bright polish-worn ring right at the bore, where an axle has turned against it for years
     c.beginPath(); c.arc(0,0,R*0.115,0,7); c.lineWidth=1.4; c.strokeStyle='rgba(255,236,190,0.5)'; c.stroke();
     c.beginPath(); c.arc(0,0,R*0.10,0,7); c.fillStyle='#20170f'; c.fill();
