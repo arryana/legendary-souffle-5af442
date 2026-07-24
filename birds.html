@@ -45,14 +45,18 @@
   }
   const SAG=85;            // how much the unloaded wire sags at its centre — a real catenary
                             // droop across the whole span, not just a pinch under the birds
-  const DIP_SIGMA=46;      // how localized a bird's weight-dip is, in px along the wire
-  const DIP_DEPTH=13;      // how far a single sparrow's weight dips the wire under it
+  const DIP_SIGMA=85;      // wide enough that several nearby birds blend into one smooth
+                            // basin instead of a sum of narrow overlapping spikes
+  const DIP_DEPTH=11;      // how far a single sparrow's weight dips the wire under it
+  const MAX_DIP=60;        // a cluster's dip saturates instead of stacking without limit —
+                            // ten birds shouldn't dig ten times deeper than one
   function restY(t){ return wireY + SAG*4*t*(1-t); }   // simple parabolic sag, good enough visually
   function targetY(x){
     const t=(x-poleX0)/(poleX1-poleX0), base=restY(t);
-    let dip=0;
+    let raw=0;
     for(const b of sparrows){ if(b.state==='perched'||b.state==='landing'||b.state==='shuffling'||b.state==='flapping'){
-      const d=x-b.x; dip += DIP_DEPTH*Math.exp(-(d*d)/(2*DIP_SIGMA*DIP_SIGMA)); } }
+      const d=x-b.x; raw += DIP_DEPTH*Math.exp(-(d*d)/(2*DIP_SIGMA*DIP_SIGMA)); } }
+    const dip = MAX_DIP*(1-Math.exp(-raw/MAX_DIP));
     return base+dip;
   }
   function stepWire(dt){
@@ -72,7 +76,7 @@
   // a proper crossbar, and a couple of insulator nubs where the wire actually attaches ----
   function drawPoles(){
     for(const px of [poleX0,poleX1]){
-      const top=wireY-78, bot=H, wTop=13, wBot=22;
+      const top=wireY-78, bot=H, wTop=6, wBot=11;
       ctx.fillStyle='rgba(38,30,22,0.92)';
       ctx.beginPath();
       ctx.moveTo(px-wTop,top); ctx.lineTo(px+wTop,top);
@@ -82,14 +86,14 @@
       ctx.fillStyle='rgba(90,72,52,0.25)';
       ctx.beginPath(); ctx.moveTo(px-wTop,top); ctx.lineTo(px-wTop*0.2,top); ctx.lineTo(px-wBot*0.3,bot); ctx.lineTo(px-wBot,bot); ctx.closePath(); ctx.fill();
 
-      const cbY=wireY-82, cbW=64, cbH=10;
+      const cbY=wireY-82, cbW=42, cbH=6;
       ctx.fillStyle='rgba(38,30,22,0.92)';
       ctx.fillRect(px-cbW/2,cbY,cbW,cbH);
       // insulator nubs — the wire actually terminates on top of one of these
-      for(const ix of [-cbW/2+9, cbW/2-9]){
+      for(const ix of [-cbW/2+7, cbW/2-7]){
         ctx.fillStyle='rgba(60,52,40,0.9)';
-        ctx.fillRect(px+ix-3,cbY-9,6,9);
-        ctx.beginPath(); ctx.ellipse(px+ix,cbY-10,5,3,0,0,7); ctx.fill();
+        ctx.fillRect(px+ix-2.5,cbY-7,5,7);
+        ctx.beginPath(); ctx.ellipse(px+ix,cbY-8,4,2.4,0,0,7); ctx.fill();
       }
     }
   }
