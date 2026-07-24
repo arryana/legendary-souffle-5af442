@@ -152,6 +152,12 @@
     sprite('bird-perch-alt.png',593,365,296.5,343,1),
     sprite('bird-perch-back.png',241,431,120.5,346,-1),
   ];
+  // a real hop-shuffle, not a slide: crouch (anticipate) -> launch (a quick, brief hop,
+  // held for less time than the others so it reads as fast) -> settle (impact)
+  const SHUFFLE_CROUCH=sprite('bird-shuffle-crouch.png',534,239,219,199);
+  const SHUFFLE_LAUNCH=sprite('bird-shuffle-launch.png',438,432,255,290);
+  const SHUFFLE_SETTLE=sprite('bird-shuffle-settle.png',444,284,147,240);
+  const SHUFFLE_CROUCH_END=0.30, SHUFFLE_LAUNCH_END=0.45;   // fractions of the shuffle's total duration
   const BIRD_SCALE=0.09;    // sprite pixels -> screen pixels, tuned by eye
   const SPRITE_FLAP_HZ=4.2; // full 8-frame flap cycles per second
 
@@ -169,7 +175,13 @@
 
   // ---- sparrows ----
   let sparrows=[], idc=0;
-  const PSR=34;           // personal-space radius along the wire
+  const PSR=34;           // personal-space radius — closer than this and a perched neighbour
+                           // reacts (shuffles or flaps); this is a comfort threshold, not a
+                           // collision one
+  const MIN_SEP=22;        // the only hard rule: two birds may never actually overlap. Smaller
+                           // than PSR on purpose — a new arrival can land inside another bird's
+                           // personal space (triggering its shuffle reaction) without the two
+                           // ever visually overlapping
   function flyFrame(wingPhase){
     const n=FLY_FRAMES.length, idx=Math.floor((wingPhase/(2*Math.PI))*n)%n;
     return FLY_FRAMES[(idx+n)%n];
@@ -181,19 +193,20 @@
     return !sparrows.some(b=>{
       if(b.wireIdx!==wireIdx || b.state==='departing') return false;
       const bx=(b.state==='arriving'||b.state==='landing') ? b.targetX : b.x;
-      return Math.abs(bx-x)<PSR;
+      return Math.abs(bx-x)<MIN_SEP;
     });
   }
   function pickLanding(){
     // prefer landing near an existing sparrow (on whichever wire it's on), otherwise pick
     // a wire at random and land near its centre — but only ever at a spot that's actually
-    // clear, searching outward if the first guess is already taken
+    // clear, searching outward if the first guess is already taken. Landing inside another
+    // bird's PSR (but outside MIN_SEP) is fine and expected — that's what triggers a shuffle.
     const settled=sparrows.filter(b=>b.state!=='departing');
     for(let attempt=0; attempt<16 && settled.length; attempt++){
       const anchor=settled[Math.floor(Math.random()*settled.length)];
       const w=wires[anchor.wireIdx];
       const side=Math.random()<0.5?-1:1;
-      const x=Math.max(w.poleX0+30,Math.min(w.poleX1-30, anchor.x+side*(PSR*(1+attempt*0.4)+Math.random()*PSR*0.5)));
+      const x=Math.max(w.poleX0+30,Math.min(w.poleX1-30, anchor.x+side*(MIN_SEP+Math.random()*PSR*0.9)));
       if(spotFree(anchor.wireIdx,x)) return {wireIdx:anchor.wireIdx, x};
     }
     for(let attempt=0; attempt<24; attempt++){
@@ -265,10 +278,18 @@
       } else if(b.state==='perched'){
         b.y=wireYAt(b.wireIdx,b.x);
       } else if(b.state==='shuffling'){
+        // three real phases, not one smooth slide: crouch in place, a quick hop with a
+        // little lift, then settle at the new spot — SHUFFLE_LAUNCH_END-SHUFFLE_CROUCH_END
+        // is deliberately short so the hop itself reads as fast, per the reference sequence
         b.shuffleT+=dt/0.5;
-        const s=Math.min(1,b.shuffleT), e=s<0.5?2*s*s:1-Math.pow(-2*s+2,2)/2;
-        b.x=b.shuffleFrom+(b.shuffleTo-b.shuffleFrom)*e;
-        b.y=wireYAt(b.wireIdx,b.x);
+        const s=Math.min(1,b.shuffleT);
+        let posT;
+        if(s<SHUFFLE_CROUCH_END) posT=0;
+        else { const u=(s-SHUFFLE_CROUCH_END)/(1-SHUFFLE_CROUCH_END); posT=u<0.5?2*u*u:1-Math.pow(-2*u+2,2)/2; }
+        b.x=b.shuffleFrom+(b.shuffleTo-b.shuffleFrom)*posT;
+        const inHop = s>=SHUFFLE_CROUCH_END && s<SHUFFLE_LAUNCH_END;
+        const lift = inHop ? Math.sin(((s-SHUFFLE_CROUCH_END)/(SHUFFLE_LAUNCH_END-SHUFFLE_CROUCH_END))*Math.PI)*14 : 0;
+        b.y=wireYAt(b.wireIdx,b.x)-lift;
         if(s>=1) b.state='perched';
       } else if(b.state==='flapping'){
         b.y=wireYAt(b.wireIdx,b.x)-8-Math.abs(Math.sin(b.wingPhase*0.5))*2;
@@ -286,6 +307,10 @@
       drawSprite(flyFrame(b.wingPhase), b.x, b.y, b.facing);
     } else if(b.state==='landing'){
       drawSprite(b.t<0.15 ? LAND_APPROACH : TOUCHDOWN, b.x, b.y, b.facing);
+    } else if(b.state==='shuffling'){
+      const s=b.shuffleT;
+      const sp = s<SHUFFLE_CROUCH_END ? SHUFFLE_CROUCH : s<SHUFFLE_LAUNCH_END ? SHUFFLE_LAUNCH : SHUFFLE_SETTLE;
+      drawSprite(sp, b.x, b.y, b.facing);
     } else {
       drawSprite(PERCH_VARIANTS[b.perchVariant], b.x, b.y, b.facing);
     }
