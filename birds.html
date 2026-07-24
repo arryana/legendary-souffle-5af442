@@ -80,7 +80,8 @@
   // reading different amounts of load — not a separate hand-shaped "dip" added on top of a
   // separate hand-shaped "sag".
   const BASE_LOAD=1;       // the wire's own weight, per unit length
-  const BIRD_LOAD=8;       // how much heavier a bird makes the wire feel at its own position
+  const BIRD_LOAD=2.5;     // how much heavier a bird makes the wire feel at its own position —
+                           // a sparrow barely weighs anything next to the wire's own tension
   const DIP_SIGMA=70;      // how far a bird's weight is felt along the wire from where it sits
   const SAG_K=0.011;       // overall sag strength — tuned by eye against the unloaded droop
   function wireShape(w, wireIdx){
@@ -202,6 +203,24 @@
     // clear, searching outward if the first guess is already taken. Landing inside another
     // bird's PSR (but outside MIN_SEP) is fine and expected — that's what triggers a shuffle.
     const settled=sparrows.filter(b=>b.state!=='departing');
+    // left unchecked, "anchor near any settled bird" is self-reinforcing — the first couple
+    // of birds landing on one wire by chance makes every later bird more likely to join them
+    // there too, and the other wire stays empty. Force a landing on whichever wire currently
+    // has fewer birds whenever the gap between them grows, so both wires actually get used —
+    // a bird still lands near a neighbour on that wire when one's already there.
+    const counts=wires.map((_,i)=>settled.filter(b=>b.wireIdx===i).length);
+    if(Math.random()<0.4 || Math.max(...counts)-Math.min(...counts)>=2){
+      const wireIdx=counts.indexOf(Math.min(...counts)), w=wires[wireIdx];
+      const onThisWire=settled.filter(b=>b.wireIdx===wireIdx);
+      for(let attempt=0; attempt<16; attempt++){
+        let x;
+        if(onThisWire.length){ const anchor=onThisWire[Math.floor(Math.random()*onThisWire.length)];
+          const side=Math.random()<0.5?-1:1;
+          x=Math.max(w.poleX0+30,Math.min(w.poleX1-30, anchor.x+side*(MIN_SEP+Math.random()*PSR*0.9)));
+        } else { x=(w.poleX0+w.poleX1)/2 + (Math.random()-0.5)*60; }
+        if(spotFree(wireIdx,x)) return {wireIdx,x};
+      }
+    }
     for(let attempt=0; attempt<16 && settled.length; attempt++){
       const anchor=settled[Math.floor(Math.random()*settled.length)];
       const w=wires[anchor.wireIdx];
@@ -227,23 +246,23 @@
     }
     return best || {wireIdx:0, x:(wires[0].poleX0+wires[0].poleX1)/2};
   }
+  // how long a bird sticks around once it's settled — mostly brief visits, with a long tail
+  // of birds that stay a while, so the wire never looks like it's just population-managed
+  function randomStayFor(){
+    return Math.random()<0.4 ? 3+Math.random()*7 : 10+Math.random()*35;
+  }
   function spawnSparrow(){
     const fromLeft=Math.random()<0.5;
     const {wireIdx,x:targetX}=pickLanding();
     const b={id:idc++, state:'arriving', x: fromLeft?-40:W+40, y:H*0.25+Math.random()*60,
       targetX, wireIdx, facing: fromLeft?1:-1, wingPhase:Math.random()*7, t:0, shuffleFrom:0, shuffleTo:0, shuffleT:0,
-      perchVariant:Math.floor(Math.random()*PERCH_VARIANTS.length)};
+      perchVariant:Math.floor(Math.random()*PERCH_VARIANTS.length), stayFor:randomStayFor(), stayTimer:0};
     sparrows.push(b);
   }
-  function removeSparrow(){
-    const alive=sparrows.filter(b=>b.state!=='departing'&&b.state!=='arriving');
-    if(!alive.length) return;
-    const b=alive[Math.floor(Math.random()*alive.length)];
-    b.state='departing'; b.t=0; b.facing=Math.random()<0.5?-1:1;
-  }
 
-  // when a bird lands near others, give crowded neighbours a chance to shuffle away, or
-  // flap in place if there's nowhere to go — only ever affects birds on the same wire
+  // when a bird lands near others, a crowded neighbour either shuffles away, flaps in place
+  // if there's nowhere to go, or — sometimes — just leaves outright, spooked by the new
+  // arrival rather than merely repositioning. Only ever affects birds on the same wire.
   function settleCrowding(wireIdx, landedX){
     const w=wires[wireIdx];
     for(const n of sparrows){
@@ -251,6 +270,7 @@
       const d=n.x-landedX;
       if(Math.abs(d)<PSR){
         const dir=d>=0?1:-1;
+        if(Math.random()<0.18){ n.state='departing'; n.t=0; n.facing=-dir; continue; }
         const roomTo=n.x+dir*PSR*1.15;
         const blocked = sparrows.some(o=>o!==n && o.wireIdx===wireIdx && (o.state==='perched'||o.state==='shuffling') && Math.abs(o.x-roomTo)<PSR*0.55)
           || roomTo<w.poleX0+30 || roomTo>w.poleX1-30;
@@ -277,6 +297,8 @@
         if(b.t>0.28) b.state='perched';
       } else if(b.state==='perched'){
         b.y=wireYAt(b.wireIdx,b.x);
+        b.stayTimer+=dt;
+        if(b.stayTimer>=b.stayFor){ b.state='departing'; b.t=0; b.facing=Math.random()<0.5?-1:1; }
       } else if(b.state==='shuffling'){
         // three real phases, not one smooth slide: crouch in place, a quick hop with a
         // little lift, then settle at the new spot — SHUFFLE_LAUNCH_END-SHUFFLE_CROUCH_END
@@ -331,10 +353,18 @@
   let last=performance.now();
   function tick(now){
     const dt=Math.min((now-last)/1000,0.05); last=now;
-    const alive=sparrows.filter(b=>b.state!=='departing').length;
+    // the slider is a target level of activity, not a hard cap — birds come and go on their
+    // own (see stayFor/settleCrowding), and arrivals just get more likely the further below
+    // that target the current count sits, tapering to a low ambient trickle once at or above it
     spawnTimer-=dt;
-    if(alive<wantCount && spawnTimer<=0){ spawnSparrow(); spawnTimer=0.35+Math.random()*0.5; }
-    else if(alive>wantCount && spawnTimer<=0){ removeSparrow(); spawnTimer=0.3+Math.random()*0.4; }
+    if(spawnTimer<=0){
+      spawnTimer=0.4+Math.random()*0.9;
+      const alive=sparrows.filter(b=>b.state!=='departing').length;
+      if(wantCount>0 && alive<wantCount+1){
+        const pressure=Math.max(0,wantCount-alive)/Math.max(1,wantCount);
+        if(Math.random()<0.12+0.7*pressure) spawnSparrow();
+      }
+    }
 
     stepWire(dt);
     updateSparrows(dt);
