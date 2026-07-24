@@ -238,25 +238,12 @@
     c.beginPath(); c.arc(0,0,Ra-0.6,rimAng+Math.PI-1.0,rimAng+Math.PI+1.0); c.lineWidth=1.6; c.strokeStyle='rgba(15,9,3,0.4)'; c.stroke();
     c.restore();
 
-    // the whole face carries a soft, quartered shadow rather than one glowy blob — a lathe-
-    // turned brass disc's slightly faceted/convex face catches an overhead light in four
-    // alternating light/dark quarters. Conic gradient keeps the transitions soft, not ruled —
-    // this is subtle background shading, not a set of hard pie-slice lines.
-    c.save(); gearOutline(c, N, wornTooth); c.clip();
-    const quadAng=Math.atan2(LY,LX);
-    const cg=c.createConicGradient(quadAng-Math.PI/4, 0, 0);
-    cg.addColorStop(0.00,'rgba(255,248,225,0.16)'); cg.addColorStop(0.25,'rgba(20,13,5,0.13)');
-    cg.addColorStop(0.50,'rgba(255,248,225,0.16)'); cg.addColorStop(0.75,'rgba(20,13,5,0.13)');
-    cg.addColorStop(1.00,'rgba(255,248,225,0.16)');
-    c.fillStyle=cg; c.beginPath(); c.arc(0,0,R-DED,0,7); c.fill();
-    c.restore();
-
     // a small, sharp specular hotspot — a real polished-metal glint, tighter and brighter
-    // than the broad ambient shading beneath it
+    // than the broad ambient gradient beneath it
     c.save(); gearOutline(c, N, wornTooth); c.clip();
     const hx=R*LX*0.42, hy=R*LY*0.42, hr=R*0.22;
     const spec=c.createRadialGradient(hx,hy,0,hx,hy,hr);
-    spec.addColorStop(0,'rgba(255,252,238,0.4)'); spec.addColorStop(0.5,'rgba(255,248,225,0.13)'); spec.addColorStop(1,'rgba(255,248,225,0)');
+    spec.addColorStop(0,'rgba(255,252,238,0.55)'); spec.addColorStop(0.5,'rgba(255,248,225,0.18)'); spec.addColorStop(1,'rgba(255,248,225,0)');
     c.fillStyle=spec; c.beginPath(); c.arc(hx,hy,hr,0,7); c.fill();
     c.restore();
 
