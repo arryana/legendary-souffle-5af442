@@ -14,7 +14,7 @@
   canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
   #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:center; gap:16px;
     padding:14px 18px 24px; background:linear-gradient(to top, rgba(10,13,20,.35), rgba(10,13,20,0)); z-index:40; }
-  .glyph{ font-size:15px; opacity:.85; text-shadow:0 1px 3px rgba(0,0,0,.4); }
+  .glyph{ font-size:15px; opacity:.85; text-shadow:0 1px 3px rgba(0,0,0,.4); display:inline-flex; align-items:center; color:var(--parchment); filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
   #sparrowRow{ display:flex; align-items:center; gap:10px; }
   input[type=range]{ -webkit-appearance:none; appearance:none; width:200px; height:3px; border-radius:3px; background:rgba(242,233,216,.4); outline:none; }
   input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--brass); cursor:pointer; box-shadow:0 0 6px rgba(0,0,0,.4); }
@@ -24,7 +24,7 @@
 <a id="backlink" href="index.html">← sagne</a>
 <canvas id="scene"></canvas>
 <div id="dock">
-  <div id="sparrowRow"><span class="glyph">sparrows</span><input type="range" id="sparrowSlider" min="0" max="18" value="6"></div>
+  <div id="sparrowRow"><span class="glyph" aria-label="sparrows"><svg width="20" height="16" viewBox="0 0 20 16" fill="currentColor"><ellipse cx="10" cy="9" rx="6.4" ry="4.6"/><circle cx="15.5" cy="5.6" r="3.4"/><path d="M4.2 8 L-0.2 5.4 L-0.2 10.8 Z" transform="translate(0.5,0)"/></svg></span><input type="range" id="sparrowSlider" min="0" max="18" value="6"></div>
 </div>
 <script>
 (function(){
@@ -125,18 +125,45 @@
   let sparrows=[], idc=0;
   const PSR=34;           // personal-space radius along the wire
   const FLAP_HZ=11;       // wing-beat rate while actually flying
+  // a spot is only free if it's clear of every other bird on that wire — including ones
+  // still mid-flight toward their own landing spot, not just ones already perched, so two
+  // birds never converge on the same stretch of wire at once
+  function spotFree(wireIdx, x){
+    return !sparrows.some(b=>{
+      if(b.wireIdx!==wireIdx || b.state==='departing') return false;
+      const bx=(b.state==='arriving'||b.state==='landing') ? b.targetX : b.x;
+      return Math.abs(bx-x)<PSR;
+    });
+  }
   function pickLanding(){
     // prefer landing near an existing sparrow (on whichever wire it's on), otherwise pick
-    // a wire at random and land near its centre, with a little randomness either way
-    const settled=sparrows.filter(b=>b.state!=='departing'&&b.state!=='arriving');
-    if(settled.length){
+    // a wire at random and land near its centre — but only ever at a spot that's actually
+    // clear, searching outward if the first guess is already taken
+    const settled=sparrows.filter(b=>b.state!=='departing');
+    for(let attempt=0; attempt<16 && settled.length; attempt++){
       const anchor=settled[Math.floor(Math.random()*settled.length)];
       const w=wires[anchor.wireIdx];
-      let x=anchor.x+(Math.random()<0.5?-1:1)*(PSR*0.7+Math.random()*PSR*0.6);
-      return {wireIdx:anchor.wireIdx, x:Math.max(w.poleX0+30,Math.min(w.poleX1-30,x))};
+      const side=Math.random()<0.5?-1:1;
+      const x=Math.max(w.poleX0+30,Math.min(w.poleX1-30, anchor.x+side*(PSR*(1+attempt*0.4)+Math.random()*PSR*0.5)));
+      if(spotFree(anchor.wireIdx,x)) return {wireIdx:anchor.wireIdx, x};
     }
-    const wireIdx=Math.floor(Math.random()*wires.length), w=wires[wireIdx];
-    return {wireIdx, x:(w.poleX0+w.poleX1)/2 + (Math.random()-0.5)*60};
+    for(let attempt=0; attempt<24; attempt++){
+      const wireIdx=Math.floor(Math.random()*wires.length), w=wires[wireIdx];
+      const x=w.poleX0+30+Math.random()*(w.poleX1-w.poleX0-60);
+      if(spotFree(wireIdx,x)) return {wireIdx,x};
+    }
+    // wires are genuinely packed — just take the roomiest spot available on either one
+    let best=null, bestGap=-1;
+    for(let wireIdx=0; wireIdx<wires.length; wireIdx++){ const w=wires[wireIdx];
+      for(let x=w.poleX0+30; x<=w.poleX1-30; x+=10){
+        let gap=Infinity;
+        for(const b of sparrows){ if(b.wireIdx===wireIdx && b.state!=='departing'){
+          const bx=(b.state==='arriving'||b.state==='landing')?b.targetX:b.x;
+          gap=Math.min(gap,Math.abs(bx-x)); } }
+        if(gap>bestGap){ bestGap=gap; best={wireIdx,x}; }
+      }
+    }
+    return best || {wireIdx:0, x:(wires[0].poleX0+wires[0].poleX1)/2};
   }
   function spawnSparrow(){
     const fromLeft=Math.random()<0.5;
