@@ -417,7 +417,7 @@ into browser security restrictions that don't apply over `http://`. Serve the re
 python3 -m http.server 8794   # from the repo root; pick any free port
 ```
 
-Then load `http://127.0.0.1:8794/gyre.html`. For repeated automated checks (screenshots,
+Then load `http://127.0.0.1:8794/gyre/`. For repeated automated checks (screenshots,
 scripted drag/drop via Playwright), a pre-installed Chromium is available in this environment
 at `/opt/pw-browsers/<version>/chrome-linux/chrome` — launch it with `playwright-core`'s
 `chromium.launch({executablePath: ..., args:['--no-sandbox']})` rather than trying to install a
