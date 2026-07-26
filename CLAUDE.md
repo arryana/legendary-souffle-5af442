@@ -38,18 +38,25 @@ to one piece.
 
 ### The pages
 
+Each linked piece now lives in its own folder as `<slug>/index.html`, served at the clean
+address `/<slug>/` (e.g. `warmler.html` → `warmler/index.html`, live at `/warmler/`). A
+`_redirects` file at the repo root forwards the old flat addresses (`/warmler.html`, etc.) to
+the new ones, so existing bookmarks/links still work. Pages **not** on the landing page
+(`candler_5.html`, `crystal.html`, `warmler-picker-concept.html`) are unaffected and remain
+flat files at the repo root.
+
 | File | On landing page? | What it is |
 |------|:---:|------------|
 | `index.html` | — | Landing page: the card grid ("sagne") |
-| `candler.html` | ✅ | *Sagne Candle* — an interactive candle. `candler_5.html` is an alternate version (not linked) |
-| `acorn.html` | ✅ | An acorn resting on wood, interactive |
-| `lamp.html` | ✅ | An oil lamp |
-| `warmler.html` | ✅ | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked) |
-| `rain.html` | ✅ | Rain on glass |
-| `ant.html` | ✅ | Ants |
-| `windower.html` | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock) |
-| `galileo.html` | ✅ | A **Galileo thermometer** whose floats rise and sink with the visitor's **real local temperature** (open-meteo API); has a °C/°F toggle |
-| `conometer.html` | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle |
+| `candler/index.html` | ✅ | *Sagne Candle* — an interactive candle. `candler_5.html` is an alternate version (not linked) |
+| `acorn/index.html` | ✅ | An acorn resting on wood, interactive |
+| `lamp/index.html` | ✅ | An oil lamp |
+| `warmler/index.html` | ✅ | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked) |
+| `rain/index.html` | ✅ | Rain on glass |
+| `ant/index.html` | ✅ | Ants |
+| `windower/index.html` | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock) |
+| `galileo/index.html` | ✅ | A **Galileo thermometer** whose floats rise and sink with the visitor's **real local temperature** (open-meteo API); has a °C/°F toggle |
+| `conometer/index.html` | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle |
 | `crystal.html` | — | A crystal (not linked from the landing page) |
 
 **Live-data pieces** — `galileo`, `conometer`, `windower` — read the visitor's **geolocation**
@@ -64,12 +71,18 @@ screenshot can't show live weather.)
   (frame 1 = fully open/dry, frame 9 = closed/wet).
 - **galileo** floats: `floats/<color>.png` — `blue, aqua, green, yellow, orange, red, pink,
   purple, silver`.
-- **warmler** finishes come in three files each:
-  `warmler-plate-<finish>.png`, `warmler-swatch-<finish>.png`, `warmler-texture-<finish>.png`
-  (finish = `brass, copper, aged-brass, aged-copper, gold, silver, diamond-plate`).
-- `favicon.svg` is the site icon.
-- Reference assets by **relative path** (they sit next to the HTML). Match the existing naming
-  when adding new ones.
+- **warmler** finishes come in two files each: `warmler-plate-<finish>.png`,
+  `warmler-swatch-<finish>.png` (finish = `brass, copper, aged-brass, aged-copper, gold, silver,
+  diamond-plate`). Some `warmler-texture-<finish>.png` files exist on disk from an earlier pass
+  but aren't referenced by the page — leave them alone, don't treat them as the convention.
+- `favicon.svg` is the shared site icon and lives at the **repo root** (not inside any page's
+  folder); pages that use it reference it as `../favicon.svg`. A few pieces (`galileo`,
+  `windower`) have their own dedicated favicon instead, which lives inside that piece's folder.
+- Each linked piece lives in its own folder as `<slug>/index.html`, with that piece's own assets
+  **alongside it in the same folder** — reference them by plain relative path, no `../` needed
+  (e.g. `warmler/index.html` refers to `warmler-plate-gold.png`, not `warmler/warmler-plate-gold.png`).
+  Match the existing naming when adding new assets. Only the shared root-level files
+  (`favicon.svg`, and links back to `index.html`) need the `../` prefix.
 
 ---
 
