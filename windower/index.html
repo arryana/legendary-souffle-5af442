@@ -154,6 +154,28 @@
     will-change:filter;
   }
 
+  /* a light dusting on the hills while it's snowing — reuses the hills photo's own alpha
+     shape as a mask (same trick as the sunbeam mask below) so the white only ever falls where
+     the hills silhouette actually is, never spilling into the sky above the ridge */
+  #hills-snow{
+    position:absolute;
+    left:0; right:0;
+    bottom:12%;
+    width:100%;
+    height:19%;
+    mask-image:url('windower-hills.png');
+    mask-size:100% 100%;
+    mask-position:center bottom;
+    mask-repeat:no-repeat;
+    -webkit-mask-image:url('windower-hills.png');
+    -webkit-mask-size:100% 100%;
+    -webkit-mask-position:center bottom;
+    -webkit-mask-repeat:no-repeat;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity 3s ease, filter 2.5s ease;
+  }
+
   #sky-body-layer{
     position:absolute;
     inset:0;
@@ -426,6 +448,7 @@
       <!-- real photographed hills, sitting IN FRONT of the sun and moon so
            they set behind the ridge; tinted with the time of day in JS -->
       <div id="hills"></div>
+      <div id="hills-snow"></div>
       <div id="moon-disc-wrap"><svg viewBox="0 0 100 100" id="moon-disc-svg"></svg></div>
       <div id="fog"></div>
       <canvas id="precip"></canvas>
@@ -451,7 +474,7 @@
   <div id="controls">
     <label class="toggle" title="Moon phase only"><input type="checkbox" id="chk-moononly" aria-label="Moon phase only"><span class="toggle-glyph">&#127769;</span></label>
     <label class="toggle" title="Fuller reading"><input type="checkbox" id="chk-fuller" aria-label="Fuller reading"><span class="toggle-glyph">&deg;</span></label>
-    <label class="toggle" title="Today's weather"><input type="checkbox" id="chk-weather" aria-label="Today's weather"><span class="toggle-glyph">&#9925;</span></label>
+    <label class="toggle" title="Real weather"><input type="checkbox" id="chk-weather" aria-label="Real weather"><span class="toggle-glyph">&#9925;</span></label>
   </div>
 
 </div>
@@ -563,6 +586,7 @@
     skySun: document.getElementById('sky-sun'),
     skyMoon: document.getElementById('sky-moon'),
     hills: document.getElementById('hills'),
+    hillsSnow: document.getElementById('hills-snow'),
     beamSun: document.getElementById('beam-sun'),
     beamMoon: document.getElementById('beam-moon'),
     moonWrap: document.getElementById('moon-disc-wrap'),
@@ -655,16 +679,22 @@
   // highlight pair below, not just a single coverage-driven tone.
   const CLOUD_SHADOW_LIGHT = hexToRgb('#b4bac2'), CLOUD_SHADOW_HEAVY = hexToRgb('#3a3f48');
   const CLOUD_HIGHLIGHT_LIGHT = hexToRgb('#fffffd'), CLOUD_HIGHLIGHT_HEAVY = hexToRgb('#6b7078');
+  // snow falls from a visibly lighter, brighter grey sky than a rain/thunderstorm one — the
+  // same heavy coverage, but nowhere near as dark and ominous
+  const CLOUD_SHADOW_HEAVY_SNOW = hexToRgb('#8b909a'), CLOUD_HIGHLIGHT_HEAVY_SNOW = hexToRgb('#d9dce2');
   const CLOUD_NIGHT_TONE = hexToRgb('#232a3a');
-  function applyClouds(coverage, dayF){
+  function applyClouds(coverage, dayF, snowy){
     const c = Math.max(0, Math.min(1, coverage));
     const f = Math.max(0, Math.min(1, dayF));
+    const sn = Math.max(0, Math.min(1, snowy||0));
     els.clouds.style.opacity = c > 0.01 ? 1 : 0;
     const curve = lerpCloudCurve(c);
     els.cloudCurve.setAttribute('intercept', curve.intercept.toFixed(3));
     els.cloudCurve.setAttribute('slope', curve.slope.toFixed(2));
-    const shadow = mixRgb(CLOUD_NIGHT_TONE, mixRgb(CLOUD_SHADOW_LIGHT, CLOUD_SHADOW_HEAVY, c), f);
-    const highlight = mixRgb(CLOUD_NIGHT_TONE, mixRgb(CLOUD_HIGHLIGHT_LIGHT, CLOUD_HIGHLIGHT_HEAVY, c), f);
+    const shadowHeavy = mixRgb(CLOUD_SHADOW_HEAVY, CLOUD_SHADOW_HEAVY_SNOW, sn);
+    const highlightHeavy = mixRgb(CLOUD_HIGHLIGHT_HEAVY, CLOUD_HIGHLIGHT_HEAVY_SNOW, sn);
+    const shadow = mixRgb(CLOUD_NIGHT_TONE, mixRgb(CLOUD_SHADOW_LIGHT, shadowHeavy, c), f);
+    const highlight = mixRgb(CLOUD_NIGHT_TONE, mixRgb(CLOUD_HIGHLIGHT_LIGHT, highlightHeavy, c), f);
     const funcs = [els.cloudShadeR, els.cloudShadeG, els.cloudShadeB];
     funcs.forEach((fn,i)=>{
       const s = shadow[i]/255, h = highlight[i]/255;
@@ -704,7 +734,14 @@
      each code's own "slight/moderate/heavy" wording is a more reliable intensity signal here
      than trying to rescale the raw precipitation-amount field ourselves. Off by default, like
      the other two toggles below — nothing about this changes what a visitor sees until they
-     opt in. */
+     opt in.
+
+     This also has to work with the time slider, not just "right now": rather than a single
+     current-conditions call, we pull an hourly array spanning past_days..forecast_days and
+     pick whichever hour is closest to whatever moment the slider is currently showing. Past
+     the edges of that window (open-meteo's real forecast horizon) it just holds the nearest
+     edge day's conditions rather than showing nothing — real forecasts don't reach further
+     out than that anyway, so there's nothing truthful to show past it. */
   const WMO_WEATHER = {
     45:{fog:0.45}, 48:{fog:0.75},                          // fog, rime fog
     51:{rain:0.15}, 53:{rain:0.35}, 55:{rain:0.55},         // drizzle
@@ -721,21 +758,46 @@
   function clearLiveWeather(){
     cloudCoverage=0; fogIntensity=0; rainIntensity=0; snowIntensity=0; sleetIntensity=0; lightningIntensity=0;
   }
-  let liveWeatherOn = false, weatherPoll = null;
+  function applyWeatherSample(weatherCode, cloudCoverPct){
+    cloudCoverage = Math.max(0, Math.min(1, (cloudCoverPct||0)/100));
+    const m = WMO_WEATHER[weatherCode] || {};
+    rainIntensity = m.rain||0; snowIntensity = m.snow||0; sleetIntensity = m.sleet||0;
+    fogIntensity = m.fog||0; lightningIntensity = m.lightning||0;
+    // rain/snow/sleet never fall from a mostly-clear sky — reported cloud_cover can lag or
+    // under-report next to the weather code, so floor it whenever precipitation is actually
+    // happening, scaled up with how heavy that precipitation is
+    const anyPrecip = Math.max(rainIntensity, snowIntensity, sleetIntensity);
+    if(anyPrecip>0) cloudCoverage = Math.max(cloudCoverage, 0.65 + anyPrecip*0.3);
+  }
+  let liveWeatherOn = false, weatherPoll = null, weatherHourly = null;
   async function fetchLiveWeather(){
     if(lat==null || lon==null) return;
     try{
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weather_code,cloud_cover`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&hourly=weather_code,cloud_cover&past_days=16&forecast_days=16&timezone=UTC`;
       const res = await fetch(url);
       const data = await res.json();
       if(!liveWeatherOn) return;   // the toggle may have been switched off while this was in flight
-      if(data && data.current){
-        cloudCoverage = Math.max(0, Math.min(1, (data.current.cloud_cover||0)/100));
-        const m = WMO_WEATHER[data.current.weather_code] || {};
-        rainIntensity = m.rain||0; snowIntensity = m.snow||0; sleetIntensity = m.sleet||0;
-        fogIntensity = m.fog||0; lightningIntensity = m.lightning||0;
+      if(data && data.hourly && Array.isArray(data.hourly.time) && data.hourly.time.length){
+        weatherHourly = {
+          times: data.hourly.time.map(t => new Date(t+'Z').getTime()),
+          code: data.hourly.weather_code,
+          cloud: data.hourly.cloud_cover,
+        };
       }
     } catch(e){ /* keep last known state silently */ }
+  }
+  // called every render() tick while the toggle is on — cheap linear scan over at most ~770
+  // hourly points, once a second, well under anything worth optimizing
+  function updateWeatherForDisplayDate(displayDate){
+    if(!weatherHourly || !weatherHourly.times.length) return;
+    const t = displayDate.getTime();
+    let idx = 0, bestDiff = Infinity;
+    for(let i=0;i<weatherHourly.times.length;i++){
+      const diff = Math.abs(weatherHourly.times[i]-t);
+      if(diff<bestDiff){ bestDiff=diff; idx=i; }
+    }
+    applyWeatherSample(weatherHourly.code[idx], weatherHourly.cloud[idx]);
   }
   els.chkWeather.addEventListener('change', ()=>{
     liveWeatherOn = els.chkWeather.checked;
@@ -1106,6 +1168,7 @@
 
   function render(){
     const displayDate = new Date(Date.now() + offsetDays*dayMs);
+    if(liveWeatherOn && weatherHourly) updateWeatherForDisplayDate(displayDate);
 
     const sun = getSunPosition(displayDate, lat, lon);
     const moon = getMoonPosition(displayDate, lat, lon);
@@ -1173,6 +1236,18 @@
     const sepia = (0.4 * warmF).toFixed(3);
     els.hills.style.filter = `brightness(${brightness}) saturate(${saturation}) sepia(${sepia})`;
 
+    // snow dusting the hills: opacity tracks current snowfall directly (no persistence once
+    // it stops — a simplification, real accumulation would need to survive after the snow
+    // itself clears), and how far down the ridge it reaches grows with how heavy it's coming
+    // down. Its own, much gentler brightness floor than the bare hill photo — real snow stays
+    // visibly pale at night (it reflects what little ambient/moon light there is) rather than
+    // going as dark as bare rock or grass would.
+    els.hillsSnow.style.opacity = snowIntensity > 0.02 ? Math.min(1, snowIntensity*1.3).toFixed(2) : 0;
+    const snowMidPct = 30 + snowIntensity*45, snowEndPct = snowMidPct + 25;
+    els.hillsSnow.style.background =
+      `linear-gradient(to bottom, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) ${snowMidPct.toFixed(0)}%, rgba(255,255,255,0) ${snowEndPct.toFixed(0)}%)`;
+    els.hillsSnow.style.filter = `brightness(${(0.55 + 0.45*dayF).toFixed(3)})`;
+
     // the sill light: a warm sunbeam by day, or — once the sun's down — cool
     // moonlight scaled by the real moon phase (bright near full, all but gone
     // near new), reusing the same day/moon factors as the hills and stars above
@@ -1191,7 +1266,7 @@
       renderMoonDisc(els.moonSvg, illum.phase);
     }
 
-    applyClouds(cloudCoverage, dayF);
+    applyClouds(cloudCoverage, dayF, snowIntensity);
     applyFog(fogIntensity, dayF);
 
     // ---- chart ----
