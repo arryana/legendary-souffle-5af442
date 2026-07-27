@@ -162,15 +162,40 @@
   const BIRD_SCALE=0.09;    // sprite pixels -> screen pixels, tuned by eye
   const SPRITE_FLAP_HZ=4.2; // full 8-frame flap cycles per second
 
+  // ---- crows: a second, larger, rarer species. Same silhouette/multiply-blend approach as
+  // the sparrows above, but crows have no shuffle-hop reference photos — when a crow would
+  // need to make room for a new arrival it just flaps in place or leaves, never shuffles.
+  const CROW_FLY=[
+    sprite('crow-fly-1.png',264,287,180,165,1),
+    sprite('crow-fly-2.png',315,131,200,35,1),
+    sprite('crow-fly-3.png',307,138,210,35,1),
+    sprite('crow-fly-4.png',310,133,205,35,1),
+    sprite('crow-fly-5.png',262,179,185,65,1),
+    sprite('crow-fly-6.png',262,282,190,165,1),
+    sprite('crow-fly-7.png',261,282,190,165,1),
+    sprite('crow-fly-8.png',261,277,185,165,1),
+  ];
+  const CROW_LAND_APPROACH=sprite('crow-land-approach.png',268,262,195,135,1);
+  const CROW_TOUCHDOWN=sprite('crow-touchdown.png',292,269,172,236,1);
+  const CROW_PERCH_VARIANTS=[
+    sprite('crow-perch.png',217,239,103,224,1),
+    sprite('crow-perch-alt.png',234,222,112.5,209,1),
+    sprite('crow-perch-back.png',232,218,110.5,205,1),
+    sprite('crow-perch-sleep.png',236,209,113.5,197,1),
+  ];
+  const CROW_SCALE=0.15;   // crows read as a noticeably bigger bird than sparrows, tuned by eye
+  const CROW_CHANCE=0.15;  // fraction of new arrivals that are a crow rather than a sparrow
+
   // draws any of the sprites above at (x,y), silhouette-only via multiply blending, flipped
   // to match the bird's actual facing against however that sprite was originally drawn
-  function drawSprite(sp, x, y, facing){
+  function drawSprite(sp, x, y, facing, scale){
     if(!sp.img.complete || !sp.img.naturalWidth) return;
+    scale = scale || BIRD_SCALE;
     const flip = facing===sp.nativeFacing ? 1 : -1;
     ctx.save();
     ctx.translate(x,y); ctx.scale(flip,1);
     ctx.globalCompositeOperation='multiply';
-    ctx.drawImage(sp.img, -sp.ax*BIRD_SCALE, -sp.ay*BIRD_SCALE, sp.w*BIRD_SCALE, sp.h*BIRD_SCALE);
+    ctx.drawImage(sp.img, -sp.ax*scale, -sp.ay*scale, sp.w*scale, sp.h*scale);
     ctx.restore();
   }
 
@@ -183,10 +208,12 @@
                            // than PSR on purpose — a new arrival can land inside another bird's
                            // personal space (triggering its shuffle reaction) without the two
                            // ever visually overlapping
-  function flyFrame(wingPhase){
-    const n=FLY_FRAMES.length, idx=Math.floor((wingPhase/(2*Math.PI))*n)%n;
-    return FLY_FRAMES[(idx+n)%n];
+  function flyFrame(wingPhase, species){
+    const frames = species==='crow' ? CROW_FLY : FLY_FRAMES;
+    const n=frames.length, idx=Math.floor((wingPhase/(2*Math.PI))*n)%n;
+    return frames[(idx+n)%n];
   }
+  function perchVariants(species){ return species==='crow' ? CROW_PERCH_VARIANTS : PERCH_VARIANTS; }
   // a spot is only free if it's clear of every other bird on that wire — including ones
   // still mid-flight toward their own landing spot, not just ones already perched, so two
   // birds never converge on the same stretch of wire at once
@@ -253,10 +280,11 @@
   }
   function spawnSparrow(){
     const fromLeft=Math.random()<0.5;
+    const species=Math.random()<CROW_CHANCE ? 'crow' : 'sparrow';
     const {wireIdx,x:targetX}=pickLanding();
-    const b={id:idc++, state:'arriving', x: fromLeft?-40:W+40, y:H*0.25+Math.random()*60,
+    const b={id:idc++, species, state:'arriving', x: fromLeft?-40:W+40, y:H*0.25+Math.random()*60,
       targetX, wireIdx, facing: fromLeft?1:-1, wingPhase:Math.random()*7, t:0, shuffleFrom:0, shuffleTo:0, shuffleT:0,
-      perchVariant:Math.floor(Math.random()*PERCH_VARIANTS.length), stayFor:randomStayFor(), stayTimer:0};
+      perchVariant:Math.floor(Math.random()*perchVariants(species).length), stayFor:randomStayFor(), stayTimer:0};
     sparrows.push(b);
   }
 
@@ -271,6 +299,9 @@
       if(Math.abs(d)<PSR){
         const dir=d>=0?1:-1;
         if(Math.random()<0.18){ n.state='departing'; n.t=0; n.facing=-dir; continue; }
+        // crows have no shuffle-hop reference photos — they either flap in place or leave,
+        // never shuffle, regardless of whether there'd be room to make
+        if(n.species==='crow'){ n.state='flapping'; n.t=0; continue; }
         const roomTo=n.x+dir*PSR*1.15;
         const blocked = sparrows.some(o=>o!==n && o.wireIdx===wireIdx && (o.state==='perched'||o.state==='shuffling') && Math.abs(o.x-roomTo)<PSR*0.55)
           || roomTo<w.poleX0+30 || roomTo>w.poleX1-30;
@@ -325,16 +356,20 @@
 
   // ---- drawing: real reference-photo sprites, picked by state ----
   function drawSparrow(b){
+    const isCrow = b.species==='crow';
+    const scale = isCrow ? CROW_SCALE : BIRD_SCALE;
     if(b.state==='arriving'||b.state==='departing'||b.state==='flapping'){
-      drawSprite(flyFrame(b.wingPhase), b.x, b.y, b.facing);
+      drawSprite(flyFrame(b.wingPhase, b.species), b.x, b.y, b.facing, scale);
     } else if(b.state==='landing'){
-      drawSprite(b.t<0.15 ? LAND_APPROACH : TOUCHDOWN, b.x, b.y, b.facing);
+      const approach = isCrow ? CROW_LAND_APPROACH : LAND_APPROACH;
+      const touchdown = isCrow ? CROW_TOUCHDOWN : TOUCHDOWN;
+      drawSprite(b.t<0.15 ? approach : touchdown, b.x, b.y, b.facing, scale);
     } else if(b.state==='shuffling'){
       const s=b.shuffleT;
       const sp = s<SHUFFLE_CROUCH_END ? SHUFFLE_CROUCH : s<SHUFFLE_LAUNCH_END ? SHUFFLE_LAUNCH : SHUFFLE_SETTLE;
-      drawSprite(sp, b.x, b.y, b.facing);
+      drawSprite(sp, b.x, b.y, b.facing, scale);
     } else {
-      drawSprite(PERCH_VARIANTS[b.perchVariant], b.x, b.y, b.facing);
+      drawSprite(perchVariants(b.species)[b.perchVariant], b.x, b.y, b.facing, scale);
     }
   }
 
