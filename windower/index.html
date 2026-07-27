@@ -191,6 +191,14 @@
     height:100%;
     pointer-events:none;
   }
+
+  #lightning-flash{
+    position:absolute;
+    inset:0;
+    background:#eef4ff;
+    opacity:0;
+    pointer-events:none;
+  }
   #sky-sun, #sky-moon{
     position:absolute;
     transition:opacity 1.2s ease, left 2s linear, top 2s linear;
@@ -393,7 +401,7 @@
             <feComponentTransfer in="alphaNoise" result="shaped">
               <feFuncA id="cloud-curve" type="linear" slope="5.2" intercept="-4"/>
             </feComponentTransfer>
-            <feFlood flood-color="#f4f6f8" result="white"/>
+            <feFlood id="cloud-flood" flood-color="#f4f6f8" result="white"/>
             <feComposite in="white" in2="shaped" operator="in"/>
           </filter>
         </defs>
@@ -405,6 +413,7 @@
       <div id="moon-disc-wrap"><svg viewBox="0 0 100 100" id="moon-disc-svg"></svg></div>
       <div id="fog"></div>
       <canvas id="precip"></canvas>
+      <div id="lightning-flash"></div>
     </div>
     <img id="frame-img" src="windower-frame.png" alt="">
     <div id="beam-sun"></div>
@@ -528,6 +537,7 @@
   let rainIntensity = 0;   // 0 = none, 1 = downpour (mutually exclusive with snow, in practice)
   let snowIntensity = 0;   // 0 = none, 1 = heavy snow (0.15ish reads as flurries)
   let sleetIntensity = 0;  // 0 = none, 1 = heavy sleet
+  let lightningIntensity = 0; // 0 = never, 1 = frequent strikes (only meaningful alongside rain)
   const SNAP_THRESHOLD = 1.2; // days, snap back to live when released this close to center
 
   const els = {
@@ -542,8 +552,10 @@
     moonSvg: document.getElementById('moon-disc-svg'),
     clouds: document.getElementById('clouds'),
     cloudCurve: document.getElementById('cloud-curve'),
+    cloudFlood: document.getElementById('cloud-flood'),
     fog: document.getElementById('fog'),
     precip: document.getElementById('precip'),
+    lightningFlash: document.getElementById('lightning-flash'),
     chart: document.getElementById('chart'),
     sliderTrack: document.getElementById('slider-track'),
     sliderThumb: document.getElementById('slider-thumb'),
@@ -598,13 +610,38 @@
   /* ===================== CLOUDS + FOG ===================== */
   // coverage 0..1: the component-transfer intercept is what actually clips the noise field
   // down to a handful of separated wisps (low) or up past nearly all of it (high, reading as
-  // a near-solid grey-white ceiling) — calibrated by eye against rendered samples across the
-  // range, since feTurbulence's real output distribution doesn't match its nominal 0..1 range
-  function applyClouds(coverage){
+  // a near-solid grey ceiling) — calibrated by eye against rendered samples, since
+  // feTurbulence's real output distribution doesn't match its nominal 0..1 range, and doesn't
+  // move linearly either: a single line through a "clear" and a "heavy" sample left everything
+  // in between looking barely-there, so this is a 3-point piecewise curve (clear/half/heavy)
+  // instead of one straight line.
+  const CLOUD_CURVE_PTS = [
+    {c:0,   intercept:-4.0, slope:5.2},
+    {c:0.5, intercept:-2.0, slope:4.8},
+    {c:1.0, intercept:-1.5, slope:4.0},
+  ];
+  function lerpCloudCurve(c){
+    for(let i=0;i<CLOUD_CURVE_PTS.length-1;i++){
+      const a=CLOUD_CURVE_PTS[i], b=CLOUD_CURVE_PTS[i+1];
+      if(c<=b.c){ const t=(c-a.c)/(b.c-a.c);
+        return { intercept: a.intercept+(b.intercept-a.intercept)*t, slope: a.slope+(b.slope-a.slope)*t }; }
+    }
+    return CLOUD_CURVE_PTS[CLOUD_CURVE_PTS.length-1];
+  }
+  // heavier cloud isn't just denser — real storm cloud is visibly darker grey than a wisp of
+  // fair-weather cloud, and any cloud reads darker at night (lit by scattered ambient/moon
+  // light rather than direct sun) than by day
+  const CLOUD_LIGHT_DAY = hexToRgb('#f4f6f8'), CLOUD_HEAVY_DAY = hexToRgb('#7e858f');
+  const CLOUD_NIGHT_TONE = hexToRgb('#232a3a');
+  function applyClouds(coverage, dayF){
     const c = Math.max(0, Math.min(1, coverage));
     els.clouds.style.opacity = c > 0.01 ? 1 : 0;
-    els.cloudCurve.setAttribute('intercept', (-4 + c*2.5).toFixed(3));
-    els.cloudCurve.setAttribute('slope', (5.2 - c*1.2).toFixed(2));
+    const curve = lerpCloudCurve(c);
+    els.cloudCurve.setAttribute('intercept', curve.intercept.toFixed(3));
+    els.cloudCurve.setAttribute('slope', curve.slope.toFixed(2));
+    const byCoverage = mixRgb(CLOUD_LIGHT_DAY, CLOUD_HEAVY_DAY, c);
+    const final = mixRgb(CLOUD_NIGHT_TONE, byCoverage, Math.max(0,Math.min(1,dayF)));
+    els.cloudFlood.setAttribute('flood-color', rgbStr(final));
   }
   // intensity 0..1: fog is modelled as a haze hugging the hills that thins going up —
   // heavier fog both climbs higher up the glass (eating further into the sky, not just
@@ -613,17 +650,21 @@
   // since most of its height is already faded well before the top. A held-density plateau
   // (the mid stop below) is what makes "heavy" actually read as a near-whiteout rather than
   // just a stronger tint at the bottom edge.
-  function applyFog(intensity){
+  // fog is lit by ambient/scattered light like anything else outside — bright pale grey by
+  // day, a much darker blue-grey haze at night rather than staying implausibly pale
+  const FOG_DAY = [214,217,222], FOG_NIGHT = [58,66,84];
+  function applyFog(intensity, dayF){
     const f = Math.max(0, Math.min(1, intensity));
     els.fog.style.opacity = f > 0.01 ? 1 : 0;
     const topPct = 15 + f*80;                    // how high up the glass the fog reaches at all
     const bottomA = 0.3 + f*0.55;                // opacity right at the bottom edge
     const holdPct = topPct * (0.35 + f*0.4);     // where density starts tapering off
     const holdA = bottomA * (0.55 + f*0.35);     // opacity still held at that point
+    const [r,g,b] = mixRgb(FOG_NIGHT, FOG_DAY, Math.max(0,Math.min(1,dayF)));
     els.fog.style.background =
-      `linear-gradient(to top, rgba(214,217,222,${bottomA.toFixed(2)}) 0%, ` +
-      `rgba(214,217,222,${holdA.toFixed(2)}) ${holdPct.toFixed(1)}%, ` +
-      `rgba(214,217,222,0) ${topPct.toFixed(1)}%)`;
+      `linear-gradient(to top, rgba(${r},${g},${b},${bottomA.toFixed(2)}) 0%, ` +
+      `rgba(${r},${g},${b},${holdA.toFixed(2)}) ${holdPct.toFixed(1)}%, ` +
+      `rgba(${r},${g},${b},0) ${topPct.toFixed(1)}%)`;
   }
 
   /* ===================== RAIN + SNOW + SLEET =====================
@@ -705,7 +746,7 @@
     sleetPellets = sleetPellets.filter(p=> p.y-p.len < precipH+10);
   }
 
-  function drawPrecip(){
+  function drawPrecip(t){
     precipCtx.clearRect(0,0,precipW,precipH);
     precipCtx.strokeStyle = 'rgba(214,222,230,1)';
     precipCtx.lineCap = 'round';
@@ -737,6 +778,58 @@
       precipCtx.stroke();
     }
     precipCtx.globalAlpha = 1;
+
+    // the bolt itself is only drawn for a brief window right at the start of a flash —
+    // real lightning's visible stroke is near-instant, it's the afterglow that lingers
+    if(flashState && t < flashState.boltUntil){
+      precipCtx.save();
+      precipCtx.globalAlpha = 0.9;
+      precipCtx.strokeStyle = '#eef4ff';
+      precipCtx.lineWidth = 2;
+      precipCtx.lineJoin = 'round';
+      precipCtx.shadowColor = '#cfe0ff';
+      precipCtx.shadowBlur = 10;
+      precipCtx.beginPath();
+      flashState.bolt.forEach((p,i)=> i===0 ? precipCtx.moveTo(p.x,p.y) : precipCtx.lineTo(p.x,p.y));
+      precipCtx.stroke();
+      precipCtx.restore();
+    }
+  }
+
+  // ---- lightning: a bright overlay flash (fast rise, slower decay) plus a jagged bolt
+  // visible only in the flash's first instant; occasionally flashes twice in quick succession,
+  // the way real strikes often do. Frequency scales with lightningIntensity; brightness doesn't
+  // — a rare storm's flash is just as bright as a frequent one, only more spaced out.
+  let nextFlashAt = null, flashState = null;
+  function generateBolt(){
+    const startX = precipW*(0.15+Math.random()*0.7);
+    const endY = precipH*(0.55+Math.random()*0.15);
+    const pts = [{x:startX, y:-5}];
+    let x=startX, y=-5;
+    while(y < endY){ y += 14+Math.random()*22; x += (Math.random()-0.5)*30; pts.push({x,y}); }
+    return pts;
+  }
+  function stepLightning(t){
+    if(lightningIntensity<=0.01){ nextFlashAt=null; flashState=null; els.lightningFlash.style.opacity=0; return; }
+    if(nextFlashAt==null && flashState==null){
+      const avgGap = 15000 - lightningIntensity*12000;   // ~15s apart at low, ~3s apart at max
+      nextFlashAt = t + avgGap*(0.4+Math.random()*1.2);
+    }
+    if(flashState==null && nextFlashAt!=null && t>=nextFlashAt){
+      flashState = { t0:t, duration:260+Math.random()*180, bolt:generateBolt(), boltUntil:t+70+Math.random()*50, double:Math.random()<0.3 };
+      nextFlashAt = null;
+    }
+    if(flashState){
+      const elapsed = t - flashState.t0;
+      if(elapsed > flashState.duration){
+        if(flashState.double) flashState = { t0:t, duration:150+Math.random()*100, bolt:generateBolt(), boltUntil:t+50, double:false };
+        else { flashState = null; els.lightningFlash.style.opacity = 0; }
+      } else {
+        const u = elapsed/flashState.duration;
+        const env = u<0.12 ? u/0.12 : Math.pow(1-((u-0.12)/0.88), 1.6);   // fast rise, slower decay
+        els.lightningFlash.style.opacity = (env*0.85).toFixed(3);
+      }
+    }
   }
 
   let lastPrecipT = null;
@@ -745,7 +838,8 @@
     const dt = Math.min((t-lastPrecipT)/1000, 0.05);
     lastPrecipT = t;
     stepPrecip(dt);
-    drawPrecip();
+    stepLightning(t);
+    drawPrecip(t);
     requestAnimationFrame(precipLoop);
   }
   resizePrecip();
@@ -1017,8 +1111,8 @@
       renderMoonDisc(els.moonSvg, illum.phase);
     }
 
-    applyClouds(cloudCoverage);
-    applyFog(fogIntensity);
+    applyClouds(cloudCoverage, dayF);
+    applyFog(fogIntensity, dayF);
 
     // ---- chart ----
     const sunCurveD = buildCurve(t => getSunPosition(t, lat, lon), displayDate);
