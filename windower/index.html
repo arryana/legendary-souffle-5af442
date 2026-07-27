@@ -474,7 +474,7 @@
   <div id="controls">
     <label class="toggle" title="Moon phase only"><input type="checkbox" id="chk-moononly" aria-label="Moon phase only"><span class="toggle-glyph">&#127769;</span></label>
     <label class="toggle" title="Fuller reading"><input type="checkbox" id="chk-fuller" aria-label="Fuller reading"><span class="toggle-glyph">&deg;</span></label>
-    <label class="toggle" title="Today's weather"><input type="checkbox" id="chk-weather" aria-label="Today's weather"><span class="toggle-glyph">&#9925;</span></label>
+    <label class="toggle" title="Real weather"><input type="checkbox" id="chk-weather" aria-label="Real weather"><span class="toggle-glyph">&#9925;</span></label>
   </div>
 
 </div>
@@ -734,7 +734,14 @@
      each code's own "slight/moderate/heavy" wording is a more reliable intensity signal here
      than trying to rescale the raw precipitation-amount field ourselves. Off by default, like
      the other two toggles below — nothing about this changes what a visitor sees until they
-     opt in. */
+     opt in.
+
+     This also has to work with the time slider, not just "right now": rather than a single
+     current-conditions call, we pull an hourly array spanning past_days..forecast_days and
+     pick whichever hour is closest to whatever moment the slider is currently showing. Past
+     the edges of that window (open-meteo's real forecast horizon) it just holds the nearest
+     edge day's conditions rather than showing nothing — real forecasts don't reach further
+     out than that anyway, so there's nothing truthful to show past it. */
   const WMO_WEATHER = {
     45:{fog:0.45}, 48:{fog:0.75},                          // fog, rime fog
     51:{rain:0.15}, 53:{rain:0.35}, 55:{rain:0.55},         // drizzle
@@ -751,26 +758,46 @@
   function clearLiveWeather(){
     cloudCoverage=0; fogIntensity=0; rainIntensity=0; snowIntensity=0; sleetIntensity=0; lightningIntensity=0;
   }
-  let liveWeatherOn = false, weatherPoll = null;
+  function applyWeatherSample(weatherCode, cloudCoverPct){
+    cloudCoverage = Math.max(0, Math.min(1, (cloudCoverPct||0)/100));
+    const m = WMO_WEATHER[weatherCode] || {};
+    rainIntensity = m.rain||0; snowIntensity = m.snow||0; sleetIntensity = m.sleet||0;
+    fogIntensity = m.fog||0; lightningIntensity = m.lightning||0;
+    // rain/snow/sleet never fall from a mostly-clear sky — reported cloud_cover can lag or
+    // under-report next to the weather code, so floor it whenever precipitation is actually
+    // happening, scaled up with how heavy that precipitation is
+    const anyPrecip = Math.max(rainIntensity, snowIntensity, sleetIntensity);
+    if(anyPrecip>0) cloudCoverage = Math.max(cloudCoverage, 0.65 + anyPrecip*0.3);
+  }
+  let liveWeatherOn = false, weatherPoll = null, weatherHourly = null;
   async function fetchLiveWeather(){
     if(lat==null || lon==null) return;
     try{
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weather_code,cloud_cover`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&hourly=weather_code,cloud_cover&past_days=16&forecast_days=16&timezone=UTC`;
       const res = await fetch(url);
       const data = await res.json();
       if(!liveWeatherOn) return;   // the toggle may have been switched off while this was in flight
-      if(data && data.current){
-        cloudCoverage = Math.max(0, Math.min(1, (data.current.cloud_cover||0)/100));
-        const m = WMO_WEATHER[data.current.weather_code] || {};
-        rainIntensity = m.rain||0; snowIntensity = m.snow||0; sleetIntensity = m.sleet||0;
-        fogIntensity = m.fog||0; lightningIntensity = m.lightning||0;
-        // rain/snow/sleet never fall from a mostly-clear sky — reported cloud_cover can lag
-        // or under-report next to the weather code, so floor it whenever precipitation is
-        // actually happening, scaled up with how heavy that precipitation is
-        const anyPrecip = Math.max(rainIntensity, snowIntensity, sleetIntensity);
-        if(anyPrecip>0) cloudCoverage = Math.max(cloudCoverage, 0.65 + anyPrecip*0.3);
+      if(data && data.hourly && Array.isArray(data.hourly.time) && data.hourly.time.length){
+        weatherHourly = {
+          times: data.hourly.time.map(t => new Date(t+'Z').getTime()),
+          code: data.hourly.weather_code,
+          cloud: data.hourly.cloud_cover,
+        };
       }
     } catch(e){ /* keep last known state silently */ }
+  }
+  // called every render() tick while the toggle is on — cheap linear scan over at most ~770
+  // hourly points, once a second, well under anything worth optimizing
+  function updateWeatherForDisplayDate(displayDate){
+    if(!weatherHourly || !weatherHourly.times.length) return;
+    const t = displayDate.getTime();
+    let idx = 0, bestDiff = Infinity;
+    for(let i=0;i<weatherHourly.times.length;i++){
+      const diff = Math.abs(weatherHourly.times[i]-t);
+      if(diff<bestDiff){ bestDiff=diff; idx=i; }
+    }
+    applyWeatherSample(weatherHourly.code[idx], weatherHourly.cloud[idx]);
   }
   els.chkWeather.addEventListener('change', ()=>{
     liveWeatherOn = els.chkWeather.checked;
@@ -1141,6 +1168,7 @@
 
   function render(){
     const displayDate = new Date(Date.now() + offsetDays*dayMs);
+    if(liveWeatherOn && weatherHourly) updateWeatherForDisplayDate(displayDate);
 
     const sun = getSunPosition(displayDate, lat, lon);
     const moon = getMoonPosition(displayDate, lat, lon);
