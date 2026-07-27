@@ -638,7 +638,7 @@
   const CLOUD_CURVE_PTS = [
     {c:0,   intercept:-4.0, slope:5.2},
     {c:0.5, intercept:-2.0, slope:4.8},
-    {c:1.0, intercept:-1.5, slope:4.0},
+    {c:1.0, intercept:0.8,  slope:3.5},
   ];
   function lerpCloudCurve(c){
     for(let i=0;i<CLOUD_CURVE_PTS.length-1;i++){
@@ -653,8 +653,8 @@
   // light rather than direct sun) than by day. And within a single cloud, it's never one flat
   // colour either: sunlit tops read whiter, shadowed undersides greyer — that's the shadow/
   // highlight pair below, not just a single coverage-driven tone.
-  const CLOUD_SHADOW_LIGHT = hexToRgb('#b4bac2'), CLOUD_SHADOW_HEAVY = hexToRgb('#5a606a');
-  const CLOUD_HIGHLIGHT_LIGHT = hexToRgb('#fffffd'), CLOUD_HIGHLIGHT_HEAVY = hexToRgb('#afb4be');
+  const CLOUD_SHADOW_LIGHT = hexToRgb('#b4bac2'), CLOUD_SHADOW_HEAVY = hexToRgb('#3a3f48');
+  const CLOUD_HIGHLIGHT_LIGHT = hexToRgb('#fffffd'), CLOUD_HIGHLIGHT_HEAVY = hexToRgb('#6b7078');
   const CLOUD_NIGHT_TONE = hexToRgb('#232a3a');
   function applyClouds(coverage, dayF){
     const c = Math.max(0, Math.min(1, coverage));
