@@ -527,6 +527,7 @@
   let fogIntensity = 0;    // 0 = none, 1 = dense
   let rainIntensity = 0;   // 0 = none, 1 = downpour (mutually exclusive with snow, in practice)
   let snowIntensity = 0;   // 0 = none, 1 = heavy snow (0.15ish reads as flurries)
+  let sleetIntensity = 0;  // 0 = none, 1 = heavy sleet
   const SNAP_THRESHOLD = 1.2; // days, snap back to live when released this close to center
 
   const els = {
@@ -625,12 +626,14 @@
       `rgba(214,217,222,0) ${topPct.toFixed(1)}%)`;
   }
 
-  /* ===================== RAIN + SNOW =====================
+  /* ===================== RAIN + SNOW + SLEET =====================
      A small canvas particle system layered right against the glass — it runs its own
      requestAnimationFrame loop, independent of the once-a-second astronomy render(), since
-     falling precipitation needs real motion. Rain is drawn as short streaks (motion-blurred
-     falling drops); snow as soft drifting flakes with gentle sideways sway. Light vs heavy
-     is entirely a matter of spawn rate, size, and fall speed — same shapes throughout. */
+     falling precipitation needs real motion. Rain is drawn as long, thin, fast streaks with
+     some horizontal drift; snow as soft drifting flakes with gentle sideways sway; sleet sits
+     between them — short, stubby, dense pellets, falling nearly straight down (ice doesn't
+     catch the wind or drift the way rain does) and hitting harder/faster than snow. Light vs
+     heavy is entirely a matter of spawn rate, size, and fall speed — same shapes throughout. */
   const precipCtx = els.precip.getContext('2d');
   let precipW=0, precipH=0, precipDPR=1;
   function resizePrecip(){
@@ -643,7 +646,7 @@
   }
   window.addEventListener('resize', resizePrecip);
 
-  let rainDrops = [], snowFlakes = [];
+  let rainDrops = [], snowFlakes = [], sleetPellets = [];
   function spawnRainDrop(){
     const speed = 260 + rainIntensity*520 + Math.random()*70;
     rainDrops.push({
@@ -665,8 +668,17 @@
       alpha: (0.45 + snowIntensity*0.35) * (0.5+depth*0.6),
     });
   }
+  function spawnSleetPellet(){
+    sleetPellets.push({
+      x: Math.random()*precipW, y: -10,
+      len: 5 + sleetIntensity*4 + Math.random()*2,
+      speed: 360 + sleetIntensity*360 + Math.random()*60,
+      drift: (Math.random()-0.5)*3,   // ice barely drifts — nothing like rain's wind-blown angle
+      alpha: 0.45 + sleetIntensity*0.35 + Math.random()*0.1,
+    });
+  }
 
-  let rainSpawnAccum = 0, snowSpawnAccum = 0;
+  let rainSpawnAccum = 0, snowSpawnAccum = 0, sleetSpawnAccum = 0;
   function stepPrecip(dt){
     if(rainIntensity>0.01){
       const rate = 3 + rainIntensity*55;   // drops/sec
@@ -683,6 +695,14 @@
     }
     for(const f of snowFlakes){ f.y += f.speed*dt; f.phase += f.swayFreq*dt; }
     snowFlakes = snowFlakes.filter(f=> f.y-f.r < precipH+10);
+
+    if(sleetIntensity>0.01){
+      const rate = 3 + sleetIntensity*50;
+      sleetSpawnAccum += dt*rate;
+      while(sleetSpawnAccum>=1){ sleetSpawnAccum-=1; if(sleetPellets.length<380) spawnSleetPellet(); }
+    }
+    for(const p of sleetPellets){ p.y += p.speed*dt; p.x += p.drift*dt; }
+    sleetPellets = sleetPellets.filter(p=> p.y-p.len < precipH+10);
   }
 
   function drawPrecip(){
@@ -704,6 +724,17 @@
       precipCtx.beginPath();
       precipCtx.arc(x, f.y, f.r, 0, Math.PI*2);
       precipCtx.fill();
+    }
+    // sleet: short, thick, near-opaque pellets — icy-white rather than rain's pale streak,
+    // and stubby rather than snow's soft round dot
+    precipCtx.strokeStyle = 'rgba(226,233,238,1)';
+    for(const p of sleetPellets){
+      precipCtx.globalAlpha = p.alpha;
+      precipCtx.lineWidth = 1.8;
+      precipCtx.beginPath();
+      precipCtx.moveTo(p.x, p.y);
+      precipCtx.lineTo(p.x - p.drift*0.1, p.y - p.len);
+      precipCtx.stroke();
     }
     precipCtx.globalAlpha = 1;
   }
