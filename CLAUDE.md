@@ -57,6 +57,8 @@ flat files at the repo root.
 | `windower/index.html` | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock) |
 | `galileo/index.html` | ✅ | A **Galileo thermometer** whose floats rise and sink with the visitor's **real local temperature** (open-meteo API); has a °C/°F toggle |
 | `conometer/index.html` | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle |
+| `gyre/index.html` | ✅ | Meshable **gears** you place and connect on a board, plus a signal-lamp piece whose lights are driven by the gear train. See `gears.md` for how the gear math/rendering works |
+| `birds/index.html` | ✅ | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
 | `crystal.html` | — | A crystal (not linked from the landing page) |
 
 **Live-data pieces** — `galileo`, `conometer`, `windower` — read the visitor's **geolocation**

@@ -110,7 +110,7 @@
   #music:hover #musicName{ opacity:.55; }
 </style>
 <div id="music" title="play your own music">
-  <button id="musicBtn" aria-label="play your own music">♪</button>
+  <button id="musicBtn" aria-label="play your own music">🎧</button>
   <span id="musicName"></span>
 </div>
 <input type="file" id="musicPick" accept="audio/*" multiple hidden>
@@ -122,7 +122,7 @@
   let list=[], idx=0;
   const label=f=> f ? f.name.replace(/\.[^.]+$/,'') : '';
   function load(i){ if(el.src) URL.revokeObjectURL(el.src); el.src=URL.createObjectURL(list[i]); name.textContent=label(list[i]); }
-  function sync(){ btn.textContent = !el.src ? '♪' : (el.paused ? '▶' : '❚❚'); btn.classList.toggle('playing', !!el.src && !el.paused); }
+  function sync(){ btn.textContent = !el.src ? '🎧' : (el.paused ? '▶' : '❚❚'); btn.classList.toggle('playing', !!el.src && !el.paused); }
   btn.addEventListener('click', ()=>{ if(!list.length){ pick.click(); return; } el.paused ? el.play() : el.pause(); });
   name.addEventListener('click', ()=> pick.click());
   pick.addEventListener('change', ()=>{ if(!pick.files.length) return; list=[...pick.files]; idx=0; el.loop=(list.length===1); load(0); el.play(); });
@@ -155,6 +155,10 @@
       <button type="button" id="leafBtn" class="iconBtn" title="leaf">🍃</button>
       <input type="range" id="leafSizeSlider" min="0" max="100" value="50">
     </div>
+    <div class="sliderRow">
+      <button type="button" id="twigBtn" class="iconBtn" title="twig">🪵</button>
+      <input type="range" id="twigSizeSlider" min="0" max="100" value="50">
+    </div>
   </div>
 </div>
 
@@ -172,6 +176,8 @@
   const pebbleSizeSlider = document.getElementById('pebbleSizeSlider');
   const leafBtn = document.getElementById('leafBtn');
   const leafSizeSlider = document.getElementById('leafSizeSlider');
+  const twigBtn = document.getElementById('twigBtn');
+  const twigSizeSlider = document.getElementById('twigSizeSlider');
 
   // ---------- ground texture: a real above-ground dirt/pebble surface
   // photo, cover-cropped to the canvas, same pattern used elsewhere on
@@ -185,6 +191,16 @@
   let leafImgReady = false;
   leafImg.onload = () => { leafImgReady = true; };
   leafImg.src = 'ant-leaf.png';
+
+  const stoneImg = new Image();
+  let stoneImgReady = false;
+  stoneImg.onload = () => { stoneImgReady = true; };
+  stoneImg.src = 'ant-stone.png';
+
+  const twigImg = new Image();
+  let twigImgReady = false;
+  twigImg.onload = () => { twigImgReady = true; };
+  twigImg.src = 'ant-twig.png';
 
 
   let W = 0, H = 0, DPR = 1;
@@ -250,9 +266,11 @@
   // the icons are the only way in or out ----------
   const PEBBLE_R_MIN = 8, PEBBLE_R_MAX = 22;
   const LEAF_R_MIN = 15, LEAF_R_MAX = 45;
+  const TWIG_R_MIN = 16, TWIG_R_MAX = 48;
   let stones = [];
   let pebbleObstacle = null;
   let leafObstacle = null;
+  let twigObstacle = null;
   let dragTarget = null;
 
   function sliderToRange(slider, min, max){
@@ -266,7 +284,10 @@
       pebbleObstacle = null;
       pebbleBtn.classList.remove('active');
     } else {
-      pebbleObstacle = { x: W*0.45, y: H*0.5, r: sliderToRange(pebbleSizeSlider, PEBBLE_R_MIN, PEBBLE_R_MAX), rot: 0 };
+      // a real stone photo rather than a drawn shape — collision uses a
+      // circle sized to the stone's overall footprint. Solid, like a
+      // real pebble: ants always route around it, never through.
+      pebbleObstacle = { x: W*0.45, y: H*0.5, r: sliderToRange(pebbleSizeSlider, PEBBLE_R_MIN, PEBBLE_R_MAX), type:'stone', rot: 0 };
       stones.push(pebbleObstacle);
       pebbleBtn.classList.add('active');
     }
@@ -282,9 +303,10 @@
       leafObstacle = null;
       leafBtn.classList.remove('active');
     } else {
-      // a real leaf photo rather than a drawn shape — collision uses a
-      // circle sized to the leaf's overall footprint, close enough for
-      // ants to visibly route around it
+      // a real leaf photo rather than a drawn shape. Unlike the other
+      // obstacles the leaf is NOT solid — it's a raised canopy ants walk
+      // underneath, not a wall (see blockedAt and the ant-hiding pass in
+      // render()). r is still its footprint, used for that hiding test.
       leafObstacle = { x: W*0.65, y: H*0.35, r: sliderToRange(leafSizeSlider, LEAF_R_MIN, LEAF_R_MAX), type:'leaf', rot: 0 };
       stones.push(leafObstacle);
       leafBtn.classList.add('active');
@@ -294,10 +316,28 @@
     if (leafObstacle) leafObstacle.r = sliderToRange(leafSizeSlider, LEAF_R_MIN, LEAF_R_MAX);
   });
 
+  twigBtn.addEventListener('click', () => {
+    if (twigObstacle){
+      const idx = stones.indexOf(twigObstacle);
+      if (idx >= 0) stones.splice(idx,1);
+      twigObstacle = null;
+      twigBtn.classList.remove('active');
+    } else {
+      // a real twig photo — solid like the pebble (a twig resting on the
+      // ground reads as something ants step around, not under)
+      twigObstacle = { x: W*0.3, y: H*0.6, r: sliderToRange(twigSizeSlider, TWIG_R_MIN, TWIG_R_MAX), type:'twig', rot: 0 };
+      stones.push(twigObstacle);
+      twigBtn.classList.add('active');
+    }
+  });
+  twigSizeSlider.addEventListener('input', () => {
+    if (twigObstacle) twigObstacle.r = sliderToRange(twigSizeSlider, TWIG_R_MIN, TWIG_R_MAX);
+  });
+
   const FOOD_HIT_R = 32;
 
   // dragging — pick up whichever placed object the pointer lands on
-  // (pebble, leaf, or food)
+  // (pebble, leaf, twig, or food)
   let pointerStart = null;
   groundWrap.addEventListener('pointerdown', (e) => {
     const rect = groundWrap.getBoundingClientRect();
@@ -333,7 +373,24 @@
   groundWrap.addEventListener('pointercancel', () => { dragTarget = null; pointerStart = null; });
 
   function blockedAt(x,y){
-    return stones.some(s => Math.hypot(s.x-x,s.y-y) < s.r);
+    // the leaf is passable — ants walk underneath it rather than around it
+    // (see the ant-hiding pass in render()); every other obstacle is solid
+    return stones.some(s => s.type !== 'leaf' && Math.hypot(s.x-x,s.y-y) < s.r);
+  }
+
+  // is (x,y) currently under the leaf's raised footprint? Matches the same
+  // rotated box the leaf photo is drawn into (see render()), inset a little
+  // so ants vanish/reappear at roughly the leaf's actual silhouette rather
+  // than its full (mostly-transparent-cornered) bounding rectangle.
+  function underLeaf(x,y){
+    if (!leafObstacle) return false;
+    const lw = leafObstacle.r*2.8, lh = lw * ((leafImg.naturalHeight||1)/(leafImg.naturalWidth||1));
+    const rx = lw/2*0.9, ry = lh/2*0.86;
+    const rot = leafObstacle.rot||0;
+    const dx = x-leafObstacle.x, dy = y-leafObstacle.y;
+    const cos = Math.cos(-rot), sin = Math.sin(-rot);
+    const lx = dx*cos - dy*sin, ly = dx*sin + dy*cos;
+    return (lx*lx)/(rx*rx) + (ly*ly)/(ry*ry) <= 1;
   }
 
   // ---------- colony and food ----------
@@ -397,7 +454,7 @@
       }
     } else if (a.state === 'toFood'){
       a.state = 'return';
-      food.amount -= 0.01;
+      food.amount -= 0.0005;
     } else if (a.state === 'return'){
       const dx = colony.x-a.x, dy = colony.y-a.y;
       const distToColony = Math.hypot(dx,dy);
@@ -482,22 +539,19 @@
 
     // food (lollipop) — a glossy round candy ball on a pale plastic
     // stick, with swirl bands wrapped around the sphere's curve (rather
-    // than a flat 2D spiral) so it actually reads as a ball
-    if (showFood && food.amount > 0){
+    // than a flat 2D spiral) so it actually reads as a ball. The candy
+    // shrinks away to nothing as it's eaten; the stick is drawn
+    // separately and stays behind after the candy's gone, the way a
+    // real lollipop stick would.
+    if (showFood){
+      const candyLeft = Math.max(0, food.amount);
+      const r = 33 * candyLeft; // shrinks fully to 0 as the candy is finished
+
+      // pale plastic stick, rounded where it ends — its top tracks the
+      // candy's current bottom edge while any candy remains, and simply
+      // settles at the candy's original center once it's gone (r=0)
       ctx.save();
       ctx.globalAlpha = lightLevel;
-      const r = 13 + 20*food.amount;
-
-      // soft drop shadow so the candy reads clearly against the ground
-      // photo instead of blending into it
-      ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(food.x+2, food.y+3, r*0.92, r*0.8, 0, 0, Math.PI*2);
-      ctx.fillStyle = 'rgba(0,0,0,0.22)';
-      ctx.fill();
-      ctx.restore();
-
-      // pale plastic stick, rounded where it ends
       const stickLen = 102, sw = 8.6;
       const topY = food.y + r*0.82;
       ctx.beginPath();
@@ -515,69 +569,91 @@
       ctx.strokeStyle = 'rgba(120,120,130,0.25)';
       ctx.lineWidth = 0.6;
       ctx.stroke();
+      ctx.restore();
 
-      // candy ball, clipped so the swirl bands and shading stay inside
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(food.x, food.y, r, 0, Math.PI*2);
-      ctx.clip();
-
-      const baseG = ctx.createRadialGradient(food.x-r*0.35, food.y-r*0.4, r*0.15, food.x, food.y, r*1.05);
-      baseG.addColorStop(0, '#c9a3e0');
-      baseG.addColorStop(0.45, '#9a55bd');
-      baseG.addColorStop(1, '#5c2c78');
-      ctx.beginPath();
-      ctx.arc(food.x, food.y, r, 0, Math.PI*2);
-      ctx.fillStyle = baseG;
-      ctx.fill();
-
-      // swirl bands — a couple of diagonal bands rotated around the
-      // center, like a barber-pole twist wrapping the candy
-      const bandAngles = [-0.28 + Math.PI/2, 0.34 + Math.PI/2];
-      const bandColors = ['rgba(120,60,150,0.4)','rgba(60,24,88,0.5)'];
-      for (let i=0;i<bandAngles.length;i++){
+      if (candyLeft > 0){
         ctx.save();
-        ctx.translate(food.x, food.y);
-        ctx.rotate(bandAngles[i]);
+        ctx.globalAlpha = lightLevel;
+
+        // soft drop shadow so the candy reads clearly against the ground
+        // photo instead of blending into it
+        ctx.save();
         ctx.beginPath();
-        ctx.ellipse(0, 0, r*0.22, r*1.15, 0, 0, Math.PI*2);
-        ctx.fillStyle = bandColors[i];
+        ctx.ellipse(food.x+2, food.y+3, r*0.92, r*0.8, 0, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
         ctx.fill();
         ctx.restore();
+
+        // candy ball, clipped so the swirl bands and shading stay inside
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(food.x, food.y, r, 0, Math.PI*2);
+        ctx.clip();
+
+        const baseG = ctx.createRadialGradient(food.x-r*0.35, food.y-r*0.4, r*0.15, food.x, food.y, r*1.05);
+        baseG.addColorStop(0, '#c9a3e0');
+        baseG.addColorStop(0.45, '#9a55bd');
+        baseG.addColorStop(1, '#5c2c78');
+        ctx.beginPath();
+        ctx.arc(food.x, food.y, r, 0, Math.PI*2);
+        ctx.fillStyle = baseG;
+        ctx.fill();
+
+        // swirl bands — a couple of diagonal bands rotated around the
+        // center, like a barber-pole twist wrapping the candy
+        const bandAngles = [-0.28 + Math.PI/2, 0.34 + Math.PI/2];
+        const bandColors = ['rgba(120,60,150,0.4)','rgba(60,24,88,0.5)'];
+        for (let i=0;i<bandAngles.length;i++){
+          ctx.save();
+          ctx.translate(food.x, food.y);
+          ctx.rotate(bandAngles[i]);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, r*0.22, r*1.15, 0, 0, Math.PI*2);
+          ctx.fillStyle = bandColors[i];
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // sphere shading — darken the lower-right rim for volume
+        const shadeG = ctx.createRadialGradient(food.x+r*0.3, food.y+r*0.35, r*0.2, food.x, food.y, r*1.05);
+        shadeG.addColorStop(0, 'rgba(0,0,0,0)');
+        shadeG.addColorStop(1, 'rgba(30,10,42,0.45)');
+        ctx.beginPath();
+        ctx.arc(food.x, food.y, r, 0, Math.PI*2);
+        ctx.fillStyle = shadeG;
+        ctx.fill();
+        ctx.restore();
+
+        // rim
+        ctx.beginPath();
+        ctx.arc(food.x, food.y, r, 0, Math.PI*2);
+        ctx.strokeStyle = 'rgba(60,24,88,0.5)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        ctx.restore();
       }
-
-      // sphere shading — darken the lower-right rim for volume
-      const shadeG = ctx.createRadialGradient(food.x+r*0.3, food.y+r*0.35, r*0.2, food.x, food.y, r*1.05);
-      shadeG.addColorStop(0, 'rgba(0,0,0,0)');
-      shadeG.addColorStop(1, 'rgba(30,10,42,0.45)');
-      ctx.beginPath();
-      ctx.arc(food.x, food.y, r, 0, Math.PI*2);
-      ctx.fillStyle = shadeG;
-      ctx.fill();
-      ctx.restore();
-
-      // rim
-      ctx.beginPath();
-      ctx.arc(food.x, food.y, r, 0, Math.PI*2);
-      ctx.strokeStyle = 'rgba(60,24,88,0.5)';
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-
-      ctx.restore();
     }
 
-    // stones
+    // stones — the solid obstacles (stone, twig) draw here, in the normal
+    // stack order. The leaf is NOT drawn in this pass: it's drawn last,
+    // after the ants below, so it can sit on top of whichever ants are
+    // still visible (see the leaf-hiding pass further down).
     stones.forEach(s => {
-      if (s.type === 'leaf' && leafImgReady){
-        const lw = s.r*2.8, lh = lw * (leafImg.naturalHeight/leafImg.naturalWidth);
+      if (s.type === 'leaf') return;
+      const img = s.type === 'twig' ? twigImg : stoneImg;
+      const imgReady = s.type === 'twig' ? twigImgReady : stoneImgReady;
+      if (imgReady){
+        const w = s.r*2.8, h = w * (img.naturalHeight/img.naturalWidth);
         ctx.save();
         ctx.globalAlpha = lightLevel;
         ctx.translate(s.x, s.y);
         ctx.rotate(s.rot||0);
-        ctx.drawImage(leafImg, -lw/2, -lh/2, lw, lh);
+        ctx.drawImage(img, -w/2, -h/2, w, h);
         ctx.restore();
         return;
       }
+      // brief fallback while the photo loads, so the obstacle isn't blank
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(s.rot||0);
@@ -587,18 +663,12 @@
       ctx.fill();
       ctx.strokeStyle = `rgba(60,60,58,${lightLevel})`;
       ctx.stroke();
-      // subtle facet highlight so the rotation is actually visible on
-      // what would otherwise be a featureless circle
-      ctx.beginPath();
-      ctx.ellipse(-s.r*0.32, -s.r*0.32, s.r*0.34, s.r*0.2, -0.6, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(200,200,195,${lightLevel*0.35})`;
-      ctx.fill();
       ctx.restore();
     });
 
     // ants — three body segments, six legs and antennae, so they read as ants
     // rather than specks. Heading points along +x (forward).
-    ants.forEach(a => {
+    function drawAnt(a){
       ctx.save();
       ctx.translate(a.x,a.y);
       ctx.rotate(a.heading);
@@ -621,7 +691,26 @@
       ctx.beginPath(); ctx.ellipse(0.1*s,0, 1.2*s,0.95*s, 0,0,Math.PI*2); ctx.fill();
       ctx.beginPath(); ctx.ellipse(2.3*s,0, 1.3*s,1.15*s, 0,0,Math.PI*2); ctx.fill();
       ctx.restore();
+    }
+    // an ant currently inside the leaf's footprint is simply skipped here
+    // — the leaf, drawn right after (on top), is what makes it read as
+    // "walking underneath"; it reappears the moment it steps clear
+    ants.forEach(a => {
+      if (!underLeaf(a.x, a.y)) drawAnt(a);
     });
+
+    // leaf — drawn last, on top of every ant still visible, so anything
+    // presently inside its footprint looks like it's passed beneath a
+    // raised, physical leaf rather than just standing still under a sticker
+    if (leafObstacle && leafImgReady){
+      const lw = leafObstacle.r*2.8, lh = lw * (leafImg.naturalHeight/leafImg.naturalWidth);
+      ctx.save();
+      ctx.globalAlpha = lightLevel;
+      ctx.translate(leafObstacle.x, leafObstacle.y);
+      ctx.rotate(leafObstacle.rot||0);
+      ctx.drawImage(leafImg, -lw/2, -lh/2, lw, lh);
+      ctx.restore();
+    }
   }
 
   let lastT = performance.now();
