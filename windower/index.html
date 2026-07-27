@@ -396,13 +396,29 @@
       <svg id="clouds" viewBox="0 0 100 100" preserveAspectRatio="none">
         <defs>
           <filter id="cloud-noise" x="-25%" y="-25%" width="150%" height="150%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.014 0.024" numOctaves="5" seed="11" result="noise"/>
+            <!-- baseFrequency tuned high on purpose: at the window's real (much smaller, much
+                 less elongated) on-page size, a lower frequency reads as one soft smeared blob
+                 rather than distinct cloud puffs — this was checked against the actual page,
+                 not just an isolated test canvas -->
+            <feTurbulence type="fractalNoise" baseFrequency="0.06 0.09" numOctaves="5" seed="11" result="noise"/>
             <feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise"/>
             <feComponentTransfer in="alphaNoise" result="shaped">
               <feFuncA id="cloud-curve" type="linear" slope="5.2" intercept="-4"/>
             </feComponentTransfer>
-            <feFlood id="cloud-flood" flood-color="#f4f6f8" result="white"/>
-            <feComposite in="white" in2="shaped" operator="in"/>
+            <!-- real clouds aren't one flat colour — sunlit tops read whiter, shadowed
+                 undersides greyer. Reusing the SAME noise field for this (rather than a
+                 second, independent one) means the brightest/whitest parts naturally line up
+                 with the densest/most-opaque parts of the shape above, the way a real cloud's
+                 lit face and its solid core coincide. -->
+            <feColorMatrix in="noise" type="matrix"
+              values="0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0 0 0 0 1"
+              result="gray"/>
+            <feComponentTransfer in="gray" result="shaded">
+              <feFuncR id="cloud-shade-r" type="linear" slope="0.39" intercept="0.59"/>
+              <feFuncG id="cloud-shade-g" type="linear" slope="0.38" intercept="0.61"/>
+              <feFuncB id="cloud-shade-b" type="linear" slope="0.35" intercept="0.64"/>
+            </feComponentTransfer>
+            <feComposite in="shaded" in2="shaped" operator="in"/>
           </filter>
         </defs>
         <g id="cloud-drift"><rect x="-60" y="-10" width="220" height="80" filter="url(#cloud-noise)"/></g>
@@ -553,7 +569,9 @@
     moonSvg: document.getElementById('moon-disc-svg'),
     clouds: document.getElementById('clouds'),
     cloudCurve: document.getElementById('cloud-curve'),
-    cloudFlood: document.getElementById('cloud-flood'),
+    cloudShadeR: document.getElementById('cloud-shade-r'),
+    cloudShadeG: document.getElementById('cloud-shade-g'),
+    cloudShadeB: document.getElementById('cloud-shade-b'),
     fog: document.getElementById('fog'),
     precip: document.getElementById('precip'),
     lightningFlash: document.getElementById('lightning-flash'),
@@ -620,7 +638,7 @@
   const CLOUD_CURVE_PTS = [
     {c:0,   intercept:-4.0, slope:5.2},
     {c:0.5, intercept:-2.0, slope:4.8},
-    {c:1.0, intercept:-1.5, slope:4.0},
+    {c:1.0, intercept:0.8,  slope:3.5},
   ];
   function lerpCloudCurve(c){
     for(let i=0;i<CLOUD_CURVE_PTS.length-1;i++){
@@ -632,18 +650,27 @@
   }
   // heavier cloud isn't just denser — real storm cloud is visibly darker grey than a wisp of
   // fair-weather cloud, and any cloud reads darker at night (lit by scattered ambient/moon
-  // light rather than direct sun) than by day
-  const CLOUD_LIGHT_DAY = hexToRgb('#f4f6f8'), CLOUD_HEAVY_DAY = hexToRgb('#7e858f');
+  // light rather than direct sun) than by day. And within a single cloud, it's never one flat
+  // colour either: sunlit tops read whiter, shadowed undersides greyer — that's the shadow/
+  // highlight pair below, not just a single coverage-driven tone.
+  const CLOUD_SHADOW_LIGHT = hexToRgb('#b4bac2'), CLOUD_SHADOW_HEAVY = hexToRgb('#3a3f48');
+  const CLOUD_HIGHLIGHT_LIGHT = hexToRgb('#fffffd'), CLOUD_HIGHLIGHT_HEAVY = hexToRgb('#6b7078');
   const CLOUD_NIGHT_TONE = hexToRgb('#232a3a');
   function applyClouds(coverage, dayF){
     const c = Math.max(0, Math.min(1, coverage));
+    const f = Math.max(0, Math.min(1, dayF));
     els.clouds.style.opacity = c > 0.01 ? 1 : 0;
     const curve = lerpCloudCurve(c);
     els.cloudCurve.setAttribute('intercept', curve.intercept.toFixed(3));
     els.cloudCurve.setAttribute('slope', curve.slope.toFixed(2));
-    const byCoverage = mixRgb(CLOUD_LIGHT_DAY, CLOUD_HEAVY_DAY, c);
-    const final = mixRgb(CLOUD_NIGHT_TONE, byCoverage, Math.max(0,Math.min(1,dayF)));
-    els.cloudFlood.setAttribute('flood-color', rgbStr(final));
+    const shadow = mixRgb(CLOUD_NIGHT_TONE, mixRgb(CLOUD_SHADOW_LIGHT, CLOUD_SHADOW_HEAVY, c), f);
+    const highlight = mixRgb(CLOUD_NIGHT_TONE, mixRgb(CLOUD_HIGHLIGHT_LIGHT, CLOUD_HIGHLIGHT_HEAVY, c), f);
+    const funcs = [els.cloudShadeR, els.cloudShadeG, els.cloudShadeB];
+    funcs.forEach((fn,i)=>{
+      const s = shadow[i]/255, h = highlight[i]/255;
+      fn.setAttribute('intercept', s.toFixed(3));
+      fn.setAttribute('slope', (h-s).toFixed(3));
+    });
   }
   // intensity 0..1: fog is modelled as a haze hugging the hills that thins going up —
   // heavier fog both climbs higher up the glass (eating further into the sky, not just
