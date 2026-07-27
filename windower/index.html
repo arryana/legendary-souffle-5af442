@@ -595,16 +595,21 @@
   }
   // intensity 0..1: fog is modelled as a haze hugging the hills that thins going up —
   // heavier fog both climbs higher up the glass (eating further into the sky, not just
-  // the hills) and reads more opaque near the bottom. Most of the window's height sits
-  // above the hills, so the reachable range has to be generous or "heavy" never reads as
-  // more than a faint tint at the very bottom edge.
+  // the hills) and stays dense for more of that climb before tapering, rather than fading
+  // immediately — a straight top-to-bottom linear fade reads as thin even at max opacity,
+  // since most of its height is already faded well before the top. A held-density plateau
+  // (the mid stop below) is what makes "heavy" actually read as a near-whiteout rather than
+  // just a stronger tint at the bottom edge.
   function applyFog(intensity){
     const f = Math.max(0, Math.min(1, intensity));
     els.fog.style.opacity = f > 0.01 ? 1 : 0;
-    const topPct = 22 + f*72;      // % of the glass, measured up from the bottom, fog reaches
-    const bottomA = 0.4 + f*0.9;   // opacity right at the bottom edge
+    const topPct = 15 + f*95;                    // how high up the glass the fog reaches at all
+    const bottomA = 0.3 + f*0.65;                // opacity right at the bottom edge
+    const holdPct = topPct * (0.35 + f*0.45);    // where density starts tapering off
+    const holdA = bottomA * (0.55 + f*0.4);      // opacity still held at that point
     els.fog.style.background =
       `linear-gradient(to top, rgba(214,217,222,${bottomA.toFixed(2)}) 0%, ` +
+      `rgba(214,217,222,${holdA.toFixed(2)}) ${holdPct.toFixed(1)}%, ` +
       `rgba(214,217,222,0) ${topPct.toFixed(1)}%)`;
   }
 
