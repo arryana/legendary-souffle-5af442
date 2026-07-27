@@ -655,16 +655,22 @@
   // highlight pair below, not just a single coverage-driven tone.
   const CLOUD_SHADOW_LIGHT = hexToRgb('#b4bac2'), CLOUD_SHADOW_HEAVY = hexToRgb('#3a3f48');
   const CLOUD_HIGHLIGHT_LIGHT = hexToRgb('#fffffd'), CLOUD_HIGHLIGHT_HEAVY = hexToRgb('#6b7078');
+  // snow falls from a visibly lighter, brighter grey sky than a rain/thunderstorm one — the
+  // same heavy coverage, but nowhere near as dark and ominous
+  const CLOUD_SHADOW_HEAVY_SNOW = hexToRgb('#8b909a'), CLOUD_HIGHLIGHT_HEAVY_SNOW = hexToRgb('#d9dce2');
   const CLOUD_NIGHT_TONE = hexToRgb('#232a3a');
-  function applyClouds(coverage, dayF){
+  function applyClouds(coverage, dayF, snowy){
     const c = Math.max(0, Math.min(1, coverage));
     const f = Math.max(0, Math.min(1, dayF));
+    const sn = Math.max(0, Math.min(1, snowy||0));
     els.clouds.style.opacity = c > 0.01 ? 1 : 0;
     const curve = lerpCloudCurve(c);
     els.cloudCurve.setAttribute('intercept', curve.intercept.toFixed(3));
     els.cloudCurve.setAttribute('slope', curve.slope.toFixed(2));
-    const shadow = mixRgb(CLOUD_NIGHT_TONE, mixRgb(CLOUD_SHADOW_LIGHT, CLOUD_SHADOW_HEAVY, c), f);
-    const highlight = mixRgb(CLOUD_NIGHT_TONE, mixRgb(CLOUD_HIGHLIGHT_LIGHT, CLOUD_HIGHLIGHT_HEAVY, c), f);
+    const shadowHeavy = mixRgb(CLOUD_SHADOW_HEAVY, CLOUD_SHADOW_HEAVY_SNOW, sn);
+    const highlightHeavy = mixRgb(CLOUD_HIGHLIGHT_HEAVY, CLOUD_HIGHLIGHT_HEAVY_SNOW, sn);
+    const shadow = mixRgb(CLOUD_NIGHT_TONE, mixRgb(CLOUD_SHADOW_LIGHT, shadowHeavy, c), f);
+    const highlight = mixRgb(CLOUD_NIGHT_TONE, mixRgb(CLOUD_HIGHLIGHT_LIGHT, highlightHeavy, c), f);
     const funcs = [els.cloudShadeR, els.cloudShadeG, els.cloudShadeB];
     funcs.forEach((fn,i)=>{
       const s = shadow[i]/255, h = highlight[i]/255;
@@ -734,6 +740,11 @@
         const m = WMO_WEATHER[data.current.weather_code] || {};
         rainIntensity = m.rain||0; snowIntensity = m.snow||0; sleetIntensity = m.sleet||0;
         fogIntensity = m.fog||0; lightningIntensity = m.lightning||0;
+        // rain/snow/sleet never fall from a mostly-clear sky — reported cloud_cover can lag
+        // or under-report next to the weather code, so floor it whenever precipitation is
+        // actually happening, scaled up with how heavy that precipitation is
+        const anyPrecip = Math.max(rainIntensity, snowIntensity, sleetIntensity);
+        if(anyPrecip>0) cloudCoverage = Math.max(cloudCoverage, 0.65 + anyPrecip*0.3);
       }
     } catch(e){ /* keep last known state silently */ }
   }
@@ -1191,7 +1202,7 @@
       renderMoonDisc(els.moonSvg, illum.phase);
     }
 
-    applyClouds(cloudCoverage, dayF);
+    applyClouds(cloudCoverage, dayF, snowIntensity);
     applyFog(fogIntensity, dayF);
 
     // ---- chart ----
