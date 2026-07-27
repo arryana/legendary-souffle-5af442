@@ -159,6 +159,30 @@
     inset:0;
     pointer-events:none;
   }
+
+  /* ---------- WEATHER: clouds + fog ----------
+     Both are generated in-page (SVG turbulence for clouds, a plain gradient for fog) rather
+     than image assets, so "how much" is just a number driving a filter/gradient, not a set of
+     pre-baked pictures. Clouds sit in front of the sun/moon/stars but behind the hills (the
+     hills are the nearest thing in the scene); fog sits in front of the hills, since real fog
+     is close enough to wash out the background. */
+  #clouds{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity 2s ease;
+  }
+  #cloud-drift{ animation:cloud-pan 260s ease-in-out infinite alternate; }
+  @keyframes cloud-pan{ from{ transform:translateX(0); } to{ transform:translateX(-16%); } }
+
+  #fog{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity 2.5s ease, background 2.5s ease;
+  }
   #sky-sun, #sky-moon{
     position:absolute;
     transition:opacity 1.2s ease, left 2s linear, top 2s linear;
@@ -353,10 +377,25 @@
         <svg id="sky-sun" viewBox="0 0 100 100"></svg>
         <svg id="sky-moon" viewBox="0 0 100 100"></svg>
       </div>
+      <svg id="clouds" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <defs>
+          <filter id="cloud-noise" x="-25%" y="-25%" width="150%" height="150%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.014 0.024" numOctaves="5" seed="11" result="noise"/>
+            <feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise"/>
+            <feComponentTransfer in="alphaNoise" result="shaped">
+              <feFuncA id="cloud-curve" type="linear" slope="5.2" intercept="-4"/>
+            </feComponentTransfer>
+            <feFlood flood-color="#f4f6f8" result="white"/>
+            <feComposite in="white" in2="shaped" operator="in"/>
+          </filter>
+        </defs>
+        <g id="cloud-drift"><rect x="-60" y="-10" width="220" height="80" filter="url(#cloud-noise)"/></g>
+      </svg>
       <!-- real photographed hills, sitting IN FRONT of the sun and moon so
            they set behind the ridge; tinted with the time of day in JS -->
       <div id="hills"></div>
       <div id="moon-disc-wrap"><svg viewBox="0 0 100 100" id="moon-disc-svg"></svg></div>
+      <div id="fog"></div>
     </div>
     <img id="frame-img" src="windower-frame.png" alt="">
     <div id="beam-sun"></div>
@@ -473,6 +512,10 @@
 
   let offsetDays = 0;      // -30..30, 0 = live
   let dragging = false;
+
+  // ---- weather (not yet wired to live data — see applyClouds/applyFog below) ----
+  let cloudCoverage = 0;   // 0 = clear, 1 = fully overcast
+  let fogIntensity = 0;    // 0 = none, 1 = dense
   const SNAP_THRESHOLD = 1.2; // days, snap back to live when released this close to center
 
   const els = {
@@ -485,6 +528,9 @@
     beamMoon: document.getElementById('beam-moon'),
     moonWrap: document.getElementById('moon-disc-wrap'),
     moonSvg: document.getElementById('moon-disc-svg'),
+    clouds: document.getElementById('clouds'),
+    cloudCurve: document.getElementById('cloud-curve'),
+    fog: document.getElementById('fog'),
     chart: document.getElementById('chart'),
     sliderTrack: document.getElementById('slider-track'),
     sliderThumb: document.getElementById('slider-thumb'),
@@ -535,6 +581,32 @@
   }
   function mixRgb(a,b,t){ return a.map((c,i)=> Math.round(c + (b[i]-c)*t)); }
   function rgbStr(c){ return `rgb(${c[0]},${c[1]},${c[2]})`; }
+
+  /* ===================== CLOUDS + FOG ===================== */
+  // coverage 0..1: the component-transfer intercept is what actually clips the noise field
+  // down to a handful of separated wisps (low) or up past nearly all of it (high, reading as
+  // a near-solid grey-white ceiling) — calibrated by eye against rendered samples across the
+  // range, since feTurbulence's real output distribution doesn't match its nominal 0..1 range
+  function applyClouds(coverage){
+    const c = Math.max(0, Math.min(1, coverage));
+    els.clouds.style.opacity = c > 0.01 ? 1 : 0;
+    els.cloudCurve.setAttribute('intercept', (-4 + c*2.5).toFixed(3));
+    els.cloudCurve.setAttribute('slope', (5.2 - c*1.2).toFixed(2));
+  }
+  // intensity 0..1: fog is modelled as a haze hugging the hills that thins going up —
+  // heavier fog both climbs higher up the glass (eating further into the sky, not just
+  // the hills) and reads more opaque near the bottom. Most of the window's height sits
+  // above the hills, so the reachable range has to be generous or "heavy" never reads as
+  // more than a faint tint at the very bottom edge.
+  function applyFog(intensity){
+    const f = Math.max(0, Math.min(1, intensity));
+    els.fog.style.opacity = f > 0.01 ? 1 : 0;
+    const topPct = 22 + f*72;      // % of the glass, measured up from the bottom, fog reaches
+    const bottomA = 0.4 + f*0.9;   // opacity right at the bottom edge
+    els.fog.style.background =
+      `linear-gradient(to top, rgba(214,217,222,${bottomA.toFixed(2)}) 0%, ` +
+      `rgba(214,217,222,0) ${topPct.toFixed(1)}%)`;
+  }
 
   /* ===================== MOON PHASE RENDER ===================== */
   function moonTerminatorPath(cx, cy, r, phase){
@@ -801,6 +873,9 @@
     if (moonOnly){
       renderMoonDisc(els.moonSvg, illum.phase);
     }
+
+    applyClouds(cloudCoverage);
+    applyFog(fogIntensity);
 
     // ---- chart ----
     const sunCurveD = buildCurve(t => getSunPosition(t, lat, lon), displayDate);
