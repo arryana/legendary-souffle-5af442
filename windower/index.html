@@ -435,6 +435,7 @@
   <div id="controls">
     <label class="toggle" title="Moon phase only"><input type="checkbox" id="chk-moononly" aria-label="Moon phase only"><span class="toggle-glyph">&#127769;</span></label>
     <label class="toggle" title="Fuller reading"><input type="checkbox" id="chk-fuller" aria-label="Fuller reading"><span class="toggle-glyph">&deg;</span></label>
+    <label class="toggle" title="Today's weather"><input type="checkbox" id="chk-weather" aria-label="Today's weather"><span class="toggle-glyph">&#9925;</span></label>
   </div>
 
 </div>
@@ -562,6 +563,7 @@
     sliderLabel: document.getElementById('slider-label'),
     chkMoonOnly: document.getElementById('chk-moononly'),
     chkFuller: document.getElementById('chk-fuller'),
+    chkWeather: document.getElementById('chk-weather'),
     tooltip: document.getElementById('tooltip'),
   };
 
@@ -666,6 +668,57 @@
       `rgba(${r},${g},${b},${holdA.toFixed(2)}) ${holdPct.toFixed(1)}%, ` +
       `rgba(${r},${g},${b},0) ${topPct.toFixed(1)}%)`;
   }
+
+  /* ===================== LIVE WEATHER =====================
+     Same open-meteo endpoint galileo and conometer already call, same lat/lon this page
+     already resolves for the sun/moon (real geolocation with a north-east-England fallback).
+     cloud_cover comes straight from the API as a percentage; the WMO weather_code decides
+     which, if any, of rain/snow/sleet/fog/lightning gets switched on and roughly how hard —
+     each code's own "slight/moderate/heavy" wording is a more reliable intensity signal here
+     than trying to rescale the raw precipitation-amount field ourselves. Off by default, like
+     the other two toggles below — nothing about this changes what a visitor sees until they
+     opt in. */
+  const WMO_WEATHER = {
+    45:{fog:0.45}, 48:{fog:0.75},                          // fog, rime fog
+    51:{rain:0.15}, 53:{rain:0.35}, 55:{rain:0.55},         // drizzle
+    56:{sleet:0.3}, 57:{sleet:0.55},                        // freezing drizzle
+    61:{rain:0.25}, 63:{rain:0.55}, 65:{rain:0.9},          // rain
+    66:{sleet:0.35}, 67:{sleet:0.7},                        // freezing rain
+    71:{snow:0.2}, 73:{snow:0.5}, 75:{snow:0.85},           // snow
+    77:{snow:0.15},                                          // snow grains
+    80:{rain:0.3}, 81:{rain:0.6}, 82:{rain:0.95},           // rain showers
+    85:{snow:0.35}, 86:{snow:0.8},                          // snow showers
+    95:{rain:0.6, lightning:0.5},                           // thunderstorm
+    96:{rain:0.7, lightning:0.75}, 99:{rain:0.85, lightning:1.0},  // thunderstorm w/ hail
+  };
+  function clearLiveWeather(){
+    cloudCoverage=0; fogIntensity=0; rainIntensity=0; snowIntensity=0; sleetIntensity=0; lightningIntensity=0;
+  }
+  let liveWeatherOn = false, weatherPoll = null;
+  async function fetchLiveWeather(){
+    if(lat==null || lon==null) return;
+    try{
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weather_code,cloud_cover`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if(!liveWeatherOn) return;   // the toggle may have been switched off while this was in flight
+      if(data && data.current){
+        cloudCoverage = Math.max(0, Math.min(1, (data.current.cloud_cover||0)/100));
+        const m = WMO_WEATHER[data.current.weather_code] || {};
+        rainIntensity = m.rain||0; snowIntensity = m.snow||0; sleetIntensity = m.sleet||0;
+        fogIntensity = m.fog||0; lightningIntensity = m.lightning||0;
+      }
+    } catch(e){ /* keep last known state silently */ }
+  }
+  els.chkWeather.addEventListener('change', ()=>{
+    liveWeatherOn = els.chkWeather.checked;
+    if(liveWeatherOn){
+      fetchLiveWeather();
+      if(!weatherPoll) weatherPoll = setInterval(fetchLiveWeather, 10*60*1000);
+    } else {
+      clearLiveWeather();
+    }
+  });
 
   /* ===================== RAIN + SNOW + SLEET =====================
      A small canvas particle system layered right against the glass — it runs its own
