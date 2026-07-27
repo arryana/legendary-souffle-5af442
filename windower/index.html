@@ -154,6 +154,28 @@
     will-change:filter;
   }
 
+  /* a light dusting on the hills while it's snowing — reuses the hills photo's own alpha
+     shape as a mask (same trick as the sunbeam mask below) so the white only ever falls where
+     the hills silhouette actually is, never spilling into the sky above the ridge */
+  #hills-snow{
+    position:absolute;
+    left:0; right:0;
+    bottom:12%;
+    width:100%;
+    height:19%;
+    mask-image:url('windower-hills.png');
+    mask-size:100% 100%;
+    mask-position:center bottom;
+    mask-repeat:no-repeat;
+    -webkit-mask-image:url('windower-hills.png');
+    -webkit-mask-size:100% 100%;
+    -webkit-mask-position:center bottom;
+    -webkit-mask-repeat:no-repeat;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity 3s ease, filter 2.5s ease;
+  }
+
   #sky-body-layer{
     position:absolute;
     inset:0;
@@ -426,6 +448,7 @@
       <!-- real photographed hills, sitting IN FRONT of the sun and moon so
            they set behind the ridge; tinted with the time of day in JS -->
       <div id="hills"></div>
+      <div id="hills-snow"></div>
       <div id="moon-disc-wrap"><svg viewBox="0 0 100 100" id="moon-disc-svg"></svg></div>
       <div id="fog"></div>
       <canvas id="precip"></canvas>
@@ -563,6 +586,7 @@
     skySun: document.getElementById('sky-sun'),
     skyMoon: document.getElementById('sky-moon'),
     hills: document.getElementById('hills'),
+    hillsSnow: document.getElementById('hills-snow'),
     beamSun: document.getElementById('beam-sun'),
     beamMoon: document.getElementById('beam-moon'),
     moonWrap: document.getElementById('moon-disc-wrap'),
@@ -1183,6 +1207,18 @@
     const saturation = (0.65 + 0.55 * dayF).toFixed(3);
     const sepia = (0.4 * warmF).toFixed(3);
     els.hills.style.filter = `brightness(${brightness}) saturate(${saturation}) sepia(${sepia})`;
+
+    // snow dusting the hills: opacity tracks current snowfall directly (no persistence once
+    // it stops — a simplification, real accumulation would need to survive after the snow
+    // itself clears), and how far down the ridge it reaches grows with how heavy it's coming
+    // down. Its own, much gentler brightness floor than the bare hill photo — real snow stays
+    // visibly pale at night (it reflects what little ambient/moon light there is) rather than
+    // going as dark as bare rock or grass would.
+    els.hillsSnow.style.opacity = snowIntensity > 0.02 ? Math.min(1, snowIntensity*1.3).toFixed(2) : 0;
+    const snowMidPct = 30 + snowIntensity*45, snowEndPct = snowMidPct + 25;
+    els.hillsSnow.style.background =
+      `linear-gradient(to bottom, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) ${snowMidPct.toFixed(0)}%, rgba(255,255,255,0) ${snowEndPct.toFixed(0)}%)`;
+    els.hillsSnow.style.filter = `brightness(${(0.55 + 0.45*dayF).toFixed(3)})`;
 
     // the sill light: a warm sunbeam by day, or — once the sun's down — cool
     // moonlight scaled by the real moon phase (bright near full, all but gone
