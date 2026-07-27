@@ -396,7 +396,11 @@
       <svg id="clouds" viewBox="0 0 100 100" preserveAspectRatio="none">
         <defs>
           <filter id="cloud-noise" x="-25%" y="-25%" width="150%" height="150%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.014 0.024" numOctaves="5" seed="11" result="noise"/>
+            <!-- baseFrequency tuned high on purpose: at the window's real (much smaller, much
+                 less elongated) on-page size, a lower frequency reads as one soft smeared blob
+                 rather than distinct cloud puffs — this was checked against the actual page,
+                 not just an isolated test canvas -->
+            <feTurbulence type="fractalNoise" baseFrequency="0.06 0.09" numOctaves="5" seed="11" result="noise"/>
             <feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise"/>
             <feComponentTransfer in="alphaNoise" result="shaped">
               <feFuncA id="cloud-curve" type="linear" slope="5.2" intercept="-4"/>
