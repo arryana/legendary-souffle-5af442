@@ -603,10 +603,10 @@
   function applyFog(intensity){
     const f = Math.max(0, Math.min(1, intensity));
     els.fog.style.opacity = f > 0.01 ? 1 : 0;
-    const topPct = 15 + f*95;                    // how high up the glass the fog reaches at all
-    const bottomA = 0.3 + f*0.65;                // opacity right at the bottom edge
-    const holdPct = topPct * (0.35 + f*0.45);    // where density starts tapering off
-    const holdA = bottomA * (0.55 + f*0.4);      // opacity still held at that point
+    const topPct = 15 + f*80;                    // how high up the glass the fog reaches at all
+    const bottomA = 0.3 + f*0.55;                // opacity right at the bottom edge
+    const holdPct = topPct * (0.35 + f*0.4);     // where density starts tapering off
+    const holdA = bottomA * (0.55 + f*0.35);     // opacity still held at that point
     els.fog.style.background =
       `linear-gradient(to top, rgba(214,217,222,${bottomA.toFixed(2)}) 0%, ` +
       `rgba(214,217,222,${holdA.toFixed(2)}) ${holdPct.toFixed(1)}%, ` +
