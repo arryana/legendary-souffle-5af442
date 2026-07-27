@@ -117,6 +117,15 @@ object positioned at the cursor and immediately starts dragging it.
 To add a new stock gear size: just add the tooth count to `TRAY`. Nothing else needs to change
 — layout, tray icon rendering, and pickup all key off the array.
 
+The lamp's tray icon is drawn with the real `drawLamp(lamp, dim)` (see §7), reused against a
+static, never-placed `lampPreview` lamp object — not a separate simplified drawing — so the
+picker always shows the actual gears/screw exactly as they'll look once placed, not just the
+bare `gyre-lamp-box.png` photo (which has no gears baked in — see §7's Assets section). Because
+`drawLamp` applies its own `1/LAMP_GS` scale internally (needed so the lamp's gears match every
+other gear's true size once placed on the board), the tray-fit scale factor for this icon has an
+extra `*LAMP_GS` multiplied back in to land at the same on-screen size as a plain box draw would
+have — drop that factor and the icon renders far too small.
+
 ---
 
 ## 5. Meshing and the drive train
@@ -214,7 +223,16 @@ isn't modeled; only gear-vs-gear overlap is prevented.
   actual distance, and if that error is under `SNAP_TOL` (18px, deliberately looser than
   `MESH_TOL`'s 7px — this is "close enough that snapping feels helpful," not "close enough to
   already be meshed"), nudge the dropped object to land at the *exact* correct distance and
-  angle from that neighbor.
+  angle from that neighbor — **unless** landing there would *also* put it within `MESH_TOL` of
+  some other gear. Three (or more) external gears meshed in a closed loop can't all freely turn
+  (it jams) — a gear only ever gets to properly mesh with one neighbor. If the snap would create
+  that second, accidental mesh, it's skipped and the dropped gear just stays wherever the live
+  drag (already collision-safe via `resolveOverlap`) left it. **Known remaining gap:** this only
+  catches the case where the *snap itself* introduces the double-mesh (the realistic case, since
+  a human dropping a gear by eye is never pixel-exact — the snap is what locks it in). It doesn't
+  chase down the far rarer case where the raw, pre-snap drop position is *already*, coincidentally,
+  within `MESH_TOL` of two gears at once without any snap correction needed — that would take
+  sub-pixel mouse precision to hit by accident, so it hasn't been guarded against separately.
 
 For the lamp, the same snap-on-drop logic exists but is measured from the **screw's tip**, not
 the tile's center (see §7) — and a very-low-movement pointerup on the screw itself is treated as
@@ -320,7 +338,7 @@ dark, same as a screw touching nothing.
 const bigSpeed = ni>=0 ? -angVel[ni]*(gears[ni].N/LAMP_BIG_N) : 0;
 lamp.bigAngle += bigSpeed*dt;
 lamp.smallAngle -= (LAMP_BIG_N/LAMP_SMALL_N)*bigSpeed*dt;
-lamp.phase -= outerR(LAMP_SMALL_N)*(LAMP_BIG_N/LAMP_SMALL_N)*bigSpeed*dt;
+lamp.phase += outerR(LAMP_SMALL_N)*(LAMP_BIG_N/LAMP_SMALL_N)*bigSpeed*dt;
 lamp.speed=bigSpeed; lamp.engaged=ni>=0;
 ```
 
@@ -332,6 +350,19 @@ and the tooth-count ratio between them (as if the screw were a simple 1:1 relay 
 modeled as a real worm gear, this is a deliberate simplification, see below). From there,
 `smallAngle` and `phase` (the screw thread's scroll position) are both driven off `bigSpeed` at
 their own correct ratios, same logic as §5's `angVel` propagation.
+
+**`phase`'s sign is `+=`, not `-=` like `smallAngle`/`bigAngle` — this isn't a typo.** The two
+formulas represent the same physical motion through two different renderers (a rotation angle
+vs. a texture-scroll offset), and those renderers don't share a sign convention: `smallAngle`
+increasing spins the small gear so its contact point (the bottom, since the screw sits below it)
+moves screen-*left*, while `phase` increasing scrolls the thread texture screen-*right* (see
+`drawLamp`'s tiling loop — larger `phase` draws the thread tiles further right). For the small
+gear and the screw to look like they're actually turning *together* at their shared contact
+point (no-slip meshing) rather than fighting each other, their rates need opposite-looking signs
+here. This was gotten backwards once already (both were `-=`) — if the small gear ever looks like
+it's spinning against the screw instead of with it, check this sign first, and verify it the way
+§10 describes (read `lamp.smallAngle`/`lamp.phase` numerically across two frames and check the
+implied contact-point directions match — don't just eyeball a screenshot, same warning as §1).
 
 `lamp.speed` (signed) is what the light-glow code reads: sign picks red vs. blue, magnitude
 (clamped) picks brightness. Idle/unmeshed is `speed=0` → no glow at all, drawn with the same

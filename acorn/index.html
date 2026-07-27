@@ -141,7 +141,7 @@
   #music:hover #musicName{ opacity:.55; }
 </style>
 <div id="music" title="play your own music">
-  <button id="musicBtn" aria-label="play your own music">♪</button>
+  <button id="musicBtn" aria-label="play your own music">🎧</button>
   <span id="musicName"></span>
 </div>
 <input type="file" id="musicPick" accept="audio/*" multiple hidden>
@@ -153,7 +153,7 @@
   let list=[], idx=0;
   const label=f=> f ? f.name.replace(/\.[^.]+$/,'') : '';
   function load(i){ if(el.src) URL.revokeObjectURL(el.src); el.src=URL.createObjectURL(list[i]); name.textContent=label(list[i]); }
-  function sync(){ btn.textContent = !el.src ? '♪' : (el.paused ? '▶' : '❚❚'); btn.classList.toggle('playing', !!el.src && !el.paused); }
+  function sync(){ btn.textContent = !el.src ? '🎧' : (el.paused ? '▶' : '❚❚'); btn.classList.toggle('playing', !!el.src && !el.paused); }
   btn.addEventListener('click', ()=>{ if(!list.length){ pick.click(); return; } el.paused ? el.play() : el.pause(); });
   name.addEventListener('click', ()=> pick.click());
   pick.addEventListener('change', ()=>{ if(!pick.files.length) return; list=[...pick.files]; idx=0; el.loop=(list.length===1); load(0); el.play(); });

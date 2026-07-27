@@ -40,7 +40,7 @@
   #music:hover #musicName{ opacity:.55; }
 </style>
 <div id="music" title="play your own music">
-  <button id="musicBtn" aria-label="play your own music">♪</button>
+  <button id="musicBtn" aria-label="play your own music">🎧</button>
   <span id="musicName"></span>
 </div>
 <input type="file" id="musicPick" accept="audio/*" multiple hidden>
@@ -52,7 +52,7 @@
   let list=[], idx=0;
   const label=f=> f ? f.name.replace(/\.[^.]+$/,'') : '';
   function load(i){ if(el.src) URL.revokeObjectURL(el.src); el.src=URL.createObjectURL(list[i]); name.textContent=label(list[i]); }
-  function sync(){ btn.textContent = !el.src ? '♪' : (el.paused ? '▶' : '❚❚'); btn.classList.toggle('playing', !!el.src && !el.paused); }
+  function sync(){ btn.textContent = !el.src ? '🎧' : (el.paused ? '▶' : '❚❚'); btn.classList.toggle('playing', !!el.src && !el.paused); }
   btn.addEventListener('click', ()=>{ if(!list.length){ pick.click(); return; } el.paused ? el.play() : el.pause(); });
   name.addEventListener('click', ()=> pick.click());
   pick.addEventListener('change', ()=>{ if(!pick.files.length) return; list=[...pick.files]; idx=0; el.loop=(list.length===1); load(0); el.play(); });
@@ -85,6 +85,7 @@
   // the gear train (see lamp geometry block below, near the sprite/drawing code)
   let lamps=[], lampIdc=0;
   const mkLamp=(x,y)=>({id:lampIdc++,x,y,facing:0,bigAngle:-0.113,smallAngle:Math.PI/10,phase:0,speed:0,engaged:false});
+  const lampPreview=mkLamp(0,0);   // static, never added to lamps[] — only used to draw the tray's catalogue icon (box + its gears + screw), so the picker shows what you're actually picking
 
   const TRAY=[8,12,16,22,30,40];
   let trayRects=[], lampTrayRect=null;
@@ -410,7 +411,17 @@
       if(y<130 && !g.fixed){ gears=gears.filter(k=>k!==g); }   // dropped in the tray band -> remove (never the driver)
       else {                                              // nudge to exact mesh distance if close to a neighbour
         let best=null,err=1e9; for(const o of gears){ if(o===g) continue; const t=pitchR(g.N)+pitchR(o.N); const e2=Math.abs(Math.hypot(g.x-o.x,g.y-o.y)-t); if(e2<err){err=e2;best=o;} }
-        if(best&&err<SNAP_TOL){ const t=pitchR(g.N)+pitchR(best.N), a=Math.atan2(g.y-best.y,g.x-best.x); g.x=best.x+Math.cos(a)*t; g.y=best.y+Math.sin(a)*t; }
+        if(best&&err<SNAP_TOL){
+          const t=pitchR(g.N)+pitchR(best.N), a=Math.atan2(g.y-best.y,g.x-best.x);
+          const nx=best.x+Math.cos(a)*t, ny=best.y+Math.sin(a)*t;
+          // don't lock into a mesh with `best` if that position also happens to land at mesh
+          // distance from some OTHER gear -- three (or more) external gears meshed in a closed
+          // loop can't all freely turn (it jams), so a gear only ever gets to properly mesh
+          // with one neighbour. If snapping here would double-mesh, just leave it where the
+          // drag safely left it instead of forcing an impossible arrangement.
+          const wouldAlsoMesh=gears.some(o=>o!==g&&o!==best&&Math.abs(Math.hypot(nx-o.x,ny-o.y)-(pitchR(g.N)+pitchR(o.N)))<MESH_TOL);
+          if(!wouldAlsoMesh){ g.x=nx; g.y=ny; }
+        }
       }
     } else { const lamp=drag.obj, moved=Math.hypot(x-drag.downX,y-drag.downY);
       if(moved<8 && drag.downOnScrew){ lamp.facing=(lamp.facing+1)%4; }   // a click on the screw spins the tile 90°
@@ -459,7 +470,16 @@
       const bigSpeed = ni>=0 ? -angVel[ni]*(gears[ni].N/LAMP_BIG_N) : 0;
       lamp.bigAngle += bigSpeed*dt;
       lamp.smallAngle -= (LAMP_BIG_N/LAMP_SMALL_N)*bigSpeed*dt;
-      lamp.phase -= outerR(LAMP_SMALL_N)*(LAMP_BIG_N/LAMP_SMALL_N)*bigSpeed*dt;
+      // the screw's thread scroll must match the small gear's actual contact-point motion
+      // (no-slip meshing) — this is a "+=", not a "-=" like smallAngle/bigAngle above,
+      // because "phase increasing" scrolls the thread texture right on screen while
+      // "smallAngle increasing" spins the small gear so its bottom (the contact point,
+      // since the screw sits below it) moves left — opposite senses for the same physical
+      // motion, given how each one is drawn. Getting this wrong doesn't break the screw's
+      // own behavior (it still correctly reverses with the drive chain's length/parity,
+      // since that only depends on bigSpeed's sign) — it just makes the screw and the small
+      // gear above it visually fight each other instead of turning together.
+      lamp.phase += outerR(LAMP_SMALL_N)*(LAMP_BIG_N/LAMP_SMALL_N)*bigSpeed*dt;
       lamp.speed=bigSpeed; lamp.engaged=ni>=0;
     }
 
@@ -467,7 +487,10 @@
     // tray
     for(const t of trayRects){ ctx.save(); ctx.translate(t.cx,t.cy); const s=Math.min(1,(t.hit*0.95)/outerR(t.N)); ctx.scale(s,s); gearBody(t.N,false,false); ctx.restore(); }
     if(lampTrayRect){ ctx.save(); ctx.translate(lampTrayRect.cx,lampTrayRect.cy);
-      const s=Math.min(1,(lampTrayRect.hit*1.7)/Math.max(LB_bw,LB_bh)); ctx.scale(s,s); ctx.drawImage(lampBoxImg,-LB_cx,-LB_cy); ctx.restore(); }
+      // drawLamp applies its own extra 1/LAMP_GS scale (needed on the real board so the lamp's
+      // gears match every other gear's true size) — multiply that back in here so the tray icon
+      // ends up the same on-screen size as before, now with its gears and screw visible too.
+      const s=Math.min(1,(lampTrayRect.hit*1.7)/Math.max(LB_bw,LB_bh))*LAMP_GS; ctx.scale(s,s); drawLamp(lampPreview,false); ctx.restore(); }
     // board gears — dim the ones not part of the running train
     for(let i=0;i<gears.length;i++){ const g=gears[i]; drawGear(g, !connected.has(i) && !g.fixed); }
     for(const lamp of lamps) drawLamp(lamp, !lamp.engaged);
