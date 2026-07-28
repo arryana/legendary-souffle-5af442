@@ -425,16 +425,25 @@
   // entirely — there's nothing on it that could catch.
   const OBJECTS = {
     pebble:    { friction: 0.985, radius: 30, wobble: 0 },
-    // acorn cone-roll derived from the real photo: cap outer edge ~441px (R),
-    // nut's rounded bottom ~217px (r), axial length ~318px between them.
-    // A tapered object rolls in a circle; curl per px = 2(R-r)/(L(R+r)) ≈
-    // 0.0021 for those measurements. The value here had drifted to roughly
-    // double that, which curls it into a tight spiral rather than the wide,
-    // graceful loop an actual cone traces — corrected back to the derived
-    // figure (with a touch of margin for visual clarity).
+    // acorn cone-roll, re-derived by actually measuring the real photo (not
+    // eyeballed): the cap's own rim is one contact circle, but the second
+    // one is NOT the tip — an acorn's body is curved, not a straight cone
+    // side, so the true second contact is wherever a straight line from the
+    // cap's edge first touches the body again without cutting into it (the
+    // classic "resting on its widest points" bitangent, found by scanning
+    // the photo's own silhouette rather than guessing): R≈220px, r≈211px,
+    // L≈27px apart, in the source photo's own pixel space.
+    // A tapered object rolls in a circle; curl per unit distance travelled
+    // = 2(R-r)/(L(R+r)). The previous figure here (0.0024) used that same
+    // formula but left R/r/L in the SOURCE PHOTO's pixel scale while
+    // applying the result against on-screen travel distance, which is a
+    // much smaller scale (the photo is drawn at roughly a quarter size) —
+    // so the curl came out several times too gentle, reading as "barely
+    // arcs at all" instead of the tight, distinct loop a real acorn traces.
+    // Rescaled to the sprite's actual on-screen size: ≈0.006.
     // catchInterval 1e9 disables the old random stick-slip kick so the arc
     // reads as a clean, steady cone curve rather than a wavy ball.
-    acorn:     { friction: 0.974, radius: 62, wobble: 1, catchInterval: 1e9, curlRate: 0.0024 },
+    acorn:     { friction: 0.974, radius: 62, wobble: 1, catchInterval: 1e9, curlRate: 0.006 },
     disc:      { friction: 0.976, radius: 34, wobble: 0, spinOnImpact: 1 },
     jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.0022 },
   };
