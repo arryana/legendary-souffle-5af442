@@ -676,8 +676,17 @@
   function updateCloudFrequency(){
     const rect = document.getElementById('glass').getBoundingClientRect();
     const w = rect.width || CLOUD_FREQ_REF.w, h = rect.height || CLOUD_FREQ_REF.h;
-    const fx = CLOUD_FREQ_REF.fx * CLOUD_FREQ_REF.w / w;
-    const fy = CLOUD_FREQ_REF.fy * CLOUD_FREQ_REF.h / h;
+    // what actually determines a cell's on-screen shape is baseFrequency combined with the
+    // box's aspect ratio (pixel-cell-width : pixel-cell-height = aspect * freq_y/freq_x) — so
+    // it's the RATIO between the two axes that needs correcting for a different-shaped window,
+    // not each axis independently. Splitting that correction as a square root across both axes
+    // (rather than piling it all onto one) keeps the pattern's overall density about the same
+    // as the desktop reference instead of pushing either axis to an extreme on very tall/narrow
+    // windows.
+    const refAspect = CLOUD_FREQ_REF.w / CLOUD_FREQ_REF.h;
+    const aspectAdjust = Math.sqrt((w/h) / refAspect);
+    const fx = CLOUD_FREQ_REF.fx * aspectAdjust;
+    const fy = CLOUD_FREQ_REF.fy / aspectAdjust;
     els.cloudTurbulence.setAttribute('baseFrequency', `${fx.toFixed(4)} ${fy.toFixed(4)}`);
   }
   function lerpCloudCurve(c){
