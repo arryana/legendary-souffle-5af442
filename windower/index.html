@@ -1287,14 +1287,22 @@
 
     // the sill light: a warm sunbeam by day, or — once the sun's down — cool
     // moonlight scaled by the real moon phase (bright near full, all but gone
-    // near new), reusing the same day/moon factors as the hills and stars above
-    const beamSunOpacity = Math.max(0, Math.min(1, (sunAltDeg + 4) / 14));
+    // near new), reusing the same day/moon factors as the hills and stars above.
+    // A sharp, direct beam like this is exactly what overcast skies scatter
+    // away — it was previously keyed only to sun/moon altitude, so it kept
+    // shining at full strength even under a fully grey, clouded-over sky,
+    // which reads as jarring against clouds dark enough to mean no direct
+    // light is actually getting through. Thin clouds barely touch it; a
+    // heavy overcast knocks it down to a bare trace rather than zeroing it
+    // outright, since some diffuse light still gets through in reality.
+    const beamCloudAtten = 1 - cloudCoverage*0.88;
+    const beamSunOpacity = Math.max(0, Math.min(1, (sunAltDeg + 4) / 14)) * beamCloudAtten;
     // beam-specific altitude factor — a wide ramp so the moon has to climb well clear of
     // the horizon before the beam reaches full strength, staying dim through moonrise/set
     // the way real low-angle moonlight does; a steep gamma on the phase fraction means only
     // a genuinely full-ish moon lights the floor plainly — a thin crescent is barely there
     const beamMoonAlt = Math.max(0, Math.min(1, moonAltDeg / 35));
-    const beamMoonOpacity = Math.pow(illum.fraction, 1.8) * beamMoonAlt * (1 - dayF) * 0.85;
+    const beamMoonOpacity = Math.pow(illum.fraction, 1.8) * beamMoonAlt * (1 - dayF) * 0.85 * beamCloudAtten;
     els.beamSun.style.opacity = beamSunOpacity;
     els.beamMoon.style.opacity = beamMoonOpacity;
 
