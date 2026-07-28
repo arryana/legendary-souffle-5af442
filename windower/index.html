@@ -835,7 +835,7 @@
     }
     applyWeatherSample(weatherHourly.code[idx], weatherHourly.cloud[idx]);
   }
-  els.chkWeather.addEventListener('change', ()=>{
+  function updateLiveWeatherToggle(){
     liveWeatherOn = els.chkWeather.checked;
     if(liveWeatherOn){
       fetchLiveWeather();
@@ -843,7 +843,12 @@
     } else {
       clearLiveWeather();
     }
-  });
+  }
+  els.chkWeather.addEventListener('change', updateLiveWeatherToggle);
+  // a page refresh can leave the checkbox showing "checked" (ordinary browser form-state
+  // restoration) without ever firing a 'change' event — pick that up on load too, so the
+  // toggle doesn't go visually-on but functionally-off after a reload
+  if(els.chkWeather.checked) updateLiveWeatherToggle();
 
   /* ===================== RAIN + SNOW + SLEET =====================
      A small canvas particle system layered right against the glass — it runs its own
