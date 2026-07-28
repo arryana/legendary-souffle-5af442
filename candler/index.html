@@ -791,6 +791,25 @@ function ring() {
   });
 }
 
+// when two pins land within the same instant, two full rings starting at
+// the exact same moment just blur into one thicker tone rather than
+// reading as "two things happened" — so landings are coalesced over a
+// brief window, and two-or-more within it get a deliberate rapid double
+// ping instead, spaced far enough apart to actually be heard as two
+let pinLandings = [];
+let pinLandTimer = null;
+const SIMULTANEOUS_LANDING_MS = 80;
+function pinLanded() {
+  pinLandings.push(Date.now());
+  clearTimeout(pinLandTimer);
+  pinLandTimer = setTimeout(() => {
+    const count = pinLandings.length;
+    pinLandings = [];
+    ring();
+    if (count > 1) setTimeout(ring, 150);
+  }, SIMULTANEOUS_LANDING_MS);
+}
+
 // tiny extinguish sound — a short filtered noise burst, not a bell.
 // "Tiny fssst sound — it's just the visible end of the candle"
 function fssst() {
@@ -1267,7 +1286,7 @@ function firePin(pin) {
   // The pin stays right where it landed afterward, resting on the plate,
   // instead of disappearing.
   setTimeout(() => {
-    ring();
+    pinLanded();
     pin.fallen = true;
     renderPinList();
     // once every pin you've set has rung, repeat (if on) keeps chiming
