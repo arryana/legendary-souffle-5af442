@@ -264,7 +264,9 @@
   let rawTiltX = 0, rawTiltY = 0;
   let tiltX = 0, tiltY = 0;
   let baseBeta = null, baseGamma = null;
+  let calibSamples = [], calibStart = 0;
   const SMOOTHING = 0.12;
+  const CALIBRATION_MS = 500;
 
   function useDeviceTilt(){
     window.addEventListener('deviceorientation', (e) => {
@@ -273,10 +275,25 @@
       // countdown might sit at 20 degrees or 70 depending on the case or
       // the table, and everyone holds a phone slightly differently even
       // just standing there. Rather than assuming a prop angle, whatever
-      // orientation the phone is actually in the moment tilt gets
-      // enabled becomes the neutral centre, and every reading after that
-      // is measured relative to it.
-      if (baseBeta === null) { baseBeta = e.beta; baseGamma = e.gamma; }
+      // orientation the phone is actually in becomes the neutral centre,
+      // and every reading after that is measured relative to it.
+      //
+      // that "actually in" reading can't be the very first sample, though —
+      // it lands the instant tilt is enabled (or the tray is tapped to
+      // recentre), while the hand is often still reaching the phone up
+      // toward the face to press that button, not resting at however it'll
+      // actually be held to watch afterward. Averaging a brief window of
+      // samples instead gives the hand time to settle back down first.
+      if (baseBeta === null) {
+        if (!calibSamples.length) calibStart = performance.now();
+        calibSamples.push({ beta: e.beta, gamma: e.gamma });
+        if (performance.now() - calibStart >= CALIBRATION_MS) {
+          baseBeta = calibSamples.reduce((s, c) => s + c.beta, 0) / calibSamples.length;
+          baseGamma = calibSamples.reduce((s, c) => s + c.gamma, 0) / calibSamples.length;
+          calibSamples = [];
+        }
+        return;
+      }
       rawTiltX = Math.max(-1, Math.min(1, (e.gamma - baseGamma) / 22));
       rawTiltY = Math.max(-1, Math.min(1, (e.beta - baseBeta) / 22));
     });
@@ -410,10 +427,14 @@
     pebble:    { friction: 0.985, radius: 30, wobble: 0 },
     // acorn cone-roll derived from the real photo: cap outer edge ~441px (R),
     // nut's rounded bottom ~217px (r), axial length ~318px between them.
-    // A tapered object rolls in a circle; curl per px = 2(R-r)/(L(R+r)).
+    // A tapered object rolls in a circle; curl per px = 2(R-r)/(L(R+r)) ≈
+    // 0.0021 for those measurements. The value here had drifted to roughly
+    // double that, which curls it into a tight spiral rather than the wide,
+    // graceful loop an actual cone traces — corrected back to the derived
+    // figure (with a touch of margin for visual clarity).
     // catchInterval 1e9 disables the old random stick-slip kick so the arc
     // reads as a clean, steady cone curve rather than a wavy ball.
-    acorn:     { friction: 0.974, radius: 62, wobble: 1, catchInterval: 1e9, curlRate: 0.0040 },
+    acorn:     { friction: 0.974, radius: 62, wobble: 1, catchInterval: 1e9, curlRate: 0.0024 },
     disc:      { friction: 0.976, radius: 34, wobble: 0, spinOnImpact: 1 },
     jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.0022 },
   };
@@ -472,6 +493,7 @@
     resetObject();
     baseBeta = null;
     baseGamma = null;
+    calibSamples = [];
   });
 
   // ---------- physics ----------
@@ -488,11 +510,6 @@
 
     const speed = Math.hypot(obj.vx, obj.vy);
     const r = spec.radius;
-
-    // real rolling: how far it's actually travelled determines how much
-    // it's turned, exactly like a wheel — used for rendering the spin,
-    // and for the acorn also used to time when the cap catches next
-    obj.spin += speed / r;
 
     if (spec.wobble) {
       obj.rollDistance += speed;
@@ -545,6 +562,7 @@
       obj.discSpin += obj.discAngVel;
     }
 
+    const prevX = obj.x, prevY = obj.y;
     obj.x += obj.vx;
     obj.y += obj.vy;
 
@@ -554,6 +572,15 @@
     if (obj.x > W - r) { obj.x = W - r; obj.vx = -obj.vx * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vx); if (spec.spinOnImpact) obj.discAngVel -= obj.vy * 0.05; }
     if (obj.y < r) { obj.y = r; obj.vy = -obj.vy * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel -= obj.vx * 0.05; }
     if (obj.y > H - r) { obj.y = H - r; obj.vy = -obj.vy * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel += obj.vx * 0.05; }
+
+    // real rolling: how far it's actually MOVED this frame determines how
+    // much it's turned, exactly like a wheel — measured after wall contact
+    // is resolved, not the pre-collision velocity. An object pressed into
+    // a wall or corner by steady tilt has nowhere left to roll, so it
+    // should stop spinning too, the same way a real one pinned in place
+    // would — using pre-collision speed here made it spin forever in a
+    // corner even once it had visibly stopped moving.
+    obj.spin += Math.hypot(obj.x - prevX, obj.y - prevY) / r;
     if (clacked && clackIntensity > 0.6) playClack(clackIntensity);
 
     // acorn sprite orientation: a rolling cone keeps its long axis across the

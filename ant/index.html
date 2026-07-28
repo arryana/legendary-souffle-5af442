@@ -266,7 +266,7 @@
   // the icons are the only way in or out ----------
   const PEBBLE_R_MIN = 8, PEBBLE_R_MAX = 22;
   const LEAF_R_MIN = 15, LEAF_R_MAX = 45;
-  const TWIG_R_MIN = 16, TWIG_R_MAX = 48;
+  const TWIG_R_MIN = 32, TWIG_R_MAX = 96; // twice the footprint of the original size
   let stones = [];
   let pebbleObstacle = null;
   let leafObstacle = null;
@@ -382,6 +382,14 @@
   // rotated box the leaf photo is drawn into (see render()), inset a little
   // so ants vanish/reappear at roughly the leaf's actual silhouette rather
   // than its full (mostly-transparent-cornered) bounding rectangle.
+  //
+  // a real leaf lying on the ground isn't uniformly raised — it touches
+  // down at its two points, the stem and the tip (the local x-axis, since
+  // the source photo runs stem-on-the-left to tip-on-the-right), and only
+  // arches up over its broader sides in between. So there's a walkway
+  // along that central spine where ants stay visible, walking over the
+  // low point of contact, while the wider belly to either side of it still
+  // hides them underneath.
   function underLeaf(x,y){
     if (!leafObstacle) return false;
     const lw = leafObstacle.r*2.8, lh = lw * ((leafImg.naturalHeight||1)/(leafImg.naturalWidth||1));
@@ -390,7 +398,10 @@
     const dx = x-leafObstacle.x, dy = y-leafObstacle.y;
     const cos = Math.cos(-rot), sin = Math.sin(-rot);
     const lx = dx*cos - dy*sin, ly = dx*sin + dy*cos;
-    return (lx*lx)/(rx*rx) + (ly*ly)/(ry*ry) <= 1;
+    const insideFootprint = (lx*lx)/(rx*rx) + (ly*ly)/(ry*ry) <= 1;
+    if (!insideFootprint) return false;
+    const onWalkway = Math.abs(ly) < ry*0.22;
+    return !onWalkway;
   }
 
   // ---------- colony and food ----------
@@ -411,6 +422,7 @@
       state: 'search', // search | toFood | return
       wobble: Math.random()*Math.PI*2,
       straightTimer: 30 + Math.random()*60,
+      climbing: null, // the obstacle currently being crossed straight over, if any
     };
   }
   function syncAntCount(){
@@ -423,6 +435,20 @@
   function stepAnt(a, dt){
     const speed = 1.3 * speedMult * dt;
     a.wobble += dt*0.15;
+
+    if (a.climbing){
+      // already committed to crossing a pebble or twig straight over rather
+      // than around — hold the heading it started with (a real ant doesn't
+      // change its mind partway up) and ignore the search/trail/collision
+      // logic below entirely until it's clear of the far side
+      let cx = a.x + Math.cos(a.heading)*speed;
+      let cy = a.y + Math.sin(a.heading)*speed;
+      cx = Math.max(4, Math.min(W-4, cx));
+      cy = Math.max(4, Math.min(H-4, cy));
+      a.x = cx; a.y = cy;
+      if (Math.hypot(a.climbing.x-a.x, a.climbing.y-a.y) > a.climbing.r*1.05) a.climbing = null;
+      return;
+    }
 
     if (a.state === 'search'){
       // weighted choice: mostly wander, but nearby trail strength pulls
@@ -463,12 +489,18 @@
       if (distToColony < 14){ a.state = 'search'; a.heading = Math.random()*Math.PI*2; }
     }
 
-    // obstacle disruption: if the step ahead is blocked, weighted random
-    // alternate direction — this is the actual mechanic, not scripted
-    // pathing around stones
+    // obstacle disruption: if the step ahead is blocked, either climb
+    // straight over it (a real ant crossing a low pebble or twig, not
+    // every single one detouring around) or fall back to a weighted random
+    // alternate direction
     let nx = a.x + Math.cos(a.heading)*speed;
     let ny = a.y + Math.sin(a.heading)*speed + Math.sin(a.wobble)*0.3;
     if (blockedAt(nx,ny)){
+      const obstacle = stones.find(s => s.type !== 'leaf' && Math.hypot(s.x-nx,s.y-ny) < s.r);
+      if (obstacle && Math.random() < 0.3){
+        a.climbing = obstacle;
+        return;
+      }
       const choices = [-1.1,-0.6,0.6,1.1];
       a.heading += choices[Math.floor(Math.random()*choices.length)];
       nx = a.x + Math.cos(a.heading)*speed;
@@ -665,6 +697,24 @@
       ctx.stroke();
       ctx.restore();
     });
+
+    // leaf shadow — cast on the ground by the raised canopy, offset toward
+    // the same implied light direction as the candy's shadow above. Drawn
+    // here (before the ants) rather than down with the leaf image itself,
+    // so it's ground shading ants visibly cross like any other, not a mark
+    // that floats on top of them.
+    if (leafObstacle && leafImgReady){
+      const lw = leafObstacle.r*2.8, lh = lw * (leafImg.naturalHeight/leafImg.naturalWidth);
+      ctx.save();
+      ctx.globalAlpha = lightLevel;
+      ctx.translate(leafObstacle.x+3, leafObstacle.y+4);
+      ctx.rotate(leafObstacle.rot||0);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, lw/2*0.82, lh/2*0.68, 0, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.fill();
+      ctx.restore();
+    }
 
     // ants — three body segments, six legs and antennae, so they read as ants
     // rather than specks. Heading points along +x (forward).

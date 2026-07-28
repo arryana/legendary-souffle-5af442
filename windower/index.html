@@ -422,7 +422,7 @@
                  less elongated) on-page size, a lower frequency reads as one soft smeared blob
                  rather than distinct cloud puffs — this was checked against the actual page,
                  not just an isolated test canvas -->
-            <feTurbulence type="fractalNoise" baseFrequency="0.06 0.09" numOctaves="5" seed="11" result="noise"/>
+            <feTurbulence id="cloud-turbulence" type="fractalNoise" baseFrequency="0.06 0.09" numOctaves="5" seed="11" result="noise"/>
             <feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise"/>
             <feComponentTransfer in="alphaNoise" result="shaped">
               <feFuncA id="cloud-curve" type="linear" slope="5.2" intercept="-4"/>
@@ -592,6 +592,8 @@
     moonWrap: document.getElementById('moon-disc-wrap'),
     moonSvg: document.getElementById('moon-disc-svg'),
     clouds: document.getElementById('clouds'),
+    cloudTurbulence: document.getElementById('cloud-turbulence'),
+    cloudRect: document.querySelector('#cloud-drift rect'),
     cloudCurve: document.getElementById('cloud-curve'),
     cloudShadeR: document.getElementById('cloud-shade-r'),
     cloudShadeG: document.getElementById('cloud-shade-g'),
@@ -664,6 +666,29 @@
     {c:0.5, intercept:-2.0, slope:4.8},
     {c:1.0, intercept:0.8,  slope:3.5},
   ];
+  // the noise's baseFrequency was tuned against one specific window shape (a wide desktop
+  // one) — on a much taller/narrower phone or e-reader window, that same fixed-seed pattern
+  // can leave one of its low spots stretched right across the lower sky, showing as a gap of
+  // bare blue between the clouds and the hills that never happens on desktop. Rescaling
+  // frequency by the glass's actual pixel width/height keeps each cloud "cell" close to the
+  // same physical size regardless of window shape, so the pattern reads the same everywhere.
+  const CLOUD_FREQ_REF = {w:700, h:440, fx:0.06, fy:0.09};   // the desktop size this was tuned against
+  function updateCloudFrequency(){
+    const rect = document.getElementById('glass').getBoundingClientRect();
+    const w = rect.width || CLOUD_FREQ_REF.w, h = rect.height || CLOUD_FREQ_REF.h;
+    // what actually determines a cell's on-screen shape is baseFrequency combined with the
+    // box's aspect ratio (pixel-cell-width : pixel-cell-height = aspect * freq_y/freq_x) — so
+    // it's the RATIO between the two axes that needs correcting for a different-shaped window,
+    // not each axis independently. Splitting that correction as a square root across both axes
+    // (rather than piling it all onto one) keeps the pattern's overall density about the same
+    // as the desktop reference instead of pushing either axis to an extreme on very tall/narrow
+    // windows.
+    const refAspect = CLOUD_FREQ_REF.w / CLOUD_FREQ_REF.h;
+    const aspectAdjust = Math.sqrt((w/h) / refAspect);
+    const fx = CLOUD_FREQ_REF.fx * aspectAdjust;
+    const fy = CLOUD_FREQ_REF.fy / aspectAdjust;
+    els.cloudTurbulence.setAttribute('baseFrequency', `${fx.toFixed(4)} ${fy.toFixed(4)}`);
+  }
   function lerpCloudCurve(c){
     for(let i=0;i<CLOUD_CURVE_PTS.length-1;i++){
       const a=CLOUD_CURVE_PTS[i], b=CLOUD_CURVE_PTS[i+1];
@@ -701,6 +726,17 @@
       fn.setAttribute('intercept', s.toFixed(3));
       fn.setAttribute('slope', (h-s).toFixed(3));
     });
+    // Safari/WebKit has a known bug where changing SVG filter-primitive attributes via JS
+    // doesn't reliably invalidate the cached filter output — the clouds can get stuck
+    // showing whatever colour they first rendered (e.g. daytime white), never actually
+    // updating again even though intercept/slope keep changing correctly underneath.
+    // Detaching and reattaching the filter reference forces a genuine re-render; cheap
+    // enough to do unconditionally once a second.
+    if(els.cloudRect){
+      els.cloudRect.setAttribute('filter', 'none');
+      els.cloudRect.getBoundingClientRect();
+      els.cloudRect.setAttribute('filter', 'url(#cloud-noise)');
+    }
   }
   // intensity 0..1: fog is modelled as a haze hugging the hills that thins going up —
   // heavier fog both climbs higher up the glass (eating further into the sky, not just
@@ -827,7 +863,7 @@
     els.precip.height = Math.max(1, precipH*precipDPR);
     precipCtx.setTransform(precipDPR,0,0,precipDPR,0,0);
   }
-  window.addEventListener('resize', resizePrecip);
+  window.addEventListener('resize', ()=>{ resizePrecip(); updateCloudFrequency(); });
 
   let rainDrops = [], snowFlakes = [], sleetPellets = [];
   function spawnRainDrop(){
@@ -985,6 +1021,7 @@
     requestAnimationFrame(precipLoop);
   }
   resizePrecip();
+  updateCloudFrequency();
   requestAnimationFrame(precipLoop);
 
   /* ===================== MOON PHASE RENDER ===================== */

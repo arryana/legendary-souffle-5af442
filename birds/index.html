@@ -12,10 +12,10 @@
   #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:var(--parchment); opacity:.6; text-decoration:none; font-size:14px; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.5), 0 0 9px rgba(0,0,0,.3); transition:opacity .3s ease; }
   #backlink:hover{opacity:1;}
   canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
-  #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:center; gap:16px;
+  #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px 16px;
     padding:14px 18px 24px; background:linear-gradient(to top, rgba(10,13,20,.35), rgba(10,13,20,0)); z-index:40; }
   .glyph{ font-size:15px; opacity:.85; text-shadow:0 1px 3px rgba(0,0,0,.4); display:inline-flex; align-items:center; color:var(--parchment); filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
-  #sparrowRow{ display:flex; align-items:center; gap:10px; }
+  #sparrowRow, #crowRow{ display:flex; align-items:center; gap:10px; }
   input[type=range]{ -webkit-appearance:none; appearance:none; width:200px; height:3px; border-radius:3px; background:rgba(242,233,216,.4); outline:none; }
   input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--brass); cursor:pointer; box-shadow:0 0 6px rgba(0,0,0,.4); }
 </style>
@@ -56,11 +56,13 @@
 <canvas id="scene"></canvas>
 <div id="dock">
   <div id="sparrowRow"><span class="glyph" aria-label="sparrows"><svg width="20" height="16" viewBox="0 0 20 16" fill="currentColor"><ellipse cx="10" cy="9" rx="6.4" ry="4.6"/><circle cx="15.5" cy="5.6" r="3.4"/><path d="M4.2 8 L-0.2 5.4 L-0.2 10.8 Z" transform="translate(0.5,0)"/></svg></span><input type="range" id="sparrowSlider" min="0" max="18" value="6"></div>
+  <div id="crowRow"><span class="glyph" aria-label="crows"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><ellipse cx="13" cy="11.5" rx="8.8" ry="6.2"/><circle cx="20.5" cy="7" r="4.4"/><path d="M5.4 10 L-0.4 6.6 L-0.4 13.8 Z" transform="translate(0.6,0)"/></svg></span><input type="range" id="crowSlider" min="0" max="10" value="2"></div>
 </div>
 <script>
 (function(){
   const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
   const sparrowSlider=document.getElementById('sparrowSlider');
+  const crowSlider=document.getElementById('crowSlider');
   let W=0,H=0,DPR=1;
 
   // ---- background: a real photo (sunset sky + the two poles), used as-is — we only draw
@@ -163,9 +165,33 @@
   // photo, so the feet land exactly on our own wire regardless of window size.
   // White backgrounds render as pure silhouettes via 'multiply' blending (draw() below) —
   // white multiplies to no-op, black multiplies to black, no cutout/alpha-matte needed.
-  function sprite(file,w,h,ax,ay,nativeFacing){
-    const img=new Image(); img.src='bird-sprites/'+file;
-    return {img,w,h,ax,ay,nativeFacing:nativeFacing||-1};
+  // some crow reference photos have their own perch branch baked into the crop, thicker than
+  // and at the wrong angle for the thin wire we draw underneath. `trim` fades that branch out
+  // beyond the bird's own feet (a band of half-width `halfW` around x=ax, cut off entirely
+  // past y=cutY) so our real wire shows through instead of the mismatched one from the photo.
+  function sprite(file,w,h,ax,ay,nativeFacing,trim){
+    const img=new Image();
+    const sp={img,w,h,ax,ay,nativeFacing:nativeFacing||-1,masked:null};
+    img.onload=function(){
+      if(!trim) return;
+      const off=document.createElement('canvas'); off.width=w; off.height=h;
+      const octx=off.getContext('2d');
+      octx.drawImage(img,0,0,w,h);
+      const id=octx.getImageData(0,0,w,h), d=id.data;
+      const {bandY,halfW,cutY,feather=4}=trim;
+      for(let py=0; py<h; py++){
+        for(let px=0; px<w; px++){
+          let keep=1;
+          if(py>bandY){ const dx=Math.abs(px-ax)-halfW; if(dx>0) keep=Math.min(keep,Math.max(0,1-dx/feather)); }
+          if(py>cutY){ const dy=py-cutY; keep=Math.min(keep,Math.max(0,1-dy/feather)); }
+          if(keep<1){ const idx=(py*w+px)*4; d[idx+3]=Math.round(d[idx+3]*keep); }
+        }
+      }
+      octx.putImageData(id,0,0);
+      sp.masked=off;
+    };
+    img.src='bird-sprites/'+file;
+    return sp;
   }
   const FLY_FRAMES=[
     sprite('bird-fly-1.png',424,396,8,282),
@@ -190,7 +216,7 @@
   const SHUFFLE_LAUNCH=sprite('bird-shuffle-launch.png',438,432,255,290);
   const SHUFFLE_SETTLE=sprite('bird-shuffle-settle.png',444,284,147,240);
   const SHUFFLE_CROUCH_END=0.30, SHUFFLE_LAUNCH_END=0.45;   // fractions of the shuffle's total duration
-  const BIRD_SCALE=0.09;    // sprite pixels -> screen pixels, tuned by eye
+  const BIRD_SCALE=0.045;   // sprite pixels -> screen pixels, tuned by eye
   const SPRITE_FLAP_HZ=4.2; // full 8-frame flap cycles per second
 
   // ---- crows: a second, larger, rarer species. Same silhouette/multiply-blend approach as
@@ -207,15 +233,14 @@
     sprite('crow-fly-8.png',261,277,185,165,1),
   ];
   const CROW_LAND_APPROACH=sprite('crow-land-approach.png',268,262,195,135,1);
-  const CROW_TOUCHDOWN=sprite('crow-touchdown.png',292,269,172,236,1);
+  const CROW_TOUCHDOWN=sprite('crow-touchdown.png',292,269,172,236,1,{bandY:188,halfW:32,cutY:224,feather:4});
   const CROW_PERCH_VARIANTS=[
-    sprite('crow-perch.png',217,239,103,224,1),
-    sprite('crow-perch-alt.png',234,222,112.5,209,1),
-    sprite('crow-perch-back.png',232,218,110.5,205,1),
-    sprite('crow-perch-sleep.png',236,209,113.5,197,1),
+    sprite('crow-perch.png',217,239,103,224,1,{bandY:150,halfW:38,cutY:200,feather:4}),
+    sprite('crow-perch-alt.png',234,222,112.5,209,1,{bandY:148,halfW:42,cutY:195,feather:4}),
+    sprite('crow-perch-back.png',232,218,110.5,205,1,{bandY:130,halfW:45,cutY:190,feather:4}),
+    sprite('crow-perch-sleep.png',236,209,113.5,197,1,{bandY:138,halfW:42,cutY:182,feather:4}),
   ];
-  const CROW_SCALE=0.15;   // crows read as a noticeably bigger bird than sparrows, tuned by eye
-  const CROW_CHANCE=0.15;  // fraction of new arrivals that are a crow rather than a sparrow
+  const CROW_SCALE=0.17;   // crows read as a noticeably bigger bird than sparrows, tuned by eye
 
   // draws any of the sprites above at (x,y), silhouette-only via multiply blending, flipped
   // to match the bird's actual facing against however that sprite was originally drawn
@@ -223,10 +248,11 @@
     if(!sp.img.complete || !sp.img.naturalWidth) return;
     scale = scale || BIRD_SCALE;
     const flip = facing===sp.nativeFacing ? 1 : -1;
+    const src = sp.masked || sp.img;
     ctx.save();
     ctx.translate(x,y); ctx.scale(flip,1);
     ctx.globalCompositeOperation='multiply';
-    ctx.drawImage(sp.img, -sp.ax*scale, -sp.ay*scale, sp.w*scale, sp.h*scale);
+    ctx.drawImage(src, -sp.ax*scale, -sp.ay*scale, sp.w*scale, sp.h*scale);
     ctx.restore();
   }
 
@@ -309,9 +335,8 @@
   function randomStayFor(){
     return Math.random()<0.4 ? 3+Math.random()*7 : 10+Math.random()*35;
   }
-  function spawnSparrow(){
+  function spawnSparrow(species){
     const fromLeft=Math.random()<0.5;
-    const species=Math.random()<CROW_CHANCE ? 'crow' : 'sparrow';
     const {wireIdx,x:targetX}=pickLanding();
     const b={id:idc++, species, state:'arriving', x: fromLeft?-40:W+40, y:H*0.25+Math.random()*60,
       targetX, wireIdx, facing: fromLeft?1:-1, wingPhase:Math.random()*7, t:0, shuffleFrom:0, shuffleTo:0, shuffleT:0,
@@ -412,23 +437,26 @@
   }
   window.addEventListener('resize',resize);
 
-  let wantCount=6;
-  sparrowSlider.addEventListener('input',()=>{ wantCount=+sparrowSlider.value; });
+  let wantSparrows=6, wantCrows=2;
+  sparrowSlider.addEventListener('input',()=>{ wantSparrows=+sparrowSlider.value; });
+  crowSlider.addEventListener('input',()=>{ wantCrows=+crowSlider.value; });
   let spawnTimer=0;
 
   let last=performance.now();
   function tick(now){
     const dt=Math.min((now-last)/1000,0.05); last=now;
-    // the slider is a target level of activity, not a hard cap — birds come and go on their
+    // each slider is a target level of activity, not a hard cap — birds come and go on their
     // own (see stayFor/settleCrowding), and arrivals just get more likely the further below
     // that target the current count sits, tapering to a low ambient trickle once at or above it
     spawnTimer-=dt;
     if(spawnTimer<=0){
       spawnTimer=0.4+Math.random()*0.9;
-      const alive=sparrows.filter(b=>b.state!=='departing').length;
-      if(wantCount>0 && alive<wantCount+1){
-        const pressure=Math.max(0,wantCount-alive)/Math.max(1,wantCount);
-        if(Math.random()<0.12+0.7*pressure) spawnSparrow();
+      for(const [species,wantCount] of [['sparrow',wantSparrows],['crow',wantCrows]]){
+        const alive=sparrows.filter(b=>b.species===species && b.state!=='departing').length;
+        if(wantCount>0 && alive<wantCount+1){
+          const pressure=Math.max(0,wantCount-alive)/Math.max(1,wantCount);
+          if(Math.random()<0.12+0.7*pressure) spawnSparrow(species);
+        }
       }
     }
 
