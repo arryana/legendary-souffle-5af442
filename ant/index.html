@@ -372,10 +372,25 @@
   });
   groundWrap.addEventListener('pointercancel', () => { dragTarget = null; pointerStart = null; });
 
+  // the lollipop is a solid obstacle too, same as the pebble or twig — but
+  // its collision circle is kept smaller than FOOD_HIT_R (see below) so an
+  // ant actually heading for it still gets close enough to trigger "found
+  // food" before ever being treated as blocked by it. It shrinks (and
+  // stops being an obstacle at all) right along with the candy itself.
+  function foodObstacle(){
+    if (!showFood || food.amount <= 0) return null;
+    return { x: food.x, y: food.y, r: 22 * food.amount, type: 'food' };
+  }
+  function findObstacleAt(x,y){
+    const s = stones.find(s => s.type !== 'leaf' && Math.hypot(s.x-x,s.y-y) < s.r);
+    if (s) return s;
+    const f = foodObstacle();
+    return (f && Math.hypot(f.x-x,f.y-y) < f.r) ? f : null;
+  }
   function blockedAt(x,y){
     // the leaf is passable — ants walk underneath it rather than around it
     // (see the ant-hiding pass in render()); every other obstacle is solid
-    return stones.some(s => s.type !== 'leaf' && Math.hypot(s.x-x,s.y-y) < s.r);
+    return !!findObstacleAt(x,y);
   }
 
   // the twig's own woody stem, cut end to tip, measured directly on the
@@ -406,18 +421,20 @@
   // along that central spine where ants stay visible, walking over the
   // low point of contact, while the wider belly to either side of it still
   // hides them underneath.
-  function underLeaf(x,y){
-    if (!leafObstacle) return false;
+  function leafFootprint(x,y){
+    if (!leafObstacle) return { inside:false, onWalkway:false };
     const lw = leafObstacle.r*2.8, lh = lw * ((leafImg.naturalHeight||1)/(leafImg.naturalWidth||1));
     const rx = lw/2*0.9, ry = lh/2*0.86;
     const rot = leafObstacle.rot||0;
     const dx = x-leafObstacle.x, dy = y-leafObstacle.y;
     const cos = Math.cos(-rot), sin = Math.sin(-rot);
     const lx = dx*cos - dy*sin, ly = dx*sin + dy*cos;
-    const insideFootprint = (lx*lx)/(rx*rx) + (ly*ly)/(ry*ry) <= 1;
-    if (!insideFootprint) return false;
-    const onWalkway = Math.abs(ly) < ry*0.22;
-    return !onWalkway;
+    const inside = (lx*lx)/(rx*rx) + (ly*ly)/(ry*ry) <= 1;
+    return { inside, onWalkway: inside && Math.abs(ly) < ry*0.22 };
+  }
+  function underLeaf(x,y){
+    const f = leafFootprint(x,y);
+    return f.inside && !f.onWalkway;
   }
 
   // ---------- colony and food ----------
@@ -526,18 +543,29 @@
     }
 
     // obstacle disruption: if the step ahead is blocked, either climb
-    // straight over it (a real ant crossing a low pebble or twig, not
-    // every single one detouring around), or — for the twig specifically —
-    // turn and walk along its own length like a real ant using a fallen
-    // branch as a path, or turn and go around it. Every one of these three
-    // responses gets a brief held-still beat first (see the pause check
-    // above) — a real ant visibly hesitates at an obstacle before doing
-    // anything about it, and without that beat "walked straight over it in
-    // a dead-straight line" and "was never blocked at all" look identical.
+    // straight over it (a real ant crossing a low pebble, twig, or the
+    // lollipop, not every single one detouring around), or — for the twig
+    // specifically — turn and walk along its own length like a real ant
+    // using a fallen branch as a path, or turn and go around it. Every one
+    // of these three responses gets a brief held-still beat first (see the
+    // pause check above) — a real ant visibly hesitates at an obstacle
+    // before doing anything about it, and without that beat "walked
+    // straight over it in a dead-straight line" and "was never blocked at
+    // all" look identical.
     let nx = a.x + Math.cos(a.heading)*speed;
     let ny = a.y + Math.sin(a.heading)*speed + Math.sin(a.wobble)*0.3;
+
+    // the leaf isn't solid — it's always either walked over (the visible
+    // spine) or under (the hidden belly) — but stepping onto it for the
+    // first time still deserves the same "notice it" beat as everything
+    // else, rather than sliding underneath with no acknowledgment at all
+    if (leafFootprint(nx,ny).inside && !leafFootprint(a.x,a.y).inside){
+      a.pause = 10;
+      return;
+    }
+
     if (blockedAt(nx,ny)){
-      const obstacle = stones.find(s => s.type !== 'leaf' && Math.hypot(s.x-nx,s.y-ny) < s.r);
+      const obstacle = findObstacleAt(nx,ny);
       if (obstacle){
         const roll = Math.random();
         if (obstacle.type === 'twig' && roll < 0.35){
@@ -776,11 +804,42 @@
       ctx.restore();
     }
 
+    // how "raised up" an ant should currently look, 0 (flat ground) to 1
+    // (right at the crest of whatever it's on) — climbing over a round
+    // obstacle follows that obstacle's own dome profile (tallest at the
+    // centre, level with the ground at its edge), while walking the
+    // twig's length or the leaf's central spine holds at a steady rise,
+    // since neither one has a crest to climb over, just a level rise
+    function antTilt(a){
+      if (a.climbing){
+        const ratio = Math.hypot(a.x-a.climbing.x, a.y-a.climbing.y) / a.climbing.r;
+        return Math.sqrt(Math.max(0, 1 - ratio*ratio));
+      }
+      if (a.onTwig) return 0.5;
+      if (leafFootprint(a.x,a.y).onWalkway) return 0.4;
+      return 0;
+    }
     // ants — three body segments, six legs and antennae, so they read as ants
     // rather than specks. Heading points along +x (forward).
     function drawAnt(a){
+      const tilt = antTilt(a);
       ctx.save();
       ctx.translate(a.x,a.y);
+      if (tilt > 0.02){
+        // a small shadow at the ant's true position on the ground, then
+        // the body itself drawn lifted toward a fixed "up" and slightly
+        // enlarged — the standard top-down cue for standing on something
+        // raised, so climbing/following an obstacle actually reads as
+        // climbing something rather than just walking across flat ground
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 2.4*antSizeMult, 1.7*antSizeMult, 0, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(0,0,0,${0.30*tilt*lightLevel})`;
+        ctx.fill();
+        ctx.restore();
+        ctx.translate(-1.8*tilt*antSizeMult, -1.8*tilt*antSizeMult);
+        ctx.scale(1+0.22*tilt, 1+0.22*tilt);
+      }
       ctx.rotate(a.heading);
       const s = antSizeMult;
       const col = a.state==='return' ? `rgba(154,85,189,${lightLevel})` : `rgba(24,16,10,${lightLevel})`;
