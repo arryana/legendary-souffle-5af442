@@ -211,10 +211,14 @@
   let prevSwingFrac=1, prevRising=false;
   let posSweepAngle=planeAngle, negSweepAngle=planeAngle+Math.PI;
   function sweepKnock(prevA, currA, t){
+    // south of the equator the plane precesses the other way, so currA can
+    // land below prevA just as often as above it — sweep by range, not by
+    // assumed direction, or the ring stops dead the moment it flips sign.
+    const lo=Math.min(prevA,currA), hi=Math.max(prevA,currA);
     for(const p of pins){
       if(p.knocked) continue;
-      let k=p.angle+Math.ceil((prevA-p.angle)/(Math.PI*2))*(Math.PI*2);
-      for(; k<=currA; k+=Math.PI*2){ p.knocked=true; p.knockedAt=t; break; }
+      let k=p.angle+Math.ceil((lo-p.angle)/(Math.PI*2))*(Math.PI*2);
+      for(; k<=hi; k+=Math.PI*2){ p.knocked=true; p.knockedAt=t; break; }
     }
   }
   function updatePins(t, swingFrac){
