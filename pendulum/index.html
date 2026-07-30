@@ -30,7 +30,7 @@
 <canvas id="scene"></canvas>
 <div id="dock">
   <canvas id="globeWrap" width="92" height="92" aria-label="latitude" role="slider" tabindex="0"></canvas>
-  <input type="range" id="speedSlider" min="0" max="100" value="52" aria-label="time speed">
+  <input type="range" id="speedSlider" min="0" max="100" value="80" aria-label="time speed">
 </div>
 <script>
 (function(){
@@ -97,7 +97,11 @@
   // or sped up enough to see happen, rather than picking one fixed rate ----------
   let speedAmt=speedSlider.value/100;
   speedSlider.addEventListener('input', ()=>{ speedAmt=speedSlider.value/100; });
-  function speedMultiplier(){ return Math.pow(10, speedAmt*4.6); } // 1x .. ~40000x
+  // 1x (real time) up to ~800x. Capped well below the point where the plane's
+  // own rotation could outrun the swing itself (3.4s) — even at the pole, the
+  // fastest case there is, a full turn still takes ~108s, comfortably slower
+  // than one swing so the line always reads as a line, never a spiral.
+  function speedMultiplier(){ return Math.pow(10, speedAmt*2.9); }
 
   // ---------- pendulum ----------
   const SWING_PERIOD=3.4;      // seconds, the ordinary back-and-forth
@@ -161,10 +165,26 @@
       const dirA=p.angle+fall*(Math.PI/2);
       const x0=Math.cos(p.angle)*baseR, y0=Math.sin(p.angle)*baseR;
       const x1=x0+Math.cos(dirA)*len, y1=y0+Math.sin(dirA)*len;
-      const baseAlpha=p.major?0.42:0.24;
-      ctx.strokeStyle=`rgba(233,217,168,${(baseAlpha-fall*0.16).toFixed(2)})`;
-      ctx.lineWidth=(p.major?2.1:1.5)-fall*0.7;
+      const perpA=dirA+Math.PI/2;
+
+      // standing: a small crossbar at the tip — a T seen edge-on. fallen: that
+      // same crossbar collapses into a round brass head lying on its side —
+      // a lollipop. one continuous shape, not two different assets swapped.
+      ctx.strokeStyle=`rgba(233,217,168,${((p.major?0.42:0.26)*(1-fall*0.2)).toFixed(2)})`;
+      ctx.lineWidth=p.major?2:1.4;
       ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+
+      if(fall<0.999){
+        const cl=(p.major?6:4.5)*(1-fall);
+        const px=Math.cos(perpA)*cl, py=Math.sin(perpA)*cl;
+        ctx.beginPath(); ctx.moveTo(x1-px,y1-py); ctx.lineTo(x1+px,y1+py); ctx.stroke();
+      }
+      if(fall>0.001){
+        const r=(p.major?3.6:2.6)*fall;
+        const bg=ctx.createRadialGradient(x1-r*0.3,y1-r*0.35,0.3,x1,y1,r);
+        bg.addColorStop(0,'#f3d489'); bg.addColorStop(0.6,'#c99a3f'); bg.addColorStop(1,'#8a6420');
+        ctx.beginPath(); ctx.arc(x1,y1,r,0,7); ctx.fillStyle=bg; ctx.fill();
+      }
     }
   }
 
