@@ -67,10 +67,13 @@
 
   // rough continent outlines (lon,lat in degrees), orthographically projected
   // onto the sphere so it reads as an actual world, not just a shaded ball.
-  // there's no longitude control here (only latitude), so the view is fixed
-  // to the classic Europe/Africa-forward globe orientation; simplified since
-  // the control itself renders at under 50px.
-  const GLOBE_LON0 = 12;
+  // there's no longitude control here (only latitude), so instead the globe
+  // spins slowly on its own — a lazy ambient rotation that eventually brings
+  // every continent into view, purely decorative and independent of both the
+  // time-speed slider and the latitude drag (which only reads the chord's
+  // height, unaffected by which way the sphere is currently turned).
+  const GLOBE_SPIN_DEG_PER_SEC = 4;
+  let GLOBE_LON0 = 12;
   const CONTINENTS = [
     [[-160,68],[-141,60],[-130,55],[-125,48],[-124,40],[-117,33],[-105,20],[-97,16],[-90,16],[-82,22],[-80,26],[-81,31],[-75,35],[-70,41],[-65,45],[-60,50],[-65,58],[-80,62],[-95,68],[-130,70]],
     [[-45,60],[-35,66],[-25,71],[-20,78],[-35,83],[-55,82],[-65,76],[-60,68],[-50,60]],
@@ -87,7 +90,8 @@
     if(cosc<0){ const m=Math.hypot(x,y)||1; x=x/m*0.998; y=y/m*0.998; }
     return {x,y};
   }
-  function drawGlobe(){
+  function drawGlobe(t){
+    GLOBE_LON0 = (12 + t*GLOBE_SPIN_DEG_PER_SEC) % 360;
     const w=globeCanvas.width, h=globeCanvas.height, R=w/2*0.94;
     const gcx=w/2, gcy=h/2;
     gctx.clearRect(0,0,w,h);
@@ -242,7 +246,7 @@
   function tick(now){
     const t=now*0.001;
     const dtReal=Math.min((now-last)/1000,0.05); last=now;
-    drawGlobe();
+    drawGlobe(t);
 
     // the swing itself always runs at its own honest pace
     simClock += dtReal;
