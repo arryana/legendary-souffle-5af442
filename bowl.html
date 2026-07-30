@@ -16,8 +16,8 @@
   #hint{ position:fixed; top:52px; left:0; right:0; text-align:center; font-size:13px; opacity:.4;
     pointer-events:none; letter-spacing:.03em; transition:opacity 1.2s ease;
     text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); }
-  #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:center;
-    gap:14px; padding:16px 18px 26px; z-index:40;
+  #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:flex-start;
+    gap:14px; padding:16px 18px 26px 24px; z-index:40;
     background:linear-gradient(to top, rgba(8,7,5,.85), rgba(8,7,5,0)); }
   .glyph{ font-size:15px; opacity:.7; }
   .divider{ width:1px; height:22px; background:rgba(231,221,201,.2); }
@@ -32,19 +32,20 @@
   #dirNeedle{ position:absolute; left:50%; top:50%; width:2px; height:13px; background:#e9d9a8;
     margin-left:-1px; margin-top:-13px; border-radius:2px; transform-origin:50% 100%;
     box-shadow:0 0 6px rgba(233,217,168,.6); pointer-events:none; }
-  #objTrigger{ background:none; border:none; font-size:17px; opacity:.75; cursor:pointer;
+  .pickerTrigger{ background:none; border:none; font-size:17px; opacity:.75; cursor:pointer;
     padding:2px 4px; line-height:1; color:inherit; }
-  #objTrigger:hover{ opacity:1; }
-  #objOverlay{ display:none; position:fixed; inset:0; z-index:60; background:rgba(8,7,5,.6);
+  .pickerTrigger:hover{ opacity:1; }
+  .pickerOverlay{ display:none; position:fixed; inset:0; z-index:60; background:rgba(8,7,5,.6);
     align-items:center; justify-content:center; }
-  #objOverlay.open{ display:flex; }
-  #objPopup{ background:#1c1712; border-radius:14px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,.5); }
-  #objList{ display:grid; grid-template-columns:repeat(4,64px); gap:10px; }
-  .objOption{ width:64px; height:64px; border-radius:10px; border:2px solid transparent;
+  .pickerOverlay.open{ display:flex; }
+  .pickerPopup{ background:#1c1712; border-radius:14px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,.5); }
+  .pickerList{ display:grid; grid-template-columns:repeat(4,64px); gap:10px; }
+  .pickerOption{ width:64px; height:64px; border-radius:10px; border:2px solid transparent;
     background:#0f0d0a; padding:0; cursor:pointer; overflow:hidden; opacity:.4;
     transition:opacity .2s ease, border-color .2s ease; }
-  .objOption.active{ opacity:1; border-color:#e8c383; }
-  .objOption img{ width:100%; height:100%; object-fit:contain; padding:7px; box-sizing:border-box; display:block; }
+  .pickerOption.active{ opacity:1; border-color:#e8c383; }
+  .pickerOption img{ width:100%; height:100%; object-fit:contain; padding:7px; box-sizing:border-box; display:block; }
+  .pickerOption.bowlThumb img{ object-fit:cover; padding:0; }
 </style>
 </head>
 <body>
@@ -52,14 +53,16 @@
 <canvas id="scene"></canvas>
 <div id="hint">tap the water to drop a stone</div>
 <div id="dock">
+  <button id="bowlTrigger" class="pickerTrigger" title="choose the bowl" aria-label="choose the bowl">🥣</button>
   <span class="glyph" title="speed">🌊</span>
   <input type="range" id="speedSlider" min="0" max="100" value="20" aria-label="speed">
   <div class="divider"></div>
   <div id="dirDial" title="direction" aria-label="direction" role="slider" tabindex="0"><div id="dirNeedle"></div></div>
   <div class="divider"></div>
-  <button id="objTrigger" title="choose what's floating" aria-label="choose what's floating">🌸</button>
+  <button id="objTrigger" class="pickerTrigger" title="choose what's floating" aria-label="choose what's floating">🌸</button>
 </div>
-<div id="objOverlay"><div id="objPopup"><div id="objList"></div></div></div>
+<div id="bowlOverlay" class="pickerOverlay"><div class="pickerPopup"><div id="bowlList" class="pickerList"></div></div></div>
+<div id="objOverlay" class="pickerOverlay"><div class="pickerPopup"><div id="objList" class="pickerList"></div></div></div>
 <script>
 (function(){
   const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
@@ -91,19 +94,63 @@
   }
 
   // ---------- bowl: a real top-down photograph, "cover"-fit into the frame ----------
-  // measured once, by hand, against the source photo (1408x768): the bowl's water
-  // surface sits centered at (707,377) with an interior radius of ~278px
-  const PHOTO_W=1408, PHOTO_H=768, PHOTO_CX=707, PHOTO_CY=377, PHOTO_WATER_R=278;
-  let bowlImg=null, bowlLayer=null;
+  // each bowl's water circle was measured by hand against its source photo
+  // (1408x768) — center and interior radius vary slightly bowl to bowl since the
+  // photos aren't all framed identically.
+  const PHOTO_W=1408, PHOTO_H=768;
+  const BOWLS = [
+    {id:'terracotta', img:'bowl-terracotta.png', cx:707, cy:377, waterR:278},
+    {id:'travertine', img:'bowl-travertine.png', cx:701, cy:371, waterR:288},
+    {id:'slate',      img:'bowl-slate.png',      cx:703, cy:373, waterR:252},
+    {id:'teak',       img:'bowl-teak.png',       cx:705, cy:379, waterR:282},
+    {id:'riverstone', img:'bowl-riverstone.png', cx:698, cy:358, waterR:219},
+    {id:'silver',     img:'bowl-silver.png',     cx:700, cy:380, waterR:277},
+    {id:'stone',      img:'bowl-greystone.png',  cx:701, cy:377, waterR:282},
+    {id:'copper',     img:'bowl-copper.png',     cx:700, cy:376, waterR:269},
+    {id:'glazed',     img:'bowl-glazed.png',     cx:703, cy:381, waterR:269},
+    {id:'porcelain',  img:'bowl-porcelain.png',  cx:703, cy:376, waterR:280},
+  ];
+  let bowlImgs={}, currentBowl=BOWLS[0], bowlLayer=null;
   function buildBowl(){
     bowlLayer=document.createElement('canvas'); bowlLayer.width=W; bowlLayer.height=H;
     const bc=bowlLayer.getContext('2d');
     const scale=Math.max(W/PHOTO_W, H/PHOTO_H);
     const dw=PHOTO_W*scale, dh=PHOTO_H*scale;
     const ox=(W-dw)/2, oy=(H-dh)/2;
-    bc.drawImage(bowlImg, ox, oy, dw, dh);
-    cx=ox+PHOTO_CX*scale; cy=oy+PHOTO_CY*scale; waterR=PHOTO_WATER_R*scale;
+    bc.drawImage(bowlImgs[currentBowl.id], ox, oy, dw, dh);
+    cx=ox+currentBowl.cx*scale; cy=oy+currentBowl.cy*scale; waterR=currentBowl.waterR*scale;
   }
+  function setBowl(id){
+    const b=BOWLS.find(b=>b.id===id);
+    if(!b || b===currentBowl) return;
+    currentBowl=b;
+    buildBowl();
+    seedObjects();
+    seedSheen();
+    sinkers=[];
+  }
+
+  // ---------- bowl picker ----------
+  const bowlTrigger=document.getElementById('bowlTrigger'), bowlOverlay=document.getElementById('bowlOverlay');
+  const bowlList=document.getElementById('bowlList');
+  function buildBowlOverlay(){
+    bowlList.innerHTML='';
+    BOWLS.forEach(b=>{
+      const btn=document.createElement('button');
+      btn.type='button'; btn.className='pickerOption bowlThumb'+(b===currentBowl?' active':'');
+      btn.setAttribute('aria-label', b.id);
+      const img=document.createElement('img'); img.src=b.img; img.alt='';
+      btn.appendChild(img);
+      btn.addEventListener('click', ()=>{
+        setBowl(b.id);
+        bowlList.querySelectorAll('.pickerOption').forEach(el=>el.classList.remove('active'));
+        btn.classList.add('active');
+      });
+      bowlList.appendChild(btn);
+    });
+  }
+  bowlTrigger.addEventListener('click', ()=>bowlOverlay.classList.add('open'));
+  bowlOverlay.addEventListener('click', e=>{ if(e.target===bowlOverlay) bowlOverlay.classList.remove('open'); });
 
   // ---------- flow field: correlated, slowly time-varying curl noise, plus a
   // steady directional bias from the direction dial — real wind is a prevailing
@@ -383,14 +430,15 @@
   }
 
   Promise.all([
-    loadImg('bowl-terracotta.png'),
+    ...BOWLS.map(b=>loadImg(b.img)),
     loadImg('bowl-stone.png'),
     ...KINDS.map(k=>loadImg(k.img)),
   ]).then(imgs=>{
-    bowlImg=imgs[0];
-    stoneImg=imgs[1];
-    KINDS.forEach((k,i)=>{ kindImgs[k.id]=imgs[2+i]; });
+    BOWLS.forEach((b,i)=>{ bowlImgs[b.id]=imgs[i]; });
+    stoneImg=imgs[BOWLS.length];
+    KINDS.forEach((k,i)=>{ kindImgs[k.id]=imgs[BOWLS.length+1+i]; });
     buildObjOverlay();
+    buildBowlOverlay();
     window.addEventListener('resize',resize);
     resize();
     requestAnimationFrame(tick);
