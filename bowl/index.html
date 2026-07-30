@@ -379,10 +379,38 @@
     });
     if(sinkers.length>MAX_STONES) sinkers.shift();
   }
+  // settled stones can be picked up and moved; dragging one takes priority
+  // over dropping a new one when the pointer starts on top of it
+  let draggingStone=null, dragDX=0, dragDY=0;
+  function hitTestSinker(x,y){
+    for(let i=sinkers.length-1;i>=0;i--){
+      const s=sinkers[i];
+      const hitR=Math.max(s.dispW,s.dispH)*0.46;
+      if(Math.hypot(x-s.x,y-s.y)<=hitR) return s;
+    }
+    return null;
+  }
   canvas.addEventListener('pointerdown', e=>{
     const rect=canvas.getBoundingClientRect();
-    dropStone(e.clientX-rect.left, e.clientY-rect.top);
+    const x=e.clientX-rect.left, y=e.clientY-rect.top;
+    const hit=hitTestSinker(x,y);
+    if(hit){
+      draggingStone=hit; dragDX=hit.x-x; dragDY=hit.y-y;
+      canvas.setPointerCapture(e.pointerId);
+      return;
+    }
+    dropStone(x,y);
   });
+  canvas.addEventListener('pointermove', e=>{
+    if(!draggingStone) return;
+    const rect=canvas.getBoundingClientRect();
+    let x=e.clientX-rect.left+dragDX, y=e.clientY-rect.top+dragDY;
+    const dx=x-cx, dy=y-cy, d=Math.hypot(dx,dy)||0.001, maxR=waterR*0.92;
+    if(d>maxR){ x=cx+dx/d*maxR; y=cy+dy/d*maxR; }
+    draggingStone.x=x; draggingStone.y=y;
+  });
+  canvas.addEventListener('pointerup', e=>{ draggingStone=null; });
+  canvas.addEventListener('pointercancel', ()=>{ draggingStone=null; });
   function drawSplash(s,t){
     const age=t-s.spawnT;
     if(age>SPLASH_DURATION || age<0) return;
@@ -400,7 +428,7 @@
     const p=Math.min(1,age/SINK_DURATION);
     const ease=1-Math.pow(1-p,3);
     const w=s.dispW*(1-0.28*ease), h=s.dispH*(1-0.28*ease);
-    const blur=2.4*ease, bright=(1-0.42*ease).toFixed(2);
+    const blur=1.5*ease, bright=(1-0.3*ease).toFixed(2);
     // compositing the tint with source-atop only clips to what's already opaque
     // *on this buffer* — done straight on the main canvas that's the whole bowl
     // photo underneath, so it painted a full rectangle instead of just the stone.
@@ -413,7 +441,15 @@
     sinkerBufCtx.drawImage(s.img,pad,pad,w,h);
     sinkerBufCtx.filter='none';
     sinkerBufCtx.globalCompositeOperation='source-atop';
-    sinkerBufCtx.fillStyle=`rgba(40,90,95,${(0.34*ease).toFixed(2)})`;
+    sinkerBufCtx.fillStyle=`rgba(40,90,95,${(0.26*ease).toFixed(2)})`;
+    sinkerBufCtx.fillRect(0,0,bw,bh);
+    // a soft oval vignette, cut in with destination-in, guarantees a clean organic
+    // edge no matter what the underlying photo's actual silhouette looks like —
+    // no straight edges or corners can survive this regardless of rotation
+    sinkerBufCtx.globalCompositeOperation='destination-in';
+    const vg=sinkerBufCtx.createRadialGradient(bw/2,bh/2,0,bw/2,bh/2,Math.max(bw,bh)/2);
+    vg.addColorStop(0,'rgba(0,0,0,1)'); vg.addColorStop(0.72,'rgba(0,0,0,1)'); vg.addColorStop(1,'rgba(0,0,0,0)');
+    sinkerBufCtx.fillStyle=vg;
     sinkerBufCtx.fillRect(0,0,bw,bh);
     sinkerBufCtx.globalCompositeOperation='source-over';
 
