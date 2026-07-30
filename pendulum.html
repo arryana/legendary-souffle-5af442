@@ -114,29 +114,57 @@
     cx=W/2; cy=H*0.47;
     floorR=Math.min(W,H)*0.40;
     floorLayer=document.createElement('canvas'); floorLayer.width=W; floorLayer.height=H;
-    const saved=ctx; // draw floor once to its own layer
     const fl=floorLayer.getContext('2d');
     const g=fl.createRadialGradient(cx,cy,0,cx,cy,floorR);
     g.addColorStop(0,'#221d17'); g.addColorStop(0.7,'#171310'); g.addColorStop(1,'#0c0a08');
     fl.fillStyle=g; fl.beginPath(); fl.arc(cx,cy,floorR,0,7); fl.fill();
-    fl.save(); fl.translate(cx,cy);
-    for(let i=0;i<24;i++){
-      const a=(i/24)*Math.PI*2;
-      const r0=floorR*0.86, r1= i%6===0 ? floorR*0.78 : floorR*0.82;
-      fl.strokeStyle= i%6===0 ? 'rgba(233,217,168,.35)' : 'rgba(231,221,201,.16)';
-      fl.lineWidth= i%6===0 ? 1.6 : 1;
-      fl.beginPath();
-      fl.moveTo(Math.cos(a)*r0,Math.sin(a)*r0);
-      fl.lineTo(Math.cos(a)*r1,Math.sin(a)*r1);
-      fl.stroke();
-    }
     fl.strokeStyle='rgba(231,221,201,.12)'; fl.lineWidth=1;
-    fl.beginPath(); fl.arc(0,0,floorR*0.86,0,7); fl.stroke();
-    fl.restore();
+    fl.beginPath(); fl.arc(cx,cy,floorR*0.86,0,7); fl.stroke();
   }
   window.addEventListener('resize',resize);
 
+  // ---------- pins: a ring of 24 pegs, one per hour, that the bob topples as
+  // the swing plane sweeps past — real Foucault installations (the Panthéon's,
+  // among others) mark the rotation exactly this way. because the swing line
+  // passes through the centre in both directions, a pin and the one opposite it
+  // fall together, and a full ring empties in half a rotation, not a whole one —
+  // that symmetry is real, not a shortcut. the ring resets once it's emptied.
+  const PIN_COUNT=24, PIN_R_FRAC=0.72, FALL_DUR=0.35;
+  let pins=Array.from({length:PIN_COUNT},(_,i)=>({ angle:(i/PIN_COUNT)*Math.PI*2, major:i%6===0, knocked:false, knockedAt:-1 }));
+  let prevPlaneAngle=planeAngle;
+  function updatePins(t){
+    const lo=Math.min(prevPlaneAngle,planeAngle), hi=Math.max(prevPlaneAngle,planeAngle);
+    let allKnocked=true;
+    for(const p of pins){
+      if(!p.knocked){
+        let k=p.angle+Math.ceil((lo-p.angle)/Math.PI)*Math.PI;
+        for(; k<=hi; k+=Math.PI){
+          if(k>=lo){ p.knocked=true; p.knockedAt=t; break; }
+        }
+      }
+      if(!p.knocked) allKnocked=false;
+    }
+    prevPlaneAngle=planeAngle;
+    if(allKnocked) for(const p of pins){ p.knocked=false; p.knockedAt=-1; }
+  }
+  function drawPins(t){
+    const baseR=floorR*PIN_R_FRAC;
+    for(const p of pins){
+      let fall=0;
+      if(p.knocked){ fall=Math.min(1,(t-p.knockedAt)/FALL_DUR); fall=1-Math.pow(1-fall,3); }
+      const len=p.major?13:9;
+      const dirA=p.angle+fall*(Math.PI/2);
+      const x0=Math.cos(p.angle)*baseR, y0=Math.sin(p.angle)*baseR;
+      const x1=x0+Math.cos(dirA)*len, y1=y0+Math.sin(dirA)*len;
+      const baseAlpha=p.major?0.42:0.24;
+      ctx.strokeStyle=`rgba(233,217,168,${(baseAlpha-fall*0.16).toFixed(2)})`;
+      ctx.lineWidth=(p.major?2.1:1.5)-fall*0.7;
+      ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+    }
+  }
+
   function tick(now){
+    const t=now*0.001;
     const dtReal=Math.min((now-last)/1000,0.05); last=now;
     drawGlobe();
 
@@ -149,12 +177,14 @@
     // scaled by sin(latitude) everywhere between; opposite sign each hemisphere
     const dtSim = dtReal*speedMultiplier();
     planeAngle += (Math.PI*2) * (Math.sin(lat)/DAY) * dtSim;
+    updatePins(t);
 
     ctx.clearRect(0,0,W,H);
     ctx.drawImage(floorLayer,0,0,W,H);
 
     ctx.save();
     ctx.translate(cx,cy);
+    drawPins(t);
     // the swing plane itself, faint, always visible even when the bob passes
     // near the pivot — this is what actually makes the rotation legible
     const amp=floorR*0.72;
