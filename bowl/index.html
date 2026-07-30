@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>floating bowl — sagne</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{ height:100%; margin:0; overflow:hidden; background:#14100c; color:#e7ddc9;
+    font-family:Georgia, serif; user-select:none; }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#e7ddc9; opacity:.5;
+    text-decoration:none; font-size:14px; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); transition:opacity .3s ease; }
+  #backlink:hover{ opacity:.9; }
+  canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  #hint{ position:fixed; top:52px; left:0; right:0; text-align:center; font-size:13px; opacity:.4;
+    pointer-events:none; letter-spacing:.03em; transition:opacity 1.2s ease;
+    text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); }
+  #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:flex-start;
+    gap:14px; padding:16px 18px 26px 24px; z-index:40;
+    background:linear-gradient(to top, rgba(8,7,5,.85), rgba(8,7,5,0)); }
+  .glyph{ font-size:15px; opacity:.7; }
+  .divider{ width:1px; height:22px; background:rgba(231,221,201,.2); }
+  input[type=range]{ -webkit-appearance:none; appearance:none; width:140px; height:3px; border-radius:3px;
+    background:rgba(231,221,201,.25); outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+    background:#e9d9a8; cursor:pointer; box-shadow:0 0 8px rgba(233,217,168,.6); }
+  input[type=range]::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:#e9d9a8; cursor:pointer; }
+  #dirDial{ width:32px; height:32px; border-radius:50%; border:1.5px solid rgba(231,221,201,.35);
+    position:relative; cursor:grab; touch-action:none; flex:0 0 auto; }
+  #dirDial:active{ cursor:grabbing; }
+  #dirNeedle{ position:absolute; left:50%; top:50%; width:2px; height:13px; background:#e9d9a8;
+    margin-left:-1px; margin-top:-13px; border-radius:2px; transform-origin:50% 100%;
+    box-shadow:0 0 6px rgba(233,217,168,.6); pointer-events:none; }
+  .pickerTrigger{ background:none; border:none; font-size:17px; opacity:.75; cursor:pointer;
+    padding:2px 4px; line-height:1; color:inherit; }
+  .pickerTrigger:hover{ opacity:1; }
+  .pickerOverlay{ display:none; position:fixed; inset:0; z-index:60; background:rgba(8,7,5,.6);
+    align-items:center; justify-content:center; }
+  .pickerOverlay.open{ display:flex; }
+  .pickerPopup{ background:#1c1712; border-radius:14px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,.5); }
+  .pickerList{ display:grid; grid-template-columns:repeat(4,64px); gap:10px; }
+  .pickerOption{ width:64px; height:64px; border-radius:10px; border:2px solid transparent;
+    background:#0f0d0a; padding:0; cursor:pointer; overflow:hidden; opacity:.4;
+    transition:opacity .2s ease, border-color .2s ease; }
+  .pickerOption.active{ opacity:1; border-color:#e8c383; }
+  .pickerOption img{ width:100%; height:100%; object-fit:contain; padding:7px; box-sizing:border-box; display:block; }
+  .pickerOption.bowlThumb img{ object-fit:cover; padding:0; }
+</style>
+</head>
+<body>
+<a id="backlink" href="../index.html">← sagne</a>
+<canvas id="scene"></canvas>
+<div id="hint">tap the water to drop a stone</div>
+<div id="dock">
+  <button id="bowlTrigger" class="pickerTrigger" title="choose the bowl" aria-label="choose the bowl">🥣</button>
+  <span class="glyph" title="speed">🌊</span>
+  <input type="range" id="speedSlider" min="0" max="100" value="20" aria-label="speed">
+  <div class="divider"></div>
+  <div id="dirDial" title="direction" aria-label="direction" role="slider" tabindex="0"><div id="dirNeedle"></div></div>
+  <div class="divider"></div>
+  <button id="objTrigger" class="pickerTrigger" title="choose what's floating" aria-label="choose what's floating">🌸</button>
+</div>
+<div id="bowlOverlay" class="pickerOverlay"><div class="pickerPopup"><div id="bowlList" class="pickerList"></div></div></div>
+<div id="objOverlay" class="pickerOverlay"><div class="pickerPopup"><div id="objList" class="pickerList"></div></div></div>
+<script>
+(function(){
+  const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
+  const hint=document.getElementById('hint');
+  const speedSlider=document.getElementById('speedSlider');
+  const dirDial=document.getElementById('dirDial'), dirNeedle=document.getElementById('dirNeedle');
+  let W=0,H=0,DPR=1, cx=0, cy=0, waterR=0;
+  let speedAmt=speedSlider.value/100;
+  speedSlider.addEventListener('input', ()=>{ speedAmt=speedSlider.value/100; });
+
+  // ---------- direction dial: drag to set the wind/current heading ----------
+  let dirAngle=-Math.PI*0.65;
+  function updateNeedle(){ dirNeedle.style.transform=`rotate(${dirAngle*180/Math.PI+90}deg)`; }
+  function setDirFromPointer(e){
+    const rect=dirDial.getBoundingClientRect();
+    dirAngle=Math.atan2(e.clientY-(rect.top+rect.height/2), e.clientX-(rect.left+rect.width/2));
+    updateNeedle();
+  }
+  let dragging=false;
+  dirDial.addEventListener('pointerdown', e=>{ dragging=true; dirDial.setPointerCapture(e.pointerId); setDirFromPointer(e); });
+  dirDial.addEventListener('pointermove', e=>{ if(dragging) setDirFromPointer(e); });
+  dirDial.addEventListener('pointerup', ()=>{ dragging=false; });
+  dirDial.addEventListener('pointercancel', ()=>{ dragging=false; });
+  updateNeedle();
+
+  // ---------- image loading ----------
+  function loadImg(src){
+    return new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.src=src; });
+  }
+
+  // ---------- bowl: a real top-down photograph, "cover"-fit into the frame ----------
+  // each bowl's water circle was measured by hand against its source photo
+  // (1408x768) — center and interior radius vary slightly bowl to bowl since the
+  // photos aren't all framed identically.
+  const PHOTO_W=1408, PHOTO_H=768;
+  const BOWLS = [
+    {id:'terracotta', img:'bowl-terracotta.png', cx:707, cy:377, waterR:278},
+    {id:'travertine', img:'bowl-travertine.png', cx:701, cy:371, waterR:288},
+    {id:'slate',      img:'bowl-slate.png',      cx:703, cy:373, waterR:252},
+    {id:'teak',       img:'bowl-teak.png',       cx:705, cy:379, waterR:282},
+    {id:'riverstone', img:'bowl-riverstone.png', cx:698, cy:358, waterR:219},
+    {id:'silver',     img:'bowl-silver.png',     cx:700, cy:380, waterR:277},
+    {id:'stone',      img:'bowl-greystone.png',  cx:701, cy:377, waterR:282},
+    {id:'copper',     img:'bowl-copper.png',     cx:700, cy:376, waterR:269},
+    {id:'glazed',     img:'bowl-glazed.png',     cx:703, cy:381, waterR:269},
+    {id:'porcelain',  img:'bowl-porcelain.png',  cx:703, cy:376, waterR:280},
+  ];
+  let bowlImgs={}, currentBowl=BOWLS[0], bowlLayer=null;
+  function buildBowl(){
+    bowlLayer=document.createElement('canvas'); bowlLayer.width=W; bowlLayer.height=H;
+    const bc=bowlLayer.getContext('2d');
+    const scale=Math.max(W/PHOTO_W, H/PHOTO_H);
+    const dw=PHOTO_W*scale, dh=PHOTO_H*scale;
+    const ox=(W-dw)/2, oy=(H-dh)/2;
+    bc.drawImage(bowlImgs[currentBowl.id], ox, oy, dw, dh);
+    cx=ox+currentBowl.cx*scale; cy=oy+currentBowl.cy*scale; waterR=currentBowl.waterR*scale;
+  }
+  function setBowl(id){
+    const b=BOWLS.find(b=>b.id===id);
+    if(!b || b===currentBowl) return;
+    currentBowl=b;
+    buildBowl();
+    seedObjects();
+    seedSheen();
+    sinkers=[];
+  }
+
+  // ---------- bowl picker ----------
+  const bowlTrigger=document.getElementById('bowlTrigger'), bowlOverlay=document.getElementById('bowlOverlay');
+  const bowlList=document.getElementById('bowlList');
+  function buildBowlOverlay(){
+    bowlList.innerHTML='';
+    BOWLS.forEach(b=>{
+      const btn=document.createElement('button');
+      btn.type='button'; btn.className='pickerOption bowlThumb'+(b===currentBowl?' active':'');
+      btn.setAttribute('aria-label', b.id);
+      const img=document.createElement('img'); img.src=b.img; img.alt='';
+      btn.appendChild(img);
+      btn.addEventListener('click', ()=>{
+        setBowl(b.id);
+        bowlList.querySelectorAll('.pickerOption').forEach(el=>el.classList.remove('active'));
+        btn.classList.add('active');
+      });
+      bowlList.appendChild(btn);
+    });
+  }
+  bowlTrigger.addEventListener('click', ()=>bowlOverlay.classList.add('open'));
+  bowlOverlay.addEventListener('click', e=>{ if(e.target===bowlOverlay) bowlOverlay.classList.remove('open'); });
+
+  // ---------- flow field: correlated, slowly time-varying curl noise, plus a
+  // steady directional bias from the direction dial — real wind is a prevailing
+  // heading with turbulence riding on top of it, not pure swirl ----------
+  function psi(x,y,t){
+    return Math.sin(x*0.0065 + t*0.16) * Math.cos(y*0.0055 - t*0.11)
+         + 0.5*Math.sin(x*0.015 - t*0.09 + 1.7) * Math.cos(y*0.017 + t*0.12);
+  }
+  const BIAS_MAG=0.028;
+  function flowAt(x,y,t){
+    const e=2.4;
+    const vx=(psi(x,y+e,t)-psi(x,y-e,t))/(2*e) + Math.cos(dirAngle)*BIAS_MAG;
+    const vy=-(psi(x+e,y,t)-psi(x-e,y,t))/(2*e) + Math.sin(dirAngle)*BIAS_MAG;
+    return { vx, vy };
+  }
+  function curlAt(x,y,t){
+    const e=2.4;
+    const fL=flowAt(x-e,y,t), fR=flowAt(x+e,y,t), fD=flowAt(x,y-e,t), fU=flowAt(x,y+e,t);
+    return ((fR.vy-fL.vy)-(fU.vx-fD.vx))/(2*e);
+  }
+
+  // ---------- floating objects ----------
+  // each references a real cut-out photograph. "refLong" is the object's on-screen
+  // long-edge size at a baseline water radius of 278px (the photo's own native scale);
+  // actual display size scales with the bowl's current on-screen size. Sized so a
+  // rose reads as roughly a quarter of the bowl, other blooms and leaves scaled to
+  // feel true to their real relative sizes. "weight" resists the current a little —
+  // a heavier bloom drifts less eagerly than a light petal. "on" is the default
+  // selection — a curated handful to start, with the rest available in the picker
+  // rather than everything crowding the bowl at once.
+  const KINDS = [
+    {id:'camellia', img:'bowl-camellia.png', refLong:230, weight:1.05, on:true},
+    {id:'rose',     img:'bowl-rose.png',     refLong:260, weight:1.15, on:true},
+    {id:'ginkgo',   img:'bowl-ginkgo.png',   refLong:150, weight:0.85, on:true},
+    {id:'oakleaf',  img:'bowl-oakleaf.png',  refLong:130, weight:0.85, on:true},
+    {id:'fern',     img:'bowl-fern.png',     refLong:170, weight:0.75, on:true},
+    {id:'petal',    img:'bowl-petal.png',    refLong:110, weight:0.9,  on:true},
+    {id:'smallpetal',   img:'bowl-smallpetal.png',   refLong:70,  weight:0.95, on:false},
+    {id:'feather',      img:'bowl-feather.png',      refLong:190, weight:0.6,  on:false},
+    {id:'lavender',     img:'bowl-lavender.png',     refLong:170, weight:0.8,  on:false},
+    {id:'elderberries', img:'bowl-elderberries.png', refLong:190, weight:0.9,  on:false},
+    {id:'moss',         img:'bowl-moss.png',         refLong:200, weight:1.3,  on:false},
+  ];
+  let kindImgs={};
+  let objs=[];
+  function makeObj(k,i,total){
+    const im=kindImgs[k.id];
+    const scale=waterR/278;
+    const long=Math.max(im.naturalWidth, im.naturalHeight);
+    const dispScale=(k.refLong*scale)/long;
+    const dispW=im.naturalWidth*dispScale, dispH=im.naturalHeight*dispScale;
+    const ang=(i/Math.max(1,total))*Math.PI*2 + i*0.7;
+    const rad=waterR*(0.15+0.25*((i*37)%5)/5);
+    return { id:k.id, img:im, dispW, dispH, r:Math.max(dispW,dispH)*0.42, weight:k.weight,
+      x:cx+Math.cos(ang)*rad, y:cy+Math.sin(ang)*rad,
+      vx:0, vy:0, angle:Math.random()*Math.PI*2, angVel:0,
+      phase:Math.random()*100 };
+  }
+  function seedObjects(){
+    const on=KINDS.filter(k=>k.on);
+    objs = on.map((k,i)=>makeObj(k,i,on.length));
+  }
+  function setKindOn(id,on){
+    const k=KINDS.find(k=>k.id===id);
+    if(!k || k.on===on) return;
+    k.on=on;
+    if(on) objs.push(makeObj(k,objs.length,objs.length+1));
+    else objs=objs.filter(o=>o.id!==id);
+  }
+
+  // ---------- picker overlay: choose which objects are in the bowl ----------
+  const objTrigger=document.getElementById('objTrigger'), objOverlay=document.getElementById('objOverlay');
+  const objList=document.getElementById('objList');
+  function buildObjOverlay(){
+    objList.innerHTML='';
+    KINDS.forEach(k=>{
+      const btn=document.createElement('button');
+      btn.type='button'; btn.className='objOption'+(k.on?' active':'');
+      btn.setAttribute('aria-label', k.id);
+      btn.setAttribute('aria-pressed', k.on?'true':'false');
+      const img=document.createElement('img'); img.src=k.img; img.alt='';
+      btn.appendChild(img);
+      btn.addEventListener('click', ()=>{
+        const newOn=!k.on;
+        setKindOn(k.id,newOn);
+        btn.classList.toggle('active',newOn);
+        btn.setAttribute('aria-pressed', newOn?'true':'false');
+      });
+      objList.appendChild(btn);
+    });
+  }
+  objTrigger.addEventListener('click', ()=>objOverlay.classList.add('open'));
+  objOverlay.addEventListener('click', e=>{ if(e.target===objOverlay) objOverlay.classList.remove('open'); });
+
+  const FLOW_SCALE=3200, BASE_JITTER=90, CONTAIN_K=140, ROT_SCALE=420, DAMPING=0.9, BUMP_SPIN_K=0.026;
+
+  function stepObjects(dt,t){
+    for(const o of objs){
+      const f=flowAt(o.x,o.y,t);
+      const resp=1/o.weight;
+      let ax=f.vx*FLOW_SCALE*speedAmt*resp;
+      let ay=f.vy*FLOW_SCALE*speedAmt*resp;
+      // the faintest natural drift, present even with speed at zero
+      ax += Math.sin(t*0.55+o.phase)*BASE_JITTER*resp;
+      ay += Math.cos(t*0.47+o.phase*1.3)*BASE_JITTER*resp;
+
+      // stay within the water — soft containment near the inner wall
+      const dx=o.x-cx, dy=o.y-cy, dist=Math.hypot(dx,dy)||0.001;
+      const maxR=Math.max(waterR*0.35, waterR-o.r-4);
+      const edge=maxR*0.78;
+      if(dist>edge){
+        const p=Math.min(1,(dist-edge)/Math.max(1,maxR-edge));
+        ax -= (dx/dist)*p*p*CONTAIN_K;
+        ay -= (dy/dist)*p*p*CONTAIN_K;
+      }
+
+      o.vx=o.vx*DAMPING+ax*dt; o.vy=o.vy*DAMPING+ay*dt;
+      o.x+=o.vx*dt; o.y+=o.vy*dt;
+
+      const curl=curlAt(o.x,o.y,t);
+      o.angVel = o.angVel*0.9 + curl*speedAmt*ROT_SCALE*resp*dt;
+      o.angle += o.angVel*dt + Math.sin(t*0.3+o.phase)*0.05*dt;
+    }
+    resolveOverlaps();
+    for(const o of objs){
+      // hard clamp — the overlap solver above can nudge an object toward the rim;
+      // never let it actually cross into the bowl wall
+      const dx=o.x-cx, dy=o.y-cy, dist=Math.hypot(dx,dy)||0.001;
+      const maxR=Math.max(waterR*0.2, waterR-o.r-4);
+      if(dist>maxR){ o.x=cx+dx/dist*maxR; o.y=cy+dy/dist*maxR; }
+    }
+  }
+
+  // objects never overlap — resolved as a direct position correction (not a force),
+  // so it holds regardless of how hard the current is pushing them together. A bump
+  // hands out a spin to both objects, scaled by how much wind/current is behind it —
+  // dead calm, a bump barely turns them; strong current, they spin off each other.
+  function resolveOverlaps(){
+    for(let iter=0; iter<3; iter++){
+      for(let i=0;i<objs.length;i++){
+        for(let j=i+1;j<objs.length;j++){
+          const a=objs[i], b=objs[j];
+          const dx=b.x-a.x, dy=b.y-a.y;
+          const d=Math.hypot(dx,dy)||0.001;
+          const minD=a.r+b.r+3;
+          if(d>=minD) continue;
+          const overlap=minD-d;
+          const nx=dx/d, ny=dy/d;
+          const totalInvW=1/a.weight+1/b.weight;
+          const pushA=overlap*(1/a.weight)/totalInvW, pushB=overlap*(1/b.weight)/totalInvW;
+          a.x-=nx*pushA; a.y-=ny*pushA;
+          b.x+=nx*pushB; b.y+=ny*pushB;
+
+          const tx=-ny, ty=nx;
+          const relTangent=(b.vx-a.vx)*tx+(b.vy-a.vy)*ty;
+          const spin=(relTangent<0?-1:1)*Math.min(1,overlap*0.08)*speedAmt*BUMP_SPIN_K;
+          a.angVel -= spin*(1/a.weight)/totalInvW;
+          b.angVel += spin*(1/b.weight)/totalInvW;
+        }
+      }
+    }
+  }
+
+  // ---------- water sheen: light catching the moving surface, advected by the
+  // same flow field driving the objects — this is what actually reads as "the
+  // water itself is moving," not just things sitting on top of it ----------
+  const SHEEN_N=18;
+  let sheen=[];
+  function respawnSheen(s){
+    const ang=Math.random()*Math.PI*2, rad=Math.sqrt(Math.random())*waterR*0.88;
+    s.x=cx+Math.cos(ang)*rad; s.y=cy+Math.sin(ang)*rad;
+    s.vx=0; s.vy=0; s.life=0; s.maxLife=2.2+Math.random()*2.6;
+  }
+  function seedSheen(){
+    sheen=Array.from({length:SHEEN_N},()=>({x:0,y:0,vx:0,vy:0,life:0,maxLife:1}));
+    for(const s of sheen) respawnSheen(s);
+  }
+  function stepSheen(dt,t){
+    for(const s of sheen){
+      const f=flowAt(s.x,s.y,t);
+      s.vx=f.vx*FLOW_SCALE*speedAmt*0.85; s.vy=f.vy*FLOW_SCALE*speedAmt*0.85;
+      s.x+=s.vx*dt; s.y+=s.vy*dt; s.life+=dt;
+      const d=Math.hypot(s.x-cx,s.y-cy);
+      if(d>waterR*0.94 || s.life>s.maxLife) respawnSheen(s);
+    }
+  }
+  function drawSheen(){
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,waterR*0.97,0,7); ctx.clip();
+    ctx.globalCompositeOperation='lighter';
+    for(const s of sheen){
+      const spd=Math.hypot(s.vx,s.vy);
+      const ang=Math.atan2(s.vy,s.vx||0.0001);
+      const len=Math.min(34, 8+spd*0.4);
+      const lifeFrac=Math.min(1,s.life/s.maxLife);
+      const fade=Math.sin(lifeFrac*Math.PI);
+      const alpha=(0.05+speedAmt*0.24)*fade;
+      if(alpha<0.006) continue;
+      ctx.save();
+      ctx.translate(s.x,s.y); ctx.rotate(ang);
+      const g=ctx.createLinearGradient(-len/2,0,len/2,0);
+      g.addColorStop(0,'rgba(255,250,225,0)'); g.addColorStop(0.5,`rgba(255,250,225,${alpha})`); g.addColorStop(1,'rgba(255,250,225,0)');
+      ctx.strokeStyle=g; ctx.lineWidth=1.8; ctx.beginPath(); ctx.moveTo(-len/2,0); ctx.lineTo(len/2,0); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // ---------- sinking stones: unlike the floating objects, a real stone is too
+  // heavy for surface tension to hold — tap the water and it drops straight
+  // through, darkening, blurring and cooling in colour as it sinks, then rests
+  // on the bottom for good, unmoved by the current from here on ----------
+  const STONE_REF_LONG=95, SINK_DURATION=1.7, SPLASH_DURATION=0.6, MAX_STONES=10;
+  let stoneImg=null, sinkers=[], hintHidden=false;
+  function dropStone(x,y){
+    if(!stoneImg || waterR<=0) return;
+    if(Math.hypot(x-cx,y-cy) > waterR*0.92) return;
+    const scale=waterR/278;
+    const long=Math.max(stoneImg.naturalWidth, stoneImg.naturalHeight);
+    const dispScale=(STONE_REF_LONG*scale)/long;
+    sinkers.push({
+      img:stoneImg, x, y, angle:Math.random()*Math.PI*2,
+      dispW:stoneImg.naturalWidth*dispScale, dispH:stoneImg.naturalHeight*dispScale,
+      spawnT: performance.now()*0.001,
+    });
+    if(sinkers.length>MAX_STONES) sinkers.shift();
+    if(!hintHidden){ hint.style.opacity=0; hintHidden=true; }
+  }
+  canvas.addEventListener('pointerdown', e=>{
+    const rect=canvas.getBoundingClientRect();
+    dropStone(e.clientX-rect.left, e.clientY-rect.top);
+  });
+  function drawSplash(s,t){
+    const age=t-s.spawnT;
+    if(age>SPLASH_DURATION || age<0) return;
+    const p=age/SPLASH_DURATION;
+    const r=6+p*s.dispW*0.9;
+    ctx.save();
+    ctx.strokeStyle=`rgba(255,250,235,${((1-p)*0.5).toFixed(2)})`;
+    ctx.lineWidth=2*(1-p)+0.5;
+    ctx.beginPath(); ctx.arc(s.x,s.y,r,0,7); ctx.stroke();
+    ctx.restore();
+  }
+  function drawSinker(s,t){
+    const age=Math.max(0,t-s.spawnT);
+    const p=Math.min(1,age/SINK_DURATION);
+    const ease=1-Math.pow(1-p,3);
+    const w=s.dispW*(1-0.28*ease), h=s.dispH*(1-0.28*ease);
+    const blur=(2.4*ease).toFixed(2), bright=(1-0.42*ease).toFixed(2);
+    ctx.save();
+    ctx.translate(s.x,s.y); ctx.rotate(s.angle);
+    ctx.filter=`blur(${blur}px) brightness(${bright})`;
+    ctx.drawImage(s.img,-w/2,-h/2,w,h);
+    ctx.filter='none';
+    ctx.globalCompositeOperation='source-atop';
+    ctx.fillStyle=`rgba(40,90,95,${(0.34*ease).toFixed(2)})`;
+    ctx.fillRect(-w/2,-h/2,w,h);
+    ctx.globalCompositeOperation='source-over';
+    ctx.restore();
+  }
+
+  // ---------- object rendering ----------
+  function drawShadow(r){
+    const g=ctx.createRadialGradient(0,0,0,0,0,r*1.3);
+    g.addColorStop(0,'rgba(0,0,0,0.28)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,r*1.3,0,7); ctx.fill();
+  }
+  function drawObj(o){
+    ctx.save();
+    ctx.translate(o.x,o.y+o.r*0.08);
+    drawShadow(o.r);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(o.x,o.y);
+    ctx.rotate(o.angle);
+    ctx.drawImage(o.img, -o.dispW/2, -o.dispH/2, o.dispW, o.dispH);
+    ctx.restore();
+  }
+
+  function resize(){
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    W=window.innerWidth; H=window.innerHeight;
+    canvas.width=W*DPR; canvas.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    buildBowl();
+    seedObjects();
+    seedSheen();
+  }
+
+  let last=performance.now();
+  function tick(now){
+    const dt=Math.min(now-last,50)/1000; last=now; const t=now*0.001;
+    stepSheen(dt,t);
+    stepObjects(dt,t);
+
+    ctx.clearRect(0,0,W,H);
+    ctx.drawImage(bowlLayer,0,0,W,H);
+    for(const s of sinkers) drawSinker(s,t);
+    drawSheen();
+    for(const s of sinkers) drawSplash(s,t);
+    for(const o of objs) drawObj(o);
+
+    requestAnimationFrame(tick);
+  }
+
+  Promise.all([
+    ...BOWLS.map(b=>loadImg(b.img)),
+    loadImg('bowl-stone.png'),
+    ...KINDS.map(k=>loadImg(k.img)),
+  ]).then(imgs=>{
+    BOWLS.forEach((b,i)=>{ bowlImgs[b.id]=imgs[i]; });
+    stoneImg=imgs[BOWLS.length];
+    KINDS.forEach((k,i)=>{ kindImgs[k.id]=imgs[BOWLS.length+1+i]; });
+    buildObjOverlay();
+    buildBowlOverlay();
+    window.addEventListener('resize',resize);
+    resize();
+    requestAnimationFrame(tick);
+  });
+})();
+</script>
+</body>
+</html>
