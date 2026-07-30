@@ -529,52 +529,52 @@
 
   <div class="panel-wrap">
     <div class="icon-popup" id="iconPopup">
-      <button type="button" class="icon-option" data-icon="" title="No icon">✕</button>
-      <button type="button" class="icon-option" data-icon="☕" title="Tea">☕</button>
-      <button type="button" class="icon-option" data-icon="🍳" title="Cooking">🍳</button>
-      <button type="button" class="icon-option" data-icon="🧘" title="Meditation">🧘</button>
-      <button type="button" class="icon-option" data-icon="📖" title="Reading">📖</button>
-      <button type="button" class="icon-option" data-icon="🛌" title="Nap">🛌</button>
-      <button type="button" class="icon-option" data-icon="💊" title="Medicine">💊</button>
-      <button type="button" class="icon-option" data-icon="🍕" title="Baking">🍕</button>
-      <button type="button" class="icon-option" data-icon="🕯️" title="Candle">🕯️</button>
-      <button type="button" class="icon-option" data-icon="⏰" title="Alarm">⏰</button>
+      <button type="button" class="icon-option" data-icon="" title="No icon" aria-label="No icon">✕</button>
+      <button type="button" class="icon-option" data-icon="☕" title="Tea" aria-label="Tea">☕</button>
+      <button type="button" class="icon-option" data-icon="🍳" title="Cooking" aria-label="Cooking">🍳</button>
+      <button type="button" class="icon-option" data-icon="🧘" title="Meditation" aria-label="Meditation">🧘</button>
+      <button type="button" class="icon-option" data-icon="📖" title="Reading" aria-label="Reading">📖</button>
+      <button type="button" class="icon-option" data-icon="🛌" title="Nap" aria-label="Nap">🛌</button>
+      <button type="button" class="icon-option" data-icon="💊" title="Medicine" aria-label="Medicine">💊</button>
+      <button type="button" class="icon-option" data-icon="🍕" title="Baking" aria-label="Baking">🍕</button>
+      <button type="button" class="icon-option" data-icon="🕯️" title="Candle" aria-label="Candle">🕯️</button>
+      <button type="button" class="icon-option" data-icon="⏰" title="Alarm" aria-label="Alarm">⏰</button>
     </div>
     <div class="panel">
       <div class="ctrl" id="sizeCtrl">
         <span class="icon">🕯️</span>
-        <input id="sizeSlider" type="range" min="0" max="100" value="100">
+        <input id="sizeSlider" type="range" min="0" max="100" value="100" aria-label="candle size">
       </div>
       <div class="divider"></div>
       <div class="ctrl" id="windCtrl">
         <span class="icon">💨</span>
-        <input id="windSlider" type="range" min="0" max="100" value="15">
+        <input id="windSlider" type="range" min="0" max="100" value="15" aria-label="wind strength">
       </div>
       <div class="divider"></div>
       <div class="ctrl" id="soundCtrl">
         <span class="icon">🔊</span>
-        <input id="soundCheck" type="checkbox">
+        <input id="soundCheck" type="checkbox" aria-label="crackle sound">
       </div>
       <div class="divider"></div>
       <div class="divider"></div>
       <div class="ctrl" id="pitchCtrl">
         <span class="icon">🔔</span>
-        <input id="pitchSlider" type="range" min="0" max="100" value="50">
+        <input id="pitchSlider" type="range" min="0" max="100" value="50" aria-label="chime pitch">
       </div>
       <div class="ctrl">
         <span class="icon">⏱️</span>
-        <input id="timerCheck" type="checkbox">
+        <input id="timerCheck" type="checkbox" aria-label="timer">
       </div>
       <div class="ctrl" id="repeatCtrl" style="opacity:0;width:0;overflow:hidden;margin:0 -11px;">
         <span class="icon">💤</span>
-        <input id="repeatCheck" type="checkbox">
+        <input id="repeatCheck" type="checkbox" aria-label="repeat timer">
       </div>
     </div>
     <div class="panel" id="pillarPanel" style="padding-top:6px;padding-bottom:6px;">
       <div class="ctrl">
-        <input id="pillarCheck" type="checkbox">
+        <input id="pillarCheck" type="checkbox" aria-label="pillar candle mode">
         <span class="icon">🗓️</span>
-        <input id="pillarSlider" type="range" min="2" max="7" step="1" value="4">
+        <input id="pillarSlider" type="range" min="2" max="7" step="1" value="4" aria-label="pillar burn length in days">
       </div>
     </div>
   </div>
