@@ -23,6 +23,10 @@
   input[type=range]::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:#e9d9a8; cursor:pointer; }
   #globeWrap{ width:46px; height:46px; flex:0 0 auto; cursor:grab; touch-action:none; }
   #globeWrap:active{ cursor:grabbing; }
+  #eternityToggle{ font-size:22px; line-height:1; color:rgba(231,221,201,.32); cursor:pointer;
+    user-select:none; transition:color .35s ease, text-shadow .35s ease; flex:0 0 auto; }
+  #eternityToggle.active{ color:#e9d9a8; text-shadow:0 0 9px rgba(233,217,168,.75); }
+  #eternityToggle:focus-visible{ outline:1px solid rgba(233,217,168,.6); outline-offset:4px; }
 </style>
 </head>
 <body>
@@ -31,13 +35,32 @@
 <div id="dock">
   <canvas id="globeWrap" width="92" height="92" aria-label="latitude" role="slider" tabindex="0"></canvas>
   <input type="range" id="speedSlider" min="0" max="100" value="80" aria-label="time speed">
+  <div id="eternityToggle" role="checkbox" tabindex="0" aria-checked="false" aria-label="ever-thickening trace">∞</div>
 </div>
 <script>
 (function(){
   const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
   const globeCanvas=document.getElementById('globeWrap'), gctx=globeCanvas.getContext('2d');
   const speedSlider=document.getElementById('speedSlider');
+  const eternityToggle=document.getElementById('eternityToggle');
   let W=0,H=0,DPR=1, cx=0, cy=0, floorR=0;
+
+  // ---------- sand trace: like a real Foucault demonstration, a stylus mark
+  // that fans into a rosette as the plane precesses. off by default, it clears
+  // itself into a fresh bloom each time the pin ring empties; the ∞ toggle
+  // switches that off so it keeps thickening indefinitely instead ----------
+  let sandEternal=false;
+  function setEternal(v){
+    sandEternal=v;
+    eternityToggle.setAttribute('aria-checked', String(v));
+    eternityToggle.classList.toggle('active', v);
+  }
+  eternityToggle.addEventListener('click', ()=>setEternal(!sandEternal));
+  eternityToggle.addEventListener('keydown', e=>{
+    if(e.key===' '||e.key==='Enter'){ e.preventDefault(); setEternal(!sandEternal); }
+  });
+  let sandLayer=null, sandCtx=null;
+  function clearSand(){ if(sandCtx) sandCtx.clearRect(0,0,sandLayer.width,sandLayer.height); }
 
   // ---------- latitude: set by dragging a line across the small globe ----------
   // a line of latitude, viewed exactly edge-on (the standard way a globe is drawn
@@ -171,6 +194,8 @@
     fl.fillStyle=g; fl.beginPath(); fl.arc(cx,cy,floorR,0,7); fl.fill();
     fl.strokeStyle='rgba(231,221,201,.12)'; fl.lineWidth=1;
     fl.beginPath(); fl.arc(cx,cy,floorR*0.86,0,7); fl.stroke();
+    sandLayer=document.createElement('canvas'); sandLayer.width=W; sandLayer.height=H;
+    sandCtx=sandLayer.getContext('2d');
   }
   window.addEventListener('resize',resize);
 
@@ -205,7 +230,10 @@
       negSweepAngle = curr;
     }
     prevSwingFrac = swingFrac; prevRising = rising;
-    if(pins.every(p=>p.knocked)) for(const p of pins){ p.knocked=false; p.knockedAt=-1; }
+    if(pins.every(p=>p.knocked)){
+      for(const p of pins){ p.knocked=false; p.knockedAt=-1; }
+      if(!sandEternal) clearSand();
+    }
   }
   function drawPins(t){
     const baseR=floorR*PIN_R_FRAC;
@@ -259,15 +287,27 @@
     planeAngle += (Math.PI*2) * (Math.sin(lat)/DAY) * dtSim;
     updatePins(t, swingFrac);
 
+    // the swing plane itself, faint, always visible even when the bob passes
+    // near the pivot — this is what actually makes the rotation legible
+    const amp=floorR*0.72;
+
+    // sand trace: a stylus-thin mark laid down along the current plane each
+    // frame, on a layer that never clears itself frame-to-frame — only the
+    // pin-ring reset (or never, in ∞ mode) wipes it, so it slowly fans into
+    // a rosette exactly the way a real sand-tray Foucault demonstration does
+    sandCtx.save();
+    sandCtx.translate(cx,cy); sandCtx.rotate(planeAngle);
+    sandCtx.strokeStyle='rgba(233,217,168,0.045)'; sandCtx.lineWidth=1;
+    sandCtx.beginPath(); sandCtx.moveTo(-amp,0); sandCtx.lineTo(amp,0); sandCtx.stroke();
+    sandCtx.restore();
+
     ctx.clearRect(0,0,W,H);
     ctx.drawImage(floorLayer,0,0,W,H);
+    ctx.drawImage(sandLayer,0,0,W,H);
 
     ctx.save();
     ctx.translate(cx,cy);
     drawPins(t);
-    // the swing plane itself, faint, always visible even when the bob passes
-    // near the pivot — this is what actually makes the rotation legible
-    const amp=floorR*0.72;
     ctx.strokeStyle='rgba(233,217,168,.22)'; ctx.lineWidth=1.2;
     ctx.beginPath();
     ctx.moveTo(Math.cos(planeAngle)*amp, Math.sin(planeAngle)*amp);
