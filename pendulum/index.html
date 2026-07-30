@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>foucault pendulum — sagne</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{ height:100%; margin:0; overflow:hidden; background:#0c0a08; color:#e7ddc9;
+    font-family:Georgia, serif; user-select:none; }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#e7ddc9; opacity:.5;
+    text-decoration:none; font-size:14px; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); transition:opacity .3s ease; }
+  #backlink:hover{ opacity:.9; }
+  canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:center;
+    gap:20px; padding:16px 22px 26px; z-index:40;
+    background:linear-gradient(to top, rgba(8,7,5,.85), rgba(8,7,5,0)); }
+  input[type=range]{ -webkit-appearance:none; appearance:none; width:150px; height:3px; border-radius:3px;
+    background:rgba(231,221,201,.25); outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+    background:#e9d9a8; cursor:pointer; box-shadow:0 0 8px rgba(233,217,168,.6); }
+  input[type=range]::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:#e9d9a8; cursor:pointer; }
+  #globeWrap{ width:46px; height:46px; flex:0 0 auto; cursor:grab; touch-action:none; }
+  #globeWrap:active{ cursor:grabbing; }
+</style>
+</head>
+<body>
+<a id="backlink" href="../index.html">← sagne</a>
+<canvas id="scene"></canvas>
+<div id="dock">
+  <canvas id="globeWrap" width="92" height="92" aria-label="latitude" role="slider" tabindex="0"></canvas>
+  <input type="range" id="speedSlider" min="0" max="100" value="52" aria-label="time speed">
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
+  const globeCanvas=document.getElementById('globeWrap'), gctx=globeCanvas.getContext('2d');
+  const speedSlider=document.getElementById('speedSlider');
+  let W=0,H=0,DPR=1, cx=0, cy=0, floorR=0;
+
+  // ---------- latitude: set by dragging a line across the small globe ----------
+  // a line of latitude, viewed exactly edge-on (the standard way a globe is drawn
+  // with its axis vertical), projects to a plain horizontal chord — full width at
+  // the equator, shrinking to a point at the pole. that's the "line" itself: no
+  // separate readout needed, the chord's own length and height carry the value.
+  let lat = 0.75; // radians, fallback until geolocation resolves (~43°N)
+  function setLatFromDrag(clientY){
+    const rect=globeCanvas.getBoundingClientRect();
+    const gR=rect.width/2*0.94;
+    const localY=clientY-(rect.top+rect.height/2);
+    const s=Math.max(-1,Math.min(1,-localY/gR));
+    lat=Math.asin(s);
+  }
+  let draggingGlobe=false;
+  globeCanvas.addEventListener('pointerdown', e=>{ draggingGlobe=true; globeCanvas.setPointerCapture(e.pointerId); setLatFromDrag(e.clientY); });
+  globeCanvas.addEventListener('pointermove', e=>{ if(draggingGlobe) setLatFromDrag(e.clientY); });
+  globeCanvas.addEventListener('pointerup', ()=>{ draggingGlobe=false; });
+  globeCanvas.addEventListener('pointercancel', ()=>{ draggingGlobe=false; });
+
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos => { lat = pos.coords.latitude*Math.PI/180; },
+      () => {}, { timeout: 4000 }
+    );
+  }
+
+  function drawGlobe(){
+    const w=globeCanvas.width, h=globeCanvas.height, R=w/2*0.94;
+    const gcx=w/2, gcy=h/2;
+    gctx.clearRect(0,0,w,h);
+    const shade=gctx.createRadialGradient(gcx-R*0.35,gcy-R*0.4,R*0.1,gcx,gcy,R*1.05);
+    shade.addColorStop(0,'#3a352c'); shade.addColorStop(1,'#151310');
+    gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.fillStyle=shade; gctx.fill();
+    gctx.save();
+    gctx.globalCompositeOperation='lighter';
+    const hi=gctx.createRadialGradient(gcx-R*0.4,gcy-R*0.45,0,gcx-R*0.4,gcy-R*0.45,R*0.9);
+    hi.addColorStop(0,'rgba(255,244,214,0.14)'); hi.addColorStop(1,'rgba(255,244,214,0)');
+    gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.fillStyle=hi; gctx.fill();
+    gctx.restore();
+    // axis
+    gctx.strokeStyle='rgba(231,221,201,.28)'; gctx.lineWidth=1;
+    gctx.beginPath(); gctx.moveTo(gcx,gcy-R); gctx.lineTo(gcx,gcy+R); gctx.stroke();
+    // equator, faint, for reference
+    gctx.strokeStyle='rgba(231,221,201,.16)';
+    gctx.beginPath(); gctx.moveTo(gcx-R,gcy); gctx.lineTo(gcx+R,gcy); gctx.stroke();
+    // the chosen latitude — a plain chord, its own length and height the whole control
+    const ly=gcy-Math.sin(lat)*R, lx=Math.cos(lat)*R;
+    gctx.strokeStyle='#e9d9a8'; gctx.lineWidth=2; gctx.lineCap='round';
+    gctx.shadowColor='rgba(233,217,168,.7)'; gctx.shadowBlur=4;
+    gctx.beginPath(); gctx.moveTo(gcx-lx,ly); gctx.lineTo(gcx+lx,ly); gctx.stroke();
+    gctx.shadowBlur=0;
+  }
+
+  // ---------- time: real precession is imperceptibly slow — a speed slider
+  // scales the simulated clock so the same physics can be watched honestly slow
+  // or sped up enough to see happen, rather than picking one fixed rate ----------
+  let speedAmt=speedSlider.value/100;
+  speedSlider.addEventListener('input', ()=>{ speedAmt=speedSlider.value/100; });
+  function speedMultiplier(){ return Math.pow(10, speedAmt*4.6); } // 1x .. ~40000x
+
+  // ---------- pendulum ----------
+  const SWING_PERIOD=3.4;      // seconds, the ordinary back-and-forth
+  const DAY=86400;             // seconds
+  let planeAngle=0;
+  let simClock=0;
+  let last=performance.now();
+
+  let floorLayer=null;
+  function resize(){
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    W=window.innerWidth; H=window.innerHeight;
+    canvas.width=W*DPR; canvas.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    // size against whichever dimension is actually tight — on a narrow phone
+    // that's width, and the old min(W,H) sizing left the circle stranded small
+    // with a lot of dead space above it once the dock's own height was spent
+    const topMargin=50, dockReserve=100;
+    const usableH=Math.max(200,H-topMargin-dockReserve);
+    floorR=Math.min(W*0.46, usableH/2*0.94);
+    cx=W/2; cy=topMargin+usableH/2;
+    floorLayer=document.createElement('canvas'); floorLayer.width=W; floorLayer.height=H;
+    const fl=floorLayer.getContext('2d');
+    const g=fl.createRadialGradient(cx,cy,0,cx,cy,floorR);
+    g.addColorStop(0,'#221d17'); g.addColorStop(0.7,'#171310'); g.addColorStop(1,'#0c0a08');
+    fl.fillStyle=g; fl.beginPath(); fl.arc(cx,cy,floorR,0,7); fl.fill();
+    fl.strokeStyle='rgba(231,221,201,.12)'; fl.lineWidth=1;
+    fl.beginPath(); fl.arc(cx,cy,floorR*0.86,0,7); fl.stroke();
+  }
+  window.addEventListener('resize',resize);
+
+  // ---------- pins: a ring of 24 pegs, one per hour, that the bob topples as
+  // the swing plane sweeps past — real Foucault installations (the Panthéon's,
+  // among others) mark the rotation exactly this way. because the swing line
+  // passes through the centre in both directions, a pin and the one opposite it
+  // fall together, and a full ring empties in half a rotation, not a whole one —
+  // that symmetry is real, not a shortcut. the ring resets once it's emptied.
+  const PIN_COUNT=24, PIN_R_FRAC=0.72, FALL_DUR=0.35;
+  let pins=Array.from({length:PIN_COUNT},(_,i)=>({ angle:(i/PIN_COUNT)*Math.PI*2, major:i%6===0, knocked:false, knockedAt:-1 }));
+  let prevPlaneAngle=planeAngle;
+  function updatePins(t){
+    const lo=Math.min(prevPlaneAngle,planeAngle), hi=Math.max(prevPlaneAngle,planeAngle);
+    let allKnocked=true;
+    for(const p of pins){
+      if(!p.knocked){
+        let k=p.angle+Math.ceil((lo-p.angle)/Math.PI)*Math.PI;
+        for(; k<=hi; k+=Math.PI){
+          if(k>=lo){ p.knocked=true; p.knockedAt=t; break; }
+        }
+      }
+      if(!p.knocked) allKnocked=false;
+    }
+    prevPlaneAngle=planeAngle;
+    if(allKnocked) for(const p of pins){ p.knocked=false; p.knockedAt=-1; }
+  }
+  function drawPins(t){
+    const baseR=floorR*PIN_R_FRAC;
+    for(const p of pins){
+      let fall=0;
+      if(p.knocked){ fall=Math.min(1,(t-p.knockedAt)/FALL_DUR); fall=1-Math.pow(1-fall,3); }
+      const len=p.major?13:9;
+      const dirA=p.angle+fall*(Math.PI/2);
+      const x0=Math.cos(p.angle)*baseR, y0=Math.sin(p.angle)*baseR;
+      const x1=x0+Math.cos(dirA)*len, y1=y0+Math.sin(dirA)*len;
+      const baseAlpha=p.major?0.42:0.24;
+      ctx.strokeStyle=`rgba(233,217,168,${(baseAlpha-fall*0.16).toFixed(2)})`;
+      ctx.lineWidth=(p.major?2.1:1.5)-fall*0.7;
+      ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+    }
+  }
+
+  function tick(now){
+    const t=now*0.001;
+    const dtReal=Math.min((now-last)/1000,0.05); last=now;
+    drawGlobe();
+
+    // the swing itself always runs at its own honest pace
+    simClock += dtReal;
+    const swingFrac = Math.cos((simClock/SWING_PERIOD)*Math.PI*2);
+
+    // the plane's precession is the only thing time-speed touches — real
+    // Foucault physics: a full turn in 24h at the poles, none at the equator,
+    // scaled by sin(latitude) everywhere between; opposite sign each hemisphere
+    const dtSim = dtReal*speedMultiplier();
+    planeAngle += (Math.PI*2) * (Math.sin(lat)/DAY) * dtSim;
+    updatePins(t);
+
+    ctx.clearRect(0,0,W,H);
+    ctx.drawImage(floorLayer,0,0,W,H);
+
+    ctx.save();
+    ctx.translate(cx,cy);
+    drawPins(t);
+    // the swing plane itself, faint, always visible even when the bob passes
+    // near the pivot — this is what actually makes the rotation legible
+    const amp=floorR*0.72;
+    ctx.strokeStyle='rgba(233,217,168,.22)'; ctx.lineWidth=1.2;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(planeAngle)*amp, Math.sin(planeAngle)*amp);
+    ctx.lineTo(-Math.cos(planeAngle)*amp, -Math.sin(planeAngle)*amp);
+    ctx.stroke();
+
+    const bx=Math.cos(planeAngle)*amp*swingFrac, by=Math.sin(planeAngle)*amp*swingFrac;
+    // thread from the (implied, off the top of the frame) pivot
+    ctx.strokeStyle='rgba(20,17,14,.5)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(bx,by); ctx.stroke();
+    // bob shadow, then bob
+    ctx.beginPath(); ctx.ellipse(bx,by+7,13,7,0,0,7);
+    ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fill();
+    const bobG=ctx.createRadialGradient(bx-5,by-6,1,bx,by,14);
+    bobG.addColorStop(0,'#f2e6c8'); bobG.addColorStop(0.6,'#c9a95f'); bobG.addColorStop(1,'#7a5d28');
+    ctx.beginPath(); ctx.arc(bx,by,12,0,7); ctx.fillStyle=bobG; ctx.fill();
+    ctx.restore();
+
+    requestAnimationFrame(tick);
+  }
+  resize();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
