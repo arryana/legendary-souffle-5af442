@@ -65,6 +65,28 @@
     );
   }
 
+  // rough continent outlines (lon,lat in degrees), orthographically projected
+  // onto the sphere so it reads as an actual world, not just a shaded ball.
+  // there's no longitude control here (only latitude), so the view is fixed
+  // to the classic Europe/Africa-forward globe orientation; simplified since
+  // the control itself renders at under 50px.
+  const GLOBE_LON0 = 12;
+  const CONTINENTS = [
+    [[-160,68],[-141,60],[-130,55],[-125,48],[-124,40],[-117,33],[-105,20],[-97,16],[-90,16],[-82,22],[-80,26],[-81,31],[-75,35],[-70,41],[-65,45],[-60,50],[-65,58],[-80,62],[-95,68],[-130,70]],
+    [[-45,60],[-35,66],[-25,71],[-20,78],[-35,83],[-55,82],[-65,76],[-60,68],[-50,60]],
+    [[-77,8],[-72,1],[-70,-5],[-70,-18],[-70,-30],[-71,-42],[-73,-52],[-68,-55],[-62,-50],[-58,-38],[-48,-25],[-35,-8],[-40,0],[-50,2],[-60,5],[-70,10]],
+    [[-17,15],[-16,20],[-10,30],[-5,35],[10,37],[20,33],[32,31],[35,20],[43,12],[51,12],[51,0],[42,-16],[35,-25],[27,-33],[18,-34],[12,-18],[10,-5],[-5,5]],
+    [[-10,37],[-9,43],[-1,43],[3,43],[8,44],[12,45],[13,42],[19,40],[23,36],[28,36],[27,40],[30,45],[27,48],[30,50],[38,52],[40,45],[35,42],[28,42],[25,40],[15,40],[8,40],[0,38],[-6,37]],
+    [[27,48],[30,55],[35,60],[45,60],[55,65],[65,68],[75,70],[90,72],[110,73],[130,72],[140,60],[142,48],[132,42],[125,40],[122,32],[118,25],[108,20],[100,12],[95,15],[90,22],[80,20],[70,22],[62,25],[52,28],[48,35],[42,38],[35,42]],
+    [[113,-22],[122,-18],[130,-12],[137,-16],[142,-11],[145,-17],[150,-22],[153,-28],[150,-34],[140,-38],[135,-35],[128,-32],[122,-34],[115,-34],[113,-26]],
+  ];
+  function projectLL(lonDeg,latDeg){
+    const lon=lonDeg*Math.PI/180, lat=latDeg*Math.PI/180, lon0=GLOBE_LON0*Math.PI/180;
+    const cosc=Math.cos(lat)*Math.cos(lon-lon0);
+    let x=Math.cos(lat)*Math.sin(lon-lon0), y=Math.sin(lat);
+    if(cosc<0){ const m=Math.hypot(x,y)||1; x=x/m*0.998; y=y/m*0.998; }
+    return {x,y};
+  }
   function drawGlobe(){
     const w=globeCanvas.width, h=globeCanvas.height, R=w/2*0.94;
     const gcx=w/2, gcy=h/2;
@@ -72,6 +94,22 @@
     const shade=gctx.createRadialGradient(gcx-R*0.35,gcy-R*0.4,R*0.1,gcx,gcy,R*1.05);
     shade.addColorStop(0,'#3a352c'); shade.addColorStop(1,'#151310');
     gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.fillStyle=shade; gctx.fill();
+    // continents, clipped to the sphere, so the globe reads as an actual world
+    gctx.save();
+    gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.clip();
+    gctx.fillStyle='rgba(214,195,153,0.32)';
+    gctx.strokeStyle='rgba(233,217,168,0.42)';
+    gctx.lineWidth=0.7;
+    for(const poly of CONTINENTS){
+      gctx.beginPath();
+      poly.forEach(([lo,la],i)=>{
+        const p=projectLL(lo,la);
+        const sx=gcx+p.x*R, sy=gcy-p.y*R;
+        if(i===0) gctx.moveTo(sx,sy); else gctx.lineTo(sx,sy);
+      });
+      gctx.closePath(); gctx.fill(); gctx.stroke();
+    }
+    gctx.restore();
     gctx.save();
     gctx.globalCompositeOperation='lighter';
     const hi=gctx.createRadialGradient(gcx-R*0.4,gcy-R*0.45,0,gcx-R*0.4,gcy-R*0.45,R*0.9);
@@ -132,29 +170,38 @@
   }
   window.addEventListener('resize',resize);
 
-  // ---------- pins: a ring of 24 pegs, one per hour, that the bob topples as
-  // the swing plane sweeps past — real Foucault installations (the Panthéon's,
-  // among others) mark the rotation exactly this way. because the swing line
-  // passes through the centre in both directions, a pin and the one opposite it
-  // fall together, and a full ring empties in half a rotation, not a whole one —
-  // that symmetry is real, not a shortcut. the ring resets once it's emptied.
+  // ---------- pins: a ring of 24 pegs, one per hour, that the bob nudges over
+  // as it reaches each extreme of its swing — the bob only ever touches the
+  // ring on whichever side it's currently swung out to, so a pin and the one
+  // opposite it fall half a swing apart, not together, alternating with the
+  // back-and-forth: one on the out-swing, the next opposite on the return.
+  // a full ring still empties in half a rotation, that symmetry is real. the
+  // ring resets once it's emptied.
   const PIN_COUNT=24, PIN_R_FRAC=0.72, FALL_DUR=0.35;
   let pins=Array.from({length:PIN_COUNT},(_,i)=>({ angle:(i/PIN_COUNT)*Math.PI*2, major:i%6===0, knocked:false, knockedAt:-1 }));
-  let prevPlaneAngle=planeAngle;
-  function updatePins(t){
-    const lo=Math.min(prevPlaneAngle,planeAngle), hi=Math.max(prevPlaneAngle,planeAngle);
-    let allKnocked=true;
+  let prevSwingFrac=1, prevRising=false;
+  let posSweepAngle=planeAngle, negSweepAngle=planeAngle+Math.PI;
+  function sweepKnock(prevA, currA, t){
     for(const p of pins){
-      if(!p.knocked){
-        let k=p.angle+Math.ceil((lo-p.angle)/Math.PI)*Math.PI;
-        for(; k<=hi; k+=Math.PI){
-          if(k>=lo){ p.knocked=true; p.knockedAt=t; break; }
-        }
-      }
-      if(!p.knocked) allKnocked=false;
+      if(p.knocked) continue;
+      let k=p.angle+Math.ceil((prevA-p.angle)/(Math.PI*2))*(Math.PI*2);
+      for(; k<=currA; k+=Math.PI*2){ p.knocked=true; p.knockedAt=t; break; }
     }
-    prevPlaneAngle=planeAngle;
-    if(allKnocked) for(const p of pins){ p.knocked=false; p.knockedAt=-1; }
+  }
+  function updatePins(t, swingFrac){
+    const rising = swingFrac > prevSwingFrac;
+    if(prevRising && !rising){
+      // just swung out to the "positive" side and touched the ring there
+      sweepKnock(posSweepAngle, planeAngle, t);
+      posSweepAngle = planeAngle;
+    } else if(!prevRising && rising){
+      // just swung out to the opposite side and touched the ring there
+      const curr = planeAngle + Math.PI;
+      sweepKnock(negSweepAngle, curr, t);
+      negSweepAngle = curr;
+    }
+    prevSwingFrac = swingFrac; prevRising = rising;
+    if(pins.every(p=>p.knocked)) for(const p of pins){ p.knocked=false; p.knockedAt=-1; }
   }
   function drawPins(t){
     const baseR=floorR*PIN_R_FRAC;
@@ -162,14 +209,18 @@
       let fall=0;
       if(p.knocked){ fall=Math.min(1,(t-p.knockedAt)/FALL_DUR); fall=1-Math.pow(1-fall,3); }
       const len=p.major?13:9;
-      const dirA=p.angle+fall*(Math.PI/2);
+      // pushed straight outward, away from the pivot — never sideways —
+      // the same direction the bob approached from
+      const dirA=p.angle;
+      const push=fall*7;
       const x0=Math.cos(p.angle)*baseR, y0=Math.sin(p.angle)*baseR;
-      const x1=x0+Math.cos(dirA)*len, y1=y0+Math.sin(dirA)*len;
+      const x1=x0+Math.cos(dirA)*(len+push), y1=y0+Math.sin(dirA)*(len+push);
       const perpA=dirA+Math.PI/2;
 
       // standing: a small crossbar at the tip — a T seen edge-on. fallen: that
-      // same crossbar collapses into a round brass head lying on its side —
-      // a lollipop. one continuous shape, not two different assets swapped.
+      // same crossbar collapses into a round brass head, pushed further out
+      // along the same line — a lollipop knocked away from the ring, not
+      // swept sideways around it.
       ctx.strokeStyle=`rgba(233,217,168,${((p.major?0.42:0.26)*(1-fall*0.2)).toFixed(2)})`;
       ctx.lineWidth=p.major?2:1.4;
       ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
@@ -202,7 +253,7 @@
     // scaled by sin(latitude) everywhere between; opposite sign each hemisphere
     const dtSim = dtReal*speedMultiplier();
     planeAngle += (Math.PI*2) * (Math.sin(lat)/DAY) * dtSim;
-    updatePins(t);
+    updatePins(t, swingFrac);
 
     ctx.clearRect(0,0,W,H);
     ctx.drawImage(floorLayer,0,0,W,H);
