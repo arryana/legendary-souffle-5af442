@@ -13,9 +13,6 @@
     text-decoration:none; font-size:14px; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); transition:opacity .3s ease; }
   #backlink:hover{ opacity:.9; }
   canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
-  #hint{ position:fixed; top:52px; left:0; right:0; text-align:center; font-size:13px; opacity:.4;
-    pointer-events:none; letter-spacing:.03em; transition:opacity 1.2s ease;
-    text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); }
   #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:flex-start;
     gap:14px; padding:16px 18px 26px 24px; z-index:40;
     background:linear-gradient(to top, rgba(8,7,5,.85), rgba(8,7,5,0)); }
@@ -33,8 +30,13 @@
     margin-left:-1px; margin-top:-13px; border-radius:2px; transform-origin:50% 100%;
     box-shadow:0 0 6px rgba(233,217,168,.6); pointer-events:none; }
   .pickerTrigger{ background:none; border:none; font-size:17px; opacity:.75; cursor:pointer;
-    padding:2px 4px; line-height:1; color:inherit; }
-  .pickerTrigger:hover{ opacity:1; }
+    padding:2px 4px; line-height:1; color:inherit; border-radius:50%;
+    transition:opacity .2s ease, background .2s ease; }
+  .pickerTrigger:hover{ opacity:1; background:rgba(231,221,201,.14); }
+  #objTrigger{ position:fixed; right:20px; bottom:20px; z-index:40; font-size:21px;
+    width:42px; height:42px; display:flex; align-items:center; justify-content:center;
+    background:rgba(8,7,5,.55); }
+  #objTrigger:hover{ background:rgba(8,7,5,.8); }
   .pickerOverlay{ display:none; position:fixed; inset:0; z-index:60; background:rgba(8,7,5,.6);
     align-items:center; justify-content:center; }
   .pickerOverlay.open{ display:flex; }
@@ -51,22 +53,19 @@
 <body>
 <a id="backlink" href="../index.html">← sagne</a>
 <canvas id="scene"></canvas>
-<div id="hint">tap the water to drop a stone</div>
 <div id="dock">
-  <button id="bowlTrigger" class="pickerTrigger" title="choose the bowl" aria-label="choose the bowl">🥣</button>
-  <span class="glyph" title="speed">🌊</span>
+  <button id="bowlTrigger" class="pickerTrigger" aria-label="choose the bowl">🥣</button>
+  <span class="glyph" aria-hidden="true">🌊</span>
   <input type="range" id="speedSlider" min="0" max="100" value="20" aria-label="speed">
   <div class="divider"></div>
-  <div id="dirDial" title="direction" aria-label="direction" role="slider" tabindex="0"><div id="dirNeedle"></div></div>
-  <div class="divider"></div>
-  <button id="objTrigger" class="pickerTrigger" title="choose what's floating" aria-label="choose what's floating">🌸</button>
+  <div id="dirDial" aria-label="direction" role="slider" tabindex="0"><div id="dirNeedle"></div></div>
 </div>
+<button id="objTrigger" class="pickerTrigger" aria-label="choose what's floating">🌸</button>
 <div id="bowlOverlay" class="pickerOverlay"><div class="pickerPopup"><div id="bowlList" class="pickerList"></div></div></div>
 <div id="objOverlay" class="pickerOverlay"><div class="pickerPopup"><div id="objList" class="pickerList"></div></div></div>
 <script>
 (function(){
   const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
-  const hint=document.getElementById('hint');
   const speedSlider=document.getElementById('speedSlider');
   const dirDial=document.getElementById('dirDial'), dirNeedle=document.getElementById('dirNeedle');
   let W=0,H=0,DPR=1, cx=0, cy=0, waterR=0;
@@ -364,7 +363,7 @@
   // through, darkening, blurring and cooling in colour as it sinks, then rests
   // on the bottom for good, unmoved by the current from here on ----------
   const STONE_REF_LONG=95, SINK_DURATION=1.7, SPLASH_DURATION=0.6, MAX_STONES=10;
-  let stoneImg=null, sinkers=[], hintHidden=false;
+  let stoneImg=null, sinkers=[];
   function dropStone(x,y){
     if(!stoneImg || waterR<=0) return;
     if(Math.hypot(x-cx,y-cy) > waterR*0.92) return;
@@ -377,7 +376,6 @@
       spawnT: performance.now()*0.001,
     });
     if(sinkers.length>MAX_STONES) sinkers.shift();
-    if(!hintHidden){ hint.style.opacity=0; hintHidden=true; }
   }
   canvas.addEventListener('pointerdown', e=>{
     const rect=canvas.getBoundingClientRect();
@@ -394,21 +392,32 @@
     ctx.beginPath(); ctx.arc(s.x,s.y,r,0,7); ctx.stroke();
     ctx.restore();
   }
+  const sinkerBuf=document.createElement('canvas'), sinkerBufCtx=sinkerBuf.getContext('2d');
   function drawSinker(s,t){
     const age=Math.max(0,t-s.spawnT);
     const p=Math.min(1,age/SINK_DURATION);
     const ease=1-Math.pow(1-p,3);
     const w=s.dispW*(1-0.28*ease), h=s.dispH*(1-0.28*ease);
-    const blur=(2.4*ease).toFixed(2), bright=(1-0.42*ease).toFixed(2);
+    const blur=2.4*ease, bright=(1-0.42*ease).toFixed(2);
+    // compositing the tint with source-atop only clips to what's already opaque
+    // *on this buffer* — done straight on the main canvas that's the whole bowl
+    // photo underneath, so it painted a full rectangle instead of just the stone.
+    // Building it on a small transparent buffer first keeps the clip honest.
+    const pad=Math.ceil(blur*3)+4;
+    const bw=Math.max(1,Math.ceil(w+pad*2)), bh=Math.max(1,Math.ceil(h+pad*2));
+    sinkerBuf.width=bw; sinkerBuf.height=bh;
+    sinkerBufCtx.clearRect(0,0,bw,bh);
+    sinkerBufCtx.filter=`blur(${blur.toFixed(2)}px) brightness(${bright})`;
+    sinkerBufCtx.drawImage(s.img,pad,pad,w,h);
+    sinkerBufCtx.filter='none';
+    sinkerBufCtx.globalCompositeOperation='source-atop';
+    sinkerBufCtx.fillStyle=`rgba(40,90,95,${(0.34*ease).toFixed(2)})`;
+    sinkerBufCtx.fillRect(0,0,bw,bh);
+    sinkerBufCtx.globalCompositeOperation='source-over';
+
     ctx.save();
     ctx.translate(s.x,s.y); ctx.rotate(s.angle);
-    ctx.filter=`blur(${blur}px) brightness(${bright})`;
-    ctx.drawImage(s.img,-w/2,-h/2,w,h);
-    ctx.filter='none';
-    ctx.globalCompositeOperation='source-atop';
-    ctx.fillStyle=`rgba(40,90,95,${(0.34*ease).toFixed(2)})`;
-    ctx.fillRect(-w/2,-h/2,w,h);
-    ctx.globalCompositeOperation='source-over';
+    ctx.drawImage(sinkerBuf,-bw/2,-bh/2);
     ctx.restore();
   }
 
