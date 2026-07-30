@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>foucault pendulum — sagne</title>
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <style>
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{ height:100%; margin:0; overflow:hidden; background:#0c0a08; color:#e7ddc9;
@@ -26,11 +26,11 @@
 </style>
 </head>
 <body>
-<a id="backlink" href="index.html">← sagne</a>
+<a id="backlink" href="../index.html">← sagne</a>
 <canvas id="scene"></canvas>
 <div id="dock">
   <canvas id="globeWrap" width="92" height="92" aria-label="latitude" role="slider" tabindex="0"></canvas>
-  <input type="range" id="speedSlider" min="0" max="100" value="18" aria-label="time speed">
+  <input type="range" id="speedSlider" min="0" max="100" value="52" aria-label="time speed">
 </div>
 <script>
 (function(){
@@ -111,8 +111,13 @@
     DPR=Math.min(window.devicePixelRatio||1,2);
     W=window.innerWidth; H=window.innerHeight;
     canvas.width=W*DPR; canvas.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
-    cx=W/2; cy=H*0.47;
-    floorR=Math.min(W,H)*0.40;
+    // size against whichever dimension is actually tight — on a narrow phone
+    // that's width, and the old min(W,H) sizing left the circle stranded small
+    // with a lot of dead space above it once the dock's own height was spent
+    const topMargin=50, dockReserve=100;
+    const usableH=Math.max(200,H-topMargin-dockReserve);
+    floorR=Math.min(W*0.46, usableH/2*0.94);
+    cx=W/2; cy=topMargin+usableH/2;
     floorLayer=document.createElement('canvas'); floorLayer.width=W; floorLayer.height=H;
     const fl=floorLayer.getContext('2d');
     const g=fl.createRadialGradient(cx,cy,0,cx,cy,floorR);
