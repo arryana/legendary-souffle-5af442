@@ -245,7 +245,7 @@
   objTrigger.addEventListener('click', ()=>objOverlay.classList.add('open'));
   objOverlay.addEventListener('click', e=>{ if(e.target===objOverlay) objOverlay.classList.remove('open'); });
 
-  const FLOW_SCALE=3200, BASE_JITTER=90, CONTAIN_K=140, REPEL_K=90, ROT_SCALE=420, DAMPING=0.9;
+  const FLOW_SCALE=3200, BASE_JITTER=90, CONTAIN_K=140, ROT_SCALE=420, DAMPING=0.9, BUMP_SPIN_K=0.026;
 
   function stepObjects(dt,t){
     for(const o of objs){
@@ -267,24 +267,50 @@
         ay -= (dy/dist)*p*p*CONTAIN_K;
       }
 
-      // gentle mutual avoidance — no rigid collision, just enough to look natural
-      for(const o2 of objs){
-        if(o2===o) continue;
-        const ddx=o.x-o2.x, ddy=o.y-o2.y, d=Math.hypot(ddx,ddy)||0.001;
-        const minD=(o.r+o2.r)*0.72;
-        if(d<minD){
-          const p=(minD-d)/minD;
-          ax += (ddx/d)*p*p*REPEL_K;
-          ay += (ddy/d)*p*p*REPEL_K;
-        }
-      }
-
       o.vx=o.vx*DAMPING+ax*dt; o.vy=o.vy*DAMPING+ay*dt;
       o.x+=o.vx*dt; o.y+=o.vy*dt;
 
       const curl=curlAt(o.x,o.y,t);
       o.angVel = o.angVel*0.9 + curl*speedAmt*ROT_SCALE*resp*dt;
       o.angle += o.angVel*dt + Math.sin(t*0.3+o.phase)*0.05*dt;
+    }
+    resolveOverlaps();
+    for(const o of objs){
+      // hard clamp — the overlap solver above can nudge an object toward the rim;
+      // never let it actually cross into the bowl wall
+      const dx=o.x-cx, dy=o.y-cy, dist=Math.hypot(dx,dy)||0.001;
+      const maxR=Math.max(waterR*0.2, waterR-o.r-4);
+      if(dist>maxR){ o.x=cx+dx/dist*maxR; o.y=cy+dy/dist*maxR; }
+    }
+  }
+
+  // objects never overlap — resolved as a direct position correction (not a force),
+  // so it holds regardless of how hard the current is pushing them together. A bump
+  // hands out a spin to both objects, scaled by how much wind/current is behind it —
+  // dead calm, a bump barely turns them; strong current, they spin off each other.
+  function resolveOverlaps(){
+    for(let iter=0; iter<3; iter++){
+      for(let i=0;i<objs.length;i++){
+        for(let j=i+1;j<objs.length;j++){
+          const a=objs[i], b=objs[j];
+          const dx=b.x-a.x, dy=b.y-a.y;
+          const d=Math.hypot(dx,dy)||0.001;
+          const minD=a.r+b.r+3;
+          if(d>=minD) continue;
+          const overlap=minD-d;
+          const nx=dx/d, ny=dy/d;
+          const totalInvW=1/a.weight+1/b.weight;
+          const pushA=overlap*(1/a.weight)/totalInvW, pushB=overlap*(1/b.weight)/totalInvW;
+          a.x-=nx*pushA; a.y-=ny*pushA;
+          b.x+=nx*pushB; b.y+=ny*pushB;
+
+          const tx=-ny, ty=nx;
+          const relTangent=(b.vx-a.vx)*tx+(b.vy-a.vy)*ty;
+          const spin=(relTangent<0?-1:1)*Math.min(1,overlap*0.08)*speedAmt*BUMP_SPIN_K;
+          a.angVel -= spin*(1/a.weight)/totalInvW;
+          b.angVel += spin*(1/b.weight)/totalInvW;
+        }
+      }
     }
   }
 
