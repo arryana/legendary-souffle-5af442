@@ -171,7 +171,9 @@
   // read the vessel photo's own pixels to find, per row, exactly where its
   // glass interior is — and stop at the true bottom of the bulb, not the
   // little foot/base below it, so crystal can never render into the base
-  const Y_TOP=250, Y_BULB_BOT=610, Y_MAXFILL=210;
+  // Y_TOP sits right at the real liquid line visible in the vessel photo —
+  // crystal only ever forms in the liquid, never in the empty neck above it
+  const Y_TOP=320, Y_BULB_BOT=610, Y_MAXFILL=280;
   function buildProfile(vc){
     const d=vc.getContext('2d').getImageData(0,0,W,H).data;
     const rows=new Array(H).fill(null);
