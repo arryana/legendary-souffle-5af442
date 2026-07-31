@@ -14,9 +14,8 @@
   #backlink:hover{ opacity:.9; }
   #stage{ height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:6vh 3vw 2vh; gap:2vh; }
-  #scene-wrap{ position:relative; height:min(76vh,720px); aspect-ratio:201/504; }
-  #scene-wrap img{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
-    -webkit-user-drag:none; pointer-events:none; transition:opacity .9s ease; }
+  #scene-wrap{ position:relative; height:min(76vh,720px); aspect-ratio:410/700; }
+  #scene-wrap canvas{ position:absolute; inset:0; width:100%; height:100%; }
   #dock{ display:flex; align-items:center; justify-content:center; gap:20px; padding:0 22px; }
   .toggle{ display:flex; align-items:center; gap:8px; cursor:pointer; }
   .toggle input{ appearance:none; width:16px; height:16px; border:1.5px solid rgba(223,230,234,.7);
@@ -38,10 +37,7 @@
 <body>
 <a id="backlink" href="../index.html">← sagne</a>
 <div id="stage">
-  <div id="scene-wrap">
-    <img id="frame-a" src="storm-01.png" alt="">
-    <img id="frame-b" src="storm-01.png" alt="" style="opacity:0;">
-  </div>
+  <div id="scene-wrap"><canvas id="scene"></canvas></div>
   <div id="dock">
     <label class="toggle">
       <input type="checkbox" id="chkLive" checked aria-label="use real local weather">
@@ -56,20 +52,15 @@
 </div>
 <script>
 (function(){
-  const N_FRAMES=7;
-  const els={
-    frameA: document.getElementById('frame-a'),
-    frameB: document.getElementById('frame-b'),
-    chkLive: document.getElementById('chkLive'),
-    sliderWrap: document.getElementById('sliderWrap'),
-    slider: document.getElementById('instabilitySlider'),
-  };
+  const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
+  const chkLive=document.getElementById('chkLive');
+  const sliderWrap=document.getElementById('sliderWrap');
+  const slider=document.getElementById('instabilitySlider');
 
   // ---------- weather: the same live/manual pattern as galileo and conometer.
-  // storminess is built from three real fields rather than one: cloud cover,
-  // how far pressure sits below the standard 1013 hPa baseline (a real proxy
-  // for "how unsettled the air is"), and a boost when precipitation is
-  // actually falling right now ----------
+  // storminess is built from three real fields: cloud cover, how far pressure
+  // sits below the standard 1013 hPa baseline (a real proxy for "how unsettled
+  // the air is"), and a boost when precipitation is actually falling ----------
   let lat=55.19, lon=-1.56; // fallback: north-east England, matching the rest of the site
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(
@@ -80,7 +71,7 @@
   let liveInstability=null;
   let manualInstability=30;
   function currentInstability(){
-    if(els.chkLive.checked) return liveInstability!=null ? liveInstability : manualInstability;
+    if(chkLive.checked) return liveInstability!=null ? liveInstability : manualInstability;
     return manualInstability;
   }
   async function fetchWeather(){
@@ -97,56 +88,151 @@
         const pressureScore=Math.max(0, Math.min(1, (1013-pressure)/40));
         const precipBoost=precip>0 ? Math.min(0.35, 0.15+precip*0.05) : 0;
         liveInstability=Math.max(0, Math.min(100, (0.5*cloudScore+0.5*pressureScore+precipBoost)*100));
-        if(els.chkLive.checked) renderStorm();
       }
     }catch(e){ /* keep last known value silently */ }
   }
   fetchWeather();
-  setInterval(()=>{ if(els.chkLive.checked) fetchWeather(); }, 10*60*1000);
-
-  // ---------- rendering: exactly conometer's crossfade pattern — one real
-  // number picks the nearest of N photographed states and eases between them ----------
-  let shownFrame=null;
-  function frameUrl(n){ return `storm-${String(n).padStart(2,'0')}.png`; }
-  function renderStorm(){
-    const v=Math.max(0, Math.min(100, currentInstability()));
-    const pos=1 + (v/100) * (N_FRAMES-1);
-    const nearest=Math.max(1, Math.min(N_FRAMES, Math.round(pos)));
-
-    if(shownFrame===null){
-      els.frameA.src=frameUrl(nearest);
-      els.frameA.style.opacity=1;
-      els.frameB.style.opacity=0;
-      shownFrame=nearest;
-      return;
-    }
-    if(nearest!==shownFrame){
-      els.frameB.src=frameUrl(nearest);
-      els.frameB.style.opacity=1;
-      els.frameA.style.opacity=0;
-      shownFrame=nearest;
-      window.clearTimeout(renderStorm._settleTimer);
-      renderStorm._settleTimer=window.setTimeout(()=>{
-        els.frameA.src=frameUrl(nearest);
-        els.frameA.style.opacity=1;
-        els.frameB.style.opacity=0;
-      }, 950); // matches the CSS opacity transition duration
-    }
-  }
+  setInterval(()=>{ if(chkLive.checked) fetchWeather(); }, 10*60*1000);
 
   function setLive(v){
-    els.chkLive.checked=v;
-    els.sliderWrap.classList.toggle('disabled', v);
-    renderStorm();
+    chkLive.checked=v;
+    sliderWrap.classList.toggle('disabled', v);
   }
-  els.chkLive.addEventListener('change', ()=>setLive(els.chkLive.checked));
-  els.slider.addEventListener('input', ()=>{
-    manualInstability=parseFloat(els.slider.value);
-    if(!els.chkLive.checked) renderStorm();
-  });
-  els.sliderWrap.addEventListener('pointerdown', ()=>{ if(els.chkLive.checked) setLive(false); });
+  chkLive.addEventListener('change', ()=>setLive(chkLive.checked));
+  slider.addEventListener('input', ()=>{ manualInstability=parseFloat(slider.value); });
+  sliderWrap.addEventListener('pointerdown', ()=>{ if(chkLive.checked) setLive(false); });
 
-  renderStorm();
+  // ---------- assets: one real vessel photo, held fixed, plus two real crystal
+  // macro photographs (sparse individual flakes, dense branching mass) that get
+  // composited into it live — the vessel's own geometry, read directly from its
+  // pixels, is what the crystal is clipped and grown against, so there's no
+  // separate-generation alignment to fight ----------
+  function loadImg(src){
+    return new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.src=src; });
+  }
+  let W=0,H=0, vesselCanvas=null, denseData=null, sparseData=null, profile=null;
+  let ready=false;
+
+  Promise.all([loadImg('storm-background.png'), loadImg('storm-tex-dense.jpg'), loadImg('storm-tex-sparse.jpg')])
+    .then(([vesselImg, denseImg, sparseImg])=>{
+      W=vesselImg.naturalWidth; H=vesselImg.naturalHeight;
+      canvas.width=W; canvas.height=H;
+
+      vesselCanvas=document.createElement('canvas');
+      vesselCanvas.width=W; vesselCanvas.height=H;
+      vesselCanvas.getContext('2d').drawImage(vesselImg,0,0);
+
+      const denseCanvas=document.createElement('canvas');
+      denseCanvas.width=W+40; denseCanvas.height=H+40;
+      denseCanvas.getContext('2d').drawImage(denseImg,0,0,W+40,H+40);
+      denseData=denseCanvas.getContext('2d').getImageData(0,0,W+40,H+40);
+
+      const sparseCanvas=document.createElement('canvas');
+      sparseCanvas.width=W+40; sparseCanvas.height=H+40;
+      sparseCanvas.getContext('2d').drawImage(sparseImg,0,0,W+40,H+40);
+      sparseData=sparseCanvas.getContext('2d').getImageData(0,0,W+40,H+40);
+
+      profile=buildProfile(vesselCanvas);
+      ready=true;
+      requestAnimationFrame(tick);
+    });
+
+  // read the vessel photo's own pixels to find, per row, exactly where its
+  // glass interior is — the crystal fill is clipped to this, so it always
+  // matches this vessel exactly, whatever shape it turns out to be
+  function buildProfile(vc){
+    const d=vc.getContext('2d').getImageData(0,0,W,H).data;
+    const rows=new Array(H).fill(null);
+    for(let y=0;y<H;y++){
+      let l=-1, r=-1;
+      for(let x=0;x<W;x++){
+        const i=(y*W+x)*4;
+        const bright=Math.max(d[i],d[i+1],d[i+2]);
+        if(bright>12){ if(l===-1) l=x; r=x; }
+      }
+      if(l!==-1) rows[y]=[l,r];
+    }
+    return rows;
+  }
+
+  function grayAt(imgData, x, y){
+    const w=imgData.width;
+    const i=((y%imgData.height)*w + (x%w))*4;
+    const d=imgData.data;
+    return (d[i]*0.34+d[i+1]*0.33+d[i+2]*0.33);
+  }
+
+  function mulberry32(a){
+    return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+  }
+  function edgeNoise(width, seed, rough){
+    const rnd=mulberry32(seed);
+    const terms=[]; for(let k=0;k<4;k++) terms.push([rnd()*0.05*rough+0.006, rnd()*6.28, (rnd()*0.7+0.3)/(k+1)]);
+    const n=new Float32Array(width);
+    let mn=Infinity, mx=-Infinity;
+    for(let x=0;x<width;x++){
+      let v=0; for(const [freq,phase,amp] of terms) v+=amp*Math.sin(x*freq+phase);
+      n[x]=v; if(v<mn)mn=v; if(v>mx)mx=v;
+    }
+    for(let x=0;x<width;x++) n[x]=(n[x]-mn)/(mx-mn+1e-6);
+    return n;
+  }
+
+  const Y_TOP=250, Y_MAXFILL=210;
+  let compositeCanvas=null, lastRenderedDensity=-1;
+  function renderComposite(density){
+    if(!ready) return;
+    const yBot = profile.length-1;
+    while(!profile[yBot]) { /* noop, profile always has bottom rows filled */ break; }
+    const fillTopY = yBot - density*(yBot-Y_MAXFILL);
+    const noise = edgeNoise(W, 5, density<0.5?1.6:0.9);
+    const blend = Math.pow(Math.max(0,Math.min(1,(density-0.15)/0.65)), 1.3);
+    const edgeBand = density<0.5 ? 55 : 34;
+
+    if(!compositeCanvas){ compositeCanvas=document.createElement('canvas'); compositeCanvas.width=W; compositeCanvas.height=H; }
+    const cctx=compositeCanvas.getContext('2d');
+    cctx.drawImage(vesselCanvas,0,0);
+    const imgData=cctx.getImageData(0,0,W,H);
+    const px=imgData.data;
+
+    for(let y=Y_TOP;y<yBot;y++){
+      const row=profile[y];
+      if(!row) continue;
+      const [l,r]=row;
+      const thresh = fillTopY + (noise[l]-0.5)*edgeBand;
+      for(let x=l;x<=r;x++){
+        const sp=grayAt(sparseData, x+30, y+10)/255;
+        const de=grayAt(denseData, x+5, y+5)/255;
+        const t = sp*(1-blend) + de*blend;
+        const localThresh = fillTopY + (noise[x]-0.5)*edgeBand;
+        let amt = (y-localThresh)/edgeBand + 0.5;
+        amt = amt<0?0:amt>1?1:amt;
+        const a = amt * Math.max(0,Math.min(1,t*1.15));
+        if(a<=0) continue;
+        const i=(y*W+x)*4;
+        const cr = 225+t*30;
+        px[i]   = px[i]*(1-a)+cr*a;
+        px[i+1] = px[i+1]*(1-a)+cr*a;
+        px[i+2] = px[i+2]*(1-a)+cr*a;
+      }
+    }
+    cctx.putImageData(imgData,0,0);
+  }
+
+  let last=performance.now();
+  let displayedDensity=0.12;
+  function tick(now){
+    const dt=Math.min((now-last)/1000,0.1); last=now;
+    const target=currentInstability()/100;
+    displayedDensity += (target-displayedDensity)*Math.min(1, dt*0.4);
+
+    if(Math.abs(displayedDensity-lastRenderedDensity)>0.004){
+      renderComposite(displayedDensity);
+      lastRenderedDensity=displayedDensity;
+    }
+    if(compositeCanvas){ ctx.clearRect(0,0,W,H); ctx.drawImage(compositeCanvas,0,0); }
+    requestAnimationFrame(tick);
+  }
 })();
 </script>
 </body>
