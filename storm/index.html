@@ -73,7 +73,10 @@
     // so it layers two offset samples of the same large-crystal photo
     snow:    { bigAmt:1.0,  bigReach:0.56, layered:true, extraFeathers:true },
     warming: { bigAmt:1.0, bigReach:0.34, streakAmt:1.0, streakReach:0.3, bottomStreakAmt:0.75, bottomStreakReach:0.16 },
-    rain:    { spreadAmt:0.32, spreadBubble:'sparse' },
+    // rain: no crystal at all — a couple of streaks top-centre, a few loose
+    // clumps of larger bubbles, and one small knot of finer bubbles at the
+    // bottom centre, matching the real reading chart's own icon exactly
+    rain:    { streakAmt:1.0, streakReach:0.22, streakCentered:true, streakSpread:0.35, bubbleClumps:true },
     storm:   { spreadAmt:0.38, spreadBubble:'dense', bigAmt:0.8, bigReach:0.3, useAltBig:true },
     sunny:   { bottomAmt:0.7, bottomTex:'bubbleSparse', bottomReach:0.22, streakAmt:0.55, streakReach:0.16 },
   };
@@ -242,6 +245,53 @@
     return a;
   }
 
+  // renders one row's contribution from a set of discrete clumps (a crystal
+  // flake, or a cluster of bubbles) into acc — each clump is its own small,
+  // bounded, centred shape, not a stretch across the whole vessel width
+  function renderClumpZone(clumps, globalAmt, y, l, r, acc, noise){
+    for(const cp of clumps){
+      const cpTopY=cp.botY-cp.size, cpX0=cp.cx-cp.size/2;
+      if(y<cpTopY || y>cp.botY) continue;
+      const cl=Math.max(l,Math.floor(cpX0)), cr=Math.min(r,Math.ceil(cpX0+cp.size));
+      if(cr<=cl) continue;
+      const a=zoneAlpha(y,cl,cr,cpTopY,cp.botY,cp.edge,noise);
+      for(let x=cl;x<=cr;x++){
+        let tx,ty;
+        if(cp.raw){
+          // raw: sample the shared texture directly at a per-clump offset,
+          // so several clumps can draw from one big photo without repeating
+          tx=x-cpX0+(cp.offX||0); ty=y-cpTopY+(cp.offY||0);
+        } else {
+          // clamp, never wrap — sampling past the texture's own edge must
+          // read as empty, not loop around to unrelated content elsewhere
+          tx=Math.max(0,Math.min(CLUMP-1,(x-cpX0)/cp.size*CLUMP));
+          ty=Math.max(0,Math.min(CLUMP-1,(y-cpTopY)/cp.size*CLUMP));
+        }
+        let t=grayAt(cp.tex,tx,ty)/255;
+        if(cp.altTex){
+          const atx=tx+30, aty=ty+18;
+          if(atx<CLUMP && aty<CLUMP) t=Math.max(t, grayAt(cp.altTex,atx,aty)/255);
+        }
+        // clear the photo's background floor so it never tints the glass,
+        // only the shape itself does — bubble photos run duller/hazier in
+        // their "empty" areas than the crystal one, so need a harder cut
+        const floor=cp.floor!=null?cp.floor:0.12;
+        t=Math.max(0,Math.min(1,(t-floor)/(1-floor)*1.15));
+        // extra contrast so a dense source patch still reads as separate
+        // blobs with gaps, not one washed-out filled shape
+        if(cp.gamma) t=Math.pow(t,cp.gamma);
+        // soft horizontal fade too, so the clump's box never reads as a
+        // rectangle — only its top/bottom got that treatment above.
+        // fadeMul controls how much of the radius stays full-strength
+        // before the fade starts — lower means a softer, rounder clump
+        const distX=Math.abs(x-cp.cx)/(cp.size/2);
+        const hFade=Math.max(0,Math.min(1,(1-distX)*(cp.fadeMul||3)));
+        const v=a[x-cl]*hFade*globalAmt*cp.amtMul*t;
+        if(v>acc[x-l]) acc[x-l]=v;
+      }
+    }
+  }
+
   function renderRecipe(recipe, seed){
     const c=document.createElement('canvas'); c.width=W; c.height=H;
     const cctx=c.getContext('2d');
@@ -279,41 +329,25 @@
       clumps.push({ cx:clumpCx+clumpW*0.38, size:s3, botY:clumpBotY-3, amtMul:0.6, tex:bigSrc, altTex:null, edge:16 });
     }
 
+    // bubbles as their own discrete clumps rather than an even spread — a
+    // couple of loose clusters of larger bubbles, plus a tighter knot of
+    // smaller ones right at the bottom centre
+    const bubbleClumps = [];
+    if(recipe.bubbleClumps){
+      const bh=Y_BULB_BOT-Y_MAXFILL;
+      bubbleClumps.push({ cx:clumpCx-clumpW*0.5, size:100, botY:Y_MAXFILL+bh*0.62, amtMul:1, tex:bubbleDenseData, raw:true, offX:30, offY:400, edge:32, floor:0.42, gamma:1.6, fadeMul:1.6 });
+      bubbleClumps.push({ cx:clumpCx+clumpW*0.42, size:90,  botY:Y_MAXFILL+bh*0.74, amtMul:0.9, tex:bubbleDenseData, raw:true, offX:60, offY:550, edge:30, floor:0.42, gamma:1.6, fadeMul:1.6 });
+      bubbleClumps.push({ cx:clumpCx+clumpW*0.06, size:60,  botY:Y_BULB_BOT-4, amtMul:0.8, tex:bubbleSparseData, raw:true, offX:120, offY:120, edge:18, floor:0.16, gamma:1.4, fadeMul:1.8 });
+    }
+
     for(let y=Y_TOP;y<Y_BULB_BOT;y++){
       const row=profile[y];
       if(!row) continue;
       const [l,r]=row;
       const acc=new Float32Array(r-l+1);
 
-      if(recipe.bigAmt){
-        for(const cp of clumps){
-          const cpTopY=cp.botY-cp.size, cpX0=cp.cx-cp.size/2;
-          if(y<cpTopY || y>cp.botY) continue;
-          const cl=Math.max(l,Math.floor(cpX0)), cr=Math.min(r,Math.ceil(cpX0+cp.size));
-          if(cr<=cl) continue;
-          const a=zoneAlpha(y,cl,cr,cpTopY,cp.botY,cp.edge,noiseA);
-          for(let x=cl;x<=cr;x++){
-            // clamp, never wrap — sampling past the texture's own edge must
-            // read as empty, not loop around to unrelated content elsewhere
-            const tx=Math.max(0,Math.min(CLUMP-1,(x-cpX0)/cp.size*CLUMP));
-            const ty=Math.max(0,Math.min(CLUMP-1,(y-cpTopY)/cp.size*CLUMP));
-            let t=grayAt(cp.tex,tx,ty)/255;
-            if(cp.altTex){
-              const atx=tx+30, aty=ty+18;
-              if(atx<CLUMP && aty<CLUMP) t=Math.max(t, grayAt(cp.altTex,atx,aty)/255);
-            }
-            // clear the low-level JPEG noise floor so the photo's "black"
-            // background never tints the glass, only the crystal itself does
-            t=Math.max(0,Math.min(1,(t-0.12)/0.88*1.15));
-            // soft horizontal fade too, so the clump's box never reads as a
-            // rectangle — only its top/bottom got that treatment above
-            const distX=Math.abs(x-cp.cx)/(cp.size/2);
-            const hFade=Math.max(0,Math.min(1,(1-distX)*3));
-            const v=a[x-cl]*hFade*recipe.bigAmt*cp.amtMul*t;
-            if(v>acc[x-l]) acc[x-l]=v;
-          }
-        }
-      }
+      if(recipe.bigAmt) renderClumpZone(clumps, recipe.bigAmt, y, l, r, acc, noiseA);
+      if(recipe.bubbleClumps) renderClumpZone(bubbleClumps, 1, y, l, r, acc, noiseB);
       if(recipe.bottomAmt && smTopY-30<=y && y<=smBotY+10){
         const a=zoneAlpha(y,l,r,smTopY,smBotY,20,noiseB);
         for(let x=l;x<=r;x++){
@@ -332,13 +366,21 @@
       }
       if(recipe.streakAmt && stkTopY-10<=y && y<=stkBotY+24){
         const a=zoneAlpha(y,l,r,stkTopY,stkBotY,24,noiseA);
+        const halfW=(r-l)/2, cx2=(l+r)/2;
         for(let x=l;x<=r;x++){
           // a contrast curve so distinct wisps stand out from the haze
           // between them, without erasing them down to hairlines
           let t=grayAt(wispData,x+20,y+20)/255;
           t=Math.max(0,Math.min(1,(t-0.25)/0.75));
           t=Math.pow(t,1.3);
-          const v=a[x-l]*recipe.streakAmt*t;
+          // optionally confined toward the centre — "a couple of streaks in
+          // the top centre" reads very differently from streaks edge-to-edge
+          let cFade=1;
+          if(recipe.streakCentered){
+            const distX=Math.abs(x-cx2)/(halfW*(recipe.streakSpread||0.5));
+            cFade=Math.max(0,Math.min(1,(1-distX)*3));
+          }
+          const v=a[x-l]*cFade*recipe.streakAmt*t;
           if(v>acc[x-l]) acc[x-l]=v;
         }
       }
