@@ -77,10 +77,9 @@
     // clumps of larger bubbles, and one small knot of finer bubbles at the
     // bottom centre, matching the real reading chart's own icon exactly
     rain:    { streakAmt:1.0, streakReach:0.22, streakCentered:true, streakSpread:0.35, bubbleClumps:true },
-    // storm: densely packed crystal filling most of the lower vessel,
-    // thinning to loose flecks up top, plus a few bubbles worked in —
-    // matches the real reference photo's turbulent, snow-packed look
-    storm:   { spreadAmt:1.0, spreadTaper:true, spreadBubble:'sparse', bubbleClumps:true, bubbleAmt:0.55, streakAmt:0.3, streakReach:0.12 },
+    // storm: a pile of large flakes overlapping low in the vessel, built
+    // from density rather than one clean shape, plus extra bubbles
+    storm:   { bigAmt:1.0, bigReach:0.5, useAltBig:true, manyFlakes:true, bubbleClumps:true, bubbleAmt:1.5, streakAmt:0.3, streakReach:0.12 },
     sunny:   { bottomAmt:0.7, bottomTex:'bubbleSparse', bottomReach:0.22, streakAmt:0.55, streakReach:0.16 },
   };
 
@@ -330,6 +329,23 @@
       clumps.push({ cx:clumpCx-clumpW*0.4, size:s2, botY:clumpBotY-6, amtMul:0.68, tex:altBigData, altTex:null, edge:16 });
       const s3 = clumpH*0.5;
       clumps.push({ cx:clumpCx+clumpW*0.38, size:s3, botY:clumpBotY-3, amtMul:0.6, tex:bigSrc, altTex:null, edge:16 });
+    }
+    // storm: a whole pile of large flakes overlapping low in the vessel,
+    // instead of one clean shape — density from real repeated crystal
+    // sprites, not a stretched texture
+    if(recipe.manyFlakes){
+      const stack = [
+        {dx:-0.55, dy:-2,  s:0.62, alt:false},
+        {dx:0.5,   dy:-8,  s:0.58, alt:true},
+        {dx:-0.15, dy:-25, s:0.66, alt:true},
+        {dx:0.28,  dy:-30, s:0.5,  alt:false},
+        {dx:-0.78, dy:-42, s:0.42, alt:false},
+        {dx:0.78,  dy:-38, s:0.4,  alt:true},
+        {dx:0.05,  dy:-58, s:0.46, alt:false},
+      ];
+      for(const p of stack){
+        clumps.push({ cx:clumpCx+clumpW*p.dx, size:clumpH*p.s, botY:clumpBotY+p.dy, amtMul:0.85, tex:p.alt?altBigData:bigSrc, altTex:null, edge:16 });
+      }
     }
 
     // bubbles as their own discrete clumps rather than an even spread — one
