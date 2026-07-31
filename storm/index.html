@@ -77,10 +77,10 @@
     // clumps of larger bubbles, and one small knot of finer bubbles at the
     // bottom centre, matching the real reading chart's own icon exactly
     rain:    { streakAmt:1.0, streakReach:0.22, streakCentered:true, streakSpread:0.35, bubbleClumps:true },
-    // storm: matches the real reference photo — clear for the upper part
-    // of the water, then a dense, fizzy, tightly packed mass of crystal
-    // and bubble texture low in the vessel, not individual floating bits
-    storm:   { spreadAmt:1.0, spreadTaper:true, spreadBubble:'dense', streakAmt:0.25, streakReach:0.1 },
+    // storm: the dense, fizzy crystal-and-bubble texture fills the whole
+    // water column top to bottom, plus a big cluster of large flakes like
+    // snow's, layered on top of that density
+    storm:   { spreadAmt:1.0, spreadBubble:'dense', bigAmt:1.0, bigReach:0.56, layered:true, extraFeathers:true, streakAmt:0.25, streakReach:0.1 },
     sunny:   { bottomAmt:0.7, bottomTex:'bubbleSparse', bottomReach:0.22, streakAmt:0.55, streakReach:0.16 },
   };
 
