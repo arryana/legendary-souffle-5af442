@@ -25,13 +25,13 @@
     border:solid #050505; border-width:0 2px 2px 0; transform:rotate(40deg); }
   .cloud-icon{ color:#dfe6ea; flex-shrink:0; transition:color .25s ease; }
   .toggle input:not(:checked) ~ .cloud-icon{ color:#7a8388; }
-  input[type=range]{ -webkit-appearance:none; appearance:none; width:150px; height:3px; border-radius:3px;
-    background:rgba(223,230,234,.25); outline:none; }
-  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
-    background:#dfe6ea; cursor:pointer; box-shadow:0 0 8px rgba(223,230,234,.5); }
-  input[type=range]::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:#dfe6ea; cursor:pointer; }
-  #sliderWrap{ display:flex; align-items:center; transition:opacity .3s ease; }
-  #sliderWrap.disabled{ opacity:.3; pointer-events:none; }
+  #key{ display:flex; align-items:flex-end; justify-content:center; gap:2px; flex-wrap:wrap; padding:0 8px; }
+  .keyItem{ display:flex; align-items:center; gap:7px; background:none; border:none; cursor:pointer;
+    padding:7px 9px; border-radius:7px; opacity:.5; transition:opacity .25s ease, background-color .25s ease; }
+  .keyItem:hover{ opacity:.8; }
+  .keyItem.active{ opacity:1; background:rgba(223,230,234,.09); }
+  .keyItem svg{ width:17px; height:17px; color:#dfe6ea; flex-shrink:0; }
+  .keyItem canvas{ width:24px; height:auto; display:block; border-radius:2px; }
 </style>
 </head>
 <body>
@@ -48,9 +48,53 @@
         <path d="M7 17a4 4 0 0 1-.6-7.96A5 5 0 0 1 16 8.2 4.5 4.5 0 0 1 17.5 17H7Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
       </svg>
     </label>
-    <div id="sliderWrap" class="disabled">
-      <input type="range" id="conditionSlider" min="0" max="4" step="1" value="2" aria-label="condition">
-    </div>
+  </div>
+  <div id="key" role="group" aria-label="weather key">
+    <button class="keyItem" type="button" data-cond="sunny" aria-label="sunny">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <g stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+          <line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/>
+          <line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/>
+          <line x1="5.6" y1="5.6" x2="7.3" y2="7.3"/><line x1="16.7" y1="16.7" x2="18.4" y2="18.4"/>
+          <line x1="5.6" y1="18.4" x2="7.3" y2="16.7"/><line x1="16.7" y1="7.3" x2="18.4" y2="5.6"/>
+        </g>
+      </svg>
+      <canvas class="miniGlass" width="82" height="140"></canvas>
+    </button>
+    <button class="keyItem" type="button" data-cond="warming" aria-label="warming">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3.5a2 2 0 0 0-2 2v8.6a3.5 3.5 0 1 0 4 0V5.5a2 2 0 0 0-2-2Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="12" y1="7" x2="12" y2="14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <canvas class="miniGlass" width="82" height="140"></canvas>
+    </button>
+    <button class="keyItem" type="button" data-cond="rain" aria-label="rain">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 13a4 4 0 0 1-.6-7.96A5 5 0 0 1 16 4.2 4.5 4.5 0 0 1 17.5 13H7Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <g stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+          <line x1="8.5" y1="16" x2="8" y2="19"/><line x1="12.5" y1="16" x2="12" y2="19"/><line x1="16.5" y1="16" x2="16" y2="19"/>
+        </g>
+      </svg>
+      <canvas class="miniGlass" width="82" height="140"></canvas>
+    </button>
+    <button class="keyItem" type="button" data-cond="storm" aria-label="storm">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 12a4 4 0 0 1-.6-7.96A5 5 0 0 1 16 3.2 4.5 4.5 0 0 1 17.5 12H7Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <polyline points="12.5,14 9.5,18.5 12,18.5 10.5,22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <canvas class="miniGlass" width="82" height="140"></canvas>
+    </button>
+    <button class="keyItem" type="button" data-cond="snow" aria-label="snow">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <g stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+          <line x1="12" y1="3" x2="12" y2="21"/><line x1="4.5" y1="7.5" x2="19.5" y2="16.5"/><line x1="19.5" y1="7.5" x2="4.5" y2="16.5"/>
+          <line x1="12" y1="6" x2="10" y2="7.2"/><line x1="12" y1="6" x2="14" y2="7.2"/>
+          <line x1="12" y1="18" x2="10" y2="16.8"/><line x1="12" y1="18" x2="14" y2="16.8"/>
+        </g>
+      </svg>
+      <canvas class="miniGlass" width="82" height="140"></canvas>
+    </button>
   </div>
 </div>
 <script>
@@ -58,8 +102,7 @@
   const frameA=document.getElementById('frame-a'), frameB=document.getElementById('frame-b');
   const ctxA=frameA.getContext('2d'), ctxB=frameB.getContext('2d');
   const chkLive=document.getElementById('chkLive');
-  const sliderWrap=document.getElementById('sliderWrap');
-  const slider=document.getElementById('conditionSlider');
+  const keyItems=document.querySelectorAll('.keyItem');
 
   // ---------- the five conditions, in the traditional storm-glass reading
   // sense: not one dial of "more or less storminess" but distinct, recognisable
@@ -81,7 +124,9 @@
     // water column top to bottom, plus a big cluster of large flakes like
     // snow's, layered on top of that density
     storm:   { spreadAmt:0.62, spreadBubble:'dense', bigAmt:1.0, bigReach:0.56, layered:true, extraFeathers:true, manyFlakes:true, streakAmt:0.25, streakReach:0.1 },
-    sunny:   { bottomAmt:0.7, bottomTex:'bubbleSparse', bottomReach:0.22, streakAmt:0.55, streakReach:0.16 },
+    // sunny: dense bubbles packed into the bottom third like storm's fizz
+    // (no crystal mixed in), and vertical streaks through the top two-thirds
+    sunny:   { spreadAmt:1.0, spreadBubble:'dense', spreadBubbleOnly:true, spreadTaper:true, spreadTaperStart:0.62, streakAmt:0.8, streakReach:0.66 },
   };
 
   // ---------- weather: the same live/manual pattern as galileo and conometer,
@@ -123,13 +168,15 @@
   fetchWeather();
   setInterval(()=>{ if(chkLive.checked) fetchWeather(); }, 10*60*1000);
 
-  function setLive(v){
-    chkLive.checked=v;
-    sliderWrap.classList.toggle('disabled', v);
-  }
-  chkLive.addEventListener('change', ()=>setLive(chkLive.checked));
-  slider.addEventListener('input', ()=>{ manualIndex=parseInt(slider.value,10); if(!chkLive.checked) applyCondition(); });
-  sliderWrap.addEventListener('pointerdown', ()=>{ if(chkLive.checked) setLive(false); });
+  function setLive(v){ chkLive.checked=v; }
+  chkLive.addEventListener('change', ()=>{ setLive(chkLive.checked); applyCondition(); });
+  keyItems.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      manualIndex=ORDER.indexOf(btn.dataset.cond);
+      setLive(false);
+      applyCondition();
+    });
+  });
 
   // ---------- assets: one real vessel photo, held fixed, plus four real macro
   // photographs — one large crystal flake, a field of small ones, vertical
@@ -188,8 +235,20 @@
 
       profile=buildProfile(vesselCanvas);
       ready=true;
+      drawKeyThumbnails();
       applyCondition();
     });
+
+  // paint each key button's small canvas with that condition's own
+  // composite, scaled down — the key IS the legend, no separate art needed
+  function drawKeyThumbnails(){
+    keyItems.forEach(btn=>{
+      const name=btn.dataset.cond;
+      const cv=btn.querySelector('canvas');
+      const cctx=cv.getContext('2d');
+      cctx.drawImage(getComposite(name), 0,0,W,H, 0,0,cv.width,cv.height);
+    });
+  }
 
   // read the vessel photo's own pixels to find, per row, exactly where its
   // glass interior is — and stop at the true bottom of the bulb, not the
@@ -373,6 +432,21 @@
       bubbleClumps.push({ cx:clumpCx+clumpW*0.58, size:42, botY:Y_MAXFILL+bh*0.6, amtMul:0.8, tex:bubbleSparseData, raw:true, offX:300, offY:245, edge:23, floor:0.16, gamma:1.4, fadeMul:1.3 });
       bubbleClumps.push({ cx:clumpCx+clumpW*0.3, size:46, botY:Y_MAXFILL+bh*0.86, amtMul:0.75, tex:bubbleSparseData, raw:true, offX:120, offY:425, edge:25, floor:0.16, gamma:1.4, fadeMul:1.3 });
     }
+    // sunny: just a small, tight knot of a few little bubbles at the
+    // bottom centre — matches the reading chart's own sparse icon
+    if(recipe.smallBubbleCluster){
+      const bh=Y_BULB_BOT-Y_MAXFILL;
+      const spots = [
+        {dx:-0.12, dy:-4,  s:20, off:[210,20]},
+        {dx:0.14,  dy:-10, s:18, off:[75,155]},
+        {dx:-0.02, dy:-20, s:16, off:[300,245]},
+        {dx:0.2,   dy:-24, s:15, off:[120,425]},
+        {dx:-0.22, dy:-16, s:15, off:[345,110]},
+      ];
+      for(const s of spots){
+        bubbleClumps.push({ cx:clumpCx+clumpW*s.dx, size:s.s, botY:Y_BULB_BOT-4+s.dy, amtMul:0.85, tex:bubbleSparseData, raw:true, offX:s.off[0], offY:s.off[1], edge:s.s*0.55, floor:0.16, gamma:1.4, fadeMul:1.3 });
+      }
+    }
     // seltzer: a lot of small bubbles worked in through the whole water
     // column top to bottom, not just clustered low down — like a fizzy
     // glass, not just a few loose clumps
@@ -398,7 +472,7 @@
       const acc=new Float32Array(r-l+1);
 
       if(recipe.bigAmt) renderClumpZone(clumps, recipe.bigAmt, y, l, r, acc, noiseA);
-      if(recipe.bubbleClumps) renderClumpZone(bubbleClumps, recipe.bubbleAmt||1, y, l, r, acc, noiseB);
+      if(recipe.bubbleClumps || recipe.smallBubbleCluster) renderClumpZone(bubbleClumps, recipe.bubbleAmt||1, y, l, r, acc, noiseB);
       if(recipe.bottomAmt && smTopY-30<=y && y<=smBotY+10){
         const a=zoneAlpha(y,l,r,smTopY,smBotY,20,noiseB);
         for(let x=l;x<=r;x++){
@@ -417,15 +491,19 @@
           // into a dense, packed mass low in the vessel — matches the real
           // reference photo, which is clear for its upper third or so
           const frac=(y-Y_TOP)/(Y_BULB_BOT-Y_TOP);
-          const raw=Math.max(0,(frac-0.3)/0.7);
+          const start=recipe.spreadTaperStart!=null?recipe.spreadTaperStart:0.3;
+          const raw=Math.max(0,(frac-start)/(1-start));
           vFade=Math.max(0,Math.min(1,Math.pow(raw,1.3)*1.3));
         }
         for(let x=l;x<=r;x++){
-          let t1=grayAt(smallData,x+20,y+20)/255;
-          // punch contrast — the source photo's own background haze sits
-          // fairly bright, so a plain read-through never gets past a grey
-          // wash; cut a floor and amplify what's left toward solid white
-          t1=Math.max(0,Math.min(1,(t1-0.32)/0.68*1.9));
+          let t1=0;
+          if(!recipe.spreadBubbleOnly){
+            t1=grayAt(smallData,x+20,y+20)/255;
+            // punch contrast — the source photo's own background haze sits
+            // fairly bright, so a plain read-through never gets past a grey
+            // wash; cut a floor and amplify what's left toward solid white
+            t1=Math.max(0,Math.min(1,(t1-0.32)/0.68*1.9));
+          }
           let t2=grayAt(bubbleTex,x+20,y+20)/255;
           t2=Math.max(0,Math.min(1,(t2-0.25)/0.75*1.6));
           const v=Math.max(t1,t2)*recipe.spreadAmt*vFade;
@@ -479,10 +557,15 @@
     return cache[name];
   }
 
+  function updateKeyActive(name){
+    keyItems.forEach(btn=>btn.classList.toggle('active', btn.dataset.cond===name));
+  }
+
   let shown=null, settleTimer=null;
   function applyCondition(){
     if(!ready) return;
     const name=currentCondition();
+    updateKeyActive(name);
     const comp=getComposite(name);
     if(shown===null){
       ctxA.clearRect(0,0,W,H); ctxA.drawImage(comp,0,0);
