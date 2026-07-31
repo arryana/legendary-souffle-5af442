@@ -63,18 +63,19 @@
 
   // ---------- the five conditions, in the traditional storm-glass reading
   // sense: not one dial of "more or less storminess" but distinct, recognisable
-  // arrangements — a few big feathery crystals read differently from many tiny
-  // ones, and where they sit (bottom-only, top streaks, throughout) carries
-  // its own meaning, the way the real folklore chart distinguishes them ----------
+  // arrangements, built from four real ingredients — large crystal (one
+  // cohesive flake), small crystal (many fine ones), vertical wisps, and
+  // bubbles (dense or sparse) — matching what the real folklore chart itself
+  // distinguishes: dashes are wisps, circles are bubbles, clumps are crystal ----------
   const ORDER = ['sunny','warming','rain','storm','snow'];
   const RECIPES = {
-    // snow: a real folklore chart shows this as one dense, filled clump —
-    // not a couple of isolated flakes — so it layers two offset samples
-    snow:    { bigAmt:1.0,  bigReach:0.78 },
+    // snow: one dense, filled clump — not a couple of isolated flakes —
+    // so it layers two offset samples of the same large-crystal photo
+    snow:    { bigAmt:1.0,  bigReach:0.78, layered:true },
     warming: { bigAmt:0.8,  bigReach:0.32, streakAmt:0.55, streakReach:0.16 },
-    rain:    { spreadAmt:0.3 },
-    storm:   { spreadAmt:0.32, bigAmt:0.8, bigReach:0.3, useAltBig:true },
-    sunny:   { smallBottomAmt:0.75, smallBottomReach:0.24, streakAmt:0.55, streakReach:0.16 },
+    rain:    { spreadAmt:0.32, spreadBubble:'sparse' },
+    storm:   { spreadAmt:0.38, spreadBubble:'dense', bigAmt:0.8, bigReach:0.3, useAltBig:true },
+    sunny:   { bottomAmt:0.7, bottomTex:'bubbleSparse', bottomReach:0.22, streakAmt:0.55, streakReach:0.16 },
   };
 
   // ---------- weather: the same live/manual pattern as galileo and conometer,
@@ -124,19 +125,30 @@
   slider.addEventListener('input', ()=>{ manualIndex=parseInt(slider.value,10); if(!chkLive.checked) applyCondition(); });
   sliderWrap.addEventListener('pointerdown', ()=>{ if(chkLive.checked) setLive(false); });
 
-  // ---------- assets: one real vessel photo, held fixed, plus one real macro
-  // photograph of ice-crystal formations sampled at two different crops (a
-  // tight crop reads as a few big flakes, the full frame reads as many small
-  // ones) — the vessel's own geometry, read directly from its pixels, is what
-  // every recipe is clipped and grown against, so nothing can ever misalign ----------
+  // ---------- assets: one real vessel photo, held fixed, plus four real macro
+  // photographs — one large crystal flake, a field of small ones, vertical
+  // ice wisps, and bubbles at two densities — the vessel's own geometry, read
+  // directly from its pixels, is what every recipe is clipped and grown
+  // against, so nothing can ever misalign ----------
   function loadImg(src){ return new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.src=src; }); }
-  let W=0,H=0, vesselCanvas=null, bigData=null, altBigData=null, smallData=null, streakCanvas=null, profile=null;
+  let W=0,H=0, vesselCanvas=null, bigData=null, altBigData=null;
+  let smallData=null, wispData=null, bubbleDenseData=null, bubbleSparseData=null;
+  let profile=null;
   let ready=false;
   const cache={};
   const CLUMP=260;
 
-  Promise.all([loadImg('storm-background.png'), loadImg('storm-tex-crystals.jpg')])
-    .then(([vesselImg, crystalImg])=>{
+  function fullFrame(img, pad){
+    const c=document.createElement('canvas'); c.width=W+pad; c.height=H+pad;
+    c.getContext('2d').drawImage(img, 0,0,img.naturalWidth,img.naturalHeight, 0,0, W+pad, H+pad);
+    return c.getContext('2d').getImageData(0,0,W+pad,H+pad);
+  }
+
+  Promise.all([
+    loadImg('storm-background.png'), loadImg('storm-tex-crystals.jpg'),
+    loadImg('storm-tex-smallcrystal.jpg'), loadImg('storm-tex-wisps.jpg'),
+    loadImg('storm-tex-bubblesdense.jpg'), loadImg('storm-tex-bubblessparse.jpg'),
+  ]).then(([vesselImg, crystalImg, smallImg, wispImg, bubDenseImg, bubSparseImg])=>{
       W=vesselImg.naturalWidth; H=vesselImg.naturalHeight;
       frameA.width=frameB.width=W; frameA.height=frameB.height=H;
 
@@ -145,10 +157,10 @@
       vesselCanvas.getContext('2d').drawImage(vesselImg,0,0);
 
       const pad=40;
-      // "big": one single, cleanly-isolated flake each, tightly cropped, so
-      // it reads as one cohesive clump rather than scattered fragments — this
-      // is placed and centred as its own small unit, not stretched to the
-      // vessel's full width the way the ambient textures below are
+      // "big": one single, cleanly-isolated flake, tightly cropped, so it
+      // reads as one cohesive clump rather than scattered fragments — this is
+      // placed and centred as its own small unit, not stretched full-width
+      // the way the ambient textures below are
       const bigCanvas=document.createElement('canvas');
       bigCanvas.width=CLUMP; bigCanvas.height=CLUMP;
       bigCanvas.getContext('2d').drawImage(crystalImg, 280,340,290,290, 0,0,CLUMP,CLUMP);
@@ -163,14 +175,11 @@
       actx.drawImage(crystalImg, 280,340,290,290, 0,0,CLUMP,CLUMP);
       altBigData=altCanvas.getContext('2d').getImageData(0,0,CLUMP,CLUMP);
 
-      // "small": the full frame compressed down, so many more flakes fit, each smaller
-      const cw=crystalImg.naturalWidth, ch=crystalImg.naturalHeight;
-      const smallCanvas=document.createElement('canvas');
-      smallCanvas.width=W+pad; smallCanvas.height=H+pad;
-      smallCanvas.getContext('2d').drawImage(crystalImg, 0,0,cw,ch, 0,0, W+pad, H+pad);
-      smallData=smallCanvas.getContext('2d').getImageData(0,0,W+pad,H+pad);
+      smallData=fullFrame(smallImg, pad);
+      wispData=fullFrame(wispImg, pad);
+      bubbleDenseData=fullFrame(bubDenseImg, pad);
+      bubbleSparseData=fullFrame(bubSparseImg, pad);
 
-      streakCanvas=buildStreaks(W+40,H+40,11,260);
       profile=buildProfile(vesselCanvas);
       ready=true;
       applyCondition();
@@ -195,34 +204,6 @@
       if(l!==-1) rows[y]=[l,r];
     }
     return rows;
-  }
-
-  function buildStreaks(w,h,seed,count){
-    const rnd=mulberry32(seed);
-    const c=document.createElement('canvas'); c.width=w; c.height=h;
-    const g=c.getContext('2d');
-    g.strokeStyle='#fff'; g.lineCap='round';
-    for(let i=0;i<count;i++){
-      const x=rnd()*w, y0=rnd()*h;
-      const length=h*(0.05+rnd()*0.11), wobble=(rnd()-0.5)*12, width=rnd()<0.7?1:2;
-      const bright=140+Math.floor(rnd()*115);
-      g.globalAlpha=bright/255; g.lineWidth=width;
-      g.beginPath(); g.moveTo(x,y0);
-      let px=x,py=y0;
-      for(let s=1;s<=6;s++){
-        const nx=x+wobble*s/6+(rnd()-0.5)*4, ny=y0+length*s/6;
-        g.lineTo(nx,ny); px=nx; py=ny;
-      }
-      g.stroke();
-      if(rnd()<0.5){
-        g.beginPath();
-        const bx=x+wobble*0.5, by=y0+length*0.5;
-        g.moveTo(bx,by); g.lineTo(bx+(rnd()-0.5)*10, by+3+rnd()*4);
-        g.globalAlpha=(bright*0.8)/255; g.lineWidth=1; g.stroke();
-      }
-    }
-    g.globalAlpha=1;
-    return { data: g.getImageData(0,0,w,h) };
   }
 
   function grayAt(imgData, x, y){
@@ -271,7 +252,11 @@
     const noiseB=edgeNoise(W+40, seed+9, 1.1);
     const bigSrc = recipe.useAltBig ? altBigData : bigData;
 
-    const smBotY=Y_BULB_BOT, smTopY=Y_BULB_BOT-(recipe.smallBottomReach||0)*(Y_BULB_BOT-Y_MAXFILL);
+    const TEX = { small:smallData, wisp:wispData, bubbleDense:bubbleDenseData, bubbleSparse:bubbleSparseData };
+    const bottomTex = TEX[recipe.bottomTex] || smallData;
+    const bubbleTex = recipe.spreadBubble==='dense' ? bubbleDenseData : bubbleSparseData;
+
+    const smBotY=Y_BULB_BOT, smTopY=Y_BULB_BOT-(recipe.bottomReach||0)*(Y_BULB_BOT-Y_MAXFILL);
     const stkTopY=Y_TOP, stkBotY=Y_TOP+(recipe.streakReach||0)*(Y_BULB_BOT-Y_TOP);
 
     // the big clump sits centred on the vessel's own midline at the bottom,
@@ -314,26 +299,26 @@
           }
         }
       }
-      if(recipe.smallBottomAmt && smTopY-30<=y && y<=smBotY+10){
+      if(recipe.bottomAmt && smTopY-30<=y && y<=smBotY+10){
         const a=zoneAlpha(y,l,r,smTopY,smBotY,20,noiseB);
         for(let x=l;x<=r;x++){
-          const t=Math.max(0,Math.min(1,grayAt(smallData,x+20,y+20)/255*1.1));
-          const v=a[x-l]*recipe.smallBottomAmt*t;
+          const t=Math.max(0,Math.min(1,grayAt(bottomTex,x+20,y+20)/255*1.1));
+          const v=a[x-l]*recipe.bottomAmt*t;
           if(v>acc[x-l]) acc[x-l]=v;
         }
       }
       if(recipe.spreadAmt){
         for(let x=l;x<=r;x++){
           const t1=grayAt(smallData,x+20,y+20)/255;
-          const t2=grayAt(streakCanvas.data,x+20,y+20)/255;
-          const v=Math.max(t1,t2*0.8)*recipe.spreadAmt;
+          const t2=grayAt(bubbleTex,x+20,y+20)/255;
+          const v=Math.max(t1,t2)*recipe.spreadAmt;
           if(v>acc[x-l]) acc[x-l]=v;
         }
       }
       if(recipe.streakAmt && stkTopY-10<=y && y<=stkBotY+24){
         const a=zoneAlpha(y,l,r,stkTopY,stkBotY,24,noiseA);
         for(let x=l;x<=r;x++){
-          const t=Math.max(0,Math.min(1,grayAt(streakCanvas.data,x+20,y+20)/255*1.3));
+          const t=Math.max(0,Math.min(1,grayAt(wispData,x+20,y+20)/255*1.3));
           const v=a[x-l]*recipe.streakAmt*t;
           if(v>acc[x-l]) acc[x-l]=v;
         }
