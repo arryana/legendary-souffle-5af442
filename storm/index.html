@@ -329,15 +329,18 @@
       clumps.push({ cx:clumpCx+clumpW*0.38, size:s3, botY:clumpBotY-3, amtMul:0.6, tex:bigSrc, altTex:null, edge:16 });
     }
 
-    // bubbles as their own discrete clumps rather than an even spread — a
-    // couple of loose clusters of larger bubbles, plus a tighter knot of
-    // smaller ones right at the bottom centre
+    // bubbles as their own discrete clumps rather than an even spread — one
+    // bold, well-defined mass of larger bubbles low in the centre, plus a
+    // handful of smaller ones scattered loosely around the rest
     const bubbleClumps = [];
     if(recipe.bubbleClumps){
       const bh=Y_BULB_BOT-Y_MAXFILL;
-      bubbleClumps.push({ cx:clumpCx-clumpW*0.5, size:100, botY:Y_MAXFILL+bh*0.62, amtMul:1, tex:bubbleDenseData, raw:true, offX:30, offY:400, edge:32, floor:0.42, gamma:1.6, fadeMul:1.6 });
-      bubbleClumps.push({ cx:clumpCx+clumpW*0.42, size:90,  botY:Y_MAXFILL+bh*0.74, amtMul:0.9, tex:bubbleDenseData, raw:true, offX:60, offY:550, edge:30, floor:0.42, gamma:1.6, fadeMul:1.6 });
-      bubbleClumps.push({ cx:clumpCx+clumpW*0.06, size:60,  botY:Y_BULB_BOT-4, amtMul:0.8, tex:bubbleSparseData, raw:true, offX:120, offY:120, edge:18, floor:0.16, gamma:1.4, fadeMul:1.8 });
+      bubbleClumps.push({ cx:clumpCx, size:150, botY:Y_BULB_BOT-2, amtMul:1.15, tex:bubbleDenseData, raw:true, offX:30, offY:400, edge:24, floor:0.34, gamma:1.25, fadeMul:2.1 });
+      bubbleClumps.push({ cx:clumpCx-clumpW*0.72, size:50, botY:Y_MAXFILL+bh*0.32, amtMul:0.85, tex:bubbleSparseData, raw:true, offX:220, offY:40, edge:16, floor:0.16, gamma:1.4, fadeMul:1.8 });
+      bubbleClumps.push({ cx:clumpCx+clumpW*0.68, size:50, botY:Y_MAXFILL+bh*0.28, amtMul:0.8, tex:bubbleSparseData, raw:true, offX:180, offY:180, edge:16, floor:0.16, gamma:1.4, fadeMul:1.8 });
+      bubbleClumps.push({ cx:clumpCx-clumpW*0.6, size:50, botY:Y_MAXFILL+bh*0.56, amtMul:0.85, tex:bubbleSparseData, raw:true, offX:100, offY:420, edge:16, floor:0.16, gamma:1.4, fadeMul:1.8 });
+      bubbleClumps.push({ cx:clumpCx+clumpW*0.58, size:42, botY:Y_MAXFILL+bh*0.6, amtMul:0.8, tex:bubbleSparseData, raw:true, offX:280, offY:460, edge:16, floor:0.16, gamma:1.4, fadeMul:1.8 });
+      bubbleClumps.push({ cx:clumpCx+clumpW*0.3, size:46, botY:Y_MAXFILL+bh*0.86, amtMul:0.75, tex:bubbleSparseData, raw:true, offX:40, offY:500, edge:16, floor:0.16, gamma:1.4, fadeMul:1.8 });
     }
 
     for(let y=Y_TOP;y<Y_BULB_BOT;y++){
