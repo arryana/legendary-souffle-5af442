@@ -77,10 +77,10 @@
     // clumps of larger bubbles, and one small knot of finer bubbles at the
     // bottom centre, matching the real reading chart's own icon exactly
     rain:    { streakAmt:1.0, streakReach:0.22, streakCentered:true, streakSpread:0.35, bubbleClumps:true },
-    // storm: a smaller branching crystal in the middle, a spread of short
-    // streaks across the top, and bubbles scattered around it plus a bottom
-    // cluster — busier and denser than rain, per the reading chart's icon
-    storm:   { bigAmt:1.0, bigReach:0.42, useAltBig:true, extraFeathers:true, streakAmt:0.95, streakReach:0.3, bubbleClumps:true, bubbleAmt:1.3 },
+    // storm: densely packed crystal filling most of the lower vessel,
+    // thinning to loose flecks up top, plus a few bubbles worked in —
+    // matches the real reference photo's turbulent, snow-packed look
+    storm:   { spreadAmt:1.0, spreadTaper:true, spreadBubble:'sparse', bubbleClumps:true, bubbleAmt:0.55, streakAmt:0.3, streakReach:0.12 },
     sunny:   { bottomAmt:0.7, bottomTex:'bubbleSparse', bottomReach:0.22, streakAmt:0.55, streakReach:0.16 },
   };
 
@@ -363,10 +363,22 @@
         }
       }
       if(recipe.spreadAmt){
+        // packed dense and solid low in the vessel, thinning out to loose
+        // scattered flecks higher up — a turbulent, storm-heavy fill
+        // rather than one clean shape
+        let vFade=1;
+        if(recipe.spreadTaper){
+          const frac=(y-Y_TOP)/(Y_BULB_BOT-Y_TOP);
+          vFade=Math.max(0,Math.min(1,Math.pow(frac,1.6)*1.5));
+        }
         for(let x=l;x<=r;x++){
-          const t1=grayAt(smallData,x+20,y+20)/255;
+          let t1=grayAt(smallData,x+20,y+20)/255;
+          // punch contrast — the source photo's own background haze sits
+          // fairly bright, so a plain read-through never gets past a grey
+          // wash; cut a floor and amplify what's left toward solid white
+          t1=Math.max(0,Math.min(1,(t1-0.32)/0.68*1.9));
           const t2=grayAt(bubbleTex,x+20,y+20)/255;
-          const v=Math.max(t1,t2)*recipe.spreadAmt;
+          const v=Math.max(t1,t2)*recipe.spreadAmt*vFade;
           if(v>acc[x-l]) acc[x-l]=v;
         }
       }
