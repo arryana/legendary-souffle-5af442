@@ -77,7 +77,10 @@
     // clumps of larger bubbles, and one small knot of finer bubbles at the
     // bottom centre, matching the real reading chart's own icon exactly
     rain:    { streakAmt:1.0, streakReach:0.22, streakCentered:true, streakSpread:0.35, bubbleClumps:true },
-    storm:   { spreadAmt:0.38, spreadBubble:'dense', bigAmt:0.8, bigReach:0.3, useAltBig:true },
+    // storm: a smaller branching crystal in the middle, a spread of short
+    // streaks across the top, and bubbles scattered around it plus a bottom
+    // cluster — busier and denser than rain, per the reading chart's icon
+    storm:   { bigAmt:0.85, bigReach:0.32, useAltBig:true, extraFeathers:true, streakAmt:0.65, streakReach:0.22, bubbleClumps:true },
     sunny:   { bottomAmt:0.7, bottomTex:'bubbleSparse', bottomReach:0.22, streakAmt:0.55, streakReach:0.16 },
   };
 
