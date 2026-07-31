@@ -70,7 +70,7 @@
   const RECIPES = {
     // snow: a real folklore chart shows this as one dense, filled clump —
     // not a couple of isolated flakes — so it layers two offset samples
-    snow:    { bigAmt:1.0,  bigReach:0.62, layered:true },
+    snow:    { bigAmt:1.0,  bigReach:0.78 },
     warming: { bigAmt:0.5,  bigReach:0.2,  streakAmt:0.55, streakReach:0.16 },
     rain:    { spreadAmt:0.3 },
     storm:   { spreadAmt:0.32, bigAmt:0.6, bigReach:0.22, useAltBig:true },
@@ -133,6 +133,7 @@
   let W=0,H=0, vesselCanvas=null, bigData=null, altBigData=null, smallData=null, streakCanvas=null, profile=null;
   let ready=false;
   const cache={};
+  const CLUMP=260;
 
   Promise.all([loadImg('storm-background.png'), loadImg('storm-tex-crystals.jpg')])
     .then(([vesselImg, crystalImg])=>{
@@ -144,21 +145,26 @@
       vesselCanvas.getContext('2d').drawImage(vesselImg,0,0);
 
       const pad=40;
-      // "big": a moderate central crop, so each flake reads large but there's
-      // still enough spread that one lands within the vessel's own silhouette
+      // "big": one single, cleanly-isolated flake each, tightly cropped, so
+      // it reads as one cohesive clump rather than scattered fragments — this
+      // is placed and centred as its own small unit, not stretched to the
+      // vessel's full width the way the ambient textures below are
       const bigCanvas=document.createElement('canvas');
-      bigCanvas.width=W+pad; bigCanvas.height=H+pad;
-      const cw=crystalImg.naturalWidth, ch=crystalImg.naturalHeight;
-      const zoomW=cw*0.62, zoomH=ch*0.85;
-      bigCanvas.getContext('2d').drawImage(crystalImg, (cw-zoomW)/2, (ch-zoomH)/2, zoomW, zoomH, 0,0, W+pad, H+pad);
-      bigData=bigCanvas.getContext('2d').getImageData(0,0,W+pad,H+pad);
+      bigCanvas.width=CLUMP; bigCanvas.height=CLUMP;
+      bigCanvas.getContext('2d').drawImage(crystalImg, 280,340,290,290, 0,0,CLUMP,CLUMP);
+      bigData=bigCanvas.getContext('2d').getImageData(0,0,CLUMP,CLUMP);
 
+      // same clean flake, mirrored, so storm's smaller supplementary clump
+      // still reads as its own thing without risking a second dirty crop
       const altCanvas=document.createElement('canvas');
-      altCanvas.width=W+pad; altCanvas.height=H+pad;
-      altCanvas.getContext('2d').drawImage(crystalImg, cw*0.18, ch*0.02, zoomW, zoomH, 0,0, W+pad, H+pad);
-      altBigData=altCanvas.getContext('2d').getImageData(0,0,W+pad,H+pad);
+      altCanvas.width=CLUMP; altCanvas.height=CLUMP;
+      const actx=altCanvas.getContext('2d');
+      actx.translate(CLUMP,0); actx.scale(-1,1);
+      actx.drawImage(crystalImg, 280,340,290,290, 0,0,CLUMP,CLUMP);
+      altBigData=altCanvas.getContext('2d').getImageData(0,0,CLUMP,CLUMP);
 
       // "small": the full frame compressed down, so many more flakes fit, each smaller
+      const cw=crystalImg.naturalWidth, ch=crystalImg.naturalHeight;
       const smallCanvas=document.createElement('canvas');
       smallCanvas.width=W+pad; smallCanvas.height=H+pad;
       smallCanvas.getContext('2d').drawImage(crystalImg, 0,0,cw,ch, 0,0, W+pad, H+pad);
@@ -221,6 +227,7 @@
 
   function grayAt(imgData, x, y){
     const w=imgData.width, h=imgData.height;
+    x=Math.floor(x); y=Math.floor(y);
     const xi=((x%w)+w)%w, yi=((y%h)+h)%h;
     const i=(yi*w+xi)*4, d=imgData.data;
     return d[i]*0.34+d[i+1]*0.33+d[i+2]*0.33;
@@ -264,9 +271,16 @@
     const noiseB=edgeNoise(W+40, seed+9, 1.1);
     const bigSrc = recipe.useAltBig ? altBigData : bigData;
 
-    const bigBotY=Y_BULB_BOT, bigTopY=Y_BULB_BOT-(recipe.bigReach||0)*(Y_BULB_BOT-Y_MAXFILL);
     const smBotY=Y_BULB_BOT, smTopY=Y_BULB_BOT-(recipe.smallBottomReach||0)*(Y_BULB_BOT-Y_MAXFILL);
     const stkTopY=Y_TOP, stkBotY=Y_TOP+(recipe.streakReach||0)*(Y_BULB_BOT-Y_TOP);
+
+    // the big clump sits centred on the vessel's own midline at the bottom,
+    // as one grouped unit — not spread across the full width of the glass
+    const clumpH = CLUMP*(recipe.bigReach||0.5), clumpW = clumpH;
+    const clumpBotY = Y_BULB_BOT - 4, clumpTopY = clumpBotY - clumpH;
+    const midRow = profile[Y_BULB_BOT-20] || profile[Y_BULB_BOT-1];
+    const clumpCx = midRow ? (midRow[0]+midRow[1])/2 : W/2;
+    const clumpX0 = clumpCx - clumpW/2;
 
     for(let y=Y_TOP;y<Y_BULB_BOT;y++){
       const row=profile[y];
@@ -274,16 +288,30 @@
       const [l,r]=row;
       const acc=new Float32Array(r-l+1);
 
-      if(recipe.bigAmt && bigTopY-30<=y && y<=bigBotY+10){
-        const a=zoneAlpha(y,l,r,bigTopY,bigBotY,34,noiseA);
-        for(let x=l;x<=r;x++){
-          let t=grayAt(bigSrc,x+20,y+20)/255;
-          // layered: a second, differently-offset sample fills in the gaps
-          // between flakes so it reads as one dense mass, not scattered ones
-          if(recipe.layered) t=Math.max(t, grayAt(altBigData,x+55,y+35)/255);
-          t=Math.max(0,Math.min(1,t*1.15));
-          const v=a[x-l]*recipe.bigAmt*t;
-          if(v>acc[x-l]) acc[x-l]=v;
+      if(recipe.bigAmt && y>=clumpTopY && y<=clumpBotY){
+        const cl=Math.max(l,Math.floor(clumpX0)), cr=Math.min(r,Math.ceil(clumpX0+clumpW));
+        if(cr>cl){
+          const a=zoneAlpha(y,cl,cr,clumpTopY,clumpBotY,18,noiseA);
+          for(let x=cl;x<=cr;x++){
+            // clamp, never wrap — sampling past the texture's own edge must
+            // read as empty, not loop around to unrelated content elsewhere
+            const tx=Math.max(0,Math.min(CLUMP-1,(x-clumpX0)/clumpW*CLUMP));
+            const ty=Math.max(0,Math.min(CLUMP-1,(y-clumpTopY)/clumpH*CLUMP));
+            let t=grayAt(bigSrc,tx,ty)/255;
+            if(recipe.layered){
+              const atx=tx+30, aty=ty+18;
+              if(atx<CLUMP && aty<CLUMP) t=Math.max(t, grayAt(altBigData,atx,aty)/255);
+            }
+            // clear the low-level JPEG noise floor so the photo's "black"
+            // background never tints the glass, only the crystal itself does
+            t=Math.max(0,Math.min(1,(t-0.12)/0.88*1.15));
+            // soft horizontal fade too, so the clump's box never reads as a
+            // rectangle — only its top/bottom got that treatment above
+            const distX=Math.abs(x-clumpCx)/(clumpW/2);
+            const hFade=Math.max(0,Math.min(1,(1-distX)*3));
+            const v=a[x-cl]*hFade*recipe.bigAmt*t;
+            if(v>acc[x-l]) acc[x-l]=v;
+          }
         }
       }
       if(recipe.smallBottomAmt && smTopY-30<=y && y<=smBotY+10){
