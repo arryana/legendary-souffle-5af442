@@ -68,11 +68,13 @@
   // its own meaning, the way the real folklore chart distinguishes them ----------
   const ORDER = ['sunny','warming','rain','storm','snow'];
   const RECIPES = {
-    snow:    { bigAmt:0.9,  bigReach:0.85 },
-    warming: { bigAmt:0.4,  bigReach:0.3,  streakAmt:0.5, streakReach:0.4 },
+    // snow: a real folklore chart shows this as one dense, filled clump —
+    // not a couple of isolated flakes — so it layers two offset samples
+    snow:    { bigAmt:1.0,  bigReach:0.62, layered:true },
+    warming: { bigAmt:0.5,  bigReach:0.2,  streakAmt:0.55, streakReach:0.16 },
     rain:    { spreadAmt:0.3 },
-    storm:   { spreadAmt:0.32, bigAmt:0.85, bigReach:0.3, useAltBig:true },
-    sunny:   { smallBottomAmt:0.4, smallBottomReach:0.15, streakAmt:0.5, streakReach:0.32 },
+    storm:   { spreadAmt:0.32, bigAmt:0.6, bigReach:0.22, useAltBig:true },
+    sunny:   { smallBottomAmt:0.4, smallBottomReach:0.15, streakAmt:0.55, streakReach:0.16 },
   };
 
   // ---------- weather: the same live/manual pattern as galileo and conometer,
@@ -275,7 +277,11 @@
       if(recipe.bigAmt && bigTopY-30<=y && y<=bigBotY+10){
         const a=zoneAlpha(y,l,r,bigTopY,bigBotY,34,noiseA);
         for(let x=l;x<=r;x++){
-          const t=Math.max(0,Math.min(1,grayAt(bigSrc,x+20,y+20)/255*1.15));
+          let t=grayAt(bigSrc,x+20,y+20)/255;
+          // layered: a second, differently-offset sample fills in the gaps
+          // between flakes so it reads as one dense mass, not scattered ones
+          if(recipe.layered) t=Math.max(t, grayAt(altBigData,x+55,y+35)/255);
+          t=Math.max(0,Math.min(1,t*1.15));
           const v=a[x-l]*recipe.bigAmt*t;
           if(v>acc[x-l]) acc[x-l]=v;
         }
