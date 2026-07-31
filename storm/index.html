@@ -15,7 +15,7 @@
   #stage{ height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:6vh 3vw 2vh; gap:2vh; }
   #scene-wrap{ position:relative; height:min(76vh,720px); aspect-ratio:410/700; }
-  #scene-wrap canvas{ position:absolute; inset:0; width:100%; height:100%; }
+  #scene-wrap canvas{ position:absolute; inset:0; width:100%; height:100%; transition:opacity .9s ease; }
   #dock{ display:flex; align-items:center; justify-content:center; gap:20px; padding:0 22px; }
   .toggle{ display:flex; align-items:center; gap:8px; cursor:pointer; }
   .toggle input{ appearance:none; width:16px; height:16px; border:1.5px solid rgba(223,230,234,.7);
@@ -37,7 +37,10 @@
 <body>
 <a id="backlink" href="../index.html">← sagne</a>
 <div id="stage">
-  <div id="scene-wrap"><canvas id="scene"></canvas></div>
+  <div id="scene-wrap">
+    <canvas id="frame-a"></canvas>
+    <canvas id="frame-b" style="opacity:0;"></canvas>
+  </div>
   <div id="dock">
     <label class="toggle">
       <input type="checkbox" id="chkLive" checked aria-label="use real local weather">
@@ -46,21 +49,35 @@
       </svg>
     </label>
     <div id="sliderWrap" class="disabled">
-      <input type="range" id="instabilitySlider" min="0" max="100" value="30" aria-label="storminess">
+      <input type="range" id="conditionSlider" min="0" max="4" step="1" value="2" aria-label="condition">
     </div>
   </div>
 </div>
 <script>
 (function(){
-  const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
+  const frameA=document.getElementById('frame-a'), frameB=document.getElementById('frame-b');
+  const ctxA=frameA.getContext('2d'), ctxB=frameB.getContext('2d');
   const chkLive=document.getElementById('chkLive');
   const sliderWrap=document.getElementById('sliderWrap');
-  const slider=document.getElementById('instabilitySlider');
+  const slider=document.getElementById('conditionSlider');
 
-  // ---------- weather: the same live/manual pattern as galileo and conometer.
-  // storminess is built from three real fields: cloud cover, how far pressure
-  // sits below the standard 1013 hPa baseline (a real proxy for "how unsettled
-  // the air is"), and a boost when precipitation is actually falling ----------
+  // ---------- the five conditions, in the traditional storm-glass reading
+  // sense: not one dial of "more or less storminess" but distinct, recognisable
+  // arrangements — a few big feathery crystals read differently from many tiny
+  // ones, and where they sit (bottom-only, top streaks, throughout) carries
+  // its own meaning, the way the real folklore chart distinguishes them ----------
+  const ORDER = ['sunny','warming','rain','storm','snow'];
+  const RECIPES = {
+    snow:    { bigAmt:0.9,  bigReach:0.85 },
+    warming: { bigAmt:0.4,  bigReach:0.3,  streakAmt:0.5, streakReach:0.4 },
+    rain:    { spreadAmt:0.3 },
+    storm:   { spreadAmt:0.32, bigAmt:0.85, bigReach:0.3, useAltBig:true },
+    sunny:   { smallBottomAmt:0.4, smallBottomReach:0.15, streakAmt:0.5, streakReach:0.32 },
+  };
+
+  // ---------- weather: the same live/manual pattern as galileo and conometer,
+  // but picking one of the five named conditions above from real fields rather
+  // than blending a single dial ----------
   let lat=55.19, lon=-1.56; // fallback: north-east England, matching the rest of the site
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(
@@ -68,15 +85,15 @@
       ()=>{ fetchWeather(); }, { timeout:5000 }
     );
   }
-  let liveInstability=null;
-  let manualInstability=30;
-  function currentInstability(){
-    if(chkLive.checked) return liveInstability!=null ? liveInstability : manualInstability;
-    return manualInstability;
+  let liveCondition=null;
+  let manualIndex=2;
+  function currentCondition(){
+    if(chkLive.checked) return liveCondition!=null ? liveCondition : ORDER[manualIndex];
+    return ORDER[manualIndex];
   }
   async function fetchWeather(){
     try{
-      const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=cloud_cover,surface_pressure,precipitation`;
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=cloud_cover,surface_pressure,precipitation,temperature_2m`;
       const res=await fetch(url);
       const data=await res.json();
       const c=data && data.current;
@@ -84,10 +101,13 @@
         const cloud=typeof c.cloud_cover==='number' ? c.cloud_cover : 50;
         const pressure=typeof c.surface_pressure==='number' ? c.surface_pressure : 1013;
         const precip=typeof c.precipitation==='number' ? c.precipitation : 0;
-        const cloudScore=cloud/100;
-        const pressureScore=Math.max(0, Math.min(1, (1013-pressure)/40));
-        const precipBoost=precip>0 ? Math.min(0.35, 0.15+precip*0.05) : 0;
-        liveInstability=Math.max(0, Math.min(100, (0.5*cloudScore+0.5*pressureScore+precipBoost)*100));
+        const temp=typeof c.temperature_2m==='number' ? c.temperature_2m : 12;
+        const pressureScore=Math.max(0, Math.min(1,(1013-pressure)/40));
+        if(precip>0.1 && temp<=1) liveCondition='snow';
+        else if(precip>0.5 && (cloud>85 || pressureScore>0.6)) liveCondition='storm';
+        else if(precip>0) liveCondition='rain';
+        else if(cloud<30) liveCondition='sunny';
+        else liveCondition='warming';
       }
     }catch(e){ /* keep last known value silently */ }
   }
@@ -99,51 +119,63 @@
     sliderWrap.classList.toggle('disabled', v);
   }
   chkLive.addEventListener('change', ()=>setLive(chkLive.checked));
-  slider.addEventListener('input', ()=>{ manualInstability=parseFloat(slider.value); });
+  slider.addEventListener('input', ()=>{ manualIndex=parseInt(slider.value,10); if(!chkLive.checked) applyCondition(); });
   sliderWrap.addEventListener('pointerdown', ()=>{ if(chkLive.checked) setLive(false); });
 
-  // ---------- assets: one real vessel photo, held fixed, plus two real crystal
-  // macro photographs (sparse individual flakes, dense branching mass) that get
-  // composited into it live — the vessel's own geometry, read directly from its
-  // pixels, is what the crystal is clipped and grown against, so there's no
-  // separate-generation alignment to fight ----------
-  function loadImg(src){
-    return new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.src=src; });
-  }
-  let W=0,H=0, vesselCanvas=null, denseData=null, sparseData=null, profile=null;
+  // ---------- assets: one real vessel photo, held fixed, plus one real macro
+  // photograph of ice-crystal formations sampled at two different crops (a
+  // tight crop reads as a few big flakes, the full frame reads as many small
+  // ones) — the vessel's own geometry, read directly from its pixels, is what
+  // every recipe is clipped and grown against, so nothing can ever misalign ----------
+  function loadImg(src){ return new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.src=src; }); }
+  let W=0,H=0, vesselCanvas=null, bigData=null, altBigData=null, smallData=null, streakCanvas=null, profile=null;
   let ready=false;
+  const cache={};
 
-  Promise.all([loadImg('storm-background.png'), loadImg('storm-tex-dense.jpg'), loadImg('storm-tex-sparse.jpg')])
-    .then(([vesselImg, denseImg, sparseImg])=>{
+  Promise.all([loadImg('storm-background.png'), loadImg('storm-tex-crystals.jpg')])
+    .then(([vesselImg, crystalImg])=>{
       W=vesselImg.naturalWidth; H=vesselImg.naturalHeight;
-      canvas.width=W; canvas.height=H;
+      frameA.width=frameB.width=W; frameA.height=frameB.height=H;
 
       vesselCanvas=document.createElement('canvas');
       vesselCanvas.width=W; vesselCanvas.height=H;
       vesselCanvas.getContext('2d').drawImage(vesselImg,0,0);
 
-      const denseCanvas=document.createElement('canvas');
-      denseCanvas.width=W+40; denseCanvas.height=H+40;
-      denseCanvas.getContext('2d').drawImage(denseImg,0,0,W+40,H+40);
-      denseData=denseCanvas.getContext('2d').getImageData(0,0,W+40,H+40);
+      const pad=40;
+      // "big": a moderate central crop, so each flake reads large but there's
+      // still enough spread that one lands within the vessel's own silhouette
+      const bigCanvas=document.createElement('canvas');
+      bigCanvas.width=W+pad; bigCanvas.height=H+pad;
+      const cw=crystalImg.naturalWidth, ch=crystalImg.naturalHeight;
+      const zoomW=cw*0.62, zoomH=ch*0.85;
+      bigCanvas.getContext('2d').drawImage(crystalImg, (cw-zoomW)/2, (ch-zoomH)/2, zoomW, zoomH, 0,0, W+pad, H+pad);
+      bigData=bigCanvas.getContext('2d').getImageData(0,0,W+pad,H+pad);
 
-      const sparseCanvas=document.createElement('canvas');
-      sparseCanvas.width=W+40; sparseCanvas.height=H+40;
-      sparseCanvas.getContext('2d').drawImage(sparseImg,0,0,W+40,H+40);
-      sparseData=sparseCanvas.getContext('2d').getImageData(0,0,W+40,H+40);
+      const altCanvas=document.createElement('canvas');
+      altCanvas.width=W+pad; altCanvas.height=H+pad;
+      altCanvas.getContext('2d').drawImage(crystalImg, cw*0.18, ch*0.02, zoomW, zoomH, 0,0, W+pad, H+pad);
+      altBigData=altCanvas.getContext('2d').getImageData(0,0,W+pad,H+pad);
 
+      // "small": the full frame compressed down, so many more flakes fit, each smaller
+      const smallCanvas=document.createElement('canvas');
+      smallCanvas.width=W+pad; smallCanvas.height=H+pad;
+      smallCanvas.getContext('2d').drawImage(crystalImg, 0,0,cw,ch, 0,0, W+pad, H+pad);
+      smallData=smallCanvas.getContext('2d').getImageData(0,0,W+pad,H+pad);
+
+      streakCanvas=buildStreaks(W+40,H+40,11,260);
       profile=buildProfile(vesselCanvas);
       ready=true;
-      requestAnimationFrame(tick);
+      applyCondition();
     });
 
   // read the vessel photo's own pixels to find, per row, exactly where its
-  // glass interior is — the crystal fill is clipped to this, so it always
-  // matches this vessel exactly, whatever shape it turns out to be
+  // glass interior is — and stop at the true bottom of the bulb, not the
+  // little foot/base below it, so crystal can never render into the base
+  const Y_TOP=250, Y_BULB_BOT=610, Y_MAXFILL=210;
   function buildProfile(vc){
     const d=vc.getContext('2d').getImageData(0,0,W,H).data;
     const rows=new Array(H).fill(null);
-    for(let y=0;y<H;y++){
+    for(let y=Y_TOP;y<=Y_BULB_BOT;y++){
       let l=-1, r=-1;
       for(let x=0;x<W;x++){
         const i=(y*W+x)*4;
@@ -155,11 +187,39 @@
     return rows;
   }
 
+  function buildStreaks(w,h,seed,count){
+    const rnd=mulberry32(seed);
+    const c=document.createElement('canvas'); c.width=w; c.height=h;
+    const g=c.getContext('2d');
+    g.strokeStyle='#fff'; g.lineCap='round';
+    for(let i=0;i<count;i++){
+      const x=rnd()*w, y0=rnd()*h;
+      const length=h*(0.05+rnd()*0.11), wobble=(rnd()-0.5)*12, width=rnd()<0.7?1:2;
+      const bright=140+Math.floor(rnd()*115);
+      g.globalAlpha=bright/255; g.lineWidth=width;
+      g.beginPath(); g.moveTo(x,y0);
+      let px=x,py=y0;
+      for(let s=1;s<=6;s++){
+        const nx=x+wobble*s/6+(rnd()-0.5)*4, ny=y0+length*s/6;
+        g.lineTo(nx,ny); px=nx; py=ny;
+      }
+      g.stroke();
+      if(rnd()<0.5){
+        g.beginPath();
+        const bx=x+wobble*0.5, by=y0+length*0.5;
+        g.moveTo(bx,by); g.lineTo(bx+(rnd()-0.5)*10, by+3+rnd()*4);
+        g.globalAlpha=(bright*0.8)/255; g.lineWidth=1; g.stroke();
+      }
+    }
+    g.globalAlpha=1;
+    return { data: g.getImageData(0,0,w,h) };
+  }
+
   function grayAt(imgData, x, y){
-    const w=imgData.width;
-    const i=((y%imgData.height)*w + (x%w))*4;
-    const d=imgData.data;
-    return (d[i]*0.34+d[i+1]*0.33+d[i+2]*0.33);
+    const w=imgData.width, h=imgData.height;
+    const xi=((x%w)+w)%w, yi=((y%h)+h)%h;
+    const i=(yi*w+xi)*4, d=imgData.data;
+    return d[i]*0.34+d[i+1]*0.33+d[i+2]*0.33;
   }
 
   function mulberry32(a){
@@ -178,61 +238,110 @@
     return n;
   }
 
-  const Y_TOP=250, Y_MAXFILL=210;
-  let compositeCanvas=null, lastRenderedDensity=-1;
-  function renderComposite(density){
-    if(!ready) return;
-    const yBot = profile.length-1;
-    while(!profile[yBot]) { /* noop, profile always has bottom rows filled */ break; }
-    const fillTopY = yBot - density*(yBot-Y_MAXFILL);
-    const noise = edgeNoise(W, 5, density<0.5?1.6:0.9);
-    const blend = Math.pow(Math.max(0,Math.min(1,(density-0.15)/0.65)), 1.3);
-    const edgeBand = density<0.5 ? 55 : 34;
+  function zoneAlpha(y,x0,x1,topY,botY,edgeband,noise){
+    const a=new Float32Array(x1-x0+1).fill(1);
+    if(y<topY-edgeband || y>botY+edgeband){ a.fill(0); return a; }
+    for(let x=x0;x<=x1;x++){
+      let v=1;
+      if(y>botY-edgeband) v*=Math.max(0,Math.min(1,(botY-y)/edgeband+0.5+(noise[x]-0.5)*0.4));
+      if(y<topY+edgeband) v*=Math.max(0,Math.min(1,(y-topY)/edgeband+0.5+(noise[x]-0.5)*0.4));
+      a[x-x0]=v;
+    }
+    return a;
+  }
 
-    if(!compositeCanvas){ compositeCanvas=document.createElement('canvas'); compositeCanvas.width=W; compositeCanvas.height=H; }
-    const cctx=compositeCanvas.getContext('2d');
+  function renderRecipe(recipe, seed){
+    const c=document.createElement('canvas'); c.width=W; c.height=H;
+    const cctx=c.getContext('2d');
     cctx.drawImage(vesselCanvas,0,0);
     const imgData=cctx.getImageData(0,0,W,H);
     const px=imgData.data;
+    const noiseA=edgeNoise(W+40, seed, 1.4);
+    const noiseB=edgeNoise(W+40, seed+9, 1.1);
+    const bigSrc = recipe.useAltBig ? altBigData : bigData;
 
-    for(let y=Y_TOP;y<yBot;y++){
+    const bigBotY=Y_BULB_BOT, bigTopY=Y_BULB_BOT-(recipe.bigReach||0)*(Y_BULB_BOT-Y_MAXFILL);
+    const smBotY=Y_BULB_BOT, smTopY=Y_BULB_BOT-(recipe.smallBottomReach||0)*(Y_BULB_BOT-Y_MAXFILL);
+    const stkTopY=Y_TOP, stkBotY=Y_TOP+(recipe.streakReach||0)*(Y_BULB_BOT-Y_TOP);
+
+    for(let y=Y_TOP;y<Y_BULB_BOT;y++){
       const row=profile[y];
       if(!row) continue;
       const [l,r]=row;
-      const thresh = fillTopY + (noise[l]-0.5)*edgeBand;
+      const acc=new Float32Array(r-l+1);
+
+      if(recipe.bigAmt && bigTopY-30<=y && y<=bigBotY+10){
+        const a=zoneAlpha(y,l,r,bigTopY,bigBotY,34,noiseA);
+        for(let x=l;x<=r;x++){
+          const t=Math.max(0,Math.min(1,grayAt(bigSrc,x+20,y+20)/255*1.15));
+          const v=a[x-l]*recipe.bigAmt*t;
+          if(v>acc[x-l]) acc[x-l]=v;
+        }
+      }
+      if(recipe.smallBottomAmt && smTopY-30<=y && y<=smBotY+10){
+        const a=zoneAlpha(y,l,r,smTopY,smBotY,20,noiseB);
+        for(let x=l;x<=r;x++){
+          const t=Math.max(0,Math.min(1,grayAt(smallData,x+20,y+20)/255*1.1));
+          const v=a[x-l]*recipe.smallBottomAmt*t;
+          if(v>acc[x-l]) acc[x-l]=v;
+        }
+      }
+      if(recipe.spreadAmt){
+        for(let x=l;x<=r;x++){
+          const t1=grayAt(smallData,x+20,y+20)/255;
+          const t2=grayAt(streakCanvas.data,x+20,y+20)/255;
+          const v=Math.max(t1,t2*0.8)*recipe.spreadAmt;
+          if(v>acc[x-l]) acc[x-l]=v;
+        }
+      }
+      if(recipe.streakAmt && stkTopY-10<=y && y<=stkBotY+24){
+        const a=zoneAlpha(y,l,r,stkTopY,stkBotY,24,noiseA);
+        for(let x=l;x<=r;x++){
+          const t=Math.max(0,Math.min(1,grayAt(streakCanvas.data,x+20,y+20)/255*1.3));
+          const v=a[x-l]*recipe.streakAmt*t;
+          if(v>acc[x-l]) acc[x-l]=v;
+        }
+      }
+
       for(let x=l;x<=r;x++){
-        const sp=grayAt(sparseData, x+30, y+10)/255;
-        const de=grayAt(denseData, x+5, y+5)/255;
-        const t = sp*(1-blend) + de*blend;
-        const localThresh = fillTopY + (noise[x]-0.5)*edgeBand;
-        let amt = (y-localThresh)/edgeBand + 0.5;
-        amt = amt<0?0:amt>1?1:amt;
-        const a = amt * Math.max(0,Math.min(1,t*1.15));
+        const a=acc[x-l];
         if(a<=0) continue;
-        const i=(y*W+x)*4;
-        const cr = 225+t*30;
-        px[i]   = px[i]*(1-a)+cr*a;
-        px[i+1] = px[i+1]*(1-a)+cr*a;
-        px[i+2] = px[i+2]*(1-a)+cr*a;
+        const i=(y*W+x)*4, cr=230;
+        px[i]=px[i]*(1-a)+cr*a; px[i+1]=px[i+1]*(1-a)+cr*a; px[i+2]=px[i+2]*(1-a)+cr*a;
       }
     }
     cctx.putImageData(imgData,0,0);
+    return c;
   }
 
-  let last=performance.now();
-  let displayedDensity=0.12;
-  function tick(now){
-    const dt=Math.min((now-last)/1000,0.1); last=now;
-    const target=currentInstability()/100;
-    displayedDensity += (target-displayedDensity)*Math.min(1, dt*0.4);
+  function getComposite(name){
+    if(!cache[name]) cache[name]=renderRecipe(RECIPES[name], 21+ORDER.indexOf(name));
+    return cache[name];
+  }
 
-    if(Math.abs(displayedDensity-lastRenderedDensity)>0.004){
-      renderComposite(displayedDensity);
-      lastRenderedDensity=displayedDensity;
+  let shown=null, settleTimer=null;
+  function applyCondition(){
+    if(!ready) return;
+    const name=currentCondition();
+    const comp=getComposite(name);
+    if(shown===null){
+      ctxA.clearRect(0,0,W,H); ctxA.drawImage(comp,0,0);
+      frameA.style.opacity=1; frameB.style.opacity=0;
+      shown=name; return;
     }
-    if(compositeCanvas){ ctx.clearRect(0,0,W,H); ctx.drawImage(compositeCanvas,0,0); }
-    requestAnimationFrame(tick);
+    if(name!==shown){
+      ctxB.clearRect(0,0,W,H); ctxB.drawImage(comp,0,0);
+      frameB.style.opacity=1; frameA.style.opacity=0;
+      shown=name;
+      window.clearTimeout(settleTimer);
+      settleTimer=window.setTimeout(()=>{
+        ctxA.clearRect(0,0,W,H); ctxA.drawImage(comp,0,0);
+        frameA.style.opacity=1; frameB.style.opacity=0;
+      }, 950);
+    }
   }
+
+  setInterval(()=>{ if(ready) applyCondition(); }, 1500);
 })();
 </script>
 </body>
