@@ -80,7 +80,7 @@
     // storm: the dense, fizzy crystal-and-bubble texture fills the whole
     // water column top to bottom, plus a big cluster of large flakes like
     // snow's, layered on top of that density
-    storm:   { spreadAmt:1.0, spreadBubble:'dense', bigAmt:1.0, bigReach:0.56, layered:true, extraFeathers:true, streakAmt:0.25, streakReach:0.1 },
+    storm:   { spreadAmt:1.0, spreadBubble:'dense', bigAmt:1.0, bigReach:0.56, layered:true, extraFeathers:true, manyFlakes:true, streakAmt:0.25, streakReach:0.1 },
     sunny:   { bottomAmt:0.7, bottomTex:'bubbleSparse', bottomReach:0.22, streakAmt:0.55, streakReach:0.16 },
   };
 
@@ -343,6 +343,17 @@
         {dx:-0.78, dy:-42, s:0.42, alt:false},
         {dx:0.78,  dy:-38, s:0.4,  alt:true},
         {dx:0.05,  dy:-58, s:0.46, alt:false},
+        {dx:-0.35, dy:-70, s:0.5,  alt:true},
+        {dx:0.4,   dy:-75, s:0.44, alt:false},
+        {dx:-0.9,  dy:-15, s:0.36, alt:true},
+        {dx:0.92,  dy:-10, s:0.34, alt:false},
+        {dx:0.1,   dy:-95, s:0.4,  alt:true},
+        {dx:-0.6,  dy:-90, s:0.36, alt:false},
+        {dx:0.65,  dy:-100,s:0.34, alt:true},
+        {dx:-0.2,  dy:-115,s:0.38, alt:false},
+        {dx:0.3,   dy:-125,s:0.32, alt:true},
+        {dx:-0.85, dy:-60, s:0.3,  alt:false},
+        {dx:0.85,  dy:-65, s:0.3,  alt:true},
       ];
       for(const p of stack){
         clumps.push({ cx:clumpCx+clumpW*p.dx, size:clumpH*p.s, botY:clumpBotY+p.dy, amtMul:0.85, tex:p.alt?altBigData:bigSrc, altTex:null, edge:16 });
