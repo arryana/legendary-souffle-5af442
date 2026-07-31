@@ -129,9 +129,11 @@
 (function(){
   "use strict";
 
-  const BULBS_F = [30, 37.5, 45, 52.5, 60, 67.5, 75, 82.5, 90];
-  const FLOAT_IMAGES = ['blue','aqua','green','yellow','orange','red','pink','purple','silver'];
-  const X_JITTER = [-22, 18, -10, 24, -27, 11, -16, 26, -5];
+  // twelve bulbs at a clean 5°F step (was nine at 7.5°) — finer resolution,
+  // same 30-85°F spread the thermometer has always covered
+  const BULBS_F = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85];
+  const FLOAT_IMAGES = ['blue','aqua','green','yellow','gold','orange','red','pink','palepink','purple','lavender','silver'];
+  const X_JITTER = [-22, 18, -10, 24, -19, -27, 11, -16, 21, 26, -13, -5];
 
   // display size for each float sprite (native crop is 340x435)
   // sized so a bulb reads as roughly a real pea against the tube (tube interior ~130 units wide)
