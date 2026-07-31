@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>storm glass — sagne</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{ height:100%; margin:0; overflow:hidden; background:#0a0b0d; color:#dfe6ea;
+    font-family:Georgia, serif; user-select:none; }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#dfe6ea; opacity:.5;
+    text-decoration:none; font-size:14px; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); transition:opacity .3s ease; }
+  #backlink:hover{ opacity:.9; }
+  canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:center;
+    gap:20px; padding:16px 22px 26px; z-index:40;
+    background:linear-gradient(to top, rgba(6,7,9,.85), rgba(6,7,9,0)); }
+  .toggle{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .toggle input{ appearance:none; width:16px; height:16px; border:1.5px solid rgba(223,230,234,.7);
+    border-radius:3px; background:transparent; position:relative; cursor:pointer; flex-shrink:0; }
+  .toggle input:checked{ background:#dfe6ea; }
+  .toggle input:checked::after{ content:''; position:absolute; left:4px; top:1px; width:4px; height:8px;
+    border:solid #0a0b0d; border-width:0 2px 2px 0; transform:rotate(40deg); }
+  .cloud-icon{ color:#dfe6ea; flex-shrink:0; transition:color .25s ease; }
+  .toggle input:not(:checked) ~ .cloud-icon{ color:#7a8388; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; width:150px; height:3px; border-radius:3px;
+    background:rgba(223,230,234,.25); outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+    background:#dfe6ea; cursor:pointer; box-shadow:0 0 8px rgba(223,230,234,.5); }
+  input[type=range]::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:#dfe6ea; cursor:pointer; }
+  #sliderWrap{ display:flex; align-items:center; transition:opacity .3s ease; }
+  #sliderWrap.disabled{ opacity:.3; pointer-events:none; }
+</style>
+</head>
+<body>
+<a id="backlink" href="../index.html">← sagne</a>
+<canvas id="scene"></canvas>
+<div id="dock">
+  <label class="toggle">
+    <input type="checkbox" id="chkLive" checked aria-label="use real local weather">
+    <svg class="cloud-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path d="M7 17a4 4 0 0 1-.6-7.96A5 5 0 0 1 16 8.2 4.5 4.5 0 0 1 17.5 17H7Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+    </svg>
+  </label>
+  <div id="sliderWrap" class="disabled">
+    <input type="range" id="instabilitySlider" min="0" max="100" value="30" aria-label="storminess">
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
+  const chkLive=document.getElementById('chkLive');
+  const sliderWrap=document.getElementById('sliderWrap');
+  const slider=document.getElementById('instabilitySlider');
+  let W=0,H=0,DPR=1,cx=0,cy=0,scale=1;
+
+  // ---------- weather: the same live/manual pattern as galileo and conometer.
+  // storminess is built from three real fields rather than one: cloud cover,
+  // how far pressure sits below the standard 1013 hPa baseline (a real proxy
+  // for "how unsettled the air is"), and a boost when precipitation is
+  // actually falling right now. temperature is a secondary modulator of the
+  // crystal shape itself, not of how much grows ----------
+  let lat=55.19, lon=-1.56; // fallback: north-east England, matching the rest of the site
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos=>{ lat=pos.coords.latitude; lon=pos.coords.longitude; fetchWeather(); },
+      ()=>{ fetchWeather(); }, { timeout:5000 }
+    );
+  }
+  let liveInstability=null, liveTemp=10;
+  let manualInstability=30;
+  function currentInstability(){
+    if(chkLive.checked) return liveInstability!=null ? liveInstability : manualInstability;
+    return manualInstability;
+  }
+  async function fetchWeather(){
+    try{
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,cloud_cover,surface_pressure,precipitation`;
+      const res=await fetch(url);
+      const data=await res.json();
+      const c=data && data.current;
+      if(c){
+        const cloud=typeof c.cloud_cover==='number' ? c.cloud_cover : 50;
+        const pressure=typeof c.surface_pressure==='number' ? c.surface_pressure : 1013;
+        const precip=typeof c.precipitation==='number' ? c.precipitation : 0;
+        const cloudScore=cloud/100;
+        const pressureScore=Math.max(0, Math.min(1, (1013-pressure)/40));
+        const precipBoost=precip>0 ? Math.min(0.35, 0.15+precip*0.05) : 0;
+        liveInstability=Math.max(0, Math.min(100, (0.5*cloudScore+0.5*pressureScore+precipBoost)*100));
+        if(typeof c.temperature_2m==='number') liveTemp=c.temperature_2m;
+      }
+    }catch(e){ /* keep last known value silently */ }
+  }
+  fetchWeather();
+  setInterval(()=>{ if(chkLive.checked) fetchWeather(); }, 10*60*1000);
+
+  function setLive(v){
+    chkLive.checked=v;
+    sliderWrap.classList.toggle('disabled', v);
+  }
+  chkLive.addEventListener('change', ()=>setLive(chkLive.checked));
+  slider.addEventListener('input', ()=>{ manualInstability=parseFloat(slider.value); });
+  sliderWrap.addEventListener('pointerdown', ()=>{ if(chkLive.checked) setLive(false); });
+
+  // ---------- vessel geometry: a placeholder teardrop glass, drawn procedurally
+  // so the crystal growth can be built and tested before the real photographed
+  // vessel exists. swapping in a photo later just means drawing that image here
+  // instead of this path, and reusing the same interior bounds below ----------
+  function vesselPath(p){
+    // local coords: origin at bulb centre, unit scale; y grows downward
+    p.moveTo(0, 1.02);
+    p.bezierCurveTo(-0.86, 1.02, -0.98, 0.42, -0.98, 0.05);
+    p.bezierCurveTo(-0.98, -0.42, -0.5, -0.62, -0.22, -1.28);
+    p.bezierCurveTo(-0.1, -1.55, 0, -1.62, 0, -1.62);
+    p.bezierCurveTo(0, -1.62, 0.1, -1.55, 0.22, -1.28);
+    p.bezierCurveTo(0.5, -0.62, 0.98, -0.42, 0.98, 0.05);
+    p.bezierCurveTo(0.98, 0.42, 0.86, 1.02, 0, 1.02);
+    p.closePath();
+  }
+
+  function resize(){
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    W=window.innerWidth; H=window.innerHeight;
+    canvas.width=W*DPR; canvas.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    const topMargin=40, dockReserve=110;
+    const usableH=Math.max(240, H-topMargin-dockReserve);
+    scale=Math.min(usableH/3.2, W*0.42);
+    cx=W/2; cy=topMargin+usableH*0.56;
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------- crystal growth: a fixed branching structure generated once,
+  // then revealed by a threshold per segment rather than regenerated —
+  // growth reads as accretion (nearer-the-base branches always appear first)
+  // instead of the whole cluster reshuffling every time the weather nudges ----------
+  function mulberry32(a){
+    return function(){
+      a|=0; a=a+0x6D2B79F5|0;
+      let t=Math.imul(a^a>>>15, 1|a);
+      t=t+Math.imul(t^t>>>7, 61|t)^t;
+      return ((t^t>>>14)>>>0)/4294967296;
+    };
+  }
+  const rand=mulberry32(20260731);
+  const segments=[]; // {x0,y0,x1,y1,w,threshold}
+  function grow(x,y,angle,len,w,depth,threshold){
+    const x1=x+Math.cos(angle)*len, y1=y+Math.sin(angle)*len;
+    segments.push({x0:x,y0:y,x1,y1,w,threshold});
+    if(depth<=0 || w<0.006) return;
+    const nKids = depth>1 ? (rand()<0.7?2:3) : (rand()<0.5?1:0);
+    for(let i=0;i<nKids;i++){
+      const side = i%2===0 ? 1 : -1;
+      const spread = (0.28+rand()*0.42) * side;
+      const childAngle=angle+spread;
+      const childLen=len*(0.6+rand()*0.16);
+      const childW=w*0.6;
+      const childThreshold=threshold + (1-threshold)*(0.16+rand()*0.08);
+      grow(x1,y1,childAngle,childLen,childW,depth-1,childThreshold);
+    }
+  }
+  // several root stems along the base of the bulb, mostly reaching upward
+  const ROOTS=9;
+  for(let i=0;i<ROOTS;i++){
+    const t=i/(ROOTS-1);
+    const bx=-0.72+t*1.44;
+    const by=0.95-Math.pow(Math.abs(bx)/0.98,2)*0.35;
+    const angle=-Math.PI/2 + (t-0.5)*0.5 + (rand()-0.5)*0.2;
+    const rootThreshold = i===Math.floor(ROOTS/2) ? 0 : (Math.abs(t-0.5)*1.7)*0.55 + rand()*0.06;
+    grow(bx,by,angle,0.34+rand()*0.08,0.05+rand()*0.015,6,rootThreshold);
+  }
+  const maxThreshold=segments.reduce((m,s)=>Math.max(m,s.threshold),0.0001);
+  for(const s of segments) s.thresholdNorm=s.threshold/maxThreshold;
+
+  let currentExtent=0.12;
+
+  function drawVessel(){
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.scale(scale,scale);
+
+    // soft ambient glow behind the glass
+    const glow=ctx.createRadialGradient(0,0.2,0.2,0,0.2,1.9);
+    glow.addColorStop(0,'rgba(140,160,175,.16)'); glow.addColorStop(1,'rgba(140,160,175,0)');
+    ctx.beginPath(); ctx.arc(0,0.2,1.9,0,7); ctx.fillStyle=glow; ctx.fill();
+
+    const p=new Path2D();
+    vesselPath(p);
+
+    // glass body
+    const g=ctx.createLinearGradient(-0.9,-1.6,0.9,1.05);
+    g.addColorStop(0,'rgba(210,222,228,.10)');
+    g.addColorStop(0.45,'rgba(180,196,205,.05)');
+    g.addColorStop(0.55,'rgba(150,168,178,.08)');
+    g.addColorStop(1,'rgba(200,214,222,.12)');
+    ctx.fillStyle=g; ctx.fill(p);
+
+    // interior liquid tint, faint
+    ctx.save();
+    ctx.clip(p);
+    const liquid=ctx.createRadialGradient(0,0.5,0.1,0,0.5,1.3);
+    liquid.addColorStop(0,'rgba(120,150,170,.10)');
+    liquid.addColorStop(1,'rgba(60,80,95,.16)');
+    ctx.fillStyle=liquid; ctx.fillRect(-1.1,-1.7,2.2,2.9);
+    ctx.restore();
+
+    // rim highlight
+    ctx.strokeStyle='rgba(235,242,246,.55)'; ctx.lineWidth=0.012;
+    ctx.stroke(p);
+    const hi=ctx.createLinearGradient(-0.55,-1.1,-0.15,0.6);
+    hi.addColorStop(0,'rgba(255,255,255,.35)'); hi.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.save(); ctx.clip(p);
+    ctx.beginPath(); ctx.moveTo(-0.62,-0.95); ctx.quadraticCurveTo(-0.78,0.1,-0.5,0.85);
+    ctx.lineWidth=0.05; ctx.strokeStyle=hi; ctx.stroke();
+    ctx.restore();
+
+    // crystal growth, clipped to the vessel interior
+    ctx.save();
+    ctx.clip(p);
+    for(const s of segments){
+      if(s.thresholdNorm>currentExtent) continue;
+      const edge=Math.max(0, Math.min(1, (currentExtent-s.thresholdNorm)*8));
+      ctx.strokeStyle=`rgba(226,236,240,${(0.5+0.4*edge).toFixed(2)})`;
+      ctx.lineWidth=Math.max(0.003, s.w*(0.5+0.5*edge));
+      ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(s.x0,s.y0); ctx.lineTo(s.x1,s.y1); ctx.stroke();
+    }
+    ctx.restore();
+
+    // base (wood placeholder)
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.scale(scale,scale);
+    const baseW=1.35, baseH=0.16;
+    const bg=ctx.createLinearGradient(0,1.0,0,1.0+baseH);
+    bg.addColorStop(0,'#3a2b1c'); bg.addColorStop(1,'#241a10');
+    ctx.fillStyle=bg;
+    ctx.beginPath();
+    ctx.roundRect(-baseW/2,1.0,baseW,baseH,0.04);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  let last=performance.now();
+  function tick(now){
+    const dt=Math.min((now-last)/1000,0.1); last=now;
+    const target=currentInstability()/100;
+    // slow, organic ease toward the target extent — crystal formation should
+    // read as gradually accreting, not snapping to match the latest reading
+    currentExtent += (target-currentExtent) * Math.min(1, dt*0.15);
+
+    ctx.clearRect(0,0,W,H);
+    drawVessel();
+
+    requestAnimationFrame(tick);
+  }
+  resize();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
