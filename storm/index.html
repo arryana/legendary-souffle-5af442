@@ -80,7 +80,7 @@
     // storm: a smaller branching crystal in the middle, a spread of short
     // streaks across the top, and bubbles scattered around it plus a bottom
     // cluster — busier and denser than rain, per the reading chart's icon
-    storm:   { bigAmt:0.85, bigReach:0.32, useAltBig:true, extraFeathers:true, streakAmt:0.65, streakReach:0.22, bubbleClumps:true },
+    storm:   { bigAmt:1.0, bigReach:0.42, useAltBig:true, extraFeathers:true, streakAmt:0.95, streakReach:0.3, bubbleClumps:true, bubbleAmt:1.3 },
     sunny:   { bottomAmt:0.7, bottomTex:'bubbleSparse', bottomReach:0.22, streakAmt:0.55, streakReach:0.16 },
   };
 
@@ -353,7 +353,7 @@
       const acc=new Float32Array(r-l+1);
 
       if(recipe.bigAmt) renderClumpZone(clumps, recipe.bigAmt, y, l, r, acc, noiseA);
-      if(recipe.bubbleClumps) renderClumpZone(bubbleClumps, 1, y, l, r, acc, noiseB);
+      if(recipe.bubbleClumps) renderClumpZone(bubbleClumps, recipe.bubbleAmt||1, y, l, r, acc, noiseB);
       if(recipe.bottomAmt && smTopY-30<=y && y<=smBotY+10){
         const a=zoneAlpha(y,l,r,smTopY,smBotY,20,noiseB);
         for(let x=l;x<=r;x++){
