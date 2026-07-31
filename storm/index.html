@@ -71,7 +71,7 @@
   const RECIPES = {
     // snow: one dense, filled clump — not a couple of isolated flakes —
     // so it layers two offset samples of the same large-crystal photo
-    snow:    { bigAmt:1.0,  bigReach:0.56, layered:true },
+    snow:    { bigAmt:1.0,  bigReach:0.56, layered:true, extraFeathers:true },
     warming: { bigAmt:0.8,  bigReach:0.32, streakAmt:0.55, streakReach:0.16 },
     rain:    { spreadAmt:0.32, spreadBubble:'sparse' },
     storm:   { spreadAmt:0.38, spreadBubble:'dense', bigAmt:0.8, bigReach:0.3, useAltBig:true },
@@ -260,12 +260,21 @@
     const stkTopY=Y_TOP, stkBotY=Y_TOP+(recipe.streakReach||0)*(Y_BULB_BOT-Y_TOP);
 
     // the big clump sits centred on the vessel's own midline at the bottom,
-    // as one grouped unit — not spread across the full width of the glass
+    // as one grouped unit — not spread across the full width of the glass.
+    // extraFeathers adds a couple of smaller, dimmer flakes just behind and
+    // to either side, so it reads as a cluster branching out, not one sprite
     const clumpH = CLUMP*(recipe.bigReach||0.5), clumpW = clumpH;
     const clumpBotY = Y_BULB_BOT - 4, clumpTopY = clumpBotY - clumpH;
     const midRow = profile[Y_BULB_BOT-20] || profile[Y_BULB_BOT-1];
     const clumpCx = midRow ? (midRow[0]+midRow[1])/2 : W/2;
-    const clumpX0 = clumpCx - clumpW/2;
+
+    const clumps = [{ cx:clumpCx, size:clumpH, botY:clumpBotY, amtMul:1, tex:bigSrc, altTex:recipe.layered?altBigData:null, edge:18 }];
+    if(recipe.extraFeathers){
+      const s2 = clumpH*0.6;
+      clumps.push({ cx:clumpCx-clumpW*0.4, size:s2, botY:clumpBotY-6, amtMul:0.68, tex:altBigData, altTex:null, edge:16 });
+      const s3 = clumpH*0.5;
+      clumps.push({ cx:clumpCx+clumpW*0.38, size:s3, botY:clumpBotY-3, amtMul:0.6, tex:bigSrc, altTex:null, edge:16 });
+    }
 
     for(let y=Y_TOP;y<Y_BULB_BOT;y++){
       const row=profile[y];
@@ -273,28 +282,31 @@
       const [l,r]=row;
       const acc=new Float32Array(r-l+1);
 
-      if(recipe.bigAmt && y>=clumpTopY && y<=clumpBotY){
-        const cl=Math.max(l,Math.floor(clumpX0)), cr=Math.min(r,Math.ceil(clumpX0+clumpW));
-        if(cr>cl){
-          const a=zoneAlpha(y,cl,cr,clumpTopY,clumpBotY,18,noiseA);
+      if(recipe.bigAmt){
+        for(const cp of clumps){
+          const cpTopY=cp.botY-cp.size, cpX0=cp.cx-cp.size/2;
+          if(y<cpTopY || y>cp.botY) continue;
+          const cl=Math.max(l,Math.floor(cpX0)), cr=Math.min(r,Math.ceil(cpX0+cp.size));
+          if(cr<=cl) continue;
+          const a=zoneAlpha(y,cl,cr,cpTopY,cp.botY,cp.edge,noiseA);
           for(let x=cl;x<=cr;x++){
             // clamp, never wrap — sampling past the texture's own edge must
             // read as empty, not loop around to unrelated content elsewhere
-            const tx=Math.max(0,Math.min(CLUMP-1,(x-clumpX0)/clumpW*CLUMP));
-            const ty=Math.max(0,Math.min(CLUMP-1,(y-clumpTopY)/clumpH*CLUMP));
-            let t=grayAt(bigSrc,tx,ty)/255;
-            if(recipe.layered){
+            const tx=Math.max(0,Math.min(CLUMP-1,(x-cpX0)/cp.size*CLUMP));
+            const ty=Math.max(0,Math.min(CLUMP-1,(y-cpTopY)/cp.size*CLUMP));
+            let t=grayAt(cp.tex,tx,ty)/255;
+            if(cp.altTex){
               const atx=tx+30, aty=ty+18;
-              if(atx<CLUMP && aty<CLUMP) t=Math.max(t, grayAt(altBigData,atx,aty)/255);
+              if(atx<CLUMP && aty<CLUMP) t=Math.max(t, grayAt(cp.altTex,atx,aty)/255);
             }
             // clear the low-level JPEG noise floor so the photo's "black"
             // background never tints the glass, only the crystal itself does
             t=Math.max(0,Math.min(1,(t-0.12)/0.88*1.15));
             // soft horizontal fade too, so the clump's box never reads as a
             // rectangle — only its top/bottom got that treatment above
-            const distX=Math.abs(x-clumpCx)/(clumpW/2);
+            const distX=Math.abs(x-cp.cx)/(cp.size/2);
             const hFade=Math.max(0,Math.min(1,(1-distX)*3));
-            const v=a[x-cl]*hFade*recipe.bigAmt*t;
+            const v=a[x-cl]*hFade*recipe.bigAmt*cp.amtMul*t;
             if(v>acc[x-l]) acc[x-l]=v;
           }
         }
