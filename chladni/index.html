@@ -151,11 +151,27 @@
     [1,2],[1,3],[2,3],[1,4],[3,4],[2,5],[1,5],[4,5],
     [3,5],[2,7],[3,7],[5,6],[4,7],[3,8],[5,8],[6,7]
   ];
+  // this formula always has a pair of perfectly straight nodal lines along
+  // the plate's own diagonals, for *every* (m,n) — a real mathematical
+  // property, not a bug, but showing the exact same diagonal cross at
+  // every single pitch reads as static/unrealistic across the sweep. A
+  // small rotation per pitch (rotating the whole pattern, not the square
+  // plate it's clipped against) breaks that up — real plates driven off-
+  // centre or asymmetrically don't line up on the geometric diagonal
+  // either — while a rotation about the origin still keeps the centre
+  // point exactly on a node, so the clamp there stays physically honest
+  const ROT_DEG = [0,14,-10,22,8,-18,15,-6,20,-24,6,17,-9,19,-13,11];
+  let rotRad=0;
 
   function pattern(m,n,x,y){
     // classic square-plate Chladni approximation — zero along the nodal
     // lines, and always zero dead-centre regardless of (m,n), matching a
     // plate genuinely clamped at its middle
+    if(rotRad){
+      const c=Math.cos(rotRad), s=Math.sin(rotRad);
+      const rx=x*c-y*s, ry=x*s+y*c;
+      x=rx; y=ry;
+    }
     return Math.cos(n*Math.PI*x)*Math.cos(m*Math.PI*y) - Math.cos(m*Math.PI*x)*Math.cos(n*Math.PI*y);
   }
 
@@ -242,6 +258,7 @@
   function setMode(idx){
     modeIdx=idx;
     m=MODES[idx][0]; n=MODES[idx][1];
+    rotRad=(ROT_DEG[idx]||0)*Math.PI/180;
     exciteAt=performance.now();
   }
   slider.addEventListener('pointerdown', ()=>{ sliderDragging=true; sustainTone(freqForIdx(modeIdx)); });
