@@ -23,6 +23,16 @@
     background:#dfe6ea; cursor:pointer; box-shadow:0 0 8px rgba(223,230,234,.5); }
   input[type=range]::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:#dfe6ea; cursor:pointer; }
   #pitchLabel{ font-size:12px; letter-spacing:.08em; opacity:.45; width:34px; text-align:center; flex:0 0 auto; }
+  #soundDock{ display:flex; align-items:center; justify-content:center; gap:12px; }
+  .toggle{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .toggle input{ appearance:none; width:16px; height:16px; border:1.5px solid rgba(223,230,234,.7);
+    border-radius:3px; background:transparent; position:relative; cursor:pointer; flex-shrink:0; }
+  .toggle input:checked{ background:#dfe6ea; }
+  .toggle input:checked::after{ content:''; position:absolute; left:4px; top:1px; width:4px; height:8px;
+    border:solid #08090b; border-width:0 2px 2px 0; transform:rotate(40deg); }
+  .speaker-icon{ color:#dfe6ea; flex-shrink:0; transition:color .25s ease; }
+  .toggle input:not(:checked) ~ .speaker-icon{ color:#7a8388; }
+  #volumeSlider{ width:100px; flex:0 0 auto; }
 </style>
 </head>
 <body>
@@ -36,6 +46,17 @@
     <input type="range" id="pitchSlider" min="0" max="1000" value="0" aria-label="pitch">
     <span id="pitchLabelHigh">high</span>
   </div>
+  <div id="soundDock">
+    <label class="toggle">
+      <input type="checkbox" id="chkSound" checked aria-label="sound on">
+      <svg class="speaker-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M4 9v6h4l5 4V5L8 9H4Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M16.5 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+    </label>
+    <input type="range" id="volumeSlider" min="0" max="100" value="55" aria-label="volume">
+  </div>
 </div>
 <script>
 (function(){
@@ -43,6 +64,18 @@
   const canvas=document.getElementById('scene');
   const ctx=canvas.getContext('2d');
   const slider=document.getElementById('pitchSlider');
+  const chkSound=document.getElementById('chkSound');
+  const volumeSlider=document.getElementById('volumeSlider');
+  let soundOn=true, volume=parseInt(volumeSlider.value,10)/100;
+  chkSound.addEventListener('change', ()=>{
+    soundOn=chkSound.checked;
+    if(!soundOn && toneGain && actx){
+      // cut it fast rather than waiting for the note's own decay to run out
+      toneGain.gain.cancelScheduledValues(actx.currentTime);
+      toneGain.gain.setTargetAtTime(0, actx.currentTime, 0.08);
+    }
+  });
+  volumeSlider.addEventListener('input', ()=>{ volume=volumeSlider.value/100; });
 
   // ---------- the physics: a square plate, clamped dead-centre, driven at a
   // chosen pitch. sand doesn't get pushed by hand — it's simulated genuinely
@@ -80,6 +113,45 @@
   function toNorm(px,py){ return [ (px-cx)/(side/2), (py-cy)/(side/2) ]; }
   function toPx(x,y){ return [ cx+x*side/2, cy+y*side/2 ]; }
 
+  // ---------- the driving tone — a real Chladni plate is driven by an
+  // actual pitch (bow or speaker), which is *why* the sand reorganises;
+  // without an audible tone the shape-change reads as unmotivated, so the
+  // slider genuinely plays the pitch it's set to, not just a silent knob ----------
+  let actx=null, osc=null, toneGain=null, audioReady=false, toneTimer=null;
+  function ensureAudio(){
+    if(audioReady) return;
+    audioReady=true;
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC) return;
+    actx=new AC();
+    osc=actx.createOscillator();
+    osc.type='sine';
+    toneGain=actx.createGain();
+    toneGain.gain.value=0;
+    osc.connect(toneGain); toneGain.connect(actx.destination);
+    osc.start();
+  }
+  function freqForIdx(idx){
+    const t=idx/(MODES.length-1);
+    // musical (exponential) sweep — a low hum up to a clear, not shrill, high tone
+    return 110*Math.pow(640/110, t);
+  }
+  function soundTone(freq, peak, hold, decay){
+    ensureAudio();
+    if(!actx) return;
+    if(actx.state==='suspended') actx.resume();
+    const now=actx.currentTime;
+    osc.frequency.cancelScheduledValues(now);
+    osc.frequency.setTargetAtTime(freq, now, 0.035);
+    const target=soundOn ? peak*volume : 0;
+    toneGain.gain.cancelScheduledValues(now);
+    toneGain.gain.setTargetAtTime(target, now, 0.02);
+    clearTimeout(toneTimer);
+    toneTimer=setTimeout(()=>{
+      if(toneGain) toneGain.gain.setTargetAtTime(0, actx.currentTime, decay);
+    }, hold);
+  }
+
   let modeIdx=0, m=MODES[0][0], n=MODES[0][1];
   let exciteAt=performance.now();
   function setMode(idx){
@@ -89,12 +161,16 @@
   }
   slider.addEventListener('input', ()=>{
     const idx=Math.round((slider.value/1000)*(MODES.length-1));
+    // sound the pitch continuously while actively dragging, even across
+    // the same mode index, so the ear always tracks the slider directly
+    soundTone(freqForIdx(idx), 0.05, 140, 0.3);
     if(idx!==modeIdx) setMode(idx);
   });
   wrap.addEventListener('pointerdown', (e)=>{
     // tapping the plate itself re-strikes it at the current pitch — a
     // little bit of mindless, satisfying re-scatter, no menu needed
     exciteAt=performance.now();
+    soundTone(freqForIdx(modeIdx), 0.09, 220, 0.6);
   });
 
   // ---------- sand ----------
@@ -137,8 +213,16 @@
       // so grains genuinely migrate toward zero-vibration ground, not a
       // hand-painted line
       const k=2.6;
-      vx[i] += -k*f*fx*dt*10;
-      vy[i] += -k*f*fy*dt*10;
+      // cap how much force a single frame can inject — steeper (higher-
+      // pitch) patterns have a much sharper gradient near their nodal
+      // lines, and switching pattern mid-drag can drop a grain right on a
+      // steep spot; without a cap that spikes into a huge kick and the
+      // whole plate "flies apart" instead of resettling
+      const maxKick=0.55;
+      let dvx=-k*f*fx*dt*10, dvy=-k*f*fy*dt*10;
+      dvx=Math.max(-maxKick,Math.min(maxKick,dvx));
+      dvy=Math.max(-maxKick,Math.min(maxKick,dvy));
+      vx[i]+=dvx; vy[i]+=dvy;
       // random jitter scaled by both the plate's local amplitude and the
       // current agitation — grains sitting on an antinode dance hard, ones
       // already on a node barely move, exactly like real sand does
@@ -148,6 +232,10 @@
       vy[i] += (Math.random()*2-1)*jitter*dt*9;
       // damping
       vx[i]*=0.86; vy[i]*=0.86;
+      // hard speed limit — belt-and-braces on top of the per-frame kick
+      // cap, so nothing can ever tunnel across the plate in one step
+      const vmag=Math.hypot(vx[i],vy[i]), vmax=2.4;
+      if(vmag>vmax){ vx[i]*=vmax/vmag; vy[i]*=vmax/vmag; }
       x+=vx[i]*dt; y+=vy[i]*dt;
       // clamp to the plate's square bounds, killing outward velocity
       if(x<-1){x=-1;vx[i]=Math.abs(vx[i])*0.4;} if(x>1){x=1;vx[i]=-Math.abs(vx[i])*0.4;}
