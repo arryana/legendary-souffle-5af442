@@ -33,6 +33,17 @@
   .speaker-icon{ color:#dfe6ea; flex-shrink:0; transition:color .25s ease; }
   .toggle input:not(:checked) ~ .speaker-icon{ color:#7a8388; }
   #volumeSlider{ width:100px; flex:0 0 auto; }
+  #densityDock{ display:flex; align-items:center; justify-content:center; gap:12px; }
+  .grain-icon{ color:#dfe6ea; opacity:.6; flex-shrink:0; }
+  #densitySlider{ width:100px; flex:0 0 auto; }
+  #hueDock{ display:flex; align-items:center; justify-content:center; gap:12px; }
+  .palette-icon{ color:#dfe6ea; opacity:.6; flex-shrink:0; }
+  #hueSlider{ width:100px; flex:0 0 auto;
+    background:linear-gradient(to right, hsl(0,80%,68%), hsl(60,80%,68%), hsl(120,80%,68%), hsl(180,80%,68%), hsl(240,80%,68%), hsl(300,80%,68%), hsl(360,80%,68%)); }
+  #micDock{ display:flex; align-items:center; justify-content:center; gap:8px; }
+  .mic-icon{ color:#dfe6ea; flex-shrink:0; transition:color .25s ease; }
+  .toggle input:not(:checked) ~ .mic-icon{ color:#7a8388; }
+  #pitchSlider.driven{ opacity:.5; pointer-events:none; }
 </style>
 </head>
 <body>
@@ -40,6 +51,17 @@
 <div id="stage">
   <div id="plateWrap">
     <canvas id="scene"></canvas>
+  </div>
+  <div id="micDock">
+    <label class="toggle">
+      <input type="checkbox" id="chkMic" aria-label="listen with microphone">
+      <svg class="mic-icon" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+        <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M7 11a5 5 0 0 0 10 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="12" y1="16" x2="12" y2="19" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="9" y1="19" x2="15" y2="19" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+    </label>
   </div>
   <div id="dock">
     <span class="pitchIcon" aria-label="low pitch">
@@ -73,6 +95,26 @@
     </label>
     <input type="range" id="volumeSlider" min="0" max="100" value="55" aria-label="volume">
   </div>
+  <div id="densityDock">
+    <svg class="grain-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <circle cx="6" cy="9" r="1.3" fill="currentColor"/>
+      <circle cx="12" cy="6" r="1.1" fill="currentColor"/>
+      <circle cx="17.5" cy="10" r="1.4" fill="currentColor"/>
+      <circle cx="9" cy="14" r="1" fill="currentColor"/>
+      <circle cx="15.5" cy="16" r="1.3" fill="currentColor"/>
+      <circle cx="6" cy="17" r="0.9" fill="currentColor"/>
+    </svg>
+    <input type="range" id="densitySlider" min="0" max="100" value="59" aria-label="sand density">
+  </div>
+  <div id="hueDock">
+    <svg class="palette-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path d="M12 3.5a8.5 8.5 0 1 0 0 17c1 0 1.7-.8 1.7-1.7 0-.45-.18-.85-.46-1.15-.28-.3-.46-.7-.46-1.15 0-.9.75-1.65 1.65-1.65H16a4.5 4.5 0 0 0 4.5-4.5c0-3.9-3.8-6.85-8.5-6.85Z" fill="none" stroke="currentColor" stroke-width="1.3"/>
+      <circle cx="8.2" cy="10.5" r="1" fill="currentColor" stroke="none"/>
+      <circle cx="11.3" cy="7.3" r="1" fill="currentColor" stroke="none"/>
+      <circle cx="15.2" cy="8" r="1" fill="currentColor" stroke="none"/>
+    </svg>
+    <input type="range" id="hueSlider" min="0" max="360" value="42" aria-label="sand colour">
+  </div>
 </div>
 <script>
 (function(){
@@ -92,6 +134,10 @@
     }
   });
   volumeSlider.addEventListener('input', ()=>{ volume=volumeSlider.value/100; });
+
+  const hueSlider=document.getElementById('hueSlider');
+  let hue=parseInt(hueSlider.value,10);
+  hueSlider.addEventListener('input', ()=>{ hue=parseInt(hueSlider.value,10); });
 
   // ---------- the physics: a square plate, clamped dead-centre, driven at a
   // chosen pitch. sand doesn't get pushed by hand — it's simulated genuinely
@@ -219,13 +265,104 @@
     soundTone(freqForIdx(modeIdx), 0.09, 220, 0.6);
   });
 
+  // ---------- microphone ----------
+  // listens to whatever's actually in the room and drives the plate from
+  // the loudest pitch it can find, the way a real plate would respond to a
+  // speaker or a bowed edge — the pitch slider just goes along for the ride
+  // (and turns non-interactive) while this is on
+  const chkMic=document.getElementById('chkMic');
+  let micStream=null, analyser=null, micBuf=null, micTimer=null;
+
+  // classic autocorrelation pitch-detector (time-domain, no external
+  // library) — finds the lag that best repeats the waveform against
+  // itself, which is the fundamental period of whatever pitch is loudest
+  function autoCorrelate(buf, sampleRate){
+    const SIZE=buf.length;
+    let rms=0;
+    for(let i=0;i<SIZE;i++) rms+=buf[i]*buf[i];
+    rms=Math.sqrt(rms/SIZE);
+    if(rms<0.01) return -1; // too quiet to bother
+    let r1=0, r2=SIZE-1;
+    const thres=0.2;
+    for(let i=0;i<SIZE/2;i++){ if(Math.abs(buf[i])<thres){ r1=i; break; } }
+    for(let i=1;i<SIZE/2;i++){ if(Math.abs(buf[SIZE-i])<thres){ r2=SIZE-i; break; } }
+    const trimmed=buf.slice(r1,r2);
+    const n=trimmed.length;
+    const c=new Float32Array(n);
+    for(let i=0;i<n;i++){ for(let j=0;j<n-i;j++) c[i]+=trimmed[j]*trimmed[j+i]; }
+    let d=0; while(d<n-1 && c[d]>c[d+1]) d++;
+    let maxval=-1, maxpos=-1;
+    for(let i=d;i<n;i++){ if(c[i]>maxval){ maxval=c[i]; maxpos=i; } }
+    if(maxpos<=0) return -1;
+    let T0=maxpos;
+    const x1=c[T0-1]||0, x2=c[T0], x3=c[T0+1]||0;
+    const a=(x1+x3-2*x2)/2, b=(x3-x1)/2;
+    if(a) T0=T0-b/(2*a);
+    return T0>0 ? sampleRate/T0 : -1;
+  }
+
+  function freqToIdx(freq){
+    const t=Math.log(freq/110)/Math.log(640/110);
+    return Math.max(0, Math.min(MODES.length-1, Math.round(t*(MODES.length-1))));
+  }
+
+  function setDriven(v){
+    slider.classList.toggle('driven', v);
+  }
+
+  function stopMic(){
+    if(micTimer){ clearInterval(micTimer); micTimer=null; }
+    if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
+    analyser=null; micBuf=null;
+    setDriven(false);
+  }
+
+  chkMic.addEventListener('change', async ()=>{
+    if(chkMic.checked){
+      try{
+        micStream=await navigator.mediaDevices.getUserMedia({audio:true});
+        ensureAudio();
+        if(!actx) throw new Error('no audio context');
+        const src=actx.createMediaStreamSource(micStream);
+        analyser=actx.createAnalyser();
+        analyser.fftSize=2048;
+        // analysis only — never connect to destination, or the mic would
+        // feed straight back out through the speakers
+        src.connect(analyser);
+        micBuf=new Float32Array(analyser.fftSize);
+        setDriven(true);
+        micTimer=setInterval(()=>{
+          analyser.getFloatTimeDomainData(micBuf);
+          const freq=autoCorrelate(micBuf, actx.sampleRate);
+          if(freq>0){
+            const clamped=Math.max(110,Math.min(640,freq));
+            const idx=freqToIdx(clamped);
+            slider.value=Math.round(idx/(MODES.length-1)*1000);
+            if(idx!==modeIdx) setMode(idx);
+          }
+        }, 120);
+      }catch(e){
+        // permission denied, no mic, or an insecure context — revert
+        // quietly rather than showing an error the owner can't act on
+        chkMic.checked=false;
+        stopMic();
+      }
+    } else {
+      stopMic();
+    }
+  });
+
   // ---------- sand ----------
-  const N = 5600;
-  const px = new Float32Array(N), py = new Float32Array(N);
-  const vx = new Float32Array(N), vy = new Float32Array(N);
-  const gsize = new Float32Array(N);
+  // a big fixed pool, pre-seeded once — the density slider just decides how
+  // many of the pool are simulated/drawn each frame (a plain prefix of the
+  // same array), so dragging it never re-scatters or re-allocates anything
+  const NMAX = 9000, N_MIN = 700, N_DEFAULT = 5600;
+  let activeN = N_DEFAULT;
+  const px = new Float32Array(NMAX), py = new Float32Array(NMAX);
+  const vx = new Float32Array(NMAX), vy = new Float32Array(NMAX);
+  const gsize = new Float32Array(NMAX);
   (function seed(){
-    for(let i=0;i<N;i++){
+    for(let i=0;i<NMAX;i++){
       // start scattered across the whole plate, uniform in x/y (not polar,
       // so corners get grains too) — first excite sweeps it into shape
       px[i]=(Math.random()*2-1);
@@ -234,6 +371,11 @@
       gsize[i]=0.55+Math.random()*0.9;
     }
   })();
+  const densitySlider=document.getElementById('densitySlider');
+  densitySlider.addEventListener('input', ()=>{
+    const t=densitySlider.value/100;
+    activeN=Math.round(N_MIN+(NMAX-N_MIN)*t);
+  });
 
   const EPS=0.01;
   function grad(x,y){
@@ -252,7 +394,7 @@
     // so settled sand still has a faint live shimmer
     const agitation = 0.055 + 1.6*Math.exp(-age*1.6);
 
-    for(let i=0;i<N;i++){
+    for(let i=0;i<activeN;i++){
       let x=px[i], y=py[i];
       const [f,fx,fy]=grad(x,y);
       // move toward the nearest nodal line at a speed based on how far off
@@ -348,8 +490,10 @@
 
   function draw(){
     drawPlate();
-    ctx.fillStyle='rgba(238,231,210,0.92)';
-    for(let i=0;i<N;i++){
+    // same soft, pale character at every hue — only the hue itself moves,
+    // so it always still reads as fine sand, never a saturated paint colour
+    ctx.fillStyle=`hsla(${hue}, 68%, 78%, 0.95)`;
+    for(let i=0;i<activeN;i++){
       const [x,y]=toPx(px[i],py[i]);
       const s=gsize[i]*DPR*1.1;
       ctx.fillRect(x-s/2,y-s/2,s,s);
