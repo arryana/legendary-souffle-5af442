@@ -22,7 +22,7 @@
   input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
     background:#dfe6ea; cursor:pointer; box-shadow:0 0 8px rgba(223,230,234,.5); }
   input[type=range]::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:#dfe6ea; cursor:pointer; }
-  #pitchLabel{ font-size:12px; letter-spacing:.08em; opacity:.45; width:34px; text-align:center; flex:0 0 auto; }
+  .pitchIcon{ display:flex; align-items:center; gap:2px; opacity:.5; flex:0 0 auto; color:#dfe6ea; }
   #soundDock{ display:flex; align-items:center; justify-content:center; gap:12px; }
   .toggle{ display:flex; align-items:center; gap:8px; cursor:pointer; }
   .toggle input{ appearance:none; width:16px; height:16px; border:1.5px solid rgba(223,230,234,.7);
@@ -42,9 +42,25 @@
     <canvas id="scene"></canvas>
   </div>
   <div id="dock">
-    <span id="pitchLabel">low</span>
+    <span class="pitchIcon" aria-label="low pitch">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+        <circle cx="8" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M10.2 17V5l6-1.4v3.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+        <path d="M6 10l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
     <input type="range" id="pitchSlider" min="0" max="1000" value="0" aria-label="pitch">
-    <span id="pitchLabelHigh">high</span>
+    <span class="pitchIcon" aria-label="high pitch">
+      <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+        <path d="M6 14l6-6 6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+        <circle cx="8" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M10.2 17V5l6-1.4v3.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
   </div>
   <div id="soundDock">
     <label class="toggle">
@@ -151,6 +167,29 @@
       if(toneGain) toneGain.gain.setTargetAtTime(0, actx.currentTime, decay);
     }, hold);
   }
+  // while actually dragging (pointer held on the slider), hold the tone
+  // sustained rather than re-arming a short hold timer on every 'input' —
+  // a real drag doesn't fire events at a steady rate, so a short hold could
+  // let the note gap out audibly mid-drag even though the hand never left
+  // the slider; sustaining ends only on release
+  let sliderDragging=false;
+  function sustainTone(freq){
+    ensureAudio();
+    if(!actx) return;
+    if(actx.state==='suspended') actx.resume();
+    const now=actx.currentTime;
+    clearTimeout(toneTimer);
+    osc.frequency.cancelScheduledValues(now);
+    osc.frequency.setTargetAtTime(freq, now, 0.035);
+    toneGain.gain.cancelScheduledValues(now);
+    toneGain.gain.setTargetAtTime(soundOn ? 0.05*volume : 0, now, 0.03);
+  }
+  function releaseTone(decay){
+    if(!actx) return;
+    clearTimeout(toneTimer);
+    toneGain.gain.cancelScheduledValues(actx.currentTime);
+    toneGain.gain.setTargetAtTime(0, actx.currentTime, decay);
+  }
 
   let modeIdx=0, m=MODES[0][0], n=MODES[0][1];
   let exciteAt=performance.now();
@@ -159,11 +198,18 @@
     m=MODES[idx][0]; n=MODES[idx][1];
     exciteAt=performance.now();
   }
+  slider.addEventListener('pointerdown', ()=>{ sliderDragging=true; sustainTone(freqForIdx(modeIdx)); });
+  window.addEventListener('pointerup', ()=>{ if(sliderDragging){ sliderDragging=false; releaseTone(0.35); } });
   slider.addEventListener('input', ()=>{
     const idx=Math.round((slider.value/1000)*(MODES.length-1));
-    // sound the pitch continuously while actively dragging, even across
-    // the same mode index, so the ear always tracks the slider directly
-    soundTone(freqForIdx(idx), 0.05, 140, 0.3);
+    if(sliderDragging){
+      // just retune the sustained note to the new pitch, don't re-trigger
+      // its own hold/decay cycle
+      sustainTone(freqForIdx(idx));
+    } else {
+      // keyboard-driven (arrow keys, no pointer down) — a short beep per step
+      soundTone(freqForIdx(idx), 0.05, 140, 0.3);
+    }
     if(idx!==modeIdx) setMode(idx);
   });
   wrap.addEventListener('pointerdown', (e)=>{
@@ -174,7 +220,7 @@
   });
 
   // ---------- sand ----------
-  const N = 4200;
+  const N = 5600;
   const px = new Float32Array(N), py = new Float32Array(N);
   const vx = new Float32Array(N), vy = new Float32Array(N);
   const gsize = new Float32Array(N);
@@ -209,20 +255,21 @@
     for(let i=0;i<N;i++){
       let x=px[i], y=py[i];
       const [f,fx,fy]=grad(x,y);
-      // gradient-descend on f^2 — its minima are exactly the nodal lines,
-      // so grains genuinely migrate toward zero-vibration ground, not a
-      // hand-painted line
-      const k=2.6;
-      // cap how much force a single frame can inject — steeper (higher-
-      // pitch) patterns have a much sharper gradient near their nodal
-      // lines, and switching pattern mid-drag can drop a grain right on a
-      // steep spot; without a cap that spikes into a huge kick and the
-      // whole plate "flies apart" instead of resettling
-      const maxKick=0.55;
-      let dvx=-k*f*fx*dt*10, dvy=-k*f*fy*dt*10;
-      dvx=Math.max(-maxKick,Math.min(maxKick,dvx));
-      dvy=Math.max(-maxKick,Math.min(maxKick,dvy));
-      vx[i]+=dvx; vy[i]+=dvy;
+      // move toward the nearest nodal line at a speed based on how far off
+      // it the grain is (|f|), in the *direction* the gradient points —
+      // but not scaled by how steep that gradient is. A higher pitch's
+      // pattern is spatially finer, so its raw gradient is naturally much
+      // steeper; scaling force by that steepness either explodes (if
+      // unclamped) or, once clamped for safety, ends up weaker than low
+      // pitches (clamped against a much bigger number) — this normalises
+      // the direction first so every pitch converges at the same real speed
+      const gmag=Math.hypot(fx,fy)||1e-6;
+      const ux=fx/gmag, uy=fy/gmag;
+      const dirSign = f>0 ? -1 : 1;
+      const closeness=Math.min(1,Math.abs(f)*1.1);
+      const speed=3.1*closeness;
+      vx[i] += dirSign*ux*speed*dt;
+      vy[i] += dirSign*uy*speed*dt;
       // random jitter scaled by both the plate's local amplitude and the
       // current agitation — grains sitting on an antinode dance hard, ones
       // already on a node barely move, exactly like real sand does
@@ -232,8 +279,8 @@
       vy[i] += (Math.random()*2-1)*jitter*dt*9;
       // damping
       vx[i]*=0.86; vy[i]*=0.86;
-      // hard speed limit — belt-and-braces on top of the per-frame kick
-      // cap, so nothing can ever tunnel across the plate in one step
+      // hard speed limit, independent of pitch — nothing can ever tunnel
+      // across the plate in one step, regardless of how fine the pattern is
       const vmag=Math.hypot(vx[i],vy[i]), vmax=2.4;
       if(vmag>vmax){ vx[i]*=vmax/vmag; vy[i]*=vmax/vmag; }
       x+=vx[i]*dt; y+=vy[i]*dt;
