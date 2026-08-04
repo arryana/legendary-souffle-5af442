@@ -282,6 +282,12 @@
       scopeCtx.clip();
       const s=R*2.4;
       scopeCtx.rotate(turn);
+      // the sampled window is smaller than the tray itself, so without an offset here it
+      // would just spin in place around the tray's own centre — always showing the same
+      // central patch and never sweeping round to objects placed nearer the rim. Panning
+      // the sample point out from centre before drawing lets turning the ring genuinely
+      // sweep different parts of the tray into view, like a real kaleidoscope's wheel.
+      scopeCtx.translate(R*0.42, 0);
       if(trayCanvas.width) scopeCtx.drawImage(trayCanvas, -s/2, -s/2, s, s);
       scopeCtx.restore();
     }
