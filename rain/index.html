@@ -111,7 +111,10 @@
   // the glass surface itself: fog regrows over cleared tracks; moving drops
   // wipe the fog away behind them and shed the odd bead into the trail
   function updateGlass(dt){
-    glassCtx.globalAlpha=Math.min(0.07,0.020*dt);        // re-fogging — trails heal a touch faster so they don't pile up
+    // heals faster at high tilt — faster-sliding drops would otherwise leave trails that
+    // stretch for most of the pane's height before the fog catches up and closes them
+    const heal = tilt<=0.5 ? 1 : 1 + (tilt-0.5)*14;
+    glassCtx.globalAlpha=Math.min(0.07*heal,0.020*dt*heal);        // re-fogging — trails heal a touch faster so they don't pile up
     glassCtx.drawImage(mistCanvas,0,0,W,H);
     glassCtx.globalAlpha=1;
     for(const d of drops){
@@ -145,10 +148,21 @@
   for(let i=0;i<30;i++) drops.push(newDrop(Math.random()*W, Math.random()*H, 1.5+Math.random()*2.4));
 
   let spawnAccum=0;
+  const DROP_VMAX=3.0; // terminal velocity safety net, on top of the tiltT flattening below
   function stepDrops(dt){
-    const g = 0.85*tilt + 0.02;                 // along-pane gravity from tilt
+    // tilt's effect on gravity flattens past the halfway point — unflattened, high tilt pushes
+    // g high enough that nearly every drop (not just the heavy ones) breaks its surface-tension
+    // pin at once, so the whole pane starts moving simultaneously and reads as solid streaks
+    // instead of rain. Below halfway this matches the old linear response exactly.
+    const tiltT = tilt<=0.5 ? tilt : 0.5 + (tilt-0.5)*0.3;
+    const g = 0.85*tiltT + 0.02;                 // along-pane gravity from tilt
+    // once a drop breaks free at high tilt it rarely re-pins, so it runs all the way to the
+    // bottom rather than settling — a full population kept moving continuously covers every
+    // column and reads as a solid curtain instead of individual streaks. Thinning the population
+    // at high tilt leaves visible glass between the drops that are actually running.
+    const maxDrops = tilt<=0.5 ? 105 : Math.round(105 - (tilt-0.5)*170);
     spawnAccum+=dt;
-    while(spawnAccum>0.30){ spawnAccum-=0.30; if(drops.length<105) spawnDrop(); }  // lighter drizzle — most drops sit
+    while(spawnAccum>0.30){ spawnAccum-=0.30; if(drops.length<maxDrops) spawnDrop(); }  // lighter drizzle — most drops sit
     for(const d of drops){
       const mass = d.r*d.r;
       const pull = g*mass;                       // gravity pull grows with size
@@ -159,6 +173,7 @@
         d.vy += ((pull-pinKinetic)/mass)*dt*2.4;
         d.vy *= 0.94;
         if(d.vy<0) d.vy=0;
+        if(d.vy>DROP_VMAX) d.vy=DROP_VMAX;
         d.py=d.y; d.y += d.vy*dt;                 // remember where it was, for a continuous trail
         if(d.vy>0.4) d.r=Math.max(2.6, d.r-0.006*dt);   // sheds slowly — stays visible leading its own trail
         if(d.vy<0.06 && pull<=pinStatic){ d.moving=false; d.vy=0; }  // re-pins if it slows & is light
