@@ -42,20 +42,10 @@
     position:absolute; inset:0;
     display:flex; align-items:center; justify-content:center;
   }
-  /* The lamp lives in a fixed-ratio box. Two canvases are stacked inside it,
-     filling it exactly: #scene paints the photo + glows, #flame paints the
-     wick + flame on top. Matching the photo's real proportions (848x1239)
-     keeps it edge-to-edge, so the ambient glow only shows in the margins and
-     never as a hard-edged box. */
-  #lampBox{
-    position:relative;
-    width:min(90vw, 480px, calc(72vh * 848 / 1239));
-    aspect-ratio:848 / 1239;
-  }
-  #lampBox canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; pointer-events:none; }
-  /* The flame layer is kept gently out of focus by the browser's compositor in
-     one cheap pass, instead of blurring inside the animation loop every frame. */
-  #flame{ filter: blur(1.2px); }
+  /* matches the photo's real proportions (848x1239) so it fills the canvas edge-to-edge —
+     a mismatched ratio here letterboxes the photo and the ambient glow shows through the
+     gap as a visible hard-edged box, which is what we're avoiding */
+  canvas{ width:min(90vw, 480px, calc(72vh * 848 / 1239)); height:auto; aspect-ratio:848 / 1239; display:block; }
 
   #dock{
     position:fixed; bottom:0; left:0; right:0;
@@ -146,10 +136,7 @@
 })();
 </script>
 <div id="stage">
-  <div id="lampBox">
-    <canvas id="scene"></canvas>
-    <canvas id="flame"></canvas>
-  </div>
+  <canvas id="scene"></canvas>
 </div>
 
 <div id="dock">
@@ -173,8 +160,6 @@
 (function(){
   const canvas = document.getElementById('scene');
   const ctx = canvas.getContext('2d');
-  const flameCanvas = document.getElementById('flame');
-  const fctx = flameCanvas.getContext('2d');
   const wickSlider = document.getElementById('wickSlider');
 
   let W = 0, H = 0, DPR = 1;
@@ -184,10 +169,7 @@
     W = rect.width; H = rect.height;
     canvas.width = W * DPR;
     canvas.height = H * DPR;
-    flameCanvas.width = W * DPR;
-    flameCanvas.height = H * DPR;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    fctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
   window.addEventListener('resize', resize);
 
@@ -326,7 +308,6 @@
 
   function drawLamp(){
     ctx.clearRect(0,0,W,H);
-    fctx.clearRect(0,0,W,H);
 
     if (!lampPhotoReady){
       return;
@@ -407,36 +388,37 @@
 
 
 
-    // the wick — real fabric poking out of the ferrule. Drawn on the flame
-    // layer (#flame); its softness now comes from that layer's CSS blur, so no
-    // per-frame in-canvas blur is needed here.
+    // the wick — real fabric poking out of the ferrule
     function wickPath(){
-      fctx.beginPath();
-      fctx.moveTo(centerX-wickHalfW_base, wickBaseY);
-      fctx.lineTo(centerX-wickHalfW_top, wickTipY);
-      fctx.lineTo(centerX+wickHalfW_top, wickTipY);
-      fctx.lineTo(centerX+wickHalfW_base, wickBaseY);
-      fctx.closePath();
+      ctx.beginPath();
+      ctx.moveTo(centerX-wickHalfW_base, wickBaseY);
+      ctx.lineTo(centerX-wickHalfW_top, wickTipY);
+      ctx.lineTo(centerX+wickHalfW_top, wickTipY);
+      ctx.lineTo(centerX+wickHalfW_base, wickBaseY);
+      ctx.closePath();
     }
     wickPath();
-    const wickG = fctx.createLinearGradient(centerX-wickHalfW_base, 0, centerX+wickHalfW_base, 0);
+    const wickG = ctx.createLinearGradient(centerX-wickHalfW_base, 0, centerX+wickHalfW_base, 0);
     wickG.addColorStop(0, '#8a6a48');
     wickG.addColorStop(0.5, '#d9bd93');
     wickG.addColorStop(1, '#7c5d3e');
-    fctx.fillStyle = wickG;
-    fctx.fill();
-    fctx.save();
+    ctx.save();
+    ctx.filter = `blur(${0.6*scale}px)`;
+    ctx.fillStyle = wickG;
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
     wickPath();
-    fctx.clip();
-    fctx.strokeStyle = 'rgba(60,42,24,0.35)';
-    fctx.lineWidth = 2.2*scale;
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(60,42,24,0.35)';
+    ctx.lineWidth = 2.2*scale;
     for (let i=-1; i<=1; i++){
-      fctx.beginPath();
-      fctx.moveTo(centerX+i*9*scale, wickBaseY);
-      fctx.lineTo(centerX+i*9*scale*(1-wt), wickTipY);
-      fctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(centerX+i*9*scale, wickBaseY);
+      ctx.lineTo(centerX+i*9*scale*(1-wt), wickTipY);
+      ctx.stroke();
     }
-    fctx.restore();
+    ctx.restore();
 
     // flame — passes through the same four stages as the wick: horned,
     // flat with rounded edges, curved (domed), sharp and taller. The
@@ -445,7 +427,7 @@
     // a dome when curved — the same value crossing zero is what makes
     // a dip become a bulge.
     function flamePath(){
-      fctx.beginPath();
+      ctx.beginPath();
       const hornX = flameW*1.05*kf.hornX;
       const trV = 3.5*scale*kf.trV;
       const tr = 5*scale*kf.tr;
@@ -455,29 +437,30 @@
       const Rx = centerX+hornX+leanAtT, Ry = fTipY+peakYOffset;
       const Vx = centerX+leanAtT, Vy = Ly + flameH*kf.dip;
       const ctrlY = fBaseY - flameH*(0.55-0.05*wt);
-      fctx.moveTo(centerX-flameW, fBaseY);
-      fctx.quadraticCurveTo(centerX-flameW*1.1, ctrlY, Lx-tr*0.6, Ly+tr*0.8);
-      fctx.quadraticCurveTo(Lx, Ly, Lx+tr*0.5, Ly+tr*0.6);
-      fctx.quadraticCurveTo(centerX-hornX*0.3+leanAtT, fBaseY-flameH*0.80, Vx-trV*0.6, Vy-trV*0.4);
-      fctx.quadraticCurveTo(Vx, Vy, Vx+trV*0.6, Vy-trV*0.4);
-      fctx.quadraticCurveTo(centerX+hornX*0.3+leanAtT, fBaseY-flameH*0.80, Rx-tr*0.5, Ry+tr*0.6);
-      fctx.quadraticCurveTo(Rx, Ry, Rx+tr*0.6, Ry+tr*0.8);
-      fctx.quadraticCurveTo(centerX+flameW*1.1, ctrlY, centerX+flameW, fBaseY);
-      fctx.quadraticCurveTo(centerX+flameW*0.5, fBaseY-flameH*0.06, centerX, fBaseY-flameH*0.1);
-      fctx.quadraticCurveTo(centerX-flameW*0.5, fBaseY-flameH*0.06, centerX-flameW, fBaseY);
-      fctx.closePath();
+      ctx.moveTo(centerX-flameW, fBaseY);
+      ctx.quadraticCurveTo(centerX-flameW*1.1, ctrlY, Lx-tr*0.6, Ly+tr*0.8);
+      ctx.quadraticCurveTo(Lx, Ly, Lx+tr*0.5, Ly+tr*0.6);
+      ctx.quadraticCurveTo(centerX-hornX*0.3+leanAtT, fBaseY-flameH*0.80, Vx-trV*0.6, Vy-trV*0.4);
+      ctx.quadraticCurveTo(Vx, Vy, Vx+trV*0.6, Vy-trV*0.4);
+      ctx.quadraticCurveTo(centerX+hornX*0.3+leanAtT, fBaseY-flameH*0.80, Rx-tr*0.5, Ry+tr*0.6);
+      ctx.quadraticCurveTo(Rx, Ry, Rx+tr*0.6, Ry+tr*0.8);
+      ctx.quadraticCurveTo(centerX+flameW*1.1, ctrlY, centerX+flameW, fBaseY);
+      ctx.quadraticCurveTo(centerX+flameW*0.5, fBaseY-flameH*0.06, centerX, fBaseY-flameH*0.1);
+      ctx.quadraticCurveTo(centerX-flameW*0.5, fBaseY-flameH*0.06, centerX-flameW, fBaseY);
+      ctx.closePath();
     }
     flamePath();
-    const flameG = fctx.createLinearGradient(0, fTipY, 0, fBaseY);
+    const flameG = ctx.createLinearGradient(0, fTipY, 0, fBaseY);
     flameG.addColorStop(0, '#fff6e0');
     flameG.addColorStop(0.45, '#ffcf7a');
     flameG.addColorStop(0.8, '#f0923f');
     flameG.addColorStop(1, '#c96a2e');
-    fctx.save();
-    fctx.globalAlpha = 0.88;
-    fctx.fillStyle = flameG;
-    fctx.fill();
-    fctx.restore();
+    ctx.save();
+    ctx.filter = `blur(${1.6*scale}px)`;
+    ctx.globalAlpha = 0.88;
+    ctx.fillStyle = flameG;
+    ctx.fill();
+    ctx.restore();
   }
 
   let lastDt = 16.67;
