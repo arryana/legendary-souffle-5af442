@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>fireflies — sagne</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<meta name="description" content="A field at dusk — place fireflies in the grass, and watch the meadow answer.">
+<meta name="theme-color" content="#0e1c30">
+<link rel="canonical" href="https://sagne.co.uk/fireflies/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="sagne">
+<meta property="og:title" content="fireflies — sagne">
+<meta property="og:description" content="A field at dusk — place fireflies in the grass, and watch the meadow answer.">
+<meta property="og:url" content="https://sagne.co.uk/fireflies/">
+<meta property="og:image" content="https://sagne.co.uk/og/fireflies.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="fireflies — sagne">
+<meta name="twitter:description" content="A field at dusk — place fireflies in the grass, and watch the meadow answer.">
+<meta name="twitter:image" content="https://sagne.co.uk/og/fireflies.png">
+<style>
+  :root{ --brass:#c9974e; --parchment:#f2e9d8; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{ height:100%; margin:0; overflow:hidden; background:#04060a;
+    font-family: Georgia, serif; color:var(--parchment); user-select:none; }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:var(--parchment); opacity:.55;
+    text-decoration:none; font-size:14px; letter-spacing:.04em;
+    text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); transition:opacity .3s ease; }
+  #backlink:hover{opacity:.9;}
+  canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  #hint{ position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:45;
+    font-size:12.5px; letter-spacing:.03em; color:var(--parchment); opacity:.5; text-align:center;
+    text-shadow:0 1px 3px rgba(0,0,0,.7); pointer-events:none; transition:opacity 1.2s ease; }
+  #hint.hidden{ opacity:0; }
+  #dock{ position:fixed; bottom:0; left:0; right:0; z-index:40; display:flex; flex-direction:column;
+    align-items:center; gap:10px; padding:14px 18px 22px;
+    background:linear-gradient(to top, rgba(4,6,10,.88), rgba(4,6,10,0)); }
+  #sliders{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px 22px; }
+  .ctrl{ display:flex; align-items:center; gap:9px; }
+  .ctrl svg{ width:17px; height:17px; opacity:.65; flex-shrink:0; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; width:118px; height:3px; border-radius:3px;
+    background:rgba(242,233,216,.25); outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:13px; height:13px; border-radius:50%;
+    background:var(--brass); cursor:pointer; box-shadow:0 0 6px rgba(201,151,78,.6); }
+  input[type=range]::-moz-range-thumb{ width:13px; height:13px; border-radius:50%; border:none;
+    background:var(--brass); cursor:pointer; }
+  #row2{ display:flex; align-items:center; justify-content:center; gap:20px; flex-wrap:wrap; }
+  #batCtrl{ display:flex; align-items:center; gap:7px; font-size:12px; opacity:.7; letter-spacing:.02em; }
+  #batCtrl svg{ width:18px; height:18px; opacity:.7; }
+  input[type=checkbox]{ -webkit-appearance:none; appearance:none; width:14px; height:14px; border-radius:3px;
+    border:1px solid rgba(242,233,216,.4); background:transparent; cursor:pointer; position:relative; margin:0; flex-shrink:0; }
+  input[type=checkbox]:checked{ background:rgba(201,151,78,0.25); border-color:var(--brass); }
+  input[type=checkbox]:checked::after{ content:''; position:absolute; left:3px; top:0px; width:4px; height:8px;
+    border:solid var(--brass); border-width:0 2px 2px 0; transform:rotate(45deg); }
+  #volumeRow{ display:flex; align-items:center; gap:8px; font-size:12px; opacity:.65; letter-spacing:.02em; }
+  #volumeRow input[type=range]{ width:88px; }
+</style>
+</head>
+<body>
+<a id="backlink" href="../index.html">← sagne</a>
+<!-- bring-your-own-music: plays a file the visitor picks from their own device; nothing is uploaded -->
+<style>
+  #music{ position:fixed; left:18px; bottom:16px; z-index:60; display:flex; align-items:center; gap:9px; }
+  #musicBtn{ width:34px; height:34px; border-radius:50%; border:1px solid rgba(242,233,216,.25); background:rgba(20,24,34,.55); color:#f2e9d8; font-size:15px; line-height:1; cursor:pointer; opacity:.55; transition:opacity .3s, color .3s, border-color .3s; -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
+  #musicBtn:hover{ opacity:1; }
+  #musicBtn.playing{ color:#f0d69a; border-color:rgba(201,151,78,.6); opacity:.9; }
+  #musicName{ max-width:40vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:#f2e9d8; opacity:0; transition:opacity .3s; letter-spacing:.02em; cursor:pointer; }
+  #music:hover #musicName{ opacity:.55; }
+</style>
+<div id="music" title="play your own music">
+  <button id="musicBtn" aria-label="play your own music">🎧</button>
+  <span id="musicName"></span>
+</div>
+<input type="file" id="musicPick" accept="audio/*" multiple hidden>
+<audio id="musicEl"></audio>
+<script>
+(function(){
+  const pick=document.getElementById('musicPick'), el=document.getElementById('musicEl'),
+        btn=document.getElementById('musicBtn'), name=document.getElementById('musicName');
+  let list=[], idx=0;
+  const label=f=> f ? f.name.replace(/\.[^.]+$/,'') : '';
+  function load(i){ if(el.src) URL.revokeObjectURL(el.src); el.src=URL.createObjectURL(list[i]); name.textContent=label(list[i]); }
+  function sync(){ btn.textContent = !el.src ? '🎧' : (el.paused ? '▶' : '❚❚'); btn.classList.toggle('playing', !!el.src && !el.paused); }
+  btn.addEventListener('click', ()=>{ if(!list.length){ pick.click(); return; } el.paused ? el.play() : el.pause(); });
+  name.addEventListener('click', ()=> pick.click());
+  pick.addEventListener('change', ()=>{ if(!pick.files.length) return; list=[...pick.files]; idx=0; el.loop=(list.length===1); load(0); el.play(); });
+  el.addEventListener('ended', ()=>{ if(list.length>1){ idx=(idx+1)%list.length; load(idx); el.play(); } });
+  el.addEventListener('play', sync); el.addEventListener('pause', sync); el.addEventListener('loadeddata', sync);
+  sync();
+})();
+</script>
+
+<canvas id="scene"></canvas>
+<div id="hint">tap the grass to place a firefly</div>
+
+<div id="dock">
+  <div id="sliders">
+    <div class="ctrl" title="temperature">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M9 3v8.6a3 3 0 1 0 2 0V3a1 1 0 0 0-2 0Z"/><circle cx="10" cy="14.2" r="1.1" fill="currentColor" stroke="none"/></svg>
+      <input type="range" id="tempSlider" min="5" max="35" value="24" aria-label="temperature">
+    </div>
+    <div class="ctrl" title="humidity">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5C10 2.5 4.5 9.2 4.5 12.8a5.5 5.5 0 0 0 11 0C15.5 9.2 10 2.5 10 2.5Z"/></svg>
+      <input type="range" id="humiditySlider" min="0" max="100" value="55" aria-label="humidity">
+    </div>
+    <div class="ctrl" title="wind">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M2.5 7h9a2.2 2.2 0 1 0-2.1-2.9"/><path d="M2.5 11h11.8a2.2 2.2 0 1 1-2.1 2.9"/><path d="M2.5 14.8h7.2a1.8 1.8 0 1 1-1.7 2.4"/></svg>
+      <input type="range" id="windSlider" min="0" max="100" value="15" aria-label="wind">
+    </div>
+    <div class="ctrl" title="darkness">
+      <svg viewBox="0 0 20 20" fill="currentColor" stroke="none"><path d="M13.8 2.3a8 8 0 1 0 4 13.9A9 9 0 0 1 13.8 2.3Z"/></svg>
+      <input type="range" id="darkSlider" min="0" max="100" value="66" aria-label="sky darkness">
+    </div>
+  </div>
+  <div id="row2">
+    <label id="batCtrl">
+      <input type="checkbox" id="batCheckbox" aria-label="bats">
+      <svg viewBox="0 0 20 20" fill="currentColor" stroke="none"><path d="M10 6.5c-1-2-3.4-3.4-6-3-1 3 .6 5 2.4 5.7C4.6 9.9 2.8 11 2 13.4c2.2.6 4.4-.2 5.7-1.7-.2.9-.1 1.8.3 2.6.4-.8 1.1-1.4 2-1.7.9.3 1.6.9 2 1.7.4-.8.5-1.7.3-2.6 1.3 1.5 3.5 2.3 5.7 1.7-.8-2.4-2.6-3.5-4.4-4.2 1.8-.7 3.4-2.7 2.4-5.7-2.6-.4-5 1-6 3Z"/></svg>
+      <span>bats</span>
+    </label>
+    <div id="volumeRow">
+      <input type="checkbox" id="muteCheckbox" title="no sound" aria-label="no sound">
+      <span>🔊</span>
+      <input type="range" id="volumeSlider" min="0" max="100" value="60" aria-label="volume">
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
+  const tempSlider=document.getElementById('tempSlider'), humiditySlider=document.getElementById('humiditySlider'),
+        windSlider=document.getElementById('windSlider'), darkSlider=document.getElementById('darkSlider'),
+        batCheckbox=document.getElementById('batCheckbox'), hint=document.getElementById('hint');
+
+  let W=0,H=0,DPR=1;
+  function resize(){
+    DPR=Math.min(2,window.devicePixelRatio||1);
+    W=window.innerWidth; H=window.innerHeight;
+    canvas.width=W*DPR; canvas.height=H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    buildStars(); buildTreeline(); buildGrass();
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------- conditions ----------
+  let temp=+tempSlider.value, humidity=+humiditySlider.value/100, wind=+windSlider.value/100, dark=+darkSlider.value/100;
+  tempSlider.addEventListener('input', ()=> temp=+tempSlider.value);
+  humiditySlider.addEventListener('input', ()=> humidity=+humiditySlider.value/100);
+  windSlider.addEventListener('input', ()=> wind=+windSlider.value/100);
+  darkSlider.addEventListener('input', ()=> dark=+darkSlider.value/100);
+  let batsOn=false;
+  batCheckbox.addEventListener('change', ()=> batsOn=batCheckbox.checked);
+
+  function tempFactor(c){
+    if(c>=21 && c<=28) return 1;
+    if(c<21) return Math.max(0, 1-(21-c)/13);
+    return Math.max(0, 1-(c-28)/14);
+  }
+  function activityLevel(){
+    const tf=tempFactor(temp), hf=0.22+0.78*humidity, wf=Math.max(0,1-wind*1.15);
+    return Math.max(0, Math.min(1, tf*hf*wf));
+  }
+
+  // ---------- sky, stars, treeline, grass ----------
+  const horizonFrac=0.60;
+  function horizonY(){ return H*horizonFrac; }
+
+  let stars=[];
+  function buildStars(){
+    stars=[];
+    const n=Math.floor(W*horizonFrac*H/2600);
+    for(let i=0;i<n;i++) stars.push({ x:Math.random()*W, y:Math.random()*horizonY()*0.94, r:0.4+Math.random()*1.3,
+      phase:Math.random()*Math.PI*2, tw:0.6+Math.random()*1.2 });
+  }
+
+  let treeline=[];
+  function buildTreeline(){
+    treeline=[]; const n=26;
+    for(let i=0;i<=n;i++){
+      const x=(i/n)*W;
+      const bump = Math.sin(i*0.7)*10 + Math.sin(i*2.3+1)*6 + Math.sin(i*0.31+3)*16;
+      treeline.push({x, y: horizonY() - 6 - Math.abs(bump)*0.7 - (Math.sin(i*1.7+5)>0.6? 14:0) });
+    }
+  }
+
+  let blades=[];
+  function buildGrass(){
+    blades=[];
+    const n=Math.floor(W/4.2);
+    for(let i=0;i<n;i++){
+      const t=Math.random();
+      blades.push({ x:Math.random()*W, h: 10+t*34, lean: (Math.random()*2-1)*0.15,
+        phase:Math.random()*Math.PI*2, sway: 0.7+Math.random()*0.7,
+        depthY: horizonY() + Math.pow(Math.random(),0.6)*(H-horizonY()) });
+    }
+    blades.sort((a,b)=>a.depthY-b.depthY);
+  }
+
+  function skyColors(){
+    // dusk (dark=0) -> full night (dark=1)
+    const top = lerpColor([20,28,52], [3,4,10], dark);
+    const mid = lerpColor([70,58,74], [8,9,20], dark);
+    const horizon = lerpColor([214,140,96], [22,20,34], dark);
+    return {top,mid,horizon};
+  }
+  function lerpColor(a,b,t){ return [0,1,2].map(i=>Math.round(a[i]+(b[i]-a[i])*t)); }
+  function rgb(c,a){ return `rgba(${c[0]},${c[1]},${c[2]},${a===undefined?1:a})`; }
+
+  function drawSky(){
+    const c=skyColors();
+    const g=ctx.createLinearGradient(0,0,0,horizonY());
+    g.addColorStop(0, rgb(c.top));
+    g.addColorStop(0.55, rgb(c.mid));
+    g.addColorStop(1, rgb(c.horizon));
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,horizonY());
+
+    // stars fade in with darkness, brighter twinkle at full night
+    if(dark>0.28){
+      const starAlpha=(dark-0.28)/0.72;
+      for(const s of stars){
+        const tw=0.55+0.45*Math.sin(perfNow*0.001*s.tw+s.phase);
+        ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,250,235,${(0.15+0.7*tw)*starAlpha})`; ctx.fill();
+      }
+      // a soft suggestion of the milky way at max darkness
+      if(dark>0.82){
+        const mwAlpha=(dark-0.82)/0.18*0.10;
+        ctx.save();
+        ctx.translate(W*0.5, horizonY()*0.4);
+        ctx.rotate(-0.5);
+        const mg=ctx.createLinearGradient(-W*0.5,0,W*0.5,0);
+        mg.addColorStop(0,'rgba(200,205,230,0)'); mg.addColorStop(0.5,`rgba(210,215,235,${mwAlpha})`); mg.addColorStop(1,'rgba(200,205,230,0)');
+        ctx.fillStyle=mg; ctx.fillRect(-W*0.6,-H*0.16,W*1.2,H*0.32);
+        ctx.restore();
+      }
+    }
+  }
+
+  function drawTreeline(){
+    const shade = lerpColor([28,30,34],[2,2,4],dark);
+    ctx.beginPath();
+    ctx.moveTo(0,horizonY());
+    for(const p of treeline) ctx.lineTo(p.x,p.y);
+    ctx.lineTo(W,horizonY());
+    ctx.closePath();
+    ctx.fillStyle=rgb(shade,0.92);
+    ctx.fill();
+  }
+
+  function drawGrass(t){
+    const base=horizonY();
+    const g=ctx.createLinearGradient(0,base,0,H);
+    const nearC=lerpColor([26,34,20],[3,5,4],dark), farC=lerpColor([16,22,14],[2,3,3],dark);
+    g.addColorStop(0, rgb(farC)); g.addColorStop(1, rgb(nearC));
+    ctx.fillStyle=g; ctx.fillRect(0,base,W,H-base);
+
+    ctx.strokeStyle=rgb(lerpColor([10,16,9],[1,2,2],dark), 0.8);
+    ctx.lineWidth=1;
+    const windAmt = wind*10;
+    for(const b of blades){
+      if(b.depthY < base+ (H-base)*0.35) continue; // only draw individual blades in the nearer band
+      const sway = Math.sin(t*0.0016*b.sway + b.phase) * (2+windAmt) * ((b.depthY-base)/(H-base));
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.depthY);
+      ctx.quadraticCurveTo(b.x + sway*0.6 + b.lean*b.h, b.depthY - b.h*0.6, b.x + sway + b.lean*b.h*1.6, b.depthY - b.h);
+      ctx.lineWidth = Math.max(0.6, 1.4*((b.depthY-base)/(H-base)));
+      ctx.stroke();
+    }
+  }
+
+  // ---------- fireflies ----------
+  let females=[]; // {x,y,phase}
+  let males=[];   // flying agents
+  let bats=[];
+  const MAX_FEMALES=10, MAX_MALES=26;
+
+  function fireflyZoneTop(){ return horizonY()-55; }   // fireflies stay low, over the field — not up in the open sky
+  function batZoneTop(){ return horizonY()*0.3; }      // bats hunt higher, against the sky
+  function fireflyGroundY(){ return H*0.985; }
+
+  function spawnMale(){
+    const depth=Math.random(); // 0 near/bright, 1 far/dim
+    const x=Math.random()*W;
+    const baseY = horizonY() + Math.random()*(H-horizonY())*0.7;
+    males.push({
+      x, y:baseY, baseX:x, baseY, depth,
+      state:'patrol', stateT:0,
+      nextCycleAt: 1+Math.random()*4,
+      wanderPhase: Math.random()*Math.PI*2,
+      flashAlpha:0, peakY:baseY,
+      target:null
+    });
+  }
+  function spawnBat(){
+    bats.push({ x:-40, y: batZoneTop()+Math.random()*horizonY()*0.5, vx: 60+Math.random()*40,
+      vy:0, t:Math.random()*100, side: Math.random()<0.5?-1:1 });
+  }
+
+  function withinGrass(x,y){ return y>horizonY() && y<H; }
+
+  function placeOrRemoveFemale(x,y){
+    for(let i=0;i<females.length;i++){
+      const f=females[i];
+      if(Math.hypot(f.x-x,f.y-y) < 16){ females.splice(i,1); return; }
+    }
+    if(females.length>=MAX_FEMALES) return;
+    if(!withinGrass(x,y)) return;
+    const y2=Math.min(y, H*0.97);
+    females.push({ x, y:y2, phase:Math.random()*Math.PI*2, respondT:-1 });
+    hint.classList.add('hidden');
+  }
+  canvas.addEventListener('pointerdown', e=>{
+    placeOrRemoveFemale(e.clientX, e.clientY);
+  });
+
+  // ---------- simulation ----------
+  let perfNow=0, lastT=0;
+  function stepFireflies(dt, t){
+    const act=activityLevel();
+    const targetMales = Math.min(MAX_MALES, Math.round(females.length * (0.5+2.1*act)));
+    if(males.length<targetMales && Math.random() < dt*0.7) spawnMale();
+    if(males.length>targetMales && Math.random() < dt*0.5){
+      const i=Math.floor(Math.random()*males.length);
+      males.splice(i,1);
+    }
+
+    for(const m of males){
+      m.stateT += dt;
+      // gentle wander baseline while patrolling
+      if(m.state==='patrol' || m.state==='orienting'){
+        m.wanderPhase += dt*0.6;
+        const wob = Math.sin(m.wanderPhase)*8;
+        if(m.state==='orienting' && m.target){
+          const dx = m.target.x - m.x;
+          m.x += Math.sign(dx)*Math.min(Math.abs(dx), 40*dt);
+          m.baseX = m.x;
+          m.baseY = Math.max(fireflyZoneTop(), m.target.y - 30 - Math.random()*20);
+          if(Math.abs(dx) < 12){ m.state='patrol'; m.target=null; m.nextCycleAt = m.stateT + 0.4+Math.random()*0.6; }
+        } else {
+          m.baseX += (Math.sin(m.wanderPhase*0.4)*6)*dt;
+          m.baseX = Math.max(10, Math.min(W-10, m.baseX));
+        }
+        m.y = m.baseY + wob;
+        m.x = m.baseX;
+        const interval = (8-5*act) + Math.random()*0.001;
+        if(m.stateT >= m.nextCycleAt){
+          m.state='rising'; m.stateT=0;
+          m.riseFromY = m.y;
+          m.peakY = Math.max(fireflyZoneTop(), m.baseY - (40+70*act) - Math.random()*30);
+        }
+      } else if(m.state==='rising'){
+        const p=Math.min(1, m.stateT/1.1);
+        m.y = m.riseFromY + (m.peakY-m.riseFromY)*easeOutCubic(p);
+        if(p>=1){ m.state='flash'; m.stateT=0; onMaleFlash(m); }
+      } else if(m.state==='flash'){
+        const p=Math.min(1, m.stateT/0.5);
+        m.flashAlpha = flashEnvelope(p);
+        if(p>=1){ m.state='descending'; m.stateT=0; m.descendFromY=m.y; }
+      } else if(m.state==='descending'){
+        const p=Math.min(1, m.stateT/1.0);
+        m.y = m.descendFromY + (m.baseY-m.descendFromY)*easeInOutCubic(p);
+        if(p>=1){ m.state='patrol'; m.stateT=0; m.nextCycleAt=(6-3*act)+Math.random()*3; }
+      }
+    }
+
+    for(const f of females){
+      if(f.respondT>=0){
+        f.respondT += dt;
+        if(f.respondT>0.55) f.respondT=-1;
+      }
+    }
+
+    if(batsOn){
+      if(bats.length<1 && Math.random()<dt*0.08) spawnBat();
+      if(bats.length<2 && Math.random()<dt*0.01) spawnBat();
+    } else if(bats.length){ bats = bats.filter(()=>false); }
+    for(const b of bats){
+      b.t += dt;
+      b.x += b.vx*dt;
+      b.y += Math.sin(b.t*3.4)*38*dt + Math.sin(b.t*1.1)*10*dt;
+      b.y = Math.max(batZoneTop()-20, Math.min(horizonY()*0.9, b.y));
+    }
+    bats = bats.filter(b=> b.x < W+60);
+  }
+
+  function onMaleFlash(m){
+    const range=180-60*m.depth;
+    let closest=null, closestD=Infinity;
+    for(const f of females){
+      const d=Math.hypot(f.x-m.x, f.y-m.y);
+      if(d<range && d<closestD){ closest=f; closestD=d; }
+    }
+    if(closest && closest.respondT<0){
+      const female=closest;
+      setTimeout(()=>{ female.respondT=0; }, 1900+Math.random()*200);
+      setTimeout(()=>{
+        if(m.state!=='rising' && m.state!=='flash'){
+          const idle = males.filter(o=>o!==m && o.state==='patrol' && !o.target);
+          const near = idle.sort((a,b)=>Math.hypot(a.x-female.x,a.y-female.y)-Math.hypot(b.x-female.x,b.y-female.y))[0];
+          if(near){ near.state='orienting'; near.target=female; near.stateT=0; }
+        }
+      }, 2000+Math.random()*200);
+    }
+  }
+
+  function easeOutCubic(t){ return 1-Math.pow(1-t,3); }
+  function easeInOutCubic(t){ return t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+  function flashEnvelope(p){
+    if(p<0.16) return p/0.16;
+    if(p>0.7) return Math.max(0,1-(p-0.7)/0.3);
+    return 1;
+  }
+
+  // ---------- drawing ----------
+  function drawFlash(x,y,alpha,depth,hue){
+    if(alpha<=0.01) return;
+    const nearness = 1-depth;
+    const r = (3.2+7*nearness) * (0.6+0.4*alpha);
+    const skyDim = 0.35+0.65*dark; // flashes read more vividly against a darker sky
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    const g=ctx.createRadialGradient(x,y,0,x,y,r*3.6);
+    g.addColorStop(0, `hsla(${hue},92%,72%,${alpha*0.95*skyDim})`);
+    g.addColorStop(0.35, `hsla(${hue},90%,60%,${alpha*0.5*skyDim})`);
+    g.addColorStop(1, `hsla(${hue},90%,55%,0)`);
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(x,y,r*3.6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=`hsla(${hue},95%,85%,${alpha*skyDim})`;
+    ctx.beginPath(); ctx.arc(x,y,r*0.4,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawFemales(){
+    for(const f of females){
+      const pulse=0.5+0.5*Math.sin(perfNow*0.0022+f.phase);
+      const restAlpha=(0.16+0.1*pulse)*(0.4+0.6*dark);
+      drawFlash(f.x,f.y,restAlpha,0.05,68);
+      if(f.respondT>=0){
+        const a = flashEnvelope(Math.min(1,f.respondT/0.5));
+        drawFlash(f.x,f.y,a,0.05,64);
+      }
+    }
+  }
+  function drawMales(){
+    const sorted=[...males].sort((a,b)=>b.depth-a.depth);
+    for(const m of sorted){
+      if(m.flashAlpha>0.01) drawFlash(m.x,m.y,m.flashAlpha,m.depth,58);
+      m.flashAlpha *= 0.001**(1/60); // negligible drift; real decay handled by state machine
+    }
+  }
+  function drawBats(){
+    ctx.fillStyle=`rgba(4,5,8,0.9)`;
+    for(const b of bats){
+      const wingFlap=Math.sin(b.t*14)*0.5+0.5;
+      ctx.save();
+      ctx.translate(b.x,b.y);
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.quadraticCurveTo(-9,-3-wingFlap*4, -15,1);
+      ctx.quadraticCurveTo(-8,1,0,0);
+      ctx.quadraticCurveTo(8,1,15,1);
+      ctx.quadraticCurveTo(9,-3-wingFlap*4, 0,0);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function loop(t){
+    if(!lastT) lastT=t;
+    const dt=Math.min((t-lastT)/1000, 0.05);
+    lastT=t; perfNow=t;
+
+    stepFireflies(dt,t);
+
+    ctx.clearRect(0,0,W,H);
+    drawSky();
+    drawTreeline();
+    drawBats();
+    drawGrass(t);
+    drawFemales();
+    drawMales();
+
+    updateAudio(dt);
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- audio: crickets (Dolbear's law) + wind ----------
+  let audioCtx=null, windGain=null, windFilter=null, cricketVoices=[];
+  const muteCheckbox=document.getElementById('muteCheckbox'), volumeSlider=document.getElementById('volumeSlider');
+  let muted=false, volumeLevel=0.6;
+  muteCheckbox.addEventListener('change', ()=> muted=muteCheckbox.checked);
+  volumeSlider.addEventListener('input', ()=> volumeLevel=volumeSlider.value/100);
+
+  function chirpRateForTemp(c){
+    const pts=[[5,40],[13,60],[25,128],[30,160],[38,185]];
+    if(c<=pts[0][0]) return pts[0][1];
+    if(c>=pts[pts.length-1][0]) return pts[pts.length-1][1];
+    for(let i=0;i<pts.length-1;i++){
+      const [c0,r0]=pts[i], [c1,r1]=pts[i+1];
+      if(c>=c0 && c<=c1) return r0 + (r1-r0)*(c-c0)/(c1-c0);
+    }
+    return 100;
+  }
+
+  function ensureAudio(){
+    if(audioCtx) return;
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+
+    const bufferSize=audioCtx.sampleRate*2;
+    const buffer=audioCtx.createBuffer(1,bufferSize,audioCtx.sampleRate);
+    const data=buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++) data[i]=Math.random()*2-1;
+    const src=audioCtx.createBufferSource(); src.buffer=buffer; src.loop=true;
+    windFilter=audioCtx.createBiquadFilter(); windFilter.type='bandpass'; windFilter.frequency.value=500; windFilter.Q.value=0.5;
+    windGain=audioCtx.createGain(); windGain.gain.value=0;
+    src.connect(windFilter).connect(windGain).connect(audioCtx.destination);
+    src.start();
+
+    for(let i=0;i<3;i++){
+      cricketVoices.push({ nextAt: audioCtx.currentTime + Math.random()*1.5, pan: (Math.random()*2-1)*0.7,
+        pitch: 2600+Math.random()*900, phaseMult: 0.88+Math.random()*0.24 });
+    }
+  }
+  document.body.addEventListener('pointerdown', ensureAudio, {once:true});
+
+  function playChirp(voice){
+    if(!audioCtx || muted) return;
+    const now=audioCtx.currentTime;
+    const panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+    const gain=audioCtx.createGain(); gain.gain.value=0;
+    const osc=audioCtx.createOscillator(); osc.type='sine'; osc.frequency.value=voice.pitch;
+    const filt=audioCtx.createBiquadFilter(); filt.type='bandpass'; filt.frequency.value=voice.pitch; filt.Q.value=6;
+    osc.connect(filt).connect(gain);
+    if(panner){ panner.pan.value=voice.pan; gain.connect(panner).connect(audioCtx.destination); }
+    else gain.connect(audioCtx.destination);
+    osc.start(now);
+    const pulseN=2+Math.floor(Math.random()*2), pulseDur=0.028, gap=0.024;
+    const peak=0.05*volumeLevel;
+    for(let i=0;i<pulseN;i++){
+      const t0=now+i*(pulseDur+gap);
+      gain.gain.setValueAtTime(0,t0);
+      gain.gain.linearRampToValueAtTime(peak,t0+pulseDur*0.4);
+      gain.gain.linearRampToValueAtTime(0,t0+pulseDur);
+    }
+    const end=now+pulseN*(pulseDur+gap)+0.02;
+    osc.stop(end);
+  }
+
+  function updateAudio(dt){
+    if(!audioCtx) return;
+    if(windGain){
+      const target = muted?0:(0.006+wind*0.05)*volumeLevel;
+      windGain.gain.setTargetAtTime(target, audioCtx.currentTime, 0.25);
+      windFilter.frequency.setTargetAtTime(280+wind*500, audioCtx.currentTime, 0.3);
+    }
+    const rate=chirpRateForTemp(temp);
+    const baseInterval=60/Math.max(20,rate);
+    const now=audioCtx.currentTime;
+    for(const v of cricketVoices){
+      if(now>=v.nextAt){
+        playChirp(v);
+        v.nextAt = now + baseInterval*v.phaseMult*(0.85+Math.random()*0.3);
+      }
+    }
+  }
+
+  resize();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
