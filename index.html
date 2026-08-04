@@ -122,18 +122,6 @@
     50%      { box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 20px 60px rgba(0,0,0,0.55), 0 0 52px rgba(201,151,78,0.14); }
   }
 
-  /* A very quiet trumpet in the bottom-left corner — barely there until you find it */
-  #trumpet{
-    position:fixed; left:14px; bottom:14px;
-    width:20px; height:20px;
-    display:block;
-    color:var(--brass-light);
-    opacity:.09;
-    transition: opacity .6s ease;
-  }
-  #trumpet svg{ width:100%; height:100%; display:block; fill:currentColor; }
-  #trumpet:hover, #trumpet:focus-visible{ opacity:.6; }
-
   /* Mobile: fill the width with a 2-column grid instead of a lone centered column */
   @media (max-width: 560px){
     #wrap{ padding: 28px 14px; justify-content:flex-start; }
@@ -143,10 +131,6 @@
       max-width: 460px;
     }
     #cards.dice6 .card{ width: calc(50% - 8px); }
-    /* the page scrolls here, so rest the trumpet under the last row
-       rather than floating it over a card and stealing its taps */
-    body{ position:relative; }
-    #trumpet{ position:absolute; bottom:6px; }
   }
 </style>
 </head>
@@ -208,16 +192,5 @@
     </a>
   </div>
 </div>
-
-<a id="trumpet" href="beep.mp3" aria-label="A small trumpet">
-  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-    <path d="M4 10.4 L1.7 9.3 Q1.1 9.02 1.1 9.7 L1.1 14.3 Q1.1 14.98 1.7 14.7 L4 13.6 Z"/>
-    <rect x="3.4" y="9.6" width="11.4" height="4.8" rx="1.2"/>
-    <rect x="7.1" y="5" width="1.7" height="5.6" rx=".7"/>
-    <rect x="10.2" y="5" width="1.7" height="5.6" rx=".7"/>
-    <rect x="13.3" y="5" width="1.7" height="5.6" rx=".7"/>
-    <path d="M14 8.1 L22.2 4.6 Q23.5 4.05 23.5 5.5 L23.5 18.5 Q23.5 19.95 22.2 19.4 L14 15.9 Z"/>
-  </svg>
-</a>
 </body>
 </html>
