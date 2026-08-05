@@ -111,6 +111,7 @@
   #loc-retry{ appearance:none; border:0; background:none; padding:0; margin-left:2px;
     font:inherit; color:inherit; text-decoration:underline; cursor:pointer; }
   #loc-retry:hover{ color:var(--gold); }
+  #loc-retry:disabled{ text-decoration:none; opacity:.6; cursor:default; }
   .toggle{
     display:flex;
     align-items:center;
@@ -257,7 +258,7 @@
       <input type="range" id="humidity-slider" min="0" max="100" value="50" step="0.5" aria-label="humidity">
       <span id="slider-label">50%</span>
     </div>
-    <div id="loc-note">using an approximate location — check that your browser and device allow it, then <button type="button" id="loc-retry">try again</button></div>
+    <div id="loc-note"><span id="loc-note-text">using an approximate location — check that your browser and device allow it, then</span> <button type="button" id="loc-retry">try again</button></div>
   </div>
 </div>
 
@@ -292,9 +293,21 @@
   }
   function tryLocationAgain(){
     if (!navigator.geolocation) return;
+    const btn = document.getElementById('loc-retry');
+    if (btn){ btn.disabled = true; btn.textContent = 'checking…'; }
     navigator.geolocation.getCurrentPosition(
-      pos => { lat = pos.coords.latitude; lon = pos.coords.longitude; hideLocationNote(); fetchHumidity(); },
-      () => {}, { timeout: 5000 }
+      pos => {
+        lat = pos.coords.latitude; lon = pos.coords.longitude;
+        hideLocationNote();
+        if (btn){ btn.disabled = false; btn.textContent = 'try again'; }
+        fetchHumidity();
+      },
+      () => {
+        if (btn){ btn.disabled = false; btn.textContent = 'try again'; }
+        const text = document.getElementById('loc-note-text');
+        if (text) text.textContent = "still couldn't find it — check your browser and device settings, then";
+      },
+      { timeout: 5000 }
     );
   }
   const locRetryBtn = document.getElementById('loc-retry');
