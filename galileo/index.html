@@ -92,6 +92,9 @@
     text-align:center; font-family:'Cormorant Garamond', serif;
   }
   #loc-note.visible{ display:block; }
+  #loc-retry{ appearance:none; border:0; background:none; padding:0; margin-left:2px;
+    font:inherit; color:inherit; text-decoration:underline; cursor:pointer; }
+  #loc-retry:hover{ color:var(--brass); }
 
   @media (orientation:portrait){
     #instrument-wrap{ width:min(52vw, 230px); height:min(80vh, 660px); }
@@ -178,7 +181,7 @@
     <span class="sep">/</span>
     <button id="btn-f" aria-label="Fahrenheit">F</button>
   </div>
-  <div id="loc-note">using an approximate location — couldn't find your real one</div>
+  <div id="loc-note">using an approximate location — check that your browser and device allow it, then <button type="button" id="loc-retry">try again</button></div>
 </div>
 
 <script>
@@ -318,8 +321,21 @@
     const note = document.getElementById('loc-note');
     if (note) note.classList.add('visible');
   }
+  function hideLocationNote(){
+    const note = document.getElementById('loc-note');
+    if (note) note.classList.remove('visible');
+  }
+  function tryLocationAgain(){
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => { lat = pos.coords.latitude; lon = pos.coords.longitude; hideLocationNote(); fetchWeather(); },
+      () => {}, { timeout: 5000 }
+    );
+  }
   function init(){
     updatePositions();
+    const locRetryBtn = document.getElementById('loc-retry');
+    if (locRetryBtn) locRetryBtn.addEventListener('click', tryLocationAgain);
     if (navigator.geolocation){
       navigator.geolocation.getCurrentPosition(
         pos => { lat = pos.coords.latitude; lon = pos.coords.longitude; fetchWeather(); },
