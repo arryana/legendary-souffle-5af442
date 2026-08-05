@@ -430,8 +430,8 @@
   .anchor.pos-piece .anchor-copy{ max-width:min(360px,82vw); text-align:left; transform:translateY(-6px); }
   .anchor.pos-home{ left:50%; bottom:26px; transform:translateX(-50%); flex-direction:column-reverse; align-items:center; }
   .anchor.pos-home .anchor-copy{ max-width:min(680px,88vw); text-align:center; transform:translateY(6px); }
-  .anchor:hover .anchor-copy, .anchor:focus-within .anchor-copy, .anchor.open .anchor-copy{ opacity:1; transform:none; }
-  .anchor:hover .anchor-q, .anchor.open .anchor-q{ opacity:.9; }
+  .anchor.open .anchor-copy{ opacity:1; transform:none; }
+  .anchor.open .anchor-q{ opacity:.9; }
   @media (prefers-reduced-motion: reduce){ .anchor-copy{ transition:opacity .2s linear; transform:none; } }
 </style>
 <div class="anchor pos-piece" id="anchor">

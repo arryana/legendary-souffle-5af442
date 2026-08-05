@@ -98,8 +98,8 @@
   .anchor.pos-piece .anchor-copy{ max-width:min(360px,82vw); text-align:left; transform:translateY(-6px); }
   .anchor.pos-home{ left:50%; bottom:26px; transform:translateX(-50%); flex-direction:column-reverse; align-items:center; }
   .anchor.pos-home .anchor-copy{ max-width:min(680px,88vw); text-align:center; transform:translateY(6px); }
-  .anchor:hover .anchor-copy, .anchor:focus-within .anchor-copy, .anchor.open .anchor-copy{ opacity:1; transform:none; }
-  .anchor:hover .anchor-q, .anchor.open .anchor-q{ opacity:.9; }
+  .anchor.open .anchor-copy{ opacity:1; transform:none; }
+  .anchor.open .anchor-q{ opacity:.9; }
   @media (prefers-reduced-motion: reduce){ .anchor-copy{ transition:opacity .2s linear; transform:none; } }
 </style>
 <div class="anchor pos-piece" id="anchor">
@@ -163,16 +163,16 @@
   <div id="controls">
     <div id="leftCluster">
       <div id="palette">
-        <div class="piece" data-type="gem" id="gemPiece"><img src="kaleidoscope-gem.jpg" alt=""></div>
-        <div class="piece" data-type="glass"><img src="kaleidoscope-glass.jpg" alt=""></div>
-        <div class="piece" data-type="nail"><img src="kaleidoscope-nail.jpg" alt=""></div>
-        <div class="piece" data-type="gear"><img src="kaleidoscope-gear.jpg" alt=""></div>
-        <div class="piece" data-type="bead_clear"><img src="kaleidoscope-bead-clear.jpg" alt=""></div>
-        <div class="piece" data-type="bead_black"><img src="kaleidoscope-bead-black.jpg" alt=""></div>
-        <div class="piece" data-type="bead_silver"><img src="kaleidoscope-bead-silver.jpg" alt=""></div>
-        <div class="piece" data-type="bead_gold"><img src="kaleidoscope-bead-gold.jpg" alt=""></div>
-        <div class="piece" data-type="stainedglass"><img src="kaleidoscope-stainedglass.jpg" alt=""></div>
-        <div class="piece" data-type="china"><img src="kaleidoscope-china.jpg" alt=""></div>
+        <div class="piece" data-type="gem" id="gemPiece"><img src="kaleidoscope-gem.png" alt=""></div>
+        <div class="piece" data-type="glass"><img src="kaleidoscope-glass.png" alt=""></div>
+        <div class="piece" data-type="nail"><img src="kaleidoscope-nail.png" alt=""></div>
+        <div class="piece" data-type="gear"><img src="kaleidoscope-gear.png" alt=""></div>
+        <div class="piece" data-type="bead_clear"><img src="kaleidoscope-bead-clear.png" alt=""></div>
+        <div class="piece" data-type="bead_black"><img src="kaleidoscope-bead-black.png" alt=""></div>
+        <div class="piece" data-type="bead_silver"><img src="kaleidoscope-bead-silver.png" alt=""></div>
+        <div class="piece" data-type="bead_gold"><img src="kaleidoscope-bead-gold.png" alt=""></div>
+        <div class="piece" data-type="stainedglass"><img src="kaleidoscope-stainedglass.png" alt=""></div>
+        <div class="piece" data-type="china"><img src="kaleidoscope-china.png" alt=""></div>
       </div>
     </div>
 
@@ -221,16 +221,16 @@
 
   function loadImg(src){ const im=new Image(); im.src=src; return im; }
   const srcImgs = {
-    gem: loadImg('kaleidoscope-gem.jpg'),
-    glass: loadImg('kaleidoscope-glass.jpg'),
-    nail: loadImg('kaleidoscope-nail.jpg'),
-    gear: loadImg('kaleidoscope-gear.jpg'),
-    bead_clear: loadImg('kaleidoscope-bead-clear.jpg'),
-    bead_black: loadImg('kaleidoscope-bead-black.jpg'),
-    bead_silver: loadImg('kaleidoscope-bead-silver.jpg'),
-    bead_gold: loadImg('kaleidoscope-bead-gold.jpg'),
-    stainedglass: loadImg('kaleidoscope-stainedglass.jpg'),
-    china: loadImg('kaleidoscope-china.jpg'),
+    gem: loadImg('kaleidoscope-gem.png'),
+    glass: loadImg('kaleidoscope-glass.png'),
+    nail: loadImg('kaleidoscope-nail.png'),
+    gear: loadImg('kaleidoscope-gear.png'),
+    bead_clear: loadImg('kaleidoscope-bead-clear.png'),
+    bead_black: loadImg('kaleidoscope-bead-black.png'),
+    bead_silver: loadImg('kaleidoscope-bead-silver.png'),
+    bead_gold: loadImg('kaleidoscope-bead-gold.png'),
+    stainedglass: loadImg('kaleidoscope-stainedglass.png'),
+    china: loadImg('kaleidoscope-china.png'),
   };
   const trayImg = loadImg('kaleidoscope-tray.jpg');
 
