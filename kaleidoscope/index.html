@@ -60,6 +60,14 @@
     transition:opacity .2s ease, transform .2s ease; background:#0a0b0d; }
   .piece:hover{ opacity:1; transform:translateY(-2px); }
   .piece img{ width:100%; height:100%; object-fit:cover; display:block; pointer-events:none; }
+  .piece.add-tile{ position:relative; display:flex; align-items:center; justify-content:center; border-style:dashed; }
+  .piece.add-tile img{ display:none; }
+  .piece.add-tile.has-image img{ display:block; }
+  .add-plus{ font-size:20px; line-height:1; color:rgba(236,227,208,.55); pointer-events:none; }
+  .piece.add-tile.has-image .add-plus{ display:none; }
+  .swap-btn{ display:none; position:absolute; right:2px; bottom:2px; width:16px; height:16px; border-radius:50%;
+    border:none; background:rgba(8,9,12,.8); color:#f2e9d8; font-size:10px; line-height:1; cursor:pointer; padding:0; }
+  .piece.add-tile.has-image .swap-btn{ display:block; }
 
   input[type=range]{ -webkit-appearance:none; appearance:none; width:184px; height:6px; border-radius:4px;
     outline:none; cursor:pointer; }
@@ -173,6 +181,11 @@
         <div class="piece" data-type="bead_gold"><img src="kaleidoscope-bead-gold.png" alt=""></div>
         <div class="piece" data-type="stainedglass"><img src="kaleidoscope-stainedglass.png" alt=""></div>
         <div class="piece" data-type="china"><img src="kaleidoscope-china.png" alt=""></div>
+        <div class="piece add-tile" data-type="custom" id="customPiece" title="use your own photo">
+          <span class="add-plus">+</span>
+          <img alt="">
+          <button type="button" class="swap-btn" title="use a different photo" aria-label="use a different photo">⟳</button>
+        </div>
       </div>
     </div>
 
@@ -202,6 +215,9 @@
 
   <div class="ghost" id="ghost"><img id="ghostImg" src="" alt=""></div>
 </div>
+<!-- bring-your-own-photo: crops a photo the visitor picks from their own device into a kaleidoscope
+     piece; nothing is uploaded, same as the music picker above -->
+<input type="file" id="imgPick" accept="image/*" hidden>
 <script>
 (function(){
   // draw the mirror-count line diagrams procedurally so the icon always
@@ -272,11 +288,14 @@
 
   function drawObject(ctx, o, size){
     const img=srcImgs[o.type];
-    if(!img.complete || !img.naturalWidth) return;
+    if(!img || !img.complete || !img.naturalWidth) return;
     const px=o.x*size, py=o.y*size, s=o.size*size;
     ctx.save();
     ctx.beginPath(); ctx.arc(px,py,s/2,0,Math.PI*2); ctx.clip();
-    ctx.drawImage(img, px-s/2, py-s/2, s, s);
+    // center-crop to square first — the built-in pieces are already square, but a
+    // visitor's own photo rarely is, and this keeps it from stretching in the circle
+    const iw=img.naturalWidth, ih=img.naturalHeight, sq=Math.min(iw,ih);
+    ctx.drawImage(img, (iw-sq)/2, (ih-sq)/2, sq, sq, px-s/2, py-s/2, s, s);
     if(o.type==='gem'){
       ctx.globalCompositeOperation='color';
       ctx.fillStyle=`hsl(${o.hue}, 85%, 50%)`;
@@ -391,9 +410,13 @@
     return Math.hypot(dx,dy) <= r.width/2;
   }
 
+  const imgPick=document.getElementById('imgPick'), customPiece=document.getElementById('customPiece');
+  let customLoaded=false, customObjectURL=null;
+
   document.querySelectorAll('.piece').forEach(piece=>{
     piece.addEventListener('pointerdown', e=>{
       const type=piece.dataset.type;
+      if(type==='custom' && !customLoaded){ imgPick.click(); e.preventDefault(); return; }
       dragging={ type, x:0.5, y:0.5, size: type==='gem'?currentSize:0.28, hue: type==='gem'?currentHue:undefined };
       dragFromPalette=true;
       ghost.style.display='block';
@@ -401,6 +424,25 @@
       moveGhost(e.clientX, e.clientY);
       e.preventDefault();
     });
+  });
+
+  customPiece.querySelector('.swap-btn').addEventListener('pointerdown', e=>{
+    e.stopPropagation(); e.preventDefault();
+    imgPick.click();
+  });
+  imgPick.addEventListener('change', ()=>{
+    if(!imgPick.files.length) return;
+    if(customObjectURL) URL.revokeObjectURL(customObjectURL);
+    customObjectURL=URL.createObjectURL(imgPick.files[0]);
+    const im=new Image();
+    im.onload=()=>{
+      srcImgs.custom=im;
+      customPiece.querySelector('img').src=customObjectURL;
+      customPiece.classList.add('has-image');
+      customLoaded=true;
+      drawAll();
+    };
+    im.src=customObjectURL;
   });
 
   function moveGhost(x,y){ ghost.style.left=x+'px'; ghost.style.top=y+'px'; }

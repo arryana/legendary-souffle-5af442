@@ -403,6 +403,11 @@
     border-width:0 2px 2px 0;
     transform:rotate(40deg);
   }
+  #loc-note{
+    display:none; margin-top:12px; font-size:12px; letter-spacing:.02em; color:#a89a7c;
+    opacity:.75; text-align:center; font-family:'Cormorant Garamond', serif;
+  }
+  #loc-note.visible{ display:block; }
 
   @media (max-width: 700px){
     #chart-wrap, #slider-wrap, #controls{ width:92vw; }
@@ -526,6 +531,7 @@
     <label class="toggle" title="Fuller reading"><input type="checkbox" id="chk-fuller" aria-label="Fuller reading"><span class="toggle-glyph">&deg;</span></label>
     <label class="toggle" title="Real weather"><input type="checkbox" id="chk-weather" aria-label="Real weather"><span class="toggle-glyph">&#9925;</span></label>
   </div>
+  <div id="loc-note">using an approximate location — couldn't find your real one</div>
 
 </div>
 
@@ -611,11 +617,20 @@
 
   /* ===================== STATE ===================== */
   let lat = 55.19, lon = -1.56; // fallback: north-east England
+  // silent until now — if the browser can't (or won't) hand over a real location, everything
+  // downstream — sun/moon timing as well as live weather — was quietly using this fallback
+  // with no sign to the visitor that anything was off. Surface it instead of guessing quietly.
+  function showLocationNote(){
+    const note = document.getElementById('loc-note');
+    if (note) note.classList.add('visible');
+  }
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       pos => { lat = pos.coords.latitude; lon = pos.coords.longitude; },
-      () => {}, { timeout: 4000 }
+      showLocationNote, { timeout: 4000 }
     );
+  } else {
+    showLocationNote();
   }
 
   let offsetDays = 0;      // -30..30, 0 = live
