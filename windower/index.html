@@ -411,6 +411,7 @@
   #loc-retry{ appearance:none; border:0; background:none; padding:0; margin-left:2px;
     font:inherit; color:inherit; text-decoration:underline; cursor:pointer; }
   #loc-retry:hover{ color:#e2d6bb; }
+  #loc-retry:disabled{ text-decoration:none; opacity:.6; cursor:default; }
 
   @media (max-width: 700px){
     #chart-wrap, #slider-wrap, #controls{ width:92vw; }
@@ -534,7 +535,7 @@
     <label class="toggle" title="Fuller reading"><input type="checkbox" id="chk-fuller" aria-label="Fuller reading"><span class="toggle-glyph">&deg;</span></label>
     <label class="toggle" title="Real weather"><input type="checkbox" id="chk-weather" aria-label="Real weather"><span class="toggle-glyph">&#9925;</span></label>
   </div>
-  <div id="loc-note">using an approximate location — check that your browser and device allow it, then <button type="button" id="loc-retry">try again</button></div>
+  <div id="loc-note"><span id="loc-note-text">using an approximate location — check that your browser and device allow it, then</span> <button type="button" id="loc-retry">try again</button></div>
 
 </div>
 
@@ -633,13 +634,21 @@
   }
   function tryLocationAgain(){
     if (!navigator.geolocation) return;
+    const btn = document.getElementById('loc-retry');
+    if (btn){ btn.disabled = true; btn.textContent = 'checking…'; }
     navigator.geolocation.getCurrentPosition(
       pos => {
         lat = pos.coords.latitude; lon = pos.coords.longitude;
         hideLocationNote();
+        if (btn){ btn.disabled = false; btn.textContent = 'try again'; }
         if (liveWeatherOn) fetchLiveWeather(); // re-pull weather for the corrected spot
       },
-      () => {}, { timeout: 5000 }
+      () => {
+        if (btn){ btn.disabled = false; btn.textContent = 'try again'; }
+        const text = document.getElementById('loc-note-text');
+        if (text) text.textContent = "still couldn't find it — check your browser and device settings, then";
+      },
+      { timeout: 5000 }
     );
   }
   const locRetryBtn = document.getElementById('loc-retry');
