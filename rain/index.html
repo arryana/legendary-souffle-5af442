@@ -40,6 +40,41 @@
 </head>
 <body>
 <a id="backlink" href="../index.html">← sagne</a>
+<!-- what-is-this anchor: a quiet "?" that reveals a one-line explanation of sagne -->
+<style>
+  .anchor{ position:fixed; z-index:30; display:flex; gap:14px; }
+  .anchor-q{ appearance:none; border:0; background:none; cursor:pointer; font-family:inherit; font-size:23px; line-height:1; color:#f2e9d8; opacity:.34; transition:opacity .45s ease; padding:4px 10px; border-radius:8px; }
+  .anchor-q:hover, .anchor-q:focus-visible{ opacity:.9; }
+  .anchor-q:focus-visible{ outline:1px solid rgba(242,233,216,.4); outline-offset:4px; }
+  .anchor-copy{ margin:0; font-size:15px; line-height:1.65; color:#9fb2c6; opacity:0; transition:opacity .6s ease, transform .6s ease; pointer-events:none; text-wrap:pretty; }
+  .anchor.pos-piece{ top:22px; right:24px; flex-direction:column; align-items:flex-end; }
+  .anchor.pos-piece .anchor-copy{ max-width:min(360px,82vw); text-align:left; transform:translateY(-6px); }
+  .anchor.pos-home{ left:50%; bottom:26px; transform:translateX(-50%); flex-direction:column-reverse; align-items:center; }
+  .anchor.pos-home .anchor-copy{ max-width:min(680px,88vw); text-align:center; transform:translateY(6px); }
+  .anchor:hover .anchor-copy, .anchor:focus-within .anchor-copy, .anchor.open .anchor-copy{ opacity:1; transform:none; }
+  .anchor:hover .anchor-q, .anchor.open .anchor-q{ opacity:.9; }
+  @media (prefers-reduced-motion: reduce){ .anchor-copy{ transition:opacity .2s linear; transform:none; } }
+</style>
+<div class="anchor pos-piece" id="anchor">
+  <button class="anchor-q" type="button" aria-expanded="false" aria-controls="anchor-copy" aria-label="what is this?">?</button>
+  <p class="anchor-copy" id="anchor-copy">tools and toys for twiddling. no scores, no goals, no timers (except the tools which are timers), no links, no likes, no ads, no in-game purchases. nothing exciting, but hopefully something enjoyable.</p>
+</div>
+<script>
+(function(){
+  const anchor = document.getElementById('anchor');
+  const btn = anchor.querySelector('.anchor-q');
+  btn.addEventListener('click', () => {
+    const open = anchor.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  document.addEventListener('click', (e) => {
+    if (!anchor.contains(e.target)) {
+      anchor.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+})();
+</script>
 <!-- bring-your-own-music: plays a file the visitor picks from their own device; nothing is uploaded -->
 <style>
   #music{ position:fixed; left:18px; bottom:16px; z-index:60; display:flex; align-items:center; gap:9px; }
@@ -141,7 +176,16 @@
   tiltSlider.addEventListener('input',()=>{ tilt=tiltSlider.value/100; });
 
   let drops=[];
-  function newDrop(x,y,r){ return {x,y,r,vy:0,moving:false,py:y}; }
+  // stick (per-drop friction) and vmaxMul give every drop its own slightly different grip and
+  // top speed — real glass isn't perfectly uniform, and without this every drop of a given
+  // size breaks free at exactly the same instant and falls at exactly the same rate, which
+  // reads as artificial lockstep rain rather than something falling naturally.
+  function newDrop(x,y,r){
+    return { x,y,r, vy:0, moving:false, py:y,
+      settle: 0.15+Math.random()*0.85,   // freshly landed drops sit visibly before they're even eligible to slide
+      stick: 0.75+Math.random()*0.6,
+      vmaxMul: 0.8+Math.random()*0.45 };
+  }
   // a raindrop lands somewhere on the glass and sticks where it hits;
   // occasionally a fatter one lands that will run before long
   function spawnDrop(){ const big=Math.random()<0.10; drops.push(newDrop(Math.random()*W, Math.random()*H, big?3.2+Math.random()*2.0:1.5+Math.random()*1.6)); }
@@ -164,16 +208,18 @@
     spawnAccum+=dt;
     while(spawnAccum>0.30){ spawnAccum-=0.30; if(drops.length<maxDrops) spawnDrop(); }  // lighter drizzle — most drops sit
     for(const d of drops){
+      if(d.settle>0){ d.settle-=dt; continue; }    // freshly landed — visibly sits before it can even be evaluated
       const mass = d.r*d.r;
       const pull = g*mass;                       // gravity pull grows with size
-      const pinStatic = 1.6*d.r;                 // surface tension pins by contact width — breaks free at a realistic (smaller) size
+      const pinStatic = 1.6*d.r*d.stick;         // surface tension pins by contact width — breaks free at a realistic (smaller) size
       if(!d.moving && pull>pinStatic) d.moving=true;   // only breaks free once heavy enough
       if(d.moving){
-        const pinKinetic = 0.6*d.r;              // weaker grip once it's sliding (hysteresis)
+        const pinKinetic = 0.6*d.r*d.stick;      // weaker grip once it's sliding (hysteresis)
         d.vy += ((pull-pinKinetic)/mass)*dt*2.4;
         d.vy *= 0.94;
         if(d.vy<0) d.vy=0;
-        if(d.vy>DROP_VMAX) d.vy=DROP_VMAX;
+        const vmax = DROP_VMAX*d.vmaxMul;
+        if(d.vy>vmax) d.vy=vmax;
         d.py=d.y; d.y += d.vy*dt;                 // remember where it was, for a continuous trail
         if(d.vy>0.4) d.r=Math.max(2.6, d.r-0.006*dt);   // sheds slowly — stays visible leading its own trail
         if(d.vy<0.06 && pull<=pinStatic){ d.moving=false; d.vy=0; }  // re-pins if it slows & is light

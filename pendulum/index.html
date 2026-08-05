@@ -36,7 +36,7 @@
   input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
     background:#e9d9a8; cursor:pointer; box-shadow:0 0 8px rgba(233,217,168,.6); }
   input[type=range]::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:#e9d9a8; cursor:pointer; }
-  #globeWrap{ position:static; width:46px; height:46px; flex:0 0 auto; cursor:grab; touch-action:none; }
+  #globeWrap{ position:static; width:82px; height:82px; flex:0 0 auto; cursor:grab; touch-action:none; }
   #globeWrap:active{ cursor:grabbing; }
   #eternityToggle{ font-size:22px; line-height:1; color:rgba(231,221,201,.32); cursor:pointer;
     user-select:none; transition:color .35s ease, text-shadow .35s ease; flex:0 0 auto; }
@@ -46,6 +46,41 @@
 </head>
 <body>
 <a id="backlink" href="../index.html">← sagne</a>
+<!-- what-is-this anchor: a quiet "?" that reveals a one-line explanation of sagne -->
+<style>
+  .anchor{ position:fixed; z-index:30; display:flex; gap:14px; }
+  .anchor-q{ appearance:none; border:0; background:none; cursor:pointer; font-family:inherit; font-size:23px; line-height:1; color:#f2e9d8; opacity:.34; transition:opacity .45s ease; padding:4px 10px; border-radius:8px; }
+  .anchor-q:hover, .anchor-q:focus-visible{ opacity:.9; }
+  .anchor-q:focus-visible{ outline:1px solid rgba(242,233,216,.4); outline-offset:4px; }
+  .anchor-copy{ margin:0; font-size:15px; line-height:1.65; color:#9fb2c6; opacity:0; transition:opacity .6s ease, transform .6s ease; pointer-events:none; text-wrap:pretty; }
+  .anchor.pos-piece{ top:22px; right:24px; flex-direction:column; align-items:flex-end; }
+  .anchor.pos-piece .anchor-copy{ max-width:min(360px,82vw); text-align:left; transform:translateY(-6px); }
+  .anchor.pos-home{ left:50%; bottom:26px; transform:translateX(-50%); flex-direction:column-reverse; align-items:center; }
+  .anchor.pos-home .anchor-copy{ max-width:min(680px,88vw); text-align:center; transform:translateY(6px); }
+  .anchor:hover .anchor-copy, .anchor:focus-within .anchor-copy, .anchor.open .anchor-copy{ opacity:1; transform:none; }
+  .anchor:hover .anchor-q, .anchor.open .anchor-q{ opacity:.9; }
+  @media (prefers-reduced-motion: reduce){ .anchor-copy{ transition:opacity .2s linear; transform:none; } }
+</style>
+<div class="anchor pos-piece" id="anchor">
+  <button class="anchor-q" type="button" aria-expanded="false" aria-controls="anchor-copy" aria-label="what is this?">?</button>
+  <p class="anchor-copy" id="anchor-copy">tools and toys for twiddling. no scores, no goals, no timers (except the tools which are timers), no links, no likes, no ads, no in-game purchases. nothing exciting, but hopefully something enjoyable.</p>
+</div>
+<script>
+(function(){
+  const anchor = document.getElementById('anchor');
+  const btn = anchor.querySelector('.anchor-q');
+  btn.addEventListener('click', () => {
+    const open = anchor.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  document.addEventListener('click', (e) => {
+    if (!anchor.contains(e.target)) {
+      anchor.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+})();
+</script>
 <!-- bring-your-own-music: plays a file the visitor picks from their own device; nothing is uploaded -->
 <style>
   #music{ position:fixed; left:18px; bottom:16px; z-index:60; display:flex; align-items:center; gap:9px; }
@@ -79,7 +114,7 @@
 </script>
 <canvas id="scene"></canvas>
 <div id="dock">
-  <canvas id="globeWrap" width="92" height="92" aria-label="latitude" role="slider" tabindex="0"></canvas>
+  <canvas id="globeWrap" width="164" height="164" aria-label="latitude" role="slider" tabindex="0"></canvas>
   <input type="range" id="speedSlider" min="0" max="100" value="80" aria-label="time speed">
   <div id="eternityToggle" role="checkbox" tabindex="0" aria-checked="false" aria-label="ever-thickening trace">∞</div>
 </div>
@@ -170,9 +205,9 @@
     // continents, clipped to the sphere, so the globe reads as an actual world
     gctx.save();
     gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.clip();
-    gctx.fillStyle='rgba(214,195,153,0.32)';
-    gctx.strokeStyle='rgba(233,217,168,0.42)';
-    gctx.lineWidth=0.7;
+    gctx.fillStyle='rgba(220,202,160,0.52)';
+    gctx.strokeStyle='rgba(240,226,182,0.75)';
+    gctx.lineWidth=1.1;
     for(const poly of CONTINENTS){
       gctx.beginPath();
       poly.forEach(([lo,la],i)=>{
