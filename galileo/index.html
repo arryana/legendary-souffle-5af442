@@ -87,6 +87,11 @@
   }
   #unit-toggle button.active{ color:var(--brass); }
   #unit-toggle .sep{ color:#5a4c38; }
+  #loc-note{
+    display:none; margin-top:10px; font-size:12px; letter-spacing:.02em; color:#7a6b52;
+    text-align:center; font-family:'Cormorant Garamond', serif;
+  }
+  #loc-note.visible{ display:block; }
 
   @media (orientation:portrait){
     #instrument-wrap{ width:min(52vw, 230px); height:min(80vh, 660px); }
@@ -173,6 +178,7 @@
     <span class="sep">/</span>
     <button id="btn-f" aria-label="Fahrenheit">F</button>
   </div>
+  <div id="loc-note">using an approximate location — couldn't find your real one</div>
 </div>
 
 <script>
@@ -306,16 +312,22 @@
     } catch(e){ /* keep last known value silently */ }
   }
 
+  // silent until now — if the browser can't (or won't) hand over a real location, the
+  // reading was quietly using this fallback with no sign to the visitor that anything was off
+  function showLocationNote(){
+    const note = document.getElementById('loc-note');
+    if (note) note.classList.add('visible');
+  }
   function init(){
     updatePositions();
     if (navigator.geolocation){
       navigator.geolocation.getCurrentPosition(
         pos => { lat = pos.coords.latitude; lon = pos.coords.longitude; fetchWeather(); },
-        () => { lat = 55.19; lon = -1.56; fetchWeather(); },
+        () => { lat = 55.19; lon = -1.56; fetchWeather(); showLocationNote(); },
         { timeout: 5000 }
       );
     } else {
-      lat = 55.19; lon = -1.56; fetchWeather();
+      lat = 55.19; lon = -1.56; fetchWeather(); showLocationNote();
     }
     setInterval(fetchWeather, 10*60*1000);
   }

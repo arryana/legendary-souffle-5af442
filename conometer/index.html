@@ -103,6 +103,11 @@
     gap:28px;
     flex-wrap:wrap;
   }
+  #loc-note{
+    display:none; width:100%; margin-top:2px; font-size:12px; letter-spacing:.02em; color:#a89a7c;
+    opacity:.75; text-align:center; font-family:'Cormorant Garamond', serif;
+  }
+  #loc-note.visible{ display:block; }
   .toggle{
     display:flex;
     align-items:center;
@@ -249,6 +254,7 @@
       <input type="range" id="humidity-slider" min="0" max="100" value="50" step="0.5" aria-label="humidity">
       <span id="slider-label">50%</span>
     </div>
+    <div id="loc-note">using an approximate location — couldn't find your real one</div>
   </div>
 </div>
 
@@ -271,11 +277,19 @@
   };
 
   let lat = 55.19, lon = -1.56; // fallback: north-east England
+  // silent until now — if the browser can't (or won't) hand over a real location, the
+  // reading was quietly using this fallback with no sign to the visitor that anything was off
+  function showLocationNote(){
+    const note = document.getElementById('loc-note');
+    if (note) note.classList.add('visible');
+  }
   if (navigator.geolocation){
     navigator.geolocation.getCurrentPosition(
       pos => { lat = pos.coords.latitude; lon = pos.coords.longitude; fetchHumidity(); },
-      () => { fetchHumidity(); }, { timeout: 5000 }
+      () => { fetchHumidity(); showLocationNote(); }, { timeout: 5000 }
     );
+  } else {
+    fetchHumidity(); showLocationNote();
   }
 
   let liveHumidity = null;   // last fetched real humidity (0-100), null until first fetch succeeds
