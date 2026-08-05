@@ -108,6 +108,9 @@
     opacity:.75; text-align:center; font-family:'Cormorant Garamond', serif;
   }
   #loc-note.visible{ display:block; }
+  #loc-retry{ appearance:none; border:0; background:none; padding:0; margin-left:2px;
+    font:inherit; color:inherit; text-decoration:underline; cursor:pointer; }
+  #loc-retry:hover{ color:var(--gold); }
   .toggle{
     display:flex;
     align-items:center;
@@ -254,7 +257,7 @@
       <input type="range" id="humidity-slider" min="0" max="100" value="50" step="0.5" aria-label="humidity">
       <span id="slider-label">50%</span>
     </div>
-    <div id="loc-note">using an approximate location — couldn't find your real one</div>
+    <div id="loc-note">using an approximate location — check that your browser and device allow it, then <button type="button" id="loc-retry">try again</button></div>
   </div>
 </div>
 
@@ -283,6 +286,19 @@
     const note = document.getElementById('loc-note');
     if (note) note.classList.add('visible');
   }
+  function hideLocationNote(){
+    const note = document.getElementById('loc-note');
+    if (note) note.classList.remove('visible');
+  }
+  function tryLocationAgain(){
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => { lat = pos.coords.latitude; lon = pos.coords.longitude; hideLocationNote(); fetchHumidity(); },
+      () => {}, { timeout: 5000 }
+    );
+  }
+  const locRetryBtn = document.getElementById('loc-retry');
+  if (locRetryBtn) locRetryBtn.addEventListener('click', tryLocationAgain);
   if (navigator.geolocation){
     navigator.geolocation.getCurrentPosition(
       pos => { lat = pos.coords.latitude; lon = pos.coords.longitude; fetchHumidity(); },
