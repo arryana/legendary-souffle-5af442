@@ -63,6 +63,41 @@
 </head>
 <body>
 <a id="backlink" href="../index.html">← sagne</a>
+<!-- what-is-this anchor: a quiet "?" that reveals a one-line explanation of sagne -->
+<style>
+  .anchor{ position:fixed; z-index:30; display:flex; gap:14px; }
+  .anchor-q{ appearance:none; border:0; background:none; cursor:pointer; font-family:inherit; font-size:23px; line-height:1; color:#f2e9d8; opacity:.34; transition:opacity .45s ease; padding:4px 10px; border-radius:8px; }
+  .anchor-q:hover, .anchor-q:focus-visible{ opacity:.9; }
+  .anchor-q:focus-visible{ outline:1px solid rgba(242,233,216,.4); outline-offset:4px; }
+  .anchor-copy{ margin:0; font-size:15px; line-height:1.65; color:#9fb2c6; opacity:0; transition:opacity .6s ease, transform .6s ease; pointer-events:none; text-wrap:pretty; }
+  .anchor.pos-piece{ top:22px; right:24px; flex-direction:column; align-items:flex-end; }
+  .anchor.pos-piece .anchor-copy{ max-width:min(360px,82vw); text-align:left; transform:translateY(-6px); }
+  .anchor.pos-home{ left:50%; bottom:26px; transform:translateX(-50%); flex-direction:column-reverse; align-items:center; }
+  .anchor.pos-home .anchor-copy{ max-width:min(680px,88vw); text-align:center; transform:translateY(6px); }
+  .anchor:hover .anchor-copy, .anchor:focus-within .anchor-copy, .anchor.open .anchor-copy{ opacity:1; transform:none; }
+  .anchor:hover .anchor-q, .anchor.open .anchor-q{ opacity:.9; }
+  @media (prefers-reduced-motion: reduce){ .anchor-copy{ transition:opacity .2s linear; transform:none; } }
+</style>
+<div class="anchor pos-piece" id="anchor">
+  <button class="anchor-q" type="button" aria-expanded="false" aria-controls="anchor-copy" aria-label="what is this?">?</button>
+  <p class="anchor-copy" id="anchor-copy">tools and toys for twiddling. no scores, no goals, no timers (except the tools which are timers), no links, no likes, no ads, no in-game purchases. nothing exciting, but hopefully something enjoyable.</p>
+</div>
+<script>
+(function(){
+  const anchor = document.getElementById('anchor');
+  const btn = anchor.querySelector('.anchor-q');
+  btn.addEventListener('click', () => {
+    const open = anchor.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  document.addEventListener('click', (e) => {
+    if (!anchor.contains(e.target)) {
+      anchor.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+})();
+</script>
 <!-- bring-your-own-music: plays a file the visitor picks from their own device; nothing is uploaded -->
 <style>
   #music{ position:fixed; left:18px; bottom:16px; z-index:60; display:flex; align-items:center; gap:9px; }
@@ -282,6 +317,7 @@
   let males=[];   // flying agents
   let bats=[];
   const MAX_FEMALES=10, MAX_MALES=26;
+  const LIGHT_FLOOR=0.018; // males never go fully dark between flashes — just barely visible
 
   function fireflyZoneTop(){ return horizonY()-55; }   // fireflies stay low, over the field — not up in the open sky
   function batZoneTop(){ return horizonY()*0.3; }      // bats hunt higher, against the sky
@@ -297,7 +333,7 @@
       nextCycleAt: 1+Math.random()*4,
       wanderPhase: Math.random()*Math.PI*2,
       flashAlpha:0, peakY:baseY,
-      target:null
+      target:null, hasFlashed:false
     });
   }
   function spawnBat(){
@@ -378,15 +414,23 @@
       } else if(m.state==='rising'){
         const p=Math.min(1, m.stateT/1.1);
         m.y = m.riseFromY + (m.peakY-m.riseFromY)*easeOutCubic(p);
-        if(p>=1){ m.state='flash'; m.stateT=0; onMaleFlash(m); }
+        if(p>=1){ m.state='flash'; m.stateT=0; m.hasFlashed=true; onMaleFlash(m); }
       } else if(m.state==='flash'){
         const p=Math.min(1, m.stateT/0.5);
-        m.flashAlpha = flashEnvelope(p);
+        if(p<0.22) m.flashAlpha = p/0.22; // quick rise to full brightness — the fade back down
         if(p>=1){ m.state='descending'; m.stateT=0; m.descendFromY=m.y; }
       } else if(m.state==='descending'){
         const p=Math.min(1, m.stateT/1.0);
         m.y = m.descendFromY + (m.baseY-m.descendFromY)*easeInOutCubic(p);
         if(p>=1){ m.state='patrol'; m.stateT=0; m.nextCycleAt=(6-3*act)+Math.random()*3; }
+      }
+      // real fireflies don't blink out — past the initial rise, the light eases down slowly
+      // and never quite reaches zero, settling to a faint ember between flashes rather than
+      // going properly dark. This runs continuously through the rest of the flash and beyond,
+      // not just once the discrete "flash" state ends.
+      const stillRising = m.state==='flash' && m.stateT/0.5 < 0.22;
+      if(m.hasFlashed && !stillRising){
+        m.flashAlpha += (LIGHT_FLOOR - m.flashAlpha) * (1 - Math.exp(-dt/0.45));
       }
     }
 
@@ -471,8 +515,7 @@
   function drawMales(){
     const sorted=[...males].sort((a,b)=>b.depth-a.depth);
     for(const m of sorted){
-      if(m.flashAlpha>0.01) drawFlash(m.x,m.y,m.flashAlpha,m.depth,58);
-      m.flashAlpha *= 0.001**(1/60); // negligible drift; real decay handled by state machine
+      if(m.flashAlpha>0.008) drawFlash(m.x,m.y,m.flashAlpha,m.depth,58);
     }
   }
   function drawBats(){
