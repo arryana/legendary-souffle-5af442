@@ -55,8 +55,8 @@
   .stopbox.stopped::after{ opacity:1; background:#e8c473; box-shadow:0 0 6px rgba(232,195,131,.75); }
   .controls{ display:flex; align-items:center; gap:18px; font-size:20px; color:var(--dim); flex-wrap:wrap; justify-content:center; }
   input[type=range]{ width:200px; accent-color:var(--brass); cursor:pointer; }
-  .clear{ font-family:inherit; font-size:14px; color:var(--dim); background:none; border:0; cursor:pointer; letter-spacing:.03em; }
-  .clear:hover{ color:var(--cream); }
+  .iconbtn{ font-family:inherit; font-size:18px; line-height:1; background:none; border:0; cursor:pointer; padding:0; opacity:.6; transition:opacity .2s ease; }
+  .iconbtn:hover{ opacity:1; }
   @media (max-width:480px){
     .controls{ gap:10px; }
     input[type=range]{ width:140px; }
@@ -74,8 +74,8 @@
     <span title="slower">🐢</span>
     <input id="tempo" type="range" min="1.2" max="7" step="0.1" value="3.2">
     <span title="faster">🐇</span>
-    <button class="clear" id="save">save</button>
-    <button class="clear" id="clear">clear</button>
+    <button class="iconbtn" id="save" title="save" aria-label="save">💾</button>
+    <button class="iconbtn" id="clear" title="clear" aria-label="clear">🗑️</button>
   </div>
 </div>
 
@@ -270,7 +270,7 @@ saveBtn.addEventListener('click',()=>{
   try{
     localStorage.setItem(SAVE_KEY, JSON.stringify({ pins, stepsPerSec }));
     const original=saveBtn.textContent;
-    saveBtn.textContent='saved';
+    saveBtn.textContent='✅';
     setTimeout(()=>{ saveBtn.textContent=original; }, 1100);
   }catch(e){ /* private-browsing/storage-blocked — nothing more we can do here */ }
 });
