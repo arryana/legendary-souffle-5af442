@@ -110,6 +110,13 @@
   .card img{
     width:100%; height:100%; object-fit:cover; display:block;
   }
+  .card .new-dot{
+    position:absolute; top:10px; right:10px; width:7px; height:7px; border-radius:50%;
+    background:var(--brass-light);
+    box-shadow:0 0 8px 1px rgba(232,195,131,0.85);
+    opacity:0; transition:opacity .5s ease;
+  }
+  .card.is-new .new-dot{ opacity:.9; }
   .card:hover{
     transform: translateY(-6px) scale(1.015);
     border-color: rgba(232,195,131,0.75);
@@ -165,59 +172,77 @@
   </div>
 
   <div id="cards" class="dice6">
-    <a class="card" href="candler/">
+    <a class="card" href="candler/" data-added="2026-07-28">
       <img src="candler/candle-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="acorn/">
+    <a class="card" href="acorn/" data-added="2026-07-28">
       <img src="acorn/acorn-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="lamp/">
+    <a class="card" href="lamp/" data-added="2026-07-28">
       <img src="lamp/lamp-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="warmler/">
+    <a class="card" href="warmler/" data-added="2026-07-28">
       <img src="warmler/warmler-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="rain/">
+    <a class="card" href="rain/" data-added="2026-07-28">
       <img src="rain/rain-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="ant/">
+    <a class="card" href="ant/" data-added="2026-07-28">
       <img src="ant/ant-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="windower/">
+    <a class="card" href="windower/" data-added="2026-07-28">
       <img src="windower/windower-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="galileo/">
+    <a class="card" href="galileo/" data-added="2026-07-28">
       <img src="galileo/galileo-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="conometer/">
+    <a class="card" href="conometer/" data-added="2026-07-28">
       <img src="conometer/conometer-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="gyre/">
+    <a class="card" href="gyre/" data-added="2026-07-28">
       <img src="gyre/gyre-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="chladni/">
+    <a class="card" href="chladni/" data-added="2026-08-03">
       <img src="chladni/chladni-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="bowl/">
+    <a class="card" href="bowl/" data-added="2026-07-30">
       <img src="bowl/bowl-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="pendulum/">
+    <a class="card" href="pendulum/" data-added="2026-07-30">
       <img src="pendulum/pendulum-card.png?v=3" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="storm/">
+    <a class="card" href="storm/" data-added="2026-07-31">
       <img src="storm/storm-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="birds/">
+    <a class="card" href="birds/" data-added="2026-07-28">
       <img src="birds/birds-card.png?v=2" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="kaleidoscope/">
+    <a class="card" href="kaleidoscope/" data-added="2026-08-03">
       <img src="kaleidoscope/kaleidoscope-card.png?v=1" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="fireflies/">
+    <a class="card" href="fireflies/" data-added="2026-08-04">
       <img src="fireflies/fireflies-card.png?v=1" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
-    <a class="card" href="musebox/">
+    <a class="card" href="musebox/" data-added="2026-08-06">
       <img src="musebox/musebox-card.png?v=1" alt="">
+      <span class="new-dot" aria-hidden="true"></span>
     </a>
   </div>
 
@@ -244,6 +269,15 @@
         anchor.querySelector('.anchor-q').setAttribute('aria-expanded', 'false');
       }
     });
+  });
+
+  // quiet "new" dot: lights up on any card added within the last 30 days, fades itself out after
+  const NEW_DAYS = 14;
+  const now = Date.now();
+  document.querySelectorAll('.card[data-added]').forEach((card) => {
+    const added = new Date(card.dataset.added + 'T00:00:00');
+    const days = (now - added.getTime()) / 86400000;
+    if (days >= 0 && days <= NEW_DAYS) card.classList.add('is-new');
   });
 })();
 </script>
