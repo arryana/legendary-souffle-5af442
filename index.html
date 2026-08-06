@@ -50,10 +50,11 @@
     font-weight:400; font-style:italic;
     font-size:clamp(30px, 5vw, 46px);
     letter-spacing:.14em;
-    margin:0 0 56px;
+    margin:0;
     color:var(--parchment);
     text-shadow: 0 0 24px rgba(201,151,78,0.25);
   }
+  .anchor.pos-title{ margin:0 0 56px; }
 
   #cards{
     display:flex; gap:28px; align-items:center; justify-content:center;
@@ -125,7 +126,8 @@
   /* Mobile: fill the width with a 2-column grid instead of a lone centered column */
   @media (max-width: 560px){
     #wrap{ padding: 28px 14px; justify-content:flex-start; }
-    h1{ font-size: clamp(28px, 8vw, 40px); margin: 0 0 32px; }
+    h1{ font-size: clamp(28px, 8vw, 40px); }
+    .anchor.pos-title{ margin: 0 0 32px; }
     #cards.dice6{
       gap: 16px;
       max-width: 460px;
@@ -137,41 +139,30 @@
 <body>
 <!-- what-is-this anchor: a quiet "?" that reveals a one-line explanation of sagne -->
 <style>
-  .anchor{ position:fixed; z-index:30; display:flex; gap:14px; pointer-events:none; }
-  .anchor-q{ appearance:none; border:0; background:none; cursor:pointer; font-family:inherit; font-size:23px; line-height:1; color:#f2e9d8; opacity:.34; transition:opacity .45s ease; padding:4px 10px; border-radius:8px; pointer-events:auto; }
+  .anchor{ display:flex; gap:14px; }
+  .anchor-q{ appearance:none; border:0; background:none; cursor:pointer; font-family:inherit; font-size:23px; line-height:1; color:#f2e9d8; opacity:.34; transition:opacity .45s ease; padding:4px 10px; border-radius:8px; }
   .anchor-q:hover, .anchor-q:focus-visible{ opacity:.9; }
   .anchor-q:focus-visible{ outline:1px solid rgba(242,233,216,.4); outline-offset:4px; }
   .anchor-copy{ margin:0; font-size:15px; line-height:1.65; color:#9fb2c6; opacity:0; transition:opacity .6s ease, transform .6s ease; pointer-events:none; text-wrap:pretty; }
-  .anchor.pos-piece{ top:22px; right:24px; flex-direction:column; align-items:flex-end; }
-  .anchor.pos-piece .anchor-copy{ max-width:min(360px,82vw); text-align:left; transform:translateY(-6px); }
-  .anchor.pos-home{ left:50%; bottom:26px; transform:translateX(-50%); flex-direction:column-reverse; align-items:center; }
-  .anchor.pos-home .anchor-copy{ max-width:min(680px,88vw); text-align:center; transform:translateY(6px); }
-  .anchor.open .anchor-copy{ opacity:1; transform:none; }
+  .anchor.open .anchor-copy{ opacity:1; transform:none; pointer-events:auto; }
   .anchor.open .anchor-q{ opacity:.9; }
   @media (prefers-reduced-motion: reduce){ .anchor-copy{ transition:opacity .2s linear; transform:none; } }
+
+  /* title anchor: the "?" sits right after the wordmark */
+  .anchor.pos-title{ flex-direction:column; align-items:center; }
+  .anchor.pos-title .anchor-q{ font-family:'Jost', sans-serif; font-size:16px; vertical-align:.6em; margin-left:.3em; }
+  .anchor.pos-title .anchor-copy{ max-width:min(520px,86vw); text-align:center; margin-top:14px; transform:translateY(-6px); }
+
+  /* foot anchor: sits after the last card, in the normal flow of the page —
+     you only find it by scrolling all the way down, it isn't pinned to the viewport */
+  .anchor.pos-foot{ flex-direction:column; align-items:center; width:100%; margin:64px 0 12px; }
+  .anchor.pos-foot .anchor-copy{ max-width:min(680px,88vw); text-align:center; margin-top:14px; transform:translateY(-6px); }
 </style>
-<div class="anchor pos-home" id="anchor">
-  <button class="anchor-q" type="button" aria-expanded="false" aria-controls="anchor-copy" aria-label="what is this?">?</button>
-  <p class="anchor-copy" id="anchor-copy">sagne has been designed by one person, programming by claude and images by gemini. it is a single individual's attempt to bring to digital life some of life's interesting modes and models.</p>
-</div>
-<script>
-(function(){
-  const anchor = document.getElementById('anchor');
-  const btn = anchor.querySelector('.anchor-q');
-  btn.addEventListener('click', () => {
-    const open = anchor.classList.toggle('open');
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-  document.addEventListener('click', (e) => {
-    if (!anchor.contains(e.target)) {
-      anchor.classList.remove('open');
-      btn.setAttribute('aria-expanded', 'false');
-    }
-  });
-})();
-</script>
 <div id="wrap">
-  <h1>sagne</h1>
+  <div class="anchor pos-title">
+    <h1>sagne<button class="anchor-q" type="button" aria-expanded="false" aria-controls="anchor-copy-title" aria-label="what is this?">?</button></h1>
+    <p class="anchor-copy" id="anchor-copy-title">tools and toys for twiddling. no scores, no goals, no timers (except the tools which are timers), no links, no likes, no ads, no in-game purchases. nothing exciting, but hopefully something enjoyable.</p>
+  </div>
 
   <div id="cards" class="dice6">
     <a class="card" href="candler/">
@@ -229,6 +220,32 @@
       <img src="musebox/musebox-card.png?v=1" alt="">
     </a>
   </div>
+
+  <div class="anchor pos-foot">
+    <button class="anchor-q" type="button" aria-expanded="false" aria-controls="anchor-copy-foot" aria-label="about sagne">?</button>
+    <p class="anchor-copy" id="anchor-copy-foot">sagne has been designed by one person, programming by claude and images by gemini. it is a single individual's attempt to bring to digital life some of life's interesting modes and models.</p>
+  </div>
 </div>
+<script>
+(function(){
+  const anchors = document.querySelectorAll('.anchor');
+  anchors.forEach((anchor) => {
+    const btn = anchor.querySelector('.anchor-q');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = anchor.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
+  document.addEventListener('click', (e) => {
+    anchors.forEach((anchor) => {
+      if (!anchor.contains(e.target)) {
+        anchor.classList.remove('open');
+        anchor.querySelector('.anchor-q').setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
+})();
+</script>
 </body>
 </html>
