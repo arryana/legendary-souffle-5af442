@@ -39,16 +39,24 @@
   }
   .disc-wrap{ position:relative; }
   canvas{ width:min(78vmin,600px); height:min(78vmin,600px); display:block; touch-action:none; cursor:pointer; }
-  .hint{
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    text-align:center; font-size:15px; color:var(--cream); opacity:.75; pointer-events:none;
-    transition:opacity .6s ease; letter-spacing:.02em;
+  .stopbox{
+    position:absolute; right:5%; bottom:8%; width:28px; height:28px; padding:0;
+    border:1.5px solid rgba(201,151,78,.55); border-radius:4px; cursor:pointer;
+    background:rgba(20,14,6,.6); display:flex; align-items:center; justify-content:center;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.4);
+    transition: border-color .2s ease;
   }
-  .hint.gone{ opacity:0; }
+  .stopbox::after{
+    content:''; width:9px; height:9px; border-radius:1px; background:var(--brass);
+    opacity:.5; transition:opacity .2s ease, background .2s ease, box-shadow .2s ease;
+  }
+  .stopbox:hover{ border-color:rgba(232,195,131,.85); }
+  .stopbox.stopped{ border-color:rgba(232,195,131,.9); }
+  .stopbox.stopped::after{ opacity:1; background:#e8c473; box-shadow:0 0 6px rgba(232,195,131,.75); }
   .controls{ display:flex; align-items:center; gap:18px; font-size:20px; color:var(--dim); flex-wrap:wrap; justify-content:center; }
   input[type=range]{ width:200px; accent-color:var(--brass); cursor:pointer; }
-  .clear{ font-family:inherit; font-size:14px; color:var(--dim); background:none; border:0; cursor:pointer; letter-spacing:.03em; }
-  .clear:hover{ color:var(--cream); }
+  .iconbtn{ font-family:inherit; font-size:18px; line-height:1; background:none; border:0; cursor:pointer; padding:0; opacity:.6; transition:opacity .2s ease; }
+  .iconbtn:hover{ opacity:1; }
   @media (max-width:480px){
     .controls{ gap:10px; }
     input[type=range]{ width:140px; }
@@ -60,14 +68,14 @@
 <div id="wrap">
   <div class="disc-wrap">
     <canvas id="cv" width="600" height="600"></canvas>
-    <div class="hint" id="hint">hold and aim, let go to set a pin — it's always turning otherwise</div>
+    <button class="stopbox" id="stopbox" aria-label="stop the disc"></button>
   </div>
   <div class="controls">
     <span title="slower">🐢</span>
     <input id="tempo" type="range" min="1.2" max="7" step="0.1" value="3.2">
     <span title="faster">🐇</span>
-    <button class="clear" id="save">save</button>
-    <button class="clear" id="clear">clear</button>
+    <button class="iconbtn" id="save" title="save" aria-label="save">💾</button>
+    <button class="iconbtn" id="clear" title="clear" aria-label="clear">🗑️</button>
   </div>
 </div>
 
@@ -104,6 +112,9 @@ const SAVE_KEY='musebox-saved-v1';
 // a finger/cursor presses down (see the interaction code below) so aiming is actually
 // possible, and only commit + resume on release
 let frozen=false, hover=null;
+// separate from that — the little box lets you stop the disc outright (a real
+// wind-up stop), independent of the aim-and-release freeze above
+let stopped=false;
 const norm=a=>{a%=2*Math.PI;return a<0?a+2*Math.PI:a;};
 
 /* ---------- audio: a struck music-box tine ---------- */
@@ -145,7 +156,7 @@ function tine(freq){
 let last=performance.now();
 function frame(now){
   const dt=Math.min(0.05,(now-last)/1000); last=now;
-  if(!frozen) rotation=(rotation+stepsPerSec*stepAngle*dt)%(2*Math.PI);
+  if(!frozen && !stopped) rotation=(rotation+stepsPerSec*stepAngle*dt)%(2*Math.PI);
   const curStep=Math.round(norm(pluckAng-rotation)/stepAngle)%N_STEPS;
   if(curStep!==lastStep){
     lastStep=curStep;
@@ -207,7 +218,6 @@ function draw(now){
 }
 
 /* ---------- interaction ---------- */
-const hint=document.getElementById('hint');
 
 // works out which ring/step (if any) a pointer event is over, using the CURRENT
 // (frozen, while a press is active) rotation — so the target stays put for the
@@ -225,7 +235,7 @@ function cellAt(e){
 }
 
 cv.addEventListener('pointerdown',e=>{
-  initAudio(); hint.classList.add('gone');
+  initAudio();
   frozen=true;
   hover=cellAt(e);
   cv.setPointerCapture(e.pointerId);
@@ -248,12 +258,19 @@ tempoSlider.value=stepsPerSec; // reflect a loaded pattern's speed, if there was
 tempoSlider.addEventListener('input',e=>stepsPerSec=parseFloat(e.target.value));
 document.getElementById('clear').addEventListener('click',()=>{ pins=Array.from({length:N_RINGS},()=>new Array(N_STEPS).fill(false)); });
 
+const stopbox=document.getElementById('stopbox');
+stopbox.addEventListener('click',()=>{
+  initAudio();
+  stopped=!stopped;
+  stopbox.classList.toggle('stopped', stopped);
+});
+
 const saveBtn=document.getElementById('save');
 saveBtn.addEventListener('click',()=>{
   try{
     localStorage.setItem(SAVE_KEY, JSON.stringify({ pins, stepsPerSec }));
     const original=saveBtn.textContent;
-    saveBtn.textContent='saved';
+    saveBtn.textContent='✅';
     setTimeout(()=>{ saveBtn.textContent=original; }, 1100);
   }catch(e){ /* private-browsing/storage-blocked — nothing more we can do here */ }
 });

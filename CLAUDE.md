@@ -86,6 +86,13 @@ screenshot can't show live weather.)
   Match the existing naming when adding new assets. Only the shared root-level files
   (`favicon.svg`, and links back to `index.html`) need the `../` prefix.
 
+### On-page controls: emoji over text
+
+For buttons/labels on a piece itself (not this chat) — save, clear, speed, etc. —
+default to an emoji instead of a text word, unless the owner asks for text. Give it a
+`title`/`aria-label` for accessibility even though there's no visible label. Matches the
+existing tempo controls (🐢/🐇) and keeps pieces free of on-screen instructions.
+
 ---
 
 ## The three actions: Preview → Do → Undo
