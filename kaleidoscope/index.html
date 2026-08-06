@@ -314,6 +314,16 @@
     for(const o of placed) drawObject(trayCtx, o, traySize);
   }
 
+  // the tray photo is a real tin with its own gold rim baked in — the velvet
+  // interior only fills the inner portion of the frame before that rim
+  // starts. Panning the sample far enough (see the translate below) can
+  // otherwise sweep past the velvet into that rim, mirroring fragments of
+  // it into the pattern as a stray pale shape that doesn't belong there.
+  // 0.78 was checked empirically across a full turn of the ring at every
+  // mirror count, comfortably inside the real boundary rather than right
+  // up against it.
+  const TRAY_SAFE_FRACTION = 0.78;
+
   function drawScope(){
     if(!scopeSize) return;
     scopeCtx.clearRect(0,0,scopeSize,scopeSize);
@@ -345,7 +355,17 @@
       // margin, so edge objects come into view across a comfortable range of turning
       // instead of only a narrow sliver of it.
       scopeCtx.translate(R*0.5, 0);
-      if(trayCanvas.width) scopeCtx.drawImage(trayCanvas, -s/2, -s/2, s, s);
+      if(trayCanvas.width){
+        // constrain painting to the tray's own safe velvet circle (in
+        // addition to the wedge clip already active) so the rim can never
+        // show up here, no matter how far the pan/turn reaches
+        scopeCtx.save();
+        scopeCtx.beginPath();
+        scopeCtx.arc(0, 0, TRAY_SAFE_FRACTION*(s/2), 0, Math.PI*2);
+        scopeCtx.clip();
+        scopeCtx.drawImage(trayCanvas, -s/2, -s/2, s, s);
+        scopeCtx.restore();
+      }
       scopeCtx.restore();
     }
     scopeCtx.restore();
