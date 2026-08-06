@@ -264,10 +264,13 @@
 
   // placed objects, in tray-normalized 0..1 coordinates so they stay put
   // correctly regardless of on-screen size
+  // centred as a group (their average position is the tray's exact middle) so the
+  // default view fills the mirror evenly around its own true centre, rather than
+  // clustering to one side of it
   let placed=[
-    {type:'gem', x:0.42, y:0.4, size:0.24, hue:200},
-    {type:'glass', x:0.62, y:0.6, size:0.3},
-    {type:'gem', x:0.58, y:0.32, size:0.18, hue:20},
+    {type:'gem', x:0.5, y:0.36, size:0.24, hue:200},
+    {type:'glass', x:0.615, y:0.565, size:0.3},
+    {type:'gem', x:0.385, y:0.565, size:0.18, hue:20},
   ];
 
   function resize(){
