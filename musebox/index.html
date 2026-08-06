@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>music box — sagne</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<meta name="description" content="A tin music-box disc — press to pause and place pins, then watch it turn and play them back.">
+<meta name="theme-color" content="#0e1c30">
+<link rel="canonical" href="https://sagne.co.uk/musebox/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="sagne">
+<meta property="og:title" content="music box — sagne">
+<meta property="og:description" content="A tin music-box disc — press to pause and place pins, then watch it turn and play them back.">
+<meta property="og:url" content="https://sagne.co.uk/musebox/">
+<meta property="og:image" content="https://sagne.co.uk/og/musebox.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="music box — sagne">
+<meta name="twitter:description" content="A tin music-box disc — press to pause and place pins, then watch it turn and play them back.">
+<meta name="twitter:image" content="https://sagne.co.uk/og/musebox.png">
+<style>
+  :root{ --bg1:#11161f; --bg2:#080a0f; --brass:#c9974e; --cream:#e7d9b4; --dim:#8f7a4e; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; margin:0;
+    background:radial-gradient(ellipse at 50% 30%, var(--bg1) 0%, var(--bg2) 78%);
+    color:var(--cream); font-family: Georgia,'Times New Roman',serif;
+    overflow-x:hidden; -webkit-font-smoothing:antialiased; user-select:none;
+  }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#dfe6ea; opacity:.5;
+    text-decoration:none; font-size:14px; letter-spacing:.04em;
+    text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); transition:opacity .3s ease; }
+  #backlink:hover{ opacity:.9; }
+
+  #wrap{ min-height:100vh; min-height:100dvh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+    padding:64px 16px 32px;
+  }
+  .disc-wrap{ position:relative; }
+  canvas{ width:min(78vmin,600px); height:min(78vmin,600px); display:block; touch-action:none; cursor:pointer; }
+  .hint{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    text-align:center; font-size:15px; color:var(--cream); opacity:.75; pointer-events:none;
+    transition:opacity .6s ease; letter-spacing:.02em;
+  }
+  .hint.gone{ opacity:0; }
+  .controls{ display:flex; align-items:center; gap:18px; font-size:20px; color:var(--dim); }
+  input[type=range]{ width:200px; accent-color:var(--brass); cursor:pointer; }
+  .clear{ font-family:inherit; font-size:14px; color:var(--dim); background:none; border:0; cursor:pointer; letter-spacing:.03em; }
+  .clear:hover{ color:var(--cream); }
+</style>
+</head>
+<body>
+<a id="backlink" href="../index.html">← sagne</a>
+<div id="wrap">
+  <div class="disc-wrap">
+    <canvas id="cv" width="600" height="600"></canvas>
+    <div class="hint" id="hint">hold and aim, let go to set a pin — it's always turning otherwise</div>
+  </div>
+  <div class="controls">
+    <span title="slower">🐢</span>
+    <input id="tempo" type="range" min="1.2" max="7" step="0.1" value="3.2">
+    <span title="faster">🐇</span>
+    <button class="clear" id="clear">clear</button>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const CX=300, CY=300, N_STEPS=16, stepAngle=2*Math.PI/N_STEPS;
+// C major pentatonic — no wrong notes
+const NOTES=[261.63,293.66,329.63,392.00,440.00,523.25,587.33,659.25];
+const N_RINGS=NOTES.length, rMax=250, rMin=95, spacing=(rMax-rMin)/(N_RINGS-1);
+const ringRadius=i=>rMax-i*spacing;
+const pluckAng=-Math.PI/2;
+let pins=Array.from({length:N_RINGS},()=>new Array(N_STEPS).fill(false));
+[[0,0],[2,2],[3,4],[4,6],[5,8],[4,10],[3,12],[2,14]].forEach(([r,s])=>pins[r][s]=true);
+let rotation=0, stepsPerSec=3.2, lastStep=-1, flashes=[];
+// the disc spins continuously, which makes it a moving target — freeze it the moment
+// a finger/cursor presses down (see the interaction code below) so aiming is actually
+// possible, and only commit + resume on release
+let frozen=false, hover=null;
+const norm=a=>{a%=2*Math.PI;return a<0?a+2*Math.PI:a;};
+
+/* ---------- audio: a struck music-box tine ---------- */
+let actx=null, inNode=null;
+function initAudio(){
+  if(actx){ if(actx.state==='suspended') actx.resume(); return; }
+  actx=new (window.AudioContext||window.webkitAudioContext)();
+  const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=4800; lp.Q.value=0.6;
+  const master=actx.createGain(); master.gain.value=0.85;
+  lp.connect(master); master.connect(actx.destination);
+  const dl=actx.createDelay(); dl.delayTime.value=0.19;
+  const fb=actx.createGain(); fb.gain.value=0.22;
+  const wet=actx.createGain(); wet.gain.value=0.12;
+  master.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(actx.destination);
+  inNode=lp;
+}
+function tine(freq){
+  if(!actx) return;
+  const t=actx.currentTime;
+  [[1,0.5,2.4],[2.76,0.16,1.0],[5.40,0.06,0.5]].forEach(([ratio,amp,dec])=>{
+    const o=actx.createOscillator(); o.type='sine';
+    o.frequency.value=freq*ratio*(1+(Math.random()-0.5)*0.006);
+    const g=actx.createGain(); const d=dec*(0.9+Math.random()*0.2);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(amp,t+0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+    o.connect(g); g.connect(inNode); o.start(t); o.stop(t+d+0.05);
+  });
+  const len=Math.floor(actx.sampleRate*0.02);
+  const nb=actx.createBuffer(1,len,actx.sampleRate);
+  const chd=nb.getChannelData(0); for(let i=0;i<len;i++) chd[i]=Math.random()*2-1;
+  const ns=actx.createBufferSource(); ns.buffer=nb;
+  const hp=actx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=2200;
+  const ng=actx.createGain(); ng.gain.setValueAtTime(0.12,t); ng.gain.exponentialRampToValueAtTime(0.0001,t+0.03);
+  ns.connect(hp); hp.connect(ng); ng.connect(inNode); ns.start(t); ns.stop(t+0.05);
+}
+
+/* ---------- loop ---------- */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(!frozen) rotation=(rotation+stepsPerSec*stepAngle*dt)%(2*Math.PI);
+  const curStep=Math.round(norm(pluckAng-rotation)/stepAngle)%N_STEPS;
+  if(curStep!==lastStep){
+    lastStep=curStep;
+    for(let r=0;r<N_RINGS;r++) if(pins[r][curStep]){ tine(NOTES[r]); flashes.push({ring:r,t:now}); }
+  }
+  draw(now);
+  requestAnimationFrame(frame);
+}
+
+function draw(now){
+  ctx.clearRect(0,0,600,600);
+  ctx.save(); ctx.translate(CX,CY);
+  const grd=ctx.createRadialGradient(0,-40,20,0,0,rMax+18);
+  grd.addColorStop(0,'#b9903f'); grd.addColorStop(0.6,'#8a6a2c'); grd.addColorStop(1,'#4d3a18');
+  ctx.beginPath(); ctx.arc(0,0,rMax+18,0,2*Math.PI); ctx.fillStyle=grd; ctx.fill();
+  ctx.lineWidth=6; ctx.strokeStyle='rgba(25,17,6,0.7)'; ctx.stroke();
+
+  ctx.save(); ctx.rotate(rotation);
+  for(let i=0;i<N_RINGS;i++){
+    const R=ringRadius(i);
+    ctx.beginPath(); ctx.arc(0,0,R,0,2*Math.PI); ctx.strokeStyle='rgba(40,28,12,0.35)'; ctx.lineWidth=1; ctx.stroke();
+    for(let s=0;s<N_STEPS;s++){
+      const a=s*stepAngle, x=R*Math.cos(a), y=R*Math.sin(a);
+      if(pins[i][s]){
+        const pg=ctx.createRadialGradient(x-2,y-2,1,x,y,8);
+        pg.addColorStop(0,'#fff2c8'); pg.addColorStop(0.5,'#e8c473'); pg.addColorStop(1,'#7a5a24');
+        ctx.beginPath(); ctx.arc(x,y,7,0,2*Math.PI); ctx.fillStyle=pg; ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.arc(x,y,2.2,0,2*Math.PI); ctx.fillStyle='rgba(28,18,7,0.42)'; ctx.fill();
+      }
+    }
+  }
+  if(frozen && hover){
+    // show exactly which pin will be set/cleared before it's committed, since the
+    // disc is paused (not moving) for the whole press — aim, then let go
+    const R=ringRadius(hover.ring), a=hover.step*stepAngle, x=R*Math.cos(a), y=R*Math.sin(a);
+    const willRemove=pins[hover.ring][hover.step];
+    ctx.beginPath(); ctx.arc(x,y,11,0,2*Math.PI);
+    ctx.strokeStyle=willRemove?'rgba(255,120,90,0.85)':'rgba(255,244,205,0.9)';
+    ctx.lineWidth=2; ctx.stroke();
+  }
+  ctx.restore();
+
+  // fixed comb at the top
+  ctx.beginPath(); ctx.moveTo(0,-(rMin-12)); ctx.lineTo(0,-(rMax+12));
+  ctx.strokeStyle='rgba(255,240,210,0.14)'; ctx.lineWidth=2; ctx.stroke();
+  for(let i=0;i<N_RINGS;i++){
+    const R=ringRadius(i), x=R*Math.cos(pluckAng), y=R*Math.sin(pluckAng);
+    let fl=0;
+    for(const f of flashes) if(f.ring===i){ const age=(now-f.t)/1000; if(age<0.35) fl=Math.max(fl,1-age/0.35); }
+    if(fl>0){ ctx.beginPath(); ctx.arc(x,y,7+9*fl,0,2*Math.PI); ctx.fillStyle=`rgba(255,235,180,${0.2*fl})`; ctx.fill(); }
+    ctx.beginPath(); ctx.arc(x,y,3.2,0,2*Math.PI);
+    ctx.fillStyle= fl>0?`rgba(255,244,205,${0.45+0.55*fl})`:'rgba(220,200,150,0.5)'; ctx.fill();
+  }
+  ctx.beginPath(); ctx.arc(0,0,rMin-24,0,2*Math.PI); ctx.fillStyle='#3a2c12'; ctx.fill();
+  ctx.beginPath(); ctx.arc(0,0,6,0,2*Math.PI); ctx.fillStyle='#20180a'; ctx.fill();
+  ctx.restore();
+  flashes=flashes.filter(f=>(now-f.t)/1000<0.4);
+}
+
+/* ---------- interaction ---------- */
+const hint=document.getElementById('hint');
+
+// works out which ring/step (if any) a pointer event is over, using the CURRENT
+// (frozen, while a press is active) rotation — so the target stays put for the
+// whole gesture instead of sliding out from under the finger
+function cellAt(e){
+  const rect=cv.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*(cv.width/rect.width)-CX;
+  const y=(e.clientY-rect.top)*(cv.height/rect.height)-CY;
+  const r=Math.hypot(x,y), ang=Math.atan2(y,x);
+  const ring=Math.round((rMax-r)/spacing);
+  if(ring<0||ring>=N_RINGS) return null;
+  if(Math.abs(ringRadius(ring)-r)>spacing*0.6) return null;
+  const step=((Math.round(norm(ang-rotation)/stepAngle)%N_STEPS)+N_STEPS)%N_STEPS;
+  return {ring, step};
+}
+
+cv.addEventListener('pointerdown',e=>{
+  initAudio(); hint.classList.add('gone');
+  frozen=true;
+  hover=cellAt(e);
+  cv.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+cv.addEventListener('pointermove',e=>{
+  if(!frozen) return;
+  hover=cellAt(e);
+});
+function releasePress(){
+  if(!frozen) return;
+  if(hover) pins[hover.ring][hover.step]=!pins[hover.ring][hover.step];
+  // no sound on placement — a pin only speaks when it comes round to the comb
+  frozen=false; hover=null;
+}
+cv.addEventListener('pointerup',releasePress);
+cv.addEventListener('pointercancel',()=>{ frozen=false; hover=null; });
+document.getElementById('tempo').addEventListener('input',e=>stepsPerSec=parseFloat(e.target.value));
+document.getElementById('clear').addEventListener('click',()=>{ pins=Array.from({length:N_RINGS},()=>new Array(N_STEPS).fill(false)); });
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
