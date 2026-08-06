@@ -146,43 +146,6 @@
 <body>
 
 <a id="backlink" href="../index.html">← sagne</a>
-<!-- what-is-this anchor: a quiet "?" that reveals a one-line explanation of sagne -->
-<style>
-  .anchor{ position:fixed; z-index:30; display:flex; gap:14px; pointer-events:none; }
-  .anchor-q{ appearance:none; border:0; background:none; cursor:pointer; font-family:inherit; font-size:23px; line-height:1; color:#f2e9d8; opacity:.34; transition:opacity .45s ease; padding:4px 10px; border-radius:8px; pointer-events:auto; }
-  .anchor-q:hover, .anchor-q:focus-visible{ opacity:.9; }
-  .anchor-q:focus-visible{ outline:1px solid rgba(242,233,216,.4); outline-offset:4px; }
-  .anchor-copy{ margin:0; font-size:15px; line-height:1.65; color:#9fb2c6; opacity:0; transition:opacity .6s ease, transform .6s ease; pointer-events:none; text-wrap:pretty; }
-  .anchor.pos-piece{ top:22px; right:24px; flex-direction:column; align-items:flex-end; }
-  .anchor.pos-piece .anchor-copy{ max-width:min(360px,82vw); text-align:left; transform:translateY(-6px); }
-  .anchor.pos-home{ left:50%; bottom:26px; transform:translateX(-50%); flex-direction:column-reverse; align-items:center; }
-  .anchor.pos-home .anchor-copy{ max-width:min(680px,88vw); text-align:center; transform:translateY(6px); }
-  .anchor.open .anchor-copy{ opacity:1; transform:none; }
-  .anchor.open .anchor-q{ opacity:.9; }
-  @media (prefers-reduced-motion: reduce){ .anchor-copy{ transition:opacity .2s linear; transform:none; } }
-  /* this page's own top-right hint label sits at the anchor's default spot — drop below it */
-  .anchor.pos-piece{ top:66px; }
-</style>
-<div class="anchor pos-piece" id="anchor">
-  <button class="anchor-q" type="button" aria-expanded="false" aria-controls="anchor-copy" aria-label="what is this?">?</button>
-  <p class="anchor-copy" id="anchor-copy">tools and toys for twiddling. no scores, no goals, no timers (except the tools which are timers), no links, no likes, no ads, no in-game purchases. nothing exciting, but hopefully something enjoyable.</p>
-</div>
-<script>
-(function(){
-  const anchor = document.getElementById('anchor');
-  const btn = anchor.querySelector('.anchor-q');
-  btn.addEventListener('click', () => {
-    const open = anchor.classList.toggle('open');
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-  document.addEventListener('click', (e) => {
-    if (!anchor.contains(e.target)) {
-      anchor.classList.remove('open');
-      btn.setAttribute('aria-expanded', 'false');
-    }
-  });
-})();
-</script>
 <!-- bring-your-own-music: plays a file the visitor picks from their own device; nothing is uploaded -->
 <style>
   #music{ position:fixed; left:18px; bottom:16px; z-index:60; display:flex; align-items:center; gap:9px; }
