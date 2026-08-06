@@ -45,10 +45,14 @@
     transition:opacity .6s ease; letter-spacing:.02em;
   }
   .hint.gone{ opacity:0; }
-  .controls{ display:flex; align-items:center; gap:18px; font-size:20px; color:var(--dim); }
+  .controls{ display:flex; align-items:center; gap:18px; font-size:20px; color:var(--dim); flex-wrap:wrap; justify-content:center; }
   input[type=range]{ width:200px; accent-color:var(--brass); cursor:pointer; }
   .clear{ font-family:inherit; font-size:14px; color:var(--dim); background:none; border:0; cursor:pointer; letter-spacing:.03em; }
   .clear:hover{ color:var(--cream); }
+  @media (max-width:480px){
+    .controls{ gap:10px; }
+    input[type=range]{ width:140px; }
+  }
 </style>
 </head>
 <body>
@@ -62,6 +66,7 @@
     <span title="slower">🐢</span>
     <input id="tempo" type="range" min="1.2" max="7" step="0.1" value="3.2">
     <span title="faster">🐇</span>
+    <button class="clear" id="save">save</button>
     <button class="clear" id="clear">clear</button>
   </div>
 </div>
@@ -77,6 +82,24 @@ const pluckAng=-Math.PI/2;
 let pins=Array.from({length:N_RINGS},()=>new Array(N_STEPS).fill(false));
 [[0,0],[2,2],[3,4],[4,6],[5,8],[4,10],[3,12],[2,14]].forEach(([r,s])=>pins[r][s]=true);
 let rotation=0, stepsPerSec=3.2, lastStep=-1, flashes=[];
+
+// remembers one pattern on this device only — no accounts, nothing sent anywhere.
+// if a saved one exists, it replaces the default pattern above before the disc
+// ever starts turning.
+const SAVE_KEY='musebox-saved-v1';
+(function loadSaved(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    const data=JSON.parse(raw);
+    if(Array.isArray(data.pins) && data.pins.length===N_RINGS && data.pins.every(row=>Array.isArray(row) && row.length===N_STEPS)){
+      pins=data.pins;
+    }
+    if(typeof data.stepsPerSec==='number' && data.stepsPerSec>=1.2 && data.stepsPerSec<=7){
+      stepsPerSec=data.stepsPerSec;
+    }
+  }catch(e){ /* private-browsing/storage-blocked — just keep the default pattern */ }
+})();
 // the disc spins continuously, which makes it a moving target — freeze it the moment
 // a finger/cursor presses down (see the interaction code below) so aiming is actually
 // possible, and only commit + resume on release
@@ -220,8 +243,20 @@ function releasePress(){
 }
 cv.addEventListener('pointerup',releasePress);
 cv.addEventListener('pointercancel',()=>{ frozen=false; hover=null; });
-document.getElementById('tempo').addEventListener('input',e=>stepsPerSec=parseFloat(e.target.value));
+const tempoSlider=document.getElementById('tempo');
+tempoSlider.value=stepsPerSec; // reflect a loaded pattern's speed, if there was one
+tempoSlider.addEventListener('input',e=>stepsPerSec=parseFloat(e.target.value));
 document.getElementById('clear').addEventListener('click',()=>{ pins=Array.from({length:N_RINGS},()=>new Array(N_STEPS).fill(false)); });
+
+const saveBtn=document.getElementById('save');
+saveBtn.addEventListener('click',()=>{
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ pins, stepsPerSec }));
+    const original=saveBtn.textContent;
+    saveBtn.textContent='saved';
+    setTimeout(()=>{ saveBtn.textContent=original; }, 1100);
+  }catch(e){ /* private-browsing/storage-blocked — nothing more we can do here */ }
+});
 
 requestAnimationFrame(frame);
 </script>
