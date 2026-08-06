@@ -351,10 +351,14 @@
       // central patch and never sweeping round to objects placed nearer the rim. Panning
       // the sample point out from centre before drawing lets turning the ring genuinely
       // sweep different parts of the tray into view, like a real kaleidoscope's wheel.
-      // 0.5 (rather than the bare minimum needed to just reach the rim) leaves a real
-      // margin, so edge objects come into view across a comfortable range of turning
-      // instead of only a narrow sliver of it.
-      scopeCtx.translate(R*0.5, 0);
+      // This used to be 0.5, on the idea that more offset means more of the rim comes into
+      // reach — but since the wedge itself is a narrow angular slice, a bigger offset also
+      // orbits anything placed near the tray's centre (the common case — most pieces end up
+      // placed fairly centrally) out of that slice for most of a turn, reading as objects
+      // going missing rather than the pattern just changing. 0.12 was checked across a full
+      // turn at every mirror count: centre pieces now stay visible almost throughout, while
+      // a piece placed near the tray's edge still sweeps into view over the course of a turn.
+      scopeCtx.translate(R*0.12, 0);
       if(trayCanvas.width){
         // constrain painting to the tray's own safe velvet circle (in
         // addition to the wedge clip already active) so the rim can never
