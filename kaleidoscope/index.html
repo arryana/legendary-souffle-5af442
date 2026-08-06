@@ -346,19 +346,17 @@
       scopeCtx.clip();
       const s=R*2.4;
       scopeCtx.rotate(turn);
-      // the sampled window is smaller than the tray itself, so without an offset here it
-      // would just spin in place around the tray's own centre — always showing the same
-      // central patch and never sweeping round to objects placed nearer the rim. Panning
-      // the sample point out from centre before drawing lets turning the ring genuinely
-      // sweep different parts of the tray into view, like a real kaleidoscope's wheel.
-      // This used to be 0.5, on the idea that more offset means more of the rim comes into
-      // reach — but since the wedge itself is a narrow angular slice, a bigger offset also
-      // orbits anything placed near the tray's centre (the common case — most pieces end up
-      // placed fairly centrally) out of that slice for most of a turn, reading as objects
-      // going missing rather than the pattern just changing. 0.12 was checked across a full
-      // turn at every mirror count: centre pieces now stay visible almost throughout, while
-      // a piece placed near the tray's edge still sweeps into view over the course of a turn.
-      scopeCtx.translate(R*0.12, 0);
+      // no pan offset here, on purpose: the centre of the mirror formation is the
+      // tray's own true centre, always, so it never depends on where `turn` happens
+      // to be. Two earlier attempts panned the sample away from centre instead (first
+      // by a lot, then by a little) to let rim-placed pieces eventually sweep into
+      // view — both wrong, because that offset also orbits the tray's OWN centre (and
+      // anything placed there, the common case) out of the wedge's narrow slice for
+      // real stretches of a turn, reading as objects going missing. Turning still
+      // rotates the whole pattern (see the rotate above), just around a fixed middle
+      // instead of a wandering one. s is already zoomed in past the wedge's own radius
+      // R (s/2 = 1.2R), so a real, sizeable ring around the centre — not just a pinprick
+      // — is visible without any pan at all; only the tray's outer rim stays out of reach.
       if(trayCanvas.width){
         // constrain painting to the tray's own safe velvet circle (in
         // addition to the wedge clip already active) so the rim can never
