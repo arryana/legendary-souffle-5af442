@@ -47,6 +47,29 @@
   .keyItem.active{ opacity:1; background:rgba(223,230,234,.09); }
   .keyItem svg{ width:17px; height:17px; color:#dfe6ea; flex-shrink:0; }
   .keyItem canvas{ width:24px; height:auto; display:block; border-radius:2px; }
+
+  /* a quiet flag, always available, for checking the weather somewhere other than
+     wherever the visitor actually is — opens a small search bar, never on by default */
+  #loc-flag{
+    appearance:none; border:0; background:none; padding:4px 6px;
+    font-size:15px; line-height:1; cursor:pointer; opacity:.4; transition:opacity .3s ease;
+  }
+  #loc-flag:hover, #loc-flag.open{ opacity:.85; }
+  #loc-search{
+    display:flex; align-items:center; justify-content:center; gap:6px; max-height:0; overflow:hidden;
+    opacity:0; transition:max-height .3s ease, opacity .3s ease;
+  }
+  #loc-search.open{ max-height:40px; opacity:1; }
+  #loc-search input{
+    appearance:none; border:0; border-bottom:1px solid rgba(223,230,234,.4); background:none;
+    color:#dfe6ea; font:15px Georgia, serif; letter-spacing:.02em; padding:3px 2px;
+    width:132px; outline:none;
+  }
+  #loc-search input::placeholder{ color:#7a8388; }
+  #loc-search input:focus{ border-bottom-color:#dfe6ea; }
+  #loc-search-status{
+    font-size:11px; letter-spacing:.02em; color:#7a8388; text-align:center; min-height:1.2em;
+  }
 </style>
 </head>
 <body>
@@ -63,7 +86,12 @@
         <path d="M7 17a4 4 0 0 1-.6-7.96A5 5 0 0 1 16 8.2 4.5 4.5 0 0 1 17.5 17H7Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
       </svg>
     </label>
+    <button type="button" id="loc-flag" title="check another location" aria-label="check another location" aria-expanded="false">🚩</button>
   </div>
+  <form id="loc-search" autocomplete="off">
+    <input type="text" id="loc-search-input" placeholder="postcode or city" aria-label="postcode or city">
+  </form>
+  <div id="loc-search-status"></div>
   <div id="key" role="group" aria-label="weather key">
     <button class="keyItem" type="button" data-cond="sunny" aria-label="sunny">
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -182,6 +210,46 @@
   }
   fetchWeather();
   setInterval(()=>{ if(chkLive.checked) fetchWeather(); }, 10*60*1000);
+
+  // the flag: a quiet, always-there way to check the weather somewhere other than
+  // wherever the visitor actually is — never open by default, no page text anywhere
+  // else hints it exists. Geocoding goes through OpenStreetMap's Nominatim (free, no
+  // key) since open-meteo's own geocoder searches place names, not postcodes.
+  (function initLocationSearch(){
+    const flag=document.getElementById('loc-flag');
+    const form=document.getElementById('loc-search');
+    const input=document.getElementById('loc-search-input');
+    const status=document.getElementById('loc-search-status');
+    if(!flag || !form || !input) return;
+
+    flag.addEventListener('click', ()=>{
+      const open=form.classList.toggle('open');
+      flag.classList.toggle('open', open);
+      flag.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if(open) input.focus();
+      else status.textContent='';
+    });
+
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const q=input.value.trim();
+      if(!q) return;
+      status.textContent='looking…';
+      try{
+        const url=`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+        const res=await fetch(url);
+        const results=await res.json();
+        if(!results || !results.length){ status.textContent="couldn't find that"; return; }
+        lat=parseFloat(results[0].lat); lon=parseFloat(results[0].lon);
+        chkLive.checked=true;
+        await fetchWeather();
+        status.textContent=results[0].display_name.split(',').slice(0,2).join(', ');
+        input.value='';
+      }catch(e){
+        status.textContent="couldn't reach the map — try again";
+      }
+    });
+  })();
 
   function setLive(v){ chkLive.checked=v; }
   chkLive.addEventListener('change', ()=>{ setLive(chkLive.checked); applyCondition(); });

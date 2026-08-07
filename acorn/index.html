@@ -460,17 +460,28 @@
     // reads as a clean, steady cone curve rather than a wavy ball.
     acorn:     { friction: 0.974, radius: 62, wobble: 1, catchInterval: 1e9, curlRate: 0.006 },
     disc:      { friction: 0.976, radius: 34, wobble: 0, spinOnImpact: 1 },
-    jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.0022 },
+    jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.0045 },
   };
 
   let activeType = 'pebble';
-  let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0, acornAngle: 0 };
+  let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, jellySpin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0, acornAngle: 0 };
 
-  // the real acorn photo, used as the rolling sprite
-  const acornImg = new Image();
-  let acornReady = false;
-  acornImg.onload = () => { acornReady = true; };
-  acornImg.src = 'acorn.png';
+  // the real acorn, as a set of real photographed angles — swapped frame to
+  // frame as it rolls, rather than spinning one flat photo like a sticker, so
+  // the tumble actually shows different facets of the acorn the way a real
+  // rolling object would. Order chosen to read as one continuous turn: mostly
+  // lying-on-its-side views (tip sweeping round), passing briefly through the
+  // end-on view, rather than jumping between unrelated angles. Frame 1 is
+  // dropped — it's nearly the same photographed angle as frame 0, and back
+  // to back they read as a stutter rather than a turn.
+  const ACORN_FRAME_ORDER = [2, 0, 3, 5, 7, 6, 4];
+  const acornFrames = ACORN_FRAME_ORDER.map((n) => {
+    const img = new Image();
+    img.ready = false;
+    img.onload = () => { img.ready = true; };
+    img.src = `acorn-roll-${n}.png`;
+    return img;
+  });
 
   function resetObject(){
     obj.x = W / 2;
@@ -478,6 +489,7 @@
     obj.vx = 0;
     obj.vy = 0;
     obj.spin = Math.random() * Math.PI * 2;
+    obj.jellySpin = Math.random() * Math.PI * 2;
     obj.rollDistance = 0;
     obj.nextCatch = 30 + Math.random() * 20;
     // which way this particular acorn curls — a real cone always arcs
@@ -563,7 +575,14 @@
       // it's sitting still, the same way an actual rolling cone wouldn't.
       const curlSpeed = Math.hypot(obj.vx, obj.vy);
       if (spec.curlRate && curlSpeed > 0.01) {
-        const rotAmt = spec.curlRate * obj.curlDir * curlSpeed;
+        // the jellybean isn't a clean cone, so it doesn't hold one steady
+        // curl the way the acorn does — its curl strength itself wobbles in
+        // step with its own uneven spin below, so the path snakes rather
+        // than tracing a single tidy arc
+        const curlAmt = (activeType === 'jellybean')
+          ? spec.curlRate * (1 + 0.9 * Math.sin(2 * obj.jellySpin))
+          : spec.curlRate;
+        const rotAmt = curlAmt * obj.curlDir * curlSpeed;
         const cosA = Math.cos(rotAmt), sinA = Math.sin(rotAmt);
         const nvx = obj.vx * cosA - obj.vy * sinA;
         const nvy = obj.vx * sinA + obj.vy * cosA;
@@ -604,7 +623,15 @@
     // should stop spinning too, the same way a real one pinned in place
     // would — using pre-collision speed here made it spin forever in a
     // corner even once it had visibly stopped moving.
-    obj.spin += Math.hypot(obj.x - prevX, obj.y - prevY) / r;
+    const rollStep = Math.hypot(obj.x - prevX, obj.y - prevY);
+    obj.spin += rollStep / r;
+    // the jellybean is elongated, not round — whichever cross-section is
+    // currently down has a different effective rolling radius, so true
+    // rolling-without-slipping means it spins faster over its narrow waist
+    // and slower over its wide middle, twice per full turn, rather than
+    // turning at one constant rate the way a circular pebble does
+    const jellyRadFactor = 1 + 0.24 * Math.cos(2 * obj.jellySpin);
+    obj.jellySpin += (rollStep / r) / jellyRadFactor;
     if (clacked && clackIntensity > 0.6) playClack(clackIntensity);
 
     // acorn sprite orientation: a rolling cone keeps its long axis across the
@@ -869,7 +896,7 @@
     ctx.fillStyle = 'rgba(20,12,4,0.28)';
     ctx.fill();
 
-    ctx.rotate(obj.spin);
+    ctx.rotate(obj.jellySpin);
 
     const body = ctx.createRadialGradient(-r*0.2, -r*0.35, r*0.1, 0, r*0.05, r*1.1);
     body.addColorStop(0, '#e8dcc4');
@@ -927,15 +954,28 @@
     ctx.fillStyle = 'rgba(20,12,4,0.28)';
     ctx.fill();
 
-    // the real acorn photo, turned to match how it's rolling — acornAngle is the slow lean
-    // (tip toward the centre of the arc, like a real cone), obj.spin is the actual continuous
-    // wheel-style rotation (radians = distance travelled / radius) that makes it visibly
-    // tumble rather than just glide along re-steering to face forward
-    ctx.rotate(obj.acornAngle + obj.spin);
-    if (acornReady) {
+    // acornAngle is the slow lean (tip toward the centre of the arc, like a
+    // real cone) — still a plain rotation. obj.spin (radians = distance
+    // travelled / radius) picks which of the real photographed angles is
+    // currently facing the camera, the way a real tumbling cone would show
+    // a different facet — but snapping between just those still angles
+    // with no rotation in between reads as a slideshow, not a roll around.
+    // So within whichever angle's own slice of the turn, the sprite still
+    // rotates continuously through it, centred on that real photo's own
+    // angle, and only swaps to the next real photo once it's rolled all
+    // the way through the current one's slice.
+    const n = acornFrames.length;
+    const slice = (Math.PI * 2) / n;
+    const rawIdx = obj.spin / slice;
+    const frameIdx = ((Math.floor(rawIdx) % n) + n) % n;
+    const withinSlice = rawIdx - Math.floor(rawIdx);
+    const fineRotate = (withinSlice - 0.5) * slice;
+    ctx.rotate(obj.acornAngle + fineRotate);
+    const frame = acornFrames[frameIdx];
+    if (frame.ready) {
       const dh = r * 2.7;
-      const dw = dh * acornImg.naturalWidth / acornImg.naturalHeight;
-      ctx.drawImage(acornImg, -dw/2, -dh/2, dw, dh);
+      const dw = dh * frame.naturalWidth / frame.naturalHeight;
+      ctx.drawImage(frame, -dw/2, -dh/2, dw, dh);
     }
 
     ctx.restore();

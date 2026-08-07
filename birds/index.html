@@ -80,11 +80,20 @@
   const crowSlider=document.getElementById('crowSlider');
   let W=0,H=0,DPR=1;
 
-  // ---- background: a real photo (sunset sky + the two poles), used as-is — we only draw
-  // the wire and birds on top of it. The pole tops were measured directly on the photo, in
-  // its own native pixel space, then mapped through the same cover-fit transform used to
-  // draw the image, so the wire's attach points track the actual poles at any window size.
-  const bgImg=new Image(); bgImg.src='birds-background.png';
+  // ---- background: a real photo, used as-is — we only draw the wire and birds on top of
+  // it. Four times of day, chosen once from the visitor's own clock when the page loads
+  // (not re-checked afterwards — simplest thing that reads right for a decorative piece).
+  // All four photos share the same framing, so the one set of measured pole/pixel positions
+  // below works for whichever one is showing.
+  const SKIES={ night:'birds-background-night.png', morning:'birds-background-morning.png',
+    day:'birds-background-day.png', dusk:'birds-background.png' };
+  function skyForHour(h){ return (h<5||h>=21) ? 'night' : h<7 ? 'morning' : h<19 ? 'day' : 'dusk'; }
+  const sky=skyForHour(new Date().getHours());
+  const isNight = sky==='night';
+  // the pole tops were measured directly on the photo, in its own native pixel space, then
+  // mapped through the same cover-fit transform used to draw the image, so the wire's attach
+  // points track the actual poles at any window size.
+  const bgImg=new Image(); bgImg.src=SKIES[sky];
   const BG_W=1408, BG_H=768;
   // two wires, both strung on the same poles but attaching further down the timber — real
   // poles carry more than one crossarm. Offsets are down from the measured pole-top pixels.
@@ -260,6 +269,21 @@
   ];
   const CROW_SCALE=0.17;   // crows read as a noticeably bigger bird than sparrows, tuned by eye
 
+  // ---- owls: a third species, and the only one that ever shows up once night has fallen —
+  // no other bird here would plausibly be out at that hour, so on the night background these
+  // replace sparrows and crows entirely, and rarely: at most one at a time, see owlTimer below.
+  const OWL_FLY=[
+    sprite('owl-fly-1.png',170,168,78,64,-1),
+    sprite('owl-fly-2.png',170,168,85,85,1),
+  ];
+  const OWL_LAND_APPROACH=sprite('owl-land-approach.png',170,171,86,100,-1);
+  const OWL_TOUCHDOWN=sprite('owl-touchdown.png',170,171,85,128,1,{bandY:112,halfW:6,cutY:129,feather:7});
+  const OWL_PERCH_VARIANTS=[
+    sprite('owl-perch.png',170,180,78,120,1,{bandY:104,halfW:6,cutY:121,feather:7}),
+    sprite('owl-perch-alt.png',170,180,76.5,120,1,{bandY:104,halfW:6,cutY:121,feather:7}),
+  ];
+  const OWL_SCALE=0.19;   // a barn owl reads as bigger again than a crow, tuned by eye
+
   // draws any of the sprites above at (x,y), silhouette-only via multiply blending, flipped
   // to match the bird's actual facing against however that sprite was originally drawn
   function drawSprite(sp, x, y, facing, scale){
@@ -284,11 +308,13 @@
                            // personal space (triggering its shuffle reaction) without the two
                            // ever visually overlapping
   function flyFrame(wingPhase, species){
-    const frames = species==='crow' ? CROW_FLY : FLY_FRAMES;
+    const frames = species==='crow' ? CROW_FLY : species==='owl' ? OWL_FLY : FLY_FRAMES;
     const n=frames.length, idx=Math.floor((wingPhase/(2*Math.PI))*n)%n;
     return frames[(idx+n)%n];
   }
-  function perchVariants(species){ return species==='crow' ? CROW_PERCH_VARIANTS : PERCH_VARIANTS; }
+  function perchVariants(species){
+    return species==='crow' ? CROW_PERCH_VARIANTS : species==='owl' ? OWL_PERCH_VARIANTS : PERCH_VARIANTS;
+  }
   // a spot is only free if it's clear of every other bird on that wire — including ones
   // still mid-flight toward their own landing spot, not just ones already perched, so two
   // birds never converge on the same stretch of wire at once
@@ -356,9 +382,12 @@
   function spawnSparrow(species){
     const fromLeft=Math.random()<0.5;
     const {wireIdx,x:targetX}=pickLanding();
+    // an owl is a rare enough sighting that it should linger, not just pass through like the
+    // ambient sparrow/crow traffic
+    const stayFor = species==='owl' ? 25+Math.random()*60 : randomStayFor();
     const b={id:idc++, species, state:'arriving', x: fromLeft?-40:W+40, y:H*0.25+Math.random()*60,
       targetX, wireIdx, facing: fromLeft?1:-1, wingPhase:Math.random()*7, t:0, shuffleFrom:0, shuffleTo:0, shuffleT:0,
-      perchVariant:Math.floor(Math.random()*perchVariants(species).length), stayFor:randomStayFor(), stayTimer:0};
+      perchVariant:Math.floor(Math.random()*perchVariants(species).length), stayFor, stayTimer:0};
     sparrows.push(b);
   }
 
@@ -373,9 +402,9 @@
       if(Math.abs(d)<PSR){
         const dir=d>=0?1:-1;
         if(Math.random()<0.18){ n.state='departing'; n.t=0; n.facing=-dir; continue; }
-        // crows have no shuffle-hop reference photos — they either flap in place or leave,
-        // never shuffle, regardless of whether there'd be room to make
-        if(n.species==='crow'){ n.state='flapping'; n.t=0; continue; }
+        // crows (and owls) have no shuffle-hop reference photos — they either flap in place
+        // or leave, never shuffle, regardless of whether there'd be room to make
+        if(n.species==='crow'||n.species==='owl'){ n.state='flapping'; n.t=0; continue; }
         const roomTo=n.x+dir*PSR*1.15;
         const blocked = sparrows.some(o=>o!==n && o.wireIdx===wireIdx && (o.state==='perched'||o.state==='shuffling') && Math.abs(o.x-roomTo)<PSR*0.55)
           || roomTo<w.poleX0+30 || roomTo>w.poleX1-30;
@@ -430,13 +459,13 @@
 
   // ---- drawing: real reference-photo sprites, picked by state ----
   function drawSparrow(b){
-    const isCrow = b.species==='crow';
-    const scale = isCrow ? CROW_SCALE : BIRD_SCALE;
+    const isCrow = b.species==='crow', isOwl = b.species==='owl';
+    const scale = isCrow ? CROW_SCALE : isOwl ? OWL_SCALE : BIRD_SCALE;
     if(b.state==='arriving'||b.state==='departing'||b.state==='flapping'){
       drawSprite(flyFrame(b.wingPhase, b.species), b.x, b.y, b.facing, scale);
     } else if(b.state==='landing'){
-      const approach = isCrow ? CROW_LAND_APPROACH : LAND_APPROACH;
-      const touchdown = isCrow ? CROW_TOUCHDOWN : TOUCHDOWN;
+      const approach = isCrow ? CROW_LAND_APPROACH : isOwl ? OWL_LAND_APPROACH : LAND_APPROACH;
+      const touchdown = isCrow ? CROW_TOUCHDOWN : isOwl ? OWL_TOUCHDOWN : TOUCHDOWN;
       drawSprite(b.t<0.15 ? approach : touchdown, b.x, b.y, b.facing, scale);
     } else if(b.state==='shuffling'){
       const s=b.shuffleT;
@@ -459,22 +488,37 @@
   sparrowSlider.addEventListener('input',()=>{ wantSparrows=+sparrowSlider.value; });
   crowSlider.addEventListener('input',()=>{ wantCrows=+crowSlider.value; });
   let spawnTimer=0;
+  // the first owl of the night waits a little before showing up, rather than arriving the
+  // instant the page loads — then a long, randomised gap between sightings after that
+  let owlTimer=20+Math.random()*40;
 
   let last=performance.now();
   function tick(now){
     const dt=Math.min((now-last)/1000,0.05); last=now;
     // each slider is a target level of activity, not a hard cap — birds come and go on their
     // own (see stayFor/settleCrowding), and arrivals just get more likely the further below
-    // that target the current count sits, tapering to a low ambient trickle once at or above it
+    // that target the current count sits, tapering to a low ambient trickle once at or above it.
+    // none of this runs at night — sparrows and crows are day birds, and stay off the wires
+    // once the owl background is up.
     spawnTimer-=dt;
     if(spawnTimer<=0){
       spawnTimer=0.4+Math.random()*0.9;
-      for(const [species,wantCount] of [['sparrow',wantSparrows],['crow',wantCrows]]){
-        const alive=sparrows.filter(b=>b.species===species && b.state!=='departing').length;
-        if(wantCount>0 && alive<wantCount+1){
-          const pressure=Math.max(0,wantCount-alive)/Math.max(1,wantCount);
-          if(Math.random()<0.12+0.7*pressure) spawnSparrow(species);
+      if(!isNight){
+        for(const [species,wantCount] of [['sparrow',wantSparrows],['crow',wantCrows]]){
+          const alive=sparrows.filter(b=>b.species===species && b.state!=='departing').length;
+          if(wantCount>0 && alive<wantCount+1){
+            const pressure=Math.max(0,wantCount-alive)/Math.max(1,wantCount);
+            if(Math.random()<0.12+0.7*pressure) spawnSparrow(species);
+          }
         }
+      }
+    }
+    // one rare owl at a time, only once night has fallen
+    if(isNight){
+      owlTimer-=dt;
+      if(owlTimer<=0){
+        owlTimer=90+Math.random()*150;   // roughly every couple of minutes, never rushed
+        if(!sparrows.some(b=>b.species==='owl' && b.state!=='departing')) spawnSparrow('owl');
       }
     }
 
