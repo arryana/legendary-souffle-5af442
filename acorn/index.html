@@ -541,8 +541,30 @@
     tiltY += (rawTiltY - tiltY) * SMOOTHING;
 
     const spec = OBJECTS[activeType];
-    obj.vx += tiltX * GRAVITY * speedMult;
-    obj.vy += tiltY * GRAVITY * speedMult;
+    // a cone doesn't get shoved straight downhill by tilt the way a ball does — its
+    // own shape resists being dragged sideways off whatever circle it's already
+    // rolling on. So tilt mostly speeds a curling object up or slows it down along
+    // its current heading (the tangential component); the sideways component that
+    // would drag it off its own arc is left out entirely below the slide threshold
+    // — a steady tilt just keeps it looping the same circle rather than slowly
+    // dragging that circle downhill — until the tilt gets steep enough to be a
+    // proper slide, at which point it overpowers the curl and it starts sliding
+    // like anything else would.
+    const speedNow = Math.hypot(obj.vx, obj.vy);
+    if (spec.curlRate && speedNow > 2) {
+      const hx = obj.vx / speedNow, hy = obj.vy / speedNow;
+      const tangent = tiltX * hx + tiltY * hy;
+      const perp = -tiltX * hy + tiltY * hx;
+      const tiltMag = Math.hypot(tiltX, tiltY);
+      const slideAmt = Math.max(0, Math.min(1, (tiltMag - 0.35) / 0.4));
+      obj.vx += (tangent * hx - perp * slideAmt * hy) * GRAVITY * speedMult;
+      obj.vy += (tangent * hy + perp * slideAmt * hx) * GRAVITY * speedMult;
+    } else {
+      // not yet rolling fast enough to have a heading of its own — tilt just gets
+      // it moving, the same as a standing start for any object
+      obj.vx += tiltX * GRAVITY * speedMult;
+      obj.vy += tiltY * GRAVITY * speedMult;
+    }
 
     const speed = Math.hypot(obj.vx, obj.vy);
     const r = spec.radius;
@@ -576,12 +598,20 @@
       const curlSpeed = Math.hypot(obj.vx, obj.vy);
       if (spec.curlRate && curlSpeed > 0.01) {
         // the jellybean isn't a clean cone, so it doesn't hold one steady
-        // curl the way the acorn does — its curl strength itself wobbles in
-        // step with its own uneven spin below, so the path snakes rather
-        // than tracing a single tidy arc
+        // curl — its curl strength wobbles in step with its own uneven spin
+        // below, so the path snakes rather than tracing a single tidy arc.
+        // The acorn isn't a clean cone either, just differently: it has two
+        // separate fat points, not one steady taper — the nut body's own
+        // widest point (round, nearly ball-like, barely any curl there) and
+        // the cap's own flared rim (properly asymmetric, where the real
+        // curl comes from). Which one is currently down rotates with the
+        // acorn's own spin, once per full turn, so the curl strength should
+        // swing between those two contacts rather than sit constant.
         const curlAmt = (activeType === 'jellybean')
           ? spec.curlRate * (1 + 0.9 * Math.sin(2 * obj.jellySpin))
-          : spec.curlRate;
+          : (activeType === 'acorn')
+            ? spec.curlRate * (0.35 + 0.65 * (0.5 + 0.5 * Math.cos(obj.spin)))
+            : spec.curlRate;
         const rotAmt = curlAmt * obj.curlDir * curlSpeed;
         const cosA = Math.cos(rotAmt), sinA = Math.sin(rotAmt);
         const nvx = obj.vx * cosA - obj.vy * sinA;
