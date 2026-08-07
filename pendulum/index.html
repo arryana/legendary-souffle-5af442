@@ -42,6 +42,31 @@
     user-select:none; transition:color .35s ease, text-shadow .35s ease; flex:0 0 auto; }
   #eternityToggle.active{ color:#e9d9a8; text-shadow:0 0 9px rgba(233,217,168,.75); }
   #eternityToggle:focus-visible{ outline:1px solid rgba(233,217,168,.6); outline-offset:4px; }
+
+  /* a quiet flag, always available, for setting the latitude to somewhere other than
+     wherever the visitor actually is — opens a small search bar, never on by default */
+  #dock{ flex-wrap:wrap; row-gap:8px; }
+  #loc-flag{
+    appearance:none; border:0; background:none; padding:4px 6px;
+    font-size:15px; line-height:1; cursor:pointer; opacity:.4; transition:opacity .3s ease; flex:0 0 auto;
+  }
+  #loc-flag:hover, #loc-flag.open{ opacity:.85; }
+  #loc-search{
+    flex-basis:100%; display:flex; align-items:center; justify-content:center;
+    gap:6px; max-height:0; overflow:hidden; opacity:0; transition:max-height .3s ease, opacity .3s ease;
+  }
+  #loc-search.open{ max-height:40px; opacity:1; }
+  #loc-search input{
+    appearance:none; border:0; border-bottom:1px solid rgba(233,217,168,.4); background:none;
+    color:#e7ddc9; font:15px Georgia, serif; letter-spacing:.02em; padding:3px 2px;
+    width:132px; outline:none;
+  }
+  #loc-search input::placeholder{ color:rgba(231,221,201,.5); }
+  #loc-search input:focus{ border-bottom-color:#e9d9a8; }
+  #loc-search-status{
+    flex-basis:100%; font-size:11px; letter-spacing:.02em;
+    color:rgba(231,221,201,.6); text-align:center; min-height:1.2em;
+  }
 </style>
 </head>
 <body>
@@ -82,6 +107,11 @@
   <canvas id="globeWrap" width="164" height="164" aria-label="latitude" role="slider" tabindex="0"></canvas>
   <input type="range" id="speedSlider" min="0" max="100" value="80" aria-label="time speed">
   <div id="eternityToggle" role="checkbox" tabindex="0" aria-checked="false" aria-label="ever-thickening trace">∞</div>
+  <button type="button" id="loc-flag" title="check another location" aria-label="check another location" aria-expanded="false">🚩</button>
+  <form id="loc-search" autocomplete="off">
+    <input type="text" id="loc-search-input" placeholder="postcode or city" aria-label="postcode or city">
+  </form>
+  <div id="loc-search-status"></div>
 </div>
 <script>
 (function(){
@@ -134,71 +164,96 @@
     );
   }
 
-  // rough continent outlines (lon,lat in degrees), orthographically projected
-  // onto the sphere so it reads as an actual world, not just a shaded ball.
-  // there's no longitude control here (only latitude), so instead the globe
-  // spins slowly on its own — a lazy ambient rotation that eventually brings
-  // every continent into view, purely decorative and independent of both the
-  // time-speed slider and the latitude drag (which only reads the chord's
-  // height, unaffected by which way the sphere is currently turned).
+  // the flag: a quiet, always-there way to set the latitude to somewhere other than
+  // wherever the visitor actually is — never open by default, no page text anywhere
+  // else hints it exists. Geocoding goes through OpenStreetMap's Nominatim (free, no
+  // key) since open-meteo's own geocoder searches place names, not postcodes.
+  (function initLocationSearch(){
+    const flag=document.getElementById('loc-flag');
+    const form=document.getElementById('loc-search');
+    const input=document.getElementById('loc-search-input');
+    const status=document.getElementById('loc-search-status');
+    if(!flag || !form || !input) return;
+
+    flag.addEventListener('click', ()=>{
+      const open=form.classList.toggle('open');
+      flag.classList.toggle('open', open);
+      flag.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if(open) input.focus();
+      else status.textContent='';
+    });
+
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const q=input.value.trim();
+      if(!q) return;
+      status.textContent='looking…';
+      try{
+        const url=`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+        const res=await fetch(url);
+        const results=await res.json();
+        if(!results || !results.length){ status.textContent="couldn't find that"; return; }
+        lat=parseFloat(results[0].lat)*Math.PI/180;
+        status.textContent=results[0].display_name.split(',').slice(0,2).join(', ');
+        input.value='';
+      }catch(e){
+        status.textContent="couldn't reach the map — try again";
+      }
+    });
+  })();
+
+  // the real globe, as a set of 32 real rendered rotation angles — swapped frame
+  // to frame as it idles, rather than a hand-drawn continent outline. there's no
+  // longitude control here (only latitude), so instead the globe spins slowly on
+  // its own — a lazy ambient rotation that eventually brings every part of the
+  // world into view, purely decorative and independent of both the time-speed
+  // slider and the latitude drag (which only reads the chord's height, unaffected
+  // by which way the sphere is currently turned).
   const GLOBE_SPIN_DEG_PER_SEC = 4;
-  let GLOBE_LON0 = 12;
-  const CONTINENTS = [
-    [[-160,68],[-141,60],[-130,55],[-125,48],[-124,40],[-117,33],[-105,20],[-97,16],[-90,16],[-82,22],[-80,26],[-81,31],[-75,35],[-70,41],[-65,45],[-60,50],[-65,58],[-80,62],[-95,68],[-130,70]],
-    [[-45,60],[-35,66],[-25,71],[-20,78],[-35,83],[-55,82],[-65,76],[-60,68],[-50,60]],
-    [[-77,8],[-72,1],[-70,-5],[-70,-18],[-70,-30],[-71,-42],[-73,-52],[-68,-55],[-62,-50],[-58,-38],[-48,-25],[-35,-8],[-40,0],[-50,2],[-60,5],[-70,10]],
-    [[-17,15],[-16,20],[-10,30],[-5,35],[10,37],[20,33],[32,31],[35,20],[43,12],[51,12],[51,0],[42,-16],[35,-25],[27,-33],[18,-34],[12,-18],[10,-5],[-5,5]],
-    [[-10,37],[-9,43],[-1,43],[3,43],[8,44],[12,45],[13,42],[19,40],[23,36],[28,36],[27,40],[30,45],[27,48],[30,50],[38,52],[40,45],[35,42],[28,42],[25,40],[15,40],[8,40],[0,38],[-6,37]],
-    [[27,48],[30,55],[35,60],[45,60],[55,65],[65,68],[75,70],[90,72],[110,73],[130,72],[140,60],[142,48],[132,42],[125,40],[122,32],[118,25],[108,20],[100,12],[95,15],[90,22],[80,20],[70,22],[62,25],[52,28],[48,35],[42,38],[35,42]],
-    [[113,-22],[122,-18],[130,-12],[137,-16],[142,-11],[145,-17],[150,-22],[153,-28],[150,-34],[140,-38],[135,-35],[128,-32],[122,-34],[115,-34],[113,-26]],
-  ];
-  function projectLL(lonDeg,latDeg){
-    const lon=lonDeg*Math.PI/180, lat=latDeg*Math.PI/180, lon0=GLOBE_LON0*Math.PI/180;
-    const cosc=Math.cos(lat)*Math.cos(lon-lon0);
-    let x=Math.cos(lat)*Math.sin(lon-lon0), y=Math.sin(lat);
-    if(cosc<0){ const m=Math.hypot(x,y)||1; x=x/m*0.998; y=y/m*0.998; }
-    return {x,y};
-  }
+  const GLOBE_FRAME_COUNT = 32;
+  const globeFrames = Array.from({length: GLOBE_FRAME_COUNT}, (_, i) => {
+    const img = new Image();
+    img.ready = false;
+    img.onload = () => { img.ready = true; };
+    img.src = `globe-${i}.png`;
+    return img;
+  });
   function drawGlobe(t){
-    GLOBE_LON0 = (12 + t*GLOBE_SPIN_DEG_PER_SEC) % 360;
-    const w=globeCanvas.width, h=globeCanvas.height, R=w/2*0.94;
+    const w=globeCanvas.width, h=globeCanvas.height, R=w/2*0.90;
     const gcx=w/2, gcy=h/2;
     gctx.clearRect(0,0,w,h);
-    const shade=gctx.createRadialGradient(gcx-R*0.35,gcy-R*0.4,R*0.1,gcx,gcy,R*1.05);
-    shade.addColorStop(0,'#3a352c'); shade.addColorStop(1,'#151310');
-    gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.fillStyle=shade; gctx.fill();
-    // continents, clipped to the sphere, so the globe reads as an actual world
-    gctx.save();
-    gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.clip();
-    gctx.fillStyle='rgba(220,202,160,0.52)';
-    gctx.strokeStyle='rgba(240,226,182,0.75)';
-    gctx.lineWidth=1.1;
-    for(const poly of CONTINENTS){
-      gctx.beginPath();
-      poly.forEach(([lo,la],i)=>{
-        const p=projectLL(lo,la);
-        const sx=gcx+p.x*R, sy=gcy-p.y*R;
-        if(i===0) gctx.moveTo(sx,sy); else gctx.lineTo(sx,sy);
-      });
-      gctx.closePath(); gctx.fill(); gctx.stroke();
+
+    const lonDeg = (12 + t*GLOBE_SPIN_DEG_PER_SEC) % 360;
+    const frameIdx = Math.floor((lonDeg/360)*GLOBE_FRAME_COUNT) % GLOBE_FRAME_COUNT;
+    const frame = globeFrames[frameIdx];
+    if (frame.ready){
+      gctx.save();
+      gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.clip();
+      // cover-fit: scale so the frame's own globe circle fills our circle exactly,
+      // cropping any excess rather than leaving letterboxed gaps at the edges
+      const scale = (R*2)/Math.min(frame.naturalWidth, frame.naturalHeight);
+      const dw = frame.naturalWidth*scale, dh = frame.naturalHeight*scale;
+      gctx.drawImage(frame, gcx-dw/2, gcy-dh/2, dw, dh);
+      // soft dark vignette right at the rim, so any bright edge in the source
+      // photo (specular highlight, faint crop fringe) blends into the page
+      // background instead of showing as a hard ring
+      const vign=gctx.createRadialGradient(gcx,gcy,R*0.8,gcx,gcy,R);
+      vign.addColorStop(0,'rgba(5,8,12,0)');
+      vign.addColorStop(1,'rgba(5,8,12,0.85)');
+      gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.fillStyle=vign; gctx.fill();
+      gctx.restore();
+    } else {
+      const shade=gctx.createRadialGradient(gcx-R*0.35,gcy-R*0.4,R*0.1,gcx,gcy,R*1.05);
+      shade.addColorStop(0,'#3a352c'); shade.addColorStop(1,'#151310');
+      gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.fillStyle=shade; gctx.fill();
     }
-    gctx.restore();
-    gctx.save();
-    gctx.globalCompositeOperation='lighter';
-    const hi=gctx.createRadialGradient(gcx-R*0.4,gcy-R*0.45,0,gcx-R*0.4,gcy-R*0.45,R*0.9);
-    hi.addColorStop(0,'rgba(255,244,214,0.14)'); hi.addColorStop(1,'rgba(255,244,214,0)');
-    gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.fillStyle=hi; gctx.fill();
-    gctx.restore();
-    // axis
-    gctx.strokeStyle='rgba(231,221,201,.28)'; gctx.lineWidth=1;
-    gctx.beginPath(); gctx.moveTo(gcx,gcy-R); gctx.lineTo(gcx,gcy+R); gctx.stroke();
-    // equator, faint, for reference
-    gctx.strokeStyle='rgba(231,221,201,.16)';
-    gctx.beginPath(); gctx.moveTo(gcx-R,gcy); gctx.lineTo(gcx+R,gcy); gctx.stroke();
-    // the chosen latitude — a plain chord, its own length and height the whole control
+
+    // the chosen latitude — a plain chord, its own length and height the whole control.
+    // white rather than the site's usual gold so it actually stands out against the
+    // globe's own blues and greens, instead of blending into their similar warm tone
     const ly=gcy-Math.sin(lat)*R, lx=Math.cos(lat)*R;
-    gctx.strokeStyle='#e9d9a8'; gctx.lineWidth=2; gctx.lineCap='round';
-    gctx.shadowColor='rgba(233,217,168,.7)'; gctx.shadowBlur=4;
+    gctx.strokeStyle='#ffffff'; gctx.lineWidth=2; gctx.lineCap='round';
+    gctx.shadowColor='rgba(255,255,255,.8)'; gctx.shadowBlur=4;
     gctx.beginPath(); gctx.moveTo(gcx-lx,ly); gctx.lineTo(gcx+lx,ly); gctx.stroke();
     gctx.shadowBlur=0;
   }
