@@ -133,7 +133,7 @@
   /* Mobile: fill the width with a 2-column grid instead of a lone centered column */
   @media (max-width: 560px){
     #wrap{ padding: 28px 14px; justify-content:flex-start; }
-    h1{ font-size: clamp(28px, 8vw, 40px); }
+    .anchor.pos-title .anchor-q{ font-size: clamp(28px, 8vw, 40px); }
     .anchor.pos-title{ margin: 0 0 32px; }
     #cards.dice6{
       gap: 16px;
@@ -155,9 +155,16 @@
   .anchor.open .anchor-q{ opacity:.9; }
   @media (prefers-reduced-motion: reduce){ .anchor-copy{ transition:opacity .2s linear; transform:none; } }
 
-  /* title anchor: the "?" sits right after the wordmark */
+  /* title anchor: the word "sagne" itself is the click target, not a separate "?" —
+     a "?" right after the wordmark reads as the title asking a question */
   .anchor.pos-title{ flex-direction:column; align-items:center; }
-  .anchor.pos-title .anchor-q{ font-family:'Jost', sans-serif; font-size:16px; vertical-align:.6em; margin-left:.3em; }
+  .anchor.pos-title .anchor-q{
+    font-family:'Cormorant Garamond', serif; font-weight:400; font-style:italic;
+    font-size:clamp(30px, 5vw, 46px); letter-spacing:.14em; line-height:1;
+    color:var(--parchment); text-shadow: 0 0 24px rgba(201,151,78,0.25);
+    padding:0; border-radius:4px; opacity:1;
+  }
+  .anchor.pos-title .anchor-q:hover, .anchor.pos-title .anchor-q:focus-visible{ opacity:.72; }
   .anchor.pos-title .anchor-copy{ max-width:min(520px,86vw); text-align:center; margin-top:14px; transform:translateY(-6px); }
 
   /* foot anchor: sits after the last card, in the normal flow of the page —
@@ -167,7 +174,7 @@
 </style>
 <div id="wrap">
   <div class="anchor pos-title">
-    <h1>sagne<button class="anchor-q" type="button" aria-expanded="false" aria-controls="anchor-copy-title" aria-label="what is this?">?</button></h1>
+    <h1><button class="anchor-q" type="button" aria-expanded="false" aria-controls="anchor-copy-title" aria-label="what is this?">sagne</button></h1>
     <p class="anchor-copy" id="anchor-copy-title">tools and toys for twiddling. no scores, no goals, no timers (except the tools which are timers), no links, no likes, no ads, no in-game purchases. nothing exciting, but hopefully something enjoyable.</p>
   </div>
 
