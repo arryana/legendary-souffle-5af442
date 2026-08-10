@@ -147,13 +147,13 @@
   // size breaks free at exactly the same instant and falls at exactly the same rate, which
   // reads as artificial lockstep rain rather than something falling naturally.
   function newDrop(x,y,r){
-    return { x,y,r, vy:0, vx:0, moving:false, py:y, px:x,
+    return { x,y,r, vy:0, moving:false, py:y, px:x, joinedTrail:null,
       settle: 0.15+Math.random()*0.85,   // freshly landed drops sit visibly before they're even eligible to slide
       stick: 0.75+Math.random()*0.6,
       vmaxMul: 0.8+Math.random()*0.45,
-      // how readily this particular drop gets pulled sideways into a trail it passes near —
-      // many drops barely feel it (or not at all), a few snap right into one, same as real
-      // rain doesn't uniformly funnel into every existing streak it happens to pass
+      // how readily this particular drop locks onto a trail it passes right next to — many
+      // drops never do, same as real rain doesn't uniformly funnel into every streak it
+      // happens to pass near
       joinAffinity: Math.random() };
   }
   // persistent streaks left on the glass by drops that have already run — lets a later
@@ -191,29 +191,36 @@
         const pinKinetic = 0.6*d.r*d.stick;      // weaker grip once it's sliding (hysteresis)
         d.vy += ((pull-pinKinetic)/mass)*dt*2.4;
         d.vy *= 0.94;
-        // small drops carry less momentum and snag on the glass's own texture far more
-        // readily than big ones — a heavy drop barely notices the same fleck of dust
-        const snagChance = (0.0018 + 0.013/d.r)*dt;
-        if(Math.random()<snagChance) d.vy *= 0.08+Math.random()*0.22;
+        // small drops carry far less momentum and snag on the glass's own texture much
+        // more readily than big ones — a heavy drop barely notices the same fleck of dust
+        const snagChance = (0.0016 + 0.019/d.r)*dt;
+        if(Math.random()<snagChance) d.vy *= 0.06+Math.random()*0.2;
         if(d.vy<0) d.vy=0;
         // smaller drops also have a lower real terminal velocity, not just the same cap
         // scaled by a size-blind random trait — gives the small/big ends of the population
-        // visibly different top speeds instead of just a mild per-drop wobble
-        const sizeVmaxFactor = 0.5+0.5*Math.min(1,(d.r-1.5)/3.7);
+        // clearly different top speeds instead of just a mild per-drop wobble
+        const sizeVmaxFactor = 0.32+0.68*Math.min(1,(d.r-1.5)/3.7);
         const vmax = DROP_VMAX*d.vmaxMul*sizeVmaxFactor;
         if(d.vy>vmax) d.vy=vmax;
         d.py=d.y; d.y += d.vy*dt;                 // remember where it was, for a continuous trail
-        // an existing trail nearby gently pulls the drop sideways into it, like real rain
-        // finding an already-wet channel — but only for drops with some affinity for it;
-        // plenty of real drops slide right past a nearby streak without joining it
-        if(d.joinAffinity>0.3){
-          let join=null, joinD=10+d.joinAffinity*14;
-          for(const tr of trails){ if(tr.yBot<d.y-4 || tr.yTop>d.y+70) continue; const dx=Math.abs(tr.x-d.x); if(dx>1.2 && dx<joinD){ joinD=dx; join=tr; } }
-          if(join) d.vx += (join.x-d.x)*0.05*dt*d.joinAffinity;
+        // once locked onto a nearby trail, tracks its exact line closely rather than easing
+        // toward it — a clean, decisive join instead of a lingering sideways coast that
+        // never quite arrives. losing the trail drops the lock instantly and the drop falls
+        // straight again; it never keeps drifting sideways on its own. plenty of drops have
+        // too little affinity to ever look for one at all.
+        if(d.joinAffinity>0.35){
+          if(d.joinedTrail && (!trails.includes(d.joinedTrail) || d.joinedTrail.yBot<d.y-6 || d.joinedTrail.yTop>d.y+40)){
+            d.joinedTrail=null;
+          }
+          if(!d.joinedTrail){
+            let best=null, bestD=7+d.joinAffinity*7;
+            for(const tr of trails){ if(tr.yBot<d.y-4 || tr.yTop>d.y+60) continue; const dx=Math.abs(tr.x-d.x); if(dx<bestD){ bestD=dx; best=tr; } }
+            if(best) d.joinedTrail=best;
+          }
+          if(d.joinedTrail) d.x += (d.joinedTrail.x-d.x)*Math.min(1,0.16*dt);
         }
-        d.vx *= 0.9; d.x += d.vx*dt;
         if(d.vy>0.4) d.r=Math.max(2.6, d.r-0.006*dt);   // sheds slowly — stays visible leading its own trail
-        if(d.vy<0.06 && pull<=pinStatic){ d.moving=false; d.vy=0; d.vx=0; }  // re-pins if it slows & is light
+        if(d.vy<0.06 && pull<=pinStatic){ d.moving=false; d.vy=0; d.joinedTrail=null; }  // re-pins if it slows & is light
         // leaves its passage behind as a trail a later drop can find and join
         let seg=trails.find(t=>Math.abs(t.x-d.x)<5 && d.y>=t.yTop-20 && d.py<=t.yBot+40);
         if(seg){ seg.x=seg.x*0.75+d.x*0.25; seg.yTop=Math.min(seg.yTop,d.py); seg.yBot=Math.max(seg.yBot,d.y); seg.life=110; }
@@ -227,7 +234,7 @@
     for(let i=0;i<drops.length;i++){ for(let j=drops.length-1;j>i;j--){ const a=drops[i],b=drops[j];
       if(Math.hypot(a.x-b.x,a.y-b.y) < (a.r+b.r)*0.95){ const R=Math.sqrt(a.r*a.r+b.r*b.r);   // merge as soon as they touch — no overlapping drops
         a.x=(a.x*a.r+b.x*b.r)/(a.r+b.r); a.y=Math.max(a.y,b.y); a.px=a.x;
-        a.vy=(a.vy*a.r+b.vy*b.r)/(a.r+b.r); a.vx=(a.vx*a.r+b.vx*b.r)/(a.r+b.r); a.r=R; a.moving=a.moving||b.moving; drops.splice(j,1);} } }
+        a.vy=(a.vy*a.r+b.vy*b.r)/(a.r+b.r); a.r=R; a.moving=a.moving||b.moving; a.joinedTrail=null; drops.splice(j,1);} } }
     drops=drops.filter(d=>d.y-d.r<H+20);
   }
 

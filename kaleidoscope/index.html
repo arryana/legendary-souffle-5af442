@@ -146,6 +146,9 @@
         <div class="piece" data-type="bead_gold"><img src="kaleidoscope-bead-gold.png" alt=""></div>
         <div class="piece" data-type="stainedglass"><img src="kaleidoscope-stainedglass.png" alt=""></div>
         <div class="piece" data-type="china"><img src="kaleidoscope-china.png" alt=""></div>
+        <div class="piece" data-type="amberglass"><img src="kaleidoscope-amberglass.png" alt=""></div>
+        <div class="piece" data-type="beetle"><img src="kaleidoscope-beetle.png" alt=""></div>
+        <div class="piece" data-type="seaglass"><img src="kaleidoscope-seaglass.png" alt=""></div>
         <div class="piece add-tile" data-type="custom" id="customPiece" title="use your own photo">
           <span class="add-plus">+</span>
           <img alt="">
@@ -212,6 +215,9 @@
     bead_gold: loadImg('kaleidoscope-bead-gold.png'),
     stainedglass: loadImg('kaleidoscope-stainedglass.png'),
     china: loadImg('kaleidoscope-china.png'),
+    amberglass: loadImg('kaleidoscope-amberglass.png'),
+    beetle: loadImg('kaleidoscope-beetle.png'),
+    seaglass: loadImg('kaleidoscope-seaglass.png'),
   };
   const trayImg = loadImg('kaleidoscope-tray.jpg');
 
@@ -254,7 +260,8 @@
   // defaults' scale above.
   const DROP_SIZE = {
     gem:0.22, gear:0.15, nail:0.16, bead_clear:0.13, bead_black:0.13, bead_silver:0.13, bead_gold:0.13,
-    china:0.20, stainedglass:0.20, glass:0.20, custom:0.20
+    china:0.20, stainedglass:0.20, glass:0.20, custom:0.20,
+    amberglass:0.20, beetle:0.21, seaglass:0.19
   };
   const SIZE_SLIDER_DEFAULT = 22;
   // nudges a freshly-dropped piece away from ones already sitting where it landed —
