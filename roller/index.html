@@ -109,33 +109,17 @@
     background:var(--brass); cursor:pointer;
   }
 
-  #muteRow{
-    display:flex; align-items:center; gap:8px;
-    font-size:12px; opacity:.55; letter-spacing:.03em;
-    cursor:pointer; user-select:none; transition:opacity .25s ease;
-  }
-  #muteRow:hover{ opacity:.85; }
-  #muteRow input[type=checkbox]{
-    -webkit-appearance:none; appearance:none;
-    width:14px; height:14px; border-radius:3px;
-    border:1px solid rgba(242,233,216,.4);
-    background:transparent; cursor:pointer; position:relative;
-    margin:0;
-  }
-  #muteRow input[type=checkbox]:checked{
-    background:rgba(201,151,78,0.25); border-color:var(--brass);
-  }
-  #muteRow input[type=checkbox]:checked::after{
-    content:''; position:absolute; left:3px; top:0px;
-    width:4px; height:8px;
-    border:solid var(--brass); border-width:0 2px 2px 0;
-    transform:rotate(45deg);
-  }
   #volumeRow{
     display:flex; align-items:center; gap:10px;
     font-size:12px; opacity:.6; letter-spacing:.03em;
   }
   #volumeRow input[type=range]{ width:100px; }
+  #muteBtn{
+    background:none; border:none; padding:0; margin:0;
+    font-size:14px; line-height:1; cursor:pointer; opacity:.85;
+    transition:opacity .25s ease;
+  }
+  #muteBtn:hover{ opacity:1; }
 
   #hint{
     position:fixed; top:22px; right:26px; font-size:13px; opacity:.4;
@@ -201,12 +185,8 @@
     <button class="objBtn" data-obj="disc" title="disc" aria-label="disc">⬤</button>
     <button class="objBtn" data-obj="jellybean" title="jellybean stone" aria-label="jellybean stone">⬬</button>
   </div>
-  <label id="muteRow">
-    <input type="checkbox" id="muteCheckbox" aria-label="mute sound">
-    <span>no sound</span>
-  </label>
   <div id="volumeRow">
-    <span title="volume">🔊</span>
+    <button id="muteBtn" type="button" aria-label="mute sound" aria-pressed="false">🔊</button>
     <input type="range" id="volumeSlider" min="0" max="100" value="70" aria-label="volume">
   </div>
 </div>
@@ -221,31 +201,36 @@
   const skipDesktop = document.getElementById('skipDesktop');
   const hint = document.getElementById('hint');
   const objBtns = document.querySelectorAll('.objBtn');
-  const muteCheckbox = document.getElementById('muteCheckbox');
+  const muteBtn = document.getElementById('muteBtn');
 
   // no-sound preference is site-wide — stored under one shared key so
   // every sagnity reads and respects the same setting
   let muted = localStorage.getItem('sagne-muted') === 'true';
-  muteCheckbox.checked = muted;
-  muteCheckbox.addEventListener('change', () => {
-    muted = muteCheckbox.checked;
+  function updateMuteIcon(){
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.setAttribute('aria-pressed', muted ? 'true' : 'false');
+    muteBtn.setAttribute('aria-label', muted ? 'unmute sound' : 'mute sound');
+  }
+  function setMuted(v){
+    muted = v;
+    updateMuteIcon();
     localStorage.setItem('sagne-muted', muted ? 'true' : 'false');
+    // rumbleGain/audioCtx don't exist until ensureAudio() has run at least once
     if (rumbleGain && audioCtx) {
       rumbleGain.gain.setTargetAtTime(muted ? 0 : rumbleGain.gain.value, audioCtx.currentTime, 0.05);
     }
-  });
+  }
+  updateMuteIcon();
+  muteBtn.addEventListener('click', () => setMuted(!muted));
 
   // If the visitor starts their own music, hush the tray's own sounds so the
-  // two don't compete — the music becomes the sound. We tick the "no sound" box
-  // (so it's visible and they can undo it) but don't overwrite their saved setting.
+  // two don't compete — the music becomes the sound. The mute icon switches
+  // too (so it's visible and they can undo it) but we don't overwrite their
+  // saved setting.
   const musicEl = document.getElementById('musicEl');
   if (musicEl) {
     musicEl.addEventListener('play', () => {
-      if (!muted) {
-        muted = true;
-        muteCheckbox.checked = true;
-        if (rumbleGain && audioCtx) rumbleGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
-      }
+      if (!muted) setMuted(true);
     });
   }
 
