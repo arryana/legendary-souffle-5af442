@@ -199,7 +199,7 @@
   wickShapeSlider.addEventListener('input', () => { wickShape = wickShapeSlider.value / 100; });
 
   // no-sound and volume are shared site-wide — same localStorage keys
-  // the acorn sagnity uses, so the setting carries over between pages
+  // the rest of the site uses, so the setting carries over between pages
   const muteCheckbox = document.getElementById('muteCheckbox');
   let muted = localStorage.getItem('sagne-muted') === 'true';
   muteCheckbox.checked = muted;
