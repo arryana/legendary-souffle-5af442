@@ -468,13 +468,14 @@
 
   // the real acorn, as a set of real photographed angles — swapped frame to
   // frame as it rolls, rather than spinning one flat photo like a sticker, so
-  // the tumble actually shows different facets of the acorn the way a real
-  // rolling object would. Order chosen to read as one continuous turn: mostly
-  // lying-on-its-side views (tip sweeping round), passing briefly through the
-  // end-on view, rather than jumping between unrelated angles. Frame 1 is
-  // dropped — it's nearly the same photographed angle as frame 0, and back
-  // to back they read as a stutter rather than a turn.
-  const ACORN_FRAME_ORDER = [2, 0, 3, 5, 7, 6, 4];
+  // rolling shows different facets of the acorn the way a real rolling cone
+  // would. Only the frames where the acorn is actually lying on its side are
+  // used here — a cone rolling on its side never presents its end-on faces
+  // to an overhead camera, so frames 6 and 7 (looking straight down the cap
+  // end and the tip end) are excluded entirely; using them made the roll
+  // read as tumbling or spinning in place, which a real rolling cone never
+  // does. Frames 1 and 3 are also dropped as near-duplicates of frame 0.
+  const ACORN_FRAME_ORDER = [0, 2, 5, 4];
   const acornFrames = ACORN_FRAME_ORDER.map((n) => {
     const img = new Image();
     img.ready = false;

@@ -54,6 +54,7 @@
   #loc-search{
     flex-basis:100%; display:flex; align-items:center; justify-content:center;
     gap:6px; max-height:0; overflow:hidden; opacity:0; transition:max-height .3s ease, opacity .3s ease;
+    flex-shrink:0;
   }
   #loc-search.open{ max-height:40px; opacity:1; }
   #loc-search input{
@@ -224,8 +225,13 @@
     gctx.clearRect(0,0,w,h);
 
     const lonDeg = (12 + t*GLOBE_SPIN_DEG_PER_SEC) % 360;
-    const frameIdx = Math.floor((lonDeg/360)*GLOBE_FRAME_COUNT) % GLOBE_FRAME_COUNT;
+    const sliceDeg = 360/GLOBE_FRAME_COUNT;
+    const rawIdx = lonDeg/sliceDeg;
+    const frameIdx = Math.floor(rawIdx) % GLOBE_FRAME_COUNT;
+    const nextIdx = (frameIdx+1) % GLOBE_FRAME_COUNT;
+    const frac = rawIdx - Math.floor(rawIdx);
     const frame = globeFrames[frameIdx];
+    const nextFrame = globeFrames[nextIdx];
     if (frame.ready){
       gctx.save();
       gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.clip();
@@ -234,6 +240,16 @@
       const scale = (R*2)/Math.min(frame.naturalWidth, frame.naturalHeight);
       const dw = frame.naturalWidth*scale, dh = frame.naturalHeight*scale;
       gctx.drawImage(frame, gcx-dw/2, gcy-dh/2, dw, dh);
+      // crossfade toward the next photographed angle as we roll through this
+      // one's slice — a hard swap between stills every ~2.8s read as a jump
+      // cut rather than a sphere actually turning
+      if (nextFrame.ready && frac > 0){
+        const nscale = (R*2)/Math.min(nextFrame.naturalWidth, nextFrame.naturalHeight);
+        const ndw = nextFrame.naturalWidth*nscale, ndh = nextFrame.naturalHeight*nscale;
+        gctx.globalAlpha = frac;
+        gctx.drawImage(nextFrame, gcx-ndw/2, gcy-ndh/2, ndw, ndh);
+        gctx.globalAlpha = 1;
+      }
       // soft dark vignette right at the rim, so any bright edge in the source
       // photo (specular highlight, faint crop fringe) blends into the page
       // background instead of showing as a hard ring

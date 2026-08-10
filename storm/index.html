@@ -58,6 +58,7 @@
   #loc-search{
     display:flex; align-items:center; justify-content:center; gap:6px; max-height:0; overflow:hidden;
     opacity:0; transition:max-height .3s ease, opacity .3s ease;
+    flex-shrink:0;
   }
   #loc-search.open{ max-height:40px; opacity:1; }
   #loc-search input{
