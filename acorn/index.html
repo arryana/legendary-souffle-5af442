@@ -536,6 +536,18 @@
   // ---------- physics ----------
   const GRAVITY = 0.55; // px/frame^2 at full tilt
   const WALL_RESTITUTION = 0.42;
+  // clamping exactly to the wall and reflecting velocity every frame turns out to have a
+  // stable "microbounce" equilibrium: under steady tilt pressing into the wall, the energy
+  // the bounce removes each frame exactly matches what that same frame's tilt adds back,
+  // forever — the object looks completely frozen against the wall no matter how long the
+  // tilt keeps being held. Nudging it a couple of pixels clear of the wall on contact means
+  // a genuinely weak bounce doesn't immediately re-collide the very next frame, and treating
+  // a very slow tap as a stop rather than a reflection (no sign to flip back and forth on)
+  // keeps a real bounce from ever decaying into that endless tiny back-and-forth to begin
+  // with — either way, tilt gets an uninterrupted frame to build the object back up to real
+  // speed instead of it being trapped vibrating in place.
+  const WALL_NUDGE = 1.4, WALL_SLEEP_V = 0.6;
+  function wallBounce(v){ return Math.abs(v) < WALL_SLEEP_V ? 0 : -v * WALL_RESTITUTION; }
 
   function step(){
     tiltX += (rawTiltX - tiltX) * SMOOTHING;
@@ -552,7 +564,19 @@
     // proper slide, at which point it overpowers the curl and it starts sliding
     // like anything else would.
     const speedNow = Math.hypot(obj.vx, obj.vy);
-    if (spec.curlRate && speedNow > 2) {
+    // right next to a wall, "current heading" isn't a meaningful thing to steer by any
+    // more — the wall keeps forcibly flipping vx or vy every time it's crossed, so a
+    // heading built from that is just noise, and steering tilt relative to noise is how
+    // the object ends up stuck vibrating against the wall no matter how long tilt keeps
+    // pushing it that way. Simple, direct, world-frame tilt near a wall means the same
+    // tilt that pushed it into the wall reliably keeps pushing it there (predictable,
+    // and the player can always just tilt a different way to pull it back off the wall)
+    // rather than getting reinterpreted through a heading that's being scrambled by the
+    // wall contact itself.
+    const nearRight = obj.x >= W - spec.radius - 3, nearLeft = obj.x <= spec.radius + 3;
+    const nearBottom = obj.y >= H - spec.radius - 3, nearTop = obj.y <= spec.radius + 3;
+    const nearWall = nearRight || nearLeft || nearBottom || nearTop;
+    if (spec.curlRate && speedNow > 2 && !nearWall) {
       const hx = obj.vx / speedNow, hy = obj.vy / speedNow;
       const tangent = tiltX * hx + tiltY * hy;
       const perp = -tiltX * hy + tiltY * hx;
@@ -562,9 +586,21 @@
       obj.vy += (tangent * hy + perp * slideAmt * hx) * GRAVITY * speedMult;
     } else {
       // not yet rolling fast enough to have a heading of its own — tilt just gets
-      // it moving, the same as a standing start for any object
-      obj.vx += tiltX * GRAVITY * speedMult;
-      obj.vy += tiltY * GRAVITY * speedMult;
+      // it moving, the same as a standing start for any object. Resting against a
+      // wall, the component of tilt still pressing further into it is dropped
+      // rather than added and then reflected back out — a wall doesn't actually
+      // bounce something it's being steadily pressed against, it just holds it
+      // there, and reflecting that push every frame was exactly what set up the
+      // endless tiny back-and-forth that reads as being stuck rolling on one
+      // spot. Tilting any other way — including straight along the wall — is
+      // completely unaffected, so the object can always still be steered off it.
+      let tx = tiltX, ty = tiltY;
+      if (nearRight && tx > 0) tx = 0;
+      if (nearLeft && tx < 0) tx = 0;
+      if (nearBottom && ty > 0) ty = 0;
+      if (nearTop && ty < 0) ty = 0;
+      obj.vx += tx * GRAVITY * speedMult;
+      obj.vy += ty * GRAVITY * speedMult;
     }
 
     const speed = Math.hypot(obj.vx, obj.vy);
@@ -597,7 +633,14 @@
       // more sharply the faster it rolls, and doesn't curl at all when
       // it's sitting still, the same way an actual rolling cone wouldn't.
       const curlSpeed = Math.hypot(obj.vx, obj.vy);
-      if (spec.curlRate && curlSpeed > 0.01) {
+      // gated on the same speedNow>2 threshold the tangent/perp tilt split above uses —
+      // below that, the object doesn't have an established heading of its own to curl
+      // yet, and continuously rotating whatever tiny velocity it has left (right after a
+      // wall bounce, or a near-stop) fights the plain tilt push hard enough to settle
+      // into a stable near-zero "wobble" that never builds back up to real speed again,
+      // however long the tilt keeps being held — reads as the object getting stuck
+      // rolling in place on one spot instead of actually continuing across the tray.
+      if (spec.curlRate && speedNow > 2 && curlSpeed > 0.01 && !nearWall) {
         // the jellybean isn't a clean cone, so it doesn't hold one steady
         // curl — its curl strength wobbles in step with its own uneven spin
         // below, so the path snakes rather than tracing a single tidy arc.
@@ -642,10 +685,10 @@
 
     let clacked = false;
     let clackIntensity = 0;
-    if (obj.x < r) { obj.x = r; obj.vx = -obj.vx * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vx); if (spec.spinOnImpact) obj.discAngVel += obj.vy * 0.05; }
-    if (obj.x > W - r) { obj.x = W - r; obj.vx = -obj.vx * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vx); if (spec.spinOnImpact) obj.discAngVel -= obj.vy * 0.05; }
-    if (obj.y < r) { obj.y = r; obj.vy = -obj.vy * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel -= obj.vx * 0.05; }
-    if (obj.y > H - r) { obj.y = H - r; obj.vy = -obj.vy * WALL_RESTITUTION; clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel += obj.vx * 0.05; }
+    if (obj.x < r) { obj.x = r + WALL_NUDGE; obj.vx = wallBounce(obj.vx); clacked = true; clackIntensity = Math.abs(obj.vx); if (spec.spinOnImpact) obj.discAngVel += obj.vy * 0.05; }
+    if (obj.x > W - r) { obj.x = W - r - WALL_NUDGE; obj.vx = wallBounce(obj.vx); clacked = true; clackIntensity = Math.abs(obj.vx); if (spec.spinOnImpact) obj.discAngVel -= obj.vy * 0.05; }
+    if (obj.y < r) { obj.y = r + WALL_NUDGE; obj.vy = wallBounce(obj.vy); clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel -= obj.vx * 0.05; }
+    if (obj.y > H - r) { obj.y = H - r - WALL_NUDGE; obj.vy = wallBounce(obj.vy); clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel += obj.vx * 0.05; }
 
     // real rolling: how far it's actually MOVED this frame determines how
     // much it's turned, exactly like a wheel — measured after wall contact
