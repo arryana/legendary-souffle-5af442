@@ -147,7 +147,7 @@
     W=window.innerWidth; H=window.innerHeight;
     canvas.width=W*DPR; canvas.height=H*DPR;
     ctx.setTransform(DPR,0,0,DPR,0,0);
-    fitSky(); buildGrass();
+    buildGrass();
   }
   window.addEventListener('resize', resize);
 
@@ -184,21 +184,29 @@
   const skyStages=Array.from({length:SKY_STAGE_COUNT}, (_,i)=>{
     const img=new Image(); img.src=`firefly-sky-${i}.png`; return img;
   });
-  const SKY_W=1408, SKY_H=768;
-  let skyScale=1, skyOX=0, skyOY=0;
-  function fitSky(){
-    skyScale=Math.max(W/SKY_W, H/SKY_H);
-    skyOX=(W-SKY_W*skyScale)/2; skyOY=(H-SKY_H*skyScale)/2;
+  // each of the 5 photos has its own native resolution (the dusk shot is a full
+  // 1408x768 photo, the other 4 are cells cropped from a smaller contact sheet) —
+  // cover-fit is computed per image, from its own naturalWidth/Height, rather than
+  // one shared size assumed for all of them. Using one frame's dimensions for every
+  // frame was the bug behind the "doubled" look: the smaller photos were scaled
+  // wrong, so crossfading against a correctly-scaled neighbour showed as a ghosted
+  // double exposure instead of a clean dissolve.
+  function coverFitFor(img){
+    const scale=Math.max(W/img.naturalWidth, H/img.naturalHeight);
+    const dw=img.naturalWidth*scale, dh=img.naturalHeight*scale;
+    return {ox:(W-dw)/2, oy:(H-dh)/2, dw, dh};
   }
   function drawSkyPhoto(){
     const pos=dark*(SKY_STAGE_COUNT-1), i0=Math.floor(pos), frac=pos-i0;
     const a=skyStages[i0], b=skyStages[Math.min(SKY_STAGE_COUNT-1,i0+1)];
-    const dw=SKY_W*skyScale, dh=SKY_H*skyScale;
-    if(a.complete && a.naturalWidth) ctx.drawImage(a,skyOX,skyOY,dw,dh);
-    else { ctx.fillStyle='#0a0e18'; ctx.fillRect(0,0,W,H); }
+    if(a.complete && a.naturalWidth){
+      const fa=coverFitFor(a);
+      ctx.drawImage(a,fa.ox,fa.oy,fa.dw,fa.dh);
+    } else { ctx.fillStyle='#0a0e18'; ctx.fillRect(0,0,W,H); }
     if(frac>0.001 && b.complete && b.naturalWidth){
+      const fb=coverFitFor(b);
       ctx.save(); ctx.globalAlpha=frac;
-      ctx.drawImage(b,skyOX,skyOY,dw,dh);
+      ctx.drawImage(b,fb.ox,fb.oy,fb.dw,fb.dh);
       ctx.restore();
     }
   }
@@ -263,20 +271,24 @@
 
   function spawnMale(){
     const depth=Math.random(); // 0 near/bright, 1 far/dim
-    // wander in from off-screen rather than simply appearing already out over the field
-    const fromLeft=Math.random()<0.5;
-    const x = fromLeft ? -30-Math.random()*30 : W+30+Math.random()*30;
+    // real fireflies rise up out of the grass they were resting in, rather than
+    // drifting in sideways from off-screen — start low, near the ground, and ease
+    // up toward cruising height over the first couple of seconds
+    const x = 30 + Math.random()*Math.max(1,W-60);
+    const groundY = fireflyGroundY();
     // real fireflies range highest right at dusk and settle low into the grass as full
-    // night comes on — a preferred altitude (with some natural spread) that shifts with
-    // the darkness slider, rather than a fixed band
+    // night comes on — a preferred cruising altitude (with some natural spread) that
+    // shifts with the darkness slider, rather than a fixed band
     const altPref = 0.15 + 0.65*dark;
     const altFrac = Math.max(0, Math.min(1, altPref + (Math.random()-0.5)*0.5));
-    const y = fireflyZoneTop() + altFrac*(fireflyGroundY()-fireflyZoneTop());
+    const targetY = fireflyZoneTop() + altFrac*(groundY-fireflyZoneTop());
+    const spawnY = groundY - 4 - Math.random()*10;
     males.push({
-      x, y, depth,
-      vx: (fromLeft?1:-1) * (6+14*Math.random()), // lazy drift inward, px/s
+      x, y: spawnY, depth,
+      vx: (Math.random()<0.5?-1:1) * (6+14*Math.random()), // lazy horizontal cruise, px/s
       steerPhase: Math.random()*Math.PI*2,
-      cruiseY: y, cruisePhase: Math.random()*Math.PI*2, cruiseSpeed: 0.12+Math.random()*0.1, cruiseAmp: 10+Math.random()*14,
+      spawnY, riseT:0, riseDur: 1.6+Math.random()*1.6,
+      cruiseY: targetY, cruisePhase: Math.random()*Math.PI*2, cruiseSpeed: 0.12+Math.random()*0.1, cruiseAmp: 10+Math.random()*14,
       bobPhase: Math.random()*Math.PI*2, bobSpeed: 0.9+Math.random()*0.5, bobAmp: 2.5+Math.random()*2,
       state:'cruise', stateT:0,
       nextFlashAt: 1+Math.random()*4,
@@ -379,7 +391,17 @@
         }
       }
 
-      m.y = Math.max(fireflyZoneTop(), Math.min(fireflyGroundY(), m.cruiseY + wanderY + flutter + swoopY));
+      // ease up from the grass toward cruising height rather than appearing there —
+      // an ease-out curve so the rise starts quick (a real hop up out of the grass)
+      // and settles gently into the cruise
+      let baseY = m.cruiseY;
+      if(m.riseT < m.riseDur){
+        m.riseT += dt;
+        const p = Math.min(1, m.riseT/m.riseDur);
+        const eased = 1 - Math.pow(1-p, 3);
+        baseY = m.spawnY + (m.cruiseY-m.spawnY)*eased;
+      }
+      m.y = Math.max(fireflyZoneTop(), Math.min(fireflyGroundY(), baseY + wanderY + flutter + swoopY));
 
       // real fireflies don't blink out — the light eases down slowly and never quite
       // reaches zero, settling to a faint ember between flashes rather than going dark
