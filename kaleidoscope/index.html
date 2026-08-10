@@ -247,6 +247,34 @@
     {type:'gem', x:0.27, y:0.4, size:0.16, hue:30},
   ];
 
+  // every non-gem piece used to drop at one flat 0.28 size regardless of type — on a tray
+  // this small that's most of the working area, so placing more than 2-3 pieces buried
+  // earlier ones completely under later ones with no way to tell they were even there.
+  // Sized per type instead, closer to how big each object actually reads at the curated
+  // defaults' scale above.
+  const DROP_SIZE = {
+    gem:0.22, gear:0.15, nail:0.16, bead_clear:0.13, bead_black:0.13, bead_silver:0.13, bead_gold:0.13,
+    china:0.20, stainedglass:0.20, glass:0.20, custom:0.20
+  };
+  const SIZE_SLIDER_DEFAULT = 22;
+  // nudges a freshly-dropped piece away from ones already sitting where it landed —
+  // real small objects in a tray do rest touching or slightly overlapping each other,
+  // they just don't land dead-center on top of one another and vanish from view
+  function separateFromPlaced(p, size){
+    for(let iter=0; iter<4; iter++){
+      let moved=false;
+      for(const o of placed){
+        const dx=p.x-o.x, dy=p.y-o.y, d=Math.hypot(dx,dy)||0.0001;
+        const minD=(size+o.size)/2*0.72;
+        if(d<minD){ const push=minD-d; p.x+=(dx/d)*push; p.y+=(dy/d)*push; moved=true; }
+      }
+      const cx=0.5, cy=0.5, dx=p.x-cx, dy=p.y-cy, dist=Math.hypot(dx,dy)||0.0001, maxR=0.5-size/2-0.02;
+      if(dist>maxR){ p.x=cx+dx/dist*maxR; p.y=cy+dy/dist*maxR; }
+      if(!moved) break;
+    }
+    return p;
+  }
+
   function resize(){
     DPR=Math.min(2,window.devicePixelRatio||1);
     const tr=trayWrap.getBoundingClientRect();
@@ -387,11 +415,14 @@
   });
   let currentHue = parseInt(hueSlider.value,10);
 
+  // one slider, every piece — it scales each type's own base size up or down together
+  // (so a nail stays smaller than a china shard at any setting) rather than only ever
+  // affecting gems while every other piece stayed fixed at its default size
   sizeSlider.addEventListener('input', ()=>{
-    currentSize = parseInt(sizeSlider.value,10)/100;
-    if(dragging && dragging.type==='gem'){ dragging.size=currentSize; drawAll(); }
+    sizeMul = parseInt(sizeSlider.value,10)/SIZE_SLIDER_DEFAULT;
+    if(dragging){ dragging.size=(DROP_SIZE[dragging.type]||0.2)*sizeMul; drawAll(); }
   });
-  let currentSize = parseInt(sizeSlider.value,10)/100;
+  let sizeMul = parseInt(sizeSlider.value,10)/SIZE_SLIDER_DEFAULT;
 
   // ---------- dragging pieces onto / around the tray ----------
   let dragging=null; // the object currently being moved (from palette or already placed)
@@ -416,7 +447,7 @@
     piece.addEventListener('pointerdown', e=>{
       const type=piece.dataset.type;
       if(type==='custom' && !customLoaded){ imgPick.click(); e.preventDefault(); return; }
-      dragging={ type, x:0.5, y:0.5, size: type==='gem'?currentSize:0.28, hue: type==='gem'?currentHue:undefined };
+      dragging={ type, x:0.5, y:0.5, size: (DROP_SIZE[type]||0.2)*sizeMul, hue: type==='gem'?currentHue:undefined };
       dragFromPalette=true;
       ghost.style.display='block';
       ghostImg.src = piece.querySelector('img').src;
@@ -477,7 +508,7 @@
     if(!dragging) return;
     if(dragFromPalette){
       if(withinTray(e.clientX, e.clientY)){
-        const p=clientToTray(e.clientX, e.clientY);
+        const p=separateFromPlaced(clientToTray(e.clientX, e.clientY), dragging.size);
         dragging.x=p.x; dragging.y=p.y;
         placed.push(dragging);
       }
