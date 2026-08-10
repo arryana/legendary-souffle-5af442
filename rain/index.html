@@ -120,9 +120,10 @@
     for(const d of drops){
       if(d.moving && d.vy>0.2){
         const w=d.r*0.72;
+        const x0=Math.min(d.px,d.x)-w, x1=Math.max(d.px,d.x)+w;
         glassCtx.save();
         glassCtx.beginPath();
-        glassCtx.rect(d.x-w, Math.min(d.py,d.y), w*2, Math.abs(d.y-d.py)+0.6);   // continuous track from last position to now
+        glassCtx.rect(x0, Math.min(d.py,d.y), x1-x0, Math.abs(d.y-d.py)+0.6);   // continuous track from last position to now
         glassCtx.ellipse(d.x,d.y,w,w*1.05,0,0,Math.PI*2);                         // rounded head
         glassCtx.clip();
         glassCtx.drawImage(bgCanvas,0,0,W,H);          // reveal the clear garden along the track
@@ -146,11 +147,14 @@
   // size breaks free at exactly the same instant and falls at exactly the same rate, which
   // reads as artificial lockstep rain rather than something falling naturally.
   function newDrop(x,y,r){
-    return { x,y,r, vy:0, moving:false, py:y,
+    return { x,y,r, vy:0, vx:0, moving:false, py:y, px:x,
       settle: 0.15+Math.random()*0.85,   // freshly landed drops sit visibly before they're even eligible to slide
       stick: 0.75+Math.random()*0.6,
       vmaxMul: 0.8+Math.random()*0.45 };
   }
+  // persistent streaks left on the glass by drops that have already run — lets a later
+  // drop find and get pulled into an already-wet channel instead of always cutting its own
+  let trails=[];
   // a raindrop lands somewhere on the glass and sticks where it hits;
   // occasionally a fatter one lands that will run before long
   function spawnDrop(){ const big=Math.random()<0.10; drops.push(newDrop(Math.random()*W, Math.random()*H, big?3.2+Math.random()*2.0:1.5+Math.random()*1.6)); }
@@ -178,25 +182,38 @@
       const pull = g*mass;                       // gravity pull grows with size
       const pinStatic = 1.6*d.r*d.stick;         // surface tension pins by contact width — breaks free at a realistic (smaller) size
       if(!d.moving && pull>pinStatic) d.moving=true;   // only breaks free once heavy enough
+      d.px=d.x;
       if(d.moving){
         const pinKinetic = 0.6*d.r*d.stick;      // weaker grip once it's sliding (hysteresis)
         d.vy += ((pull-pinKinetic)/mass)*dt*2.4;
         d.vy *= 0.94;
+        if(Math.random()<0.006*dt) d.vy *= 0.10+Math.random()*0.25;   // snags on a dry fleck of dust — real chance to stall below
         if(d.vy<0) d.vy=0;
         const vmax = DROP_VMAX*d.vmaxMul;
         if(d.vy>vmax) d.vy=vmax;
         d.py=d.y; d.y += d.vy*dt;                 // remember where it was, for a continuous trail
+        // an existing trail nearby gently pulls the drop sideways into it, like real rain
+        // finding an already-wet channel instead of every drop cutting its own straight line
+        let join=null, joinD=18;
+        for(const tr of trails){ if(tr.yBot<d.y-4 || tr.yTop>d.y+70) continue; const dx=Math.abs(tr.x-d.x); if(dx>1.2 && dx<joinD){ joinD=dx; join=tr; } }
+        if(join) d.vx += (join.x-d.x)*0.05*dt;
+        d.vx *= 0.9; d.x += d.vx*dt;
         if(d.vy>0.4) d.r=Math.max(2.6, d.r-0.006*dt);   // sheds slowly — stays visible leading its own trail
-        if(d.vy<0.06 && pull<=pinStatic){ d.moving=false; d.vy=0; }  // re-pins if it slows & is light
+        if(d.vy<0.06 && pull<=pinStatic){ d.moving=false; d.vy=0; d.vx=0; }  // re-pins if it slows & is light
+        // leaves its passage behind as a trail a later drop can find and join
+        let seg=trails.find(t=>Math.abs(t.x-d.x)<5 && d.y>=t.yTop-20 && d.py<=t.yBot+40);
+        if(seg){ seg.x=seg.x*0.75+d.x*0.25; seg.yTop=Math.min(seg.yTop,d.py); seg.yBot=Math.max(seg.yBot,d.y); seg.life=110; }
+        else trails.push({x:d.x, yTop:Math.min(d.py,d.y), yBot:Math.max(d.py,d.y), life:110});
       } else {                                    // stalled — condensation slowly feeds it
         d.vy=0; d.py=d.y; if(d.r<11) d.r += (0.0026 + 0.0016*tilt)*dt;  // gentle condensation; runs mostly triggered by rain landing & merging
       }
     }
+    trails=trails.filter(t=>(t.life-=dt)>0);
     // a moving drop swallows the beads it passes, growing and speeding on
     for(let i=0;i<drops.length;i++){ for(let j=drops.length-1;j>i;j--){ const a=drops[i],b=drops[j];
       if(Math.hypot(a.x-b.x,a.y-b.y) < (a.r+b.r)*0.95){ const R=Math.sqrt(a.r*a.r+b.r*b.r);   // merge as soon as they touch — no overlapping drops
-        a.x=(a.x*a.r+b.x*b.r)/(a.r+b.r); a.y=Math.max(a.y,b.y);
-        a.vy=(a.vy*a.r+b.vy*b.r)/(a.r+b.r); a.r=R; a.moving=a.moving||b.moving; drops.splice(j,1);} } }
+        a.x=(a.x*a.r+b.x*b.r)/(a.r+b.r); a.y=Math.max(a.y,b.y); a.px=a.x;
+        a.vy=(a.vy*a.r+b.vy*b.r)/(a.r+b.r); a.vx=(a.vx*a.r+b.vx*b.r)/(a.r+b.r); a.r=R; a.moving=a.moving||b.moving; drops.splice(j,1);} } }
     drops=drops.filter(d=>d.y-d.r<H+20);
   }
 
