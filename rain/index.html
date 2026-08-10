@@ -150,7 +150,11 @@
     return { x,y,r, vy:0, vx:0, moving:false, py:y, px:x,
       settle: 0.15+Math.random()*0.85,   // freshly landed drops sit visibly before they're even eligible to slide
       stick: 0.75+Math.random()*0.6,
-      vmaxMul: 0.8+Math.random()*0.45 };
+      vmaxMul: 0.8+Math.random()*0.45,
+      // how readily this particular drop gets pulled sideways into a trail it passes near —
+      // many drops barely feel it (or not at all), a few snap right into one, same as real
+      // rain doesn't uniformly funnel into every existing streak it happens to pass
+      joinAffinity: Math.random() };
   }
   // persistent streaks left on the glass by drops that have already run — lets a later
   // drop find and get pulled into an already-wet channel instead of always cutting its own
@@ -187,16 +191,26 @@
         const pinKinetic = 0.6*d.r*d.stick;      // weaker grip once it's sliding (hysteresis)
         d.vy += ((pull-pinKinetic)/mass)*dt*2.4;
         d.vy *= 0.94;
-        if(Math.random()<0.006*dt) d.vy *= 0.10+Math.random()*0.25;   // snags on a dry fleck of dust — real chance to stall below
+        // small drops carry less momentum and snag on the glass's own texture far more
+        // readily than big ones — a heavy drop barely notices the same fleck of dust
+        const snagChance = (0.0018 + 0.013/d.r)*dt;
+        if(Math.random()<snagChance) d.vy *= 0.08+Math.random()*0.22;
         if(d.vy<0) d.vy=0;
-        const vmax = DROP_VMAX*d.vmaxMul;
+        // smaller drops also have a lower real terminal velocity, not just the same cap
+        // scaled by a size-blind random trait — gives the small/big ends of the population
+        // visibly different top speeds instead of just a mild per-drop wobble
+        const sizeVmaxFactor = 0.5+0.5*Math.min(1,(d.r-1.5)/3.7);
+        const vmax = DROP_VMAX*d.vmaxMul*sizeVmaxFactor;
         if(d.vy>vmax) d.vy=vmax;
         d.py=d.y; d.y += d.vy*dt;                 // remember where it was, for a continuous trail
         // an existing trail nearby gently pulls the drop sideways into it, like real rain
-        // finding an already-wet channel instead of every drop cutting its own straight line
-        let join=null, joinD=18;
-        for(const tr of trails){ if(tr.yBot<d.y-4 || tr.yTop>d.y+70) continue; const dx=Math.abs(tr.x-d.x); if(dx>1.2 && dx<joinD){ joinD=dx; join=tr; } }
-        if(join) d.vx += (join.x-d.x)*0.05*dt;
+        // finding an already-wet channel — but only for drops with some affinity for it;
+        // plenty of real drops slide right past a nearby streak without joining it
+        if(d.joinAffinity>0.3){
+          let join=null, joinD=10+d.joinAffinity*14;
+          for(const tr of trails){ if(tr.yBot<d.y-4 || tr.yTop>d.y+70) continue; const dx=Math.abs(tr.x-d.x); if(dx>1.2 && dx<joinD){ joinD=dx; join=tr; } }
+          if(join) d.vx += (join.x-d.x)*0.05*dt*d.joinAffinity;
+        }
         d.vx *= 0.9; d.x += d.vx*dt;
         if(d.vy>0.4) d.r=Math.max(2.6, d.r-0.006*dt);   // sheds slowly — stays visible leading its own trail
         if(d.vy<0.06 && pull<=pinStatic){ d.moving=false; d.vy=0; d.vx=0; }  // re-pins if it slows & is light
