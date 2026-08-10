@@ -440,31 +440,19 @@
   // entirely — there's nothing on it that could catch.
   const OBJECTS = {
     pebble:    { friction: 0.985, radius: 30, wobble: 0 },
-    // acorn cone-roll, re-derived by actually measuring the real photo (not
-    // eyeballed): the cap's own rim is one contact circle, but the second
-    // one is NOT the tip — an acorn's body is curved, not a straight cone
-    // side, so the true second contact is wherever a straight line from the
-    // cap's edge first touches the body again without cutting into it (the
-    // classic "resting on its widest points" bitangent, found by scanning
-    // the photo's own silhouette rather than guessing): R≈220px, r≈211px,
-    // L≈27px apart, in the source photo's own pixel space.
-    // A tapered object rolls in a circle; curl per unit distance travelled
-    // = 2(R-r)/(L(R+r)). The previous figure here (0.0024) used that same
-    // formula but left R/r/L in the SOURCE PHOTO's pixel scale while
-    // applying the result against on-screen travel distance, which is a
-    // much smaller scale (the photo is drawn at roughly a quarter size) —
-    // so the curl came out several times too gentle, reading as "barely
-    // arcs at all" instead of the tight, distinct loop a real acorn traces.
-    // Rescaled to the sprite's actual on-screen size: ≈0.006.
-    // catchInterval 1e9 disables the old random stick-slip kick so the arc
-    // reads as a clean, steady cone curve rather than a wavy ball.
-    acorn:     { friction: 0.974, radius: 62, wobble: 1, catchInterval: 1e9, curlRate: 0.006 },
+    // the acorn no longer shares the "rotate the velocity vector a little every frame"
+    // approximation the other curling objects use below — that traces a curve, but a
+    // curve isn't the same thing as rolling around a fixed point the way a cone actually
+    // does. It has its own dedicated motion (stepAcornPivot, near the bottom of the
+    // physics section) built around an explicit near-fixed pivot instead.
+    acorn:     { radius: 62 },
     disc:      { friction: 0.976, radius: 34, wobble: 0, spinOnImpact: 1 },
     jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.0045 },
   };
 
   let activeType = 'pebble';
-  let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, jellySpin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0, acornAngle: 0 };
+  let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, jellySpin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0, acornAngle: 0,
+    pivotX: 0, pivotY: 0 };
 
   // the real acorn, as a set of real photographed angles — swapped frame to
   // frame as it rolls, rather than spinning one flat photo like a sticker, so
@@ -503,6 +491,10 @@
     // start lying naturally on its side (long axis horizontal), tipped the
     // way it will curl, rather than at a random angle
     obj.acornAngle = obj.curlDir * Math.PI / 2 + (Math.random() - 0.5) * 0.4;
+    // the pivot is only ever read back out from the live heading once it's actually
+    // moving (see stepAcornPivot) — parked at the start position until then
+    obj.pivotX = obj.x;
+    obj.pivotY = obj.y;
   }
 
   objBtns.forEach((btn) => {
@@ -549,9 +541,109 @@
   const WALL_NUDGE = 1.4, WALL_SLEEP_V = 0.6;
   function wallBounce(v){ return Math.abs(v) < WALL_SLEEP_V ? 0 : -v * WALL_RESTITUTION; }
 
+  // ---------- acorn: cone rolling around a fixed pivot ----------
+  // First attempt at this drove the orbit by projecting tilt straight onto the tangent
+  // of a fixed pivot-relative angle. That's real torque-around-a-fixed-point physics —
+  // and real torque-around-a-fixed-point physics is a pendulum: pushing a fixed
+  // direction against a continuously-turning angle necessarily helps for half of every
+  // lap and fights it for the other half. With enough drive that still powers all the
+  // way around; slow the drive down (as asked for below) or add more damping and it
+  // stops making it over the top and instead just rocks back and forth near a resting
+  // angle — measured directly (sweep speed oscillating between roughly -0.0012 and 0,
+  // never sustaining), not guessed at. A steerable toy rolling around under a
+  // continuous push needs the push to keep helping regardless of which way it's
+  // currently facing, not fight itself twice a lap — so tilt instead accelerates
+  // whatever direction it's ALREADY travelling (self-referential, like a hand
+  // continuing to push a merry-go-round from wherever it currently is, rather than
+  // pushing one fixed spot in space), and an unconditional curl — always the same
+  // direction, scaled by current speed — is what actually turns that travel into a
+  // loop. The pivot itself still exists, it just isn't the thing driving the motion any
+  // more: it's read back out, each frame, from the live heading and the curl's own
+  // radius (a circle turning at curlAmt radians per unit distance has radius
+  // 1/curlAmt), for the sprite's tip-lean and for anything checking that a real,
+  // consistent point is genuinely being circled.
+  const ACORN_CURL_RATE = 0.006;   // rad per unit on-screen distance travelled
+  // a real acorn doesn't spin up freely — its own rough, flared cap drags against the
+  // surface as it rolls, and its weight sits low in the round nut body rather than out
+  // toward the rim, so it takes real, sustained push to get it moving and it sheds that
+  // speed quickly once the push stops. Both knobs below are turned down from the
+  // original shared GRAVITY/friction figures for exactly that reason, not as one
+  // arbitrary "make it slower" multiplier.
+  const ACORN_GRAVITY = 0.32;
+  const ACORN_FRICTION = 0.958;
+  const ACORN_PIVOT_R = 1 / ACORN_CURL_RATE; // on-screen radius of the loop this traces
+
+  function stepAcornPivot(){
+    const r = OBJECTS.acorn.radius;
+    const speedNow = Math.hypot(obj.vx, obj.vy);
+
+    const nearRight = obj.x >= W - r - 3, nearLeft = obj.x <= r + 3;
+    const nearBottom = obj.y >= H - r - 3, nearTop = obj.y <= r + 3;
+    const nearWall = nearRight || nearLeft || nearBottom || nearTop;
+
+    if (speedNow > 2 && !nearWall) {
+      const hx = obj.vx / speedNow, hy = obj.vy / speedNow;
+      const tangent = tiltX * hx + tiltY * hy;
+      obj.vx += tangent * hx * ACORN_GRAVITY * speedMult;
+      obj.vy += tangent * hy * ACORN_GRAVITY * speedMult;
+    } else {
+      let tx = tiltX, ty = tiltY;
+      if (nearRight && tx > 0) tx = 0;
+      if (nearLeft && tx < 0) tx = 0;
+      if (nearBottom && ty > 0) ty = 0;
+      if (nearTop && ty < 0) ty = 0;
+      obj.vx += tx * ACORN_GRAVITY * speedMult;
+      obj.vy += ty * ACORN_GRAVITY * speedMult;
+    }
+
+    const curlSpeed = Math.hypot(obj.vx, obj.vy);
+    if (curlSpeed > 0.01 && !nearWall) {
+      const rotAmt = ACORN_CURL_RATE * obj.curlDir * curlSpeed;
+      const cosA = Math.cos(rotAmt), sinA = Math.sin(rotAmt);
+      const nvx = obj.vx * cosA - obj.vy * sinA;
+      const nvy = obj.vx * sinA + obj.vy * cosA;
+      obj.vx = nvx; obj.vy = nvy;
+    }
+
+    obj.vx *= ACORN_FRICTION;
+    obj.vy *= ACORN_FRICTION;
+
+    const prevX = obj.x, prevY = obj.y;
+    obj.x += obj.vx;
+    obj.y += obj.vy;
+
+    let clacked = false, clackIntensity = 0;
+    if (obj.x < r) { obj.x = r + WALL_NUDGE; obj.vx = wallBounce(obj.vx); clacked = true; clackIntensity = Math.abs(obj.vx); }
+    if (obj.x > W - r) { obj.x = W - r - WALL_NUDGE; obj.vx = wallBounce(obj.vx); clacked = true; clackIntensity = Math.abs(obj.vx); }
+    if (obj.y < r) { obj.y = r + WALL_NUDGE; obj.vy = wallBounce(obj.vy); clacked = true; clackIntensity = Math.abs(obj.vy); }
+    if (obj.y > H - r) { obj.y = H - r - WALL_NUDGE; obj.vy = wallBounce(obj.vy); clacked = true; clackIntensity = Math.abs(obj.vy); }
+    if (clacked && clackIntensity > 0.6) playClack(clackIntensity);
+
+    const rollStep = Math.hypot(obj.x - prevX, obj.y - prevY);
+    obj.spin += rollStep / r;
+
+    // the pivot this is currently circling, read back out from the live heading rather
+    // than driven as its own separate state — see the note above
+    const speedForPivot = Math.hypot(obj.vx, obj.vy);
+    if (speedForPivot > 0.01) {
+      const hx = obj.vx / speedForPivot, hy = obj.vy / speedForPivot;
+      obj.pivotX = obj.x - hy * ACORN_PIVOT_R * obj.curlDir;
+      obj.pivotY = obj.y + hx * ACORN_PIVOT_R * obj.curlDir;
+      const towardPivot = Math.atan2(obj.pivotY - obj.y, obj.pivotX - obj.x);
+      const target = towardPivot - Math.PI / 2;
+      let d = ((target - obj.acornAngle + Math.PI) % (2 * Math.PI)) - Math.PI;
+      if (d < -Math.PI) d += 2 * Math.PI;
+      obj.acornAngle += d * 0.18;
+    }
+
+    setRumble(speedForPivot, 'acorn');
+  }
+
   function step(){
     tiltX += (rawTiltX - tiltX) * SMOOTHING;
     tiltY += (rawTiltY - tiltY) * SMOOTHING;
+
+    if (activeType === 'acorn') { stepAcornPivot(); return; }
 
     const spec = OBJECTS[activeType];
     // a cone doesn't get shoved straight downhill by tilt the way a ball does — its
@@ -641,21 +733,14 @@
       // however long the tilt keeps being held — reads as the object getting stuck
       // rolling in place on one spot instead of actually continuing across the tray.
       if (spec.curlRate && speedNow > 2 && curlSpeed > 0.01 && !nearWall) {
-        // the jellybean isn't a clean cone, so it doesn't hold one steady
-        // curl — its curl strength wobbles in step with its own uneven spin
-        // below, so the path snakes rather than tracing a single tidy arc.
-        // The acorn isn't a clean cone either, just differently: it has two
-        // separate fat points, not one steady taper — the nut body's own
-        // widest point (round, nearly ball-like, barely any curl there) and
-        // the cap's own flared rim (properly asymmetric, where the real
-        // curl comes from). Which one is currently down rotates with the
-        // acorn's own spin, once per full turn, so the curl strength should
-        // swing between those two contacts rather than sit constant.
+        // the jellybean isn't a clean cone, so it doesn't hold one steady curl — its
+        // curl strength wobbles in step with its own uneven spin below, so the path
+        // snakes rather than tracing a single tidy arc. (The acorn used to share this
+        // same mechanism too; it now has its own dedicated pivot-based rolling in
+        // stepAcornPivot above instead.)
         const curlAmt = (activeType === 'jellybean')
           ? spec.curlRate * (1 + 0.9 * Math.sin(2 * obj.jellySpin))
-          : (activeType === 'acorn')
-            ? spec.curlRate * (0.35 + 0.65 * (0.5 + 0.5 * Math.cos(obj.spin)))
-            : spec.curlRate;
+          : spec.curlRate;
         const rotAmt = curlAmt * obj.curlDir * curlSpeed;
         const cosA = Math.cos(rotAmt), sinA = Math.sin(rotAmt);
         const nvx = obj.vx * cosA - obj.vy * sinA;
@@ -707,19 +792,6 @@
     const jellyRadFactor = 1 + 0.24 * Math.cos(2 * obj.jellySpin);
     obj.jellySpin += (rollStep / r) / jellyRadFactor;
     if (clacked && clackIntensity > 0.6) playClack(clackIntensity);
-
-    // acorn sprite orientation: a rolling cone keeps its long axis across the
-    // direction of travel and leans its narrow (tip) end toward the inside of
-    // the curve — the point it's circling around. Track the heading and turn
-    // the sprite to match, smoothed so it reads as rolling rather than snapping.
-    if (activeType === 'acorn' && speed > 0.25) {
-      const headV = Math.atan2(obj.vy, obj.vx);
-      const tipDir = headV - obj.curlDir * Math.PI / 2;  // tip points to inside of arc
-      const target = tipDir - Math.PI / 2;               // sprite's tip is local +y
-      let d = ((target - obj.acornAngle + Math.PI) % (2 * Math.PI)) - Math.PI;
-      if (d < -Math.PI) d += 2 * Math.PI;
-      obj.acornAngle += d * 0.18;
-    }
 
     setRumble(speed, activeType);
   }
