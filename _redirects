@@ -1,6 +1,7 @@
 /conometer.html   /conometer/   301
 /candler.html     /candler/     301
-/acorn.html       /acorn/       301
+/acorn.html       /roller/      301
+/acorn/           /roller/      301
 /lamp.html        /lamp/        301
 /warmler.html     /warmler/     301
 /rain.html        /rain/        301

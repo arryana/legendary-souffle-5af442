@@ -49,7 +49,7 @@ flat files at the repo root.
 |------|:---:|------------|
 | `index.html` | — | Landing page: the card grid ("sagne") |
 | `candler/index.html` | ✅ | *Sagne Candle* — an interactive candle. `candler_5.html` is an alternate version (not linked) |
-| `acorn/index.html` | ✅ | An acorn resting on wood, interactive |
+| `roller/index.html` | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse |
 | `lamp/index.html` | ✅ | An oil lamp |
 | `warmler/index.html` | ✅ | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked) |
 | `rain/index.html` | ✅ | Rain on glass |

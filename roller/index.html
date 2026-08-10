@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>acorn — sagne</title>
+<title>roller — sagne</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <meta name="description" content="Tip the tray and let it roll. A small study in balance and gravity.">
 <meta name="theme-color" content="#0e1c30">
-<link rel="canonical" href="https://sagne.co.uk/acorn/">
+<link rel="canonical" href="https://sagne.co.uk/roller/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="sagne">
-<meta property="og:title" content="acorn — sagne">
+<meta property="og:title" content="roller — sagne">
 <meta property="og:description" content="Tip the tray and let it roll. A small study in balance and gravity.">
-<meta property="og:url" content="https://sagne.co.uk/acorn/">
-<meta property="og:image" content="https://sagne.co.uk/og/acorn.png">
+<meta property="og:url" content="https://sagne.co.uk/roller/">
+<meta property="og:image" content="https://sagne.co.uk/og/roller.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="acorn — sagne">
+<meta name="twitter:title" content="roller — sagne">
 <meta name="twitter:description" content="Tip the tray and let it roll. A small study in balance and gravity.">
-<meta name="twitter:image" content="https://sagne.co.uk/og/acorn.png">
+<meta name="twitter:image" content="https://sagne.co.uk/og/roller.png">
 <style>
   :root{
     --bg1:#0f1420; --bg2:#1c2433;
@@ -180,7 +180,7 @@
 <div id="hint">tilt your device<br>or move your mouse</div>
 
 <div id="permissionGate">
-  <p>acorn responds to how you tilt whatever it's resting on.<br>On a phone or tablet, that means the device itself.</p>
+  <p>Each of these responds to how you tilt whatever it's resting on.<br>On a phone or tablet, that means the device itself.</p>
   <button id="tiltBtn">enable tilt</button>
   <button id="skipDesktop">I'm on a computer — use my mouse instead</button>
 </div>
@@ -198,7 +198,6 @@
   </div>
   <div id="objRow">
     <button class="objBtn active" data-obj="pebble" title="river pebble" aria-label="river pebble">⬮</button>
-    <button class="objBtn" data-obj="acorn" title="acorn" aria-label="acorn">🌰</button>
     <button class="objBtn" data-obj="disc" title="disc" aria-label="disc">⬤</button>
     <button class="objBtn" data-obj="jellybean" title="jellybean stone" aria-label="jellybean stone">⬬</button>
   </div>
@@ -236,7 +235,7 @@
     }
   });
 
-  // If the visitor starts their own music, hush the acorn's own sounds so the
+  // If the visitor starts their own music, hush the tray's own sounds so the
   // two don't compete — the music becomes the sound. We tick the "no sound" box
   // (so it's visible and they can undo it) but don't overwrite their saved setting.
   const musicEl = document.getElementById('musicEl');
@@ -417,13 +416,6 @@
   // ---------- objects ----------
   // river pebble: the simplest case per the brief — position, velocity,
   // friction, boundary collision. No rotation.
-  // acorn: the cap is wider than the body, so its centre of mass isn't on
-  // the rolling axis — once per rotation the wide edge of the cap catches
-  // the surface and momentarily hitches, kicking the object sideways and
-  // stealing some of its speed, before it rolls freely again until the
-  // next catch. That's a stick-slip pattern, not a smooth curve — a
-  // continuous sine wobble reads as "ball on a wavy path," which isn't
-  // what a lopsided object actually does.
   // disc: flat and rigid, so it slides rather than rolls — same core
   // mechanic as the pebble — but it can still spin in place around its
   // own centre, independent of where it's travelling. That spin comes
@@ -431,46 +423,19 @@
   // torque the same way a hockey puck catches an edge), not from being
   // scripted to twirl; a dead-on hit imparts no spin at all.
   // jellybean stone: a smooth, elongated stone with a very slightly
-  // off-centre mass — nowhere near the acorn's dramatic cap asymmetry,
-  // just a barely-perceptible lean in its density. Reuses the exact same
-  // curl mechanism as the acorn's cone-rolling physics, just at a small
-  // fraction of the strength, so it drifts in a lazy, wide arc rather
-  // than looping. And because it's one smooth stone with no attached
-  // cap to catch on anything, it skips the stick-slip catch mechanic
-  // entirely — there's nothing on it that could catch.
+  // off-centre mass — just a barely-perceptible lean in its density —
+  // that curls in a lazy, wide arc as it rolls (see the curl mechanism
+  // below) rather than travelling in a straight line. And because it's
+  // one smooth stone with nothing on it to catch, it skips the stick-slip
+  // catch mechanic entirely.
   const OBJECTS = {
     pebble:    { friction: 0.985, radius: 30, wobble: 0 },
-    // the acorn no longer shares the "rotate the velocity vector a little every frame"
-    // approximation the other curling objects use below — that traces a curve, but a
-    // curve isn't the same thing as rolling around a fixed point the way a cone actually
-    // does. It has its own dedicated motion (stepAcornPivot, near the bottom of the
-    // physics section) built around an explicit near-fixed pivot instead.
-    acorn:     { radius: 62 },
     disc:      { friction: 0.976, radius: 34, wobble: 0, spinOnImpact: 1 },
     jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.0045 },
   };
 
   let activeType = 'pebble';
-  let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, jellySpin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0, acornAngle: 0,
-    pivotX: 0, pivotY: 0 };
-
-  // the real acorn, as a set of real photographed angles — swapped frame to
-  // frame as it rolls, rather than spinning one flat photo like a sticker, so
-  // rolling shows different facets of the acorn the way a real rolling cone
-  // would. Only the frames where the acorn is actually lying on its side are
-  // used here — a cone rolling on its side never presents its end-on faces
-  // to an overhead camera, so frames 6 and 7 (looking straight down the cap
-  // end and the tip end) are excluded entirely; using them made the roll
-  // read as tumbling or spinning in place, which a real rolling cone never
-  // does. Frames 1 and 3 are also dropped as near-duplicates of frame 0.
-  const ACORN_FRAME_ORDER = [0, 2, 5, 4];
-  const acornFrames = ACORN_FRAME_ORDER.map((n) => {
-    const img = new Image();
-    img.ready = false;
-    img.onload = () => { img.ready = true; };
-    img.src = `acorn-roll-${n}.png`;
-    return img;
-  });
+  let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, jellySpin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0 };
 
   function resetObject(){
     obj.x = W / 2;
@@ -481,20 +446,13 @@
     obj.jellySpin = Math.random() * Math.PI * 2;
     obj.rollDistance = 0;
     obj.nextCatch = 30 + Math.random() * 20;
-    // which way this particular acorn curls — a real cone always arcs
-    // toward the same side (its narrow end), but which side that is
-    // depends on which way it happens to be lying, so it's randomised
-    // once per reset and then held fixed, not re-rolled every frame
+    // which way this particular jellybean curls — its own off-centre mass always
+    // drifts it toward the same side, but which side that is depends on which way
+    // it happens to be lying, so it's randomised once per reset and then held
+    // fixed, not re-rolled every frame
     obj.curlDir = Math.random() < 0.5 ? 1 : -1;
     obj.discSpin = Math.random() * Math.PI * 2;
     obj.discAngVel = 0;
-    // start lying naturally on its side (long axis horizontal), tipped the
-    // way it will curl, rather than at a random angle
-    obj.acornAngle = obj.curlDir * Math.PI / 2 + (Math.random() - 0.5) * 0.4;
-    // the pivot is only ever read back out from the live heading once it's actually
-    // moving (see stepAcornPivot) — parked at the start position until then
-    obj.pivotX = obj.x;
-    obj.pivotY = obj.y;
   }
 
   objBtns.forEach((btn) => {
@@ -541,113 +499,13 @@
   const WALL_NUDGE = 1.4, WALL_SLEEP_V = 0.6;
   function wallBounce(v){ return Math.abs(v) < WALL_SLEEP_V ? 0 : -v * WALL_RESTITUTION; }
 
-  // ---------- acorn: cone rolling around a fixed pivot ----------
-  // First attempt at this drove the orbit by projecting tilt straight onto the tangent
-  // of a fixed pivot-relative angle. That's real torque-around-a-fixed-point physics —
-  // and real torque-around-a-fixed-point physics is a pendulum: pushing a fixed
-  // direction against a continuously-turning angle necessarily helps for half of every
-  // lap and fights it for the other half. With enough drive that still powers all the
-  // way around; slow the drive down (as asked for below) or add more damping and it
-  // stops making it over the top and instead just rocks back and forth near a resting
-  // angle — measured directly (sweep speed oscillating between roughly -0.0012 and 0,
-  // never sustaining), not guessed at. A steerable toy rolling around under a
-  // continuous push needs the push to keep helping regardless of which way it's
-  // currently facing, not fight itself twice a lap — so tilt instead accelerates
-  // whatever direction it's ALREADY travelling (self-referential, like a hand
-  // continuing to push a merry-go-round from wherever it currently is, rather than
-  // pushing one fixed spot in space), and an unconditional curl — always the same
-  // direction, scaled by current speed — is what actually turns that travel into a
-  // loop. The pivot itself still exists, it just isn't the thing driving the motion any
-  // more: it's read back out, each frame, from the live heading and the curl's own
-  // radius (a circle turning at curlAmt radians per unit distance has radius
-  // 1/curlAmt), for the sprite's tip-lean and for anything checking that a real,
-  // consistent point is genuinely being circled.
-  const ACORN_CURL_RATE = 0.006;   // rad per unit on-screen distance travelled
-  // a real acorn doesn't spin up freely — its own rough, flared cap drags against the
-  // surface as it rolls, and its weight sits low in the round nut body rather than out
-  // toward the rim, so it takes real, sustained push to get it moving and it sheds that
-  // speed quickly once the push stops. Both knobs below are turned down from the
-  // original shared GRAVITY/friction figures for exactly that reason, not as one
-  // arbitrary "make it slower" multiplier.
-  const ACORN_GRAVITY = 0.32;
-  const ACORN_FRICTION = 0.958;
-  const ACORN_PIVOT_R = 1 / ACORN_CURL_RATE; // on-screen radius of the loop this traces
-
-  function stepAcornPivot(){
-    const r = OBJECTS.acorn.radius;
-    const speedNow = Math.hypot(obj.vx, obj.vy);
-
-    const nearRight = obj.x >= W - r - 3, nearLeft = obj.x <= r + 3;
-    const nearBottom = obj.y >= H - r - 3, nearTop = obj.y <= r + 3;
-    const nearWall = nearRight || nearLeft || nearBottom || nearTop;
-
-    if (speedNow > 2 && !nearWall) {
-      const hx = obj.vx / speedNow, hy = obj.vy / speedNow;
-      const tangent = tiltX * hx + tiltY * hy;
-      obj.vx += tangent * hx * ACORN_GRAVITY * speedMult;
-      obj.vy += tangent * hy * ACORN_GRAVITY * speedMult;
-    } else {
-      let tx = tiltX, ty = tiltY;
-      if (nearRight && tx > 0) tx = 0;
-      if (nearLeft && tx < 0) tx = 0;
-      if (nearBottom && ty > 0) ty = 0;
-      if (nearTop && ty < 0) ty = 0;
-      obj.vx += tx * ACORN_GRAVITY * speedMult;
-      obj.vy += ty * ACORN_GRAVITY * speedMult;
-    }
-
-    const curlSpeed = Math.hypot(obj.vx, obj.vy);
-    if (curlSpeed > 0.01 && !nearWall) {
-      const rotAmt = ACORN_CURL_RATE * obj.curlDir * curlSpeed;
-      const cosA = Math.cos(rotAmt), sinA = Math.sin(rotAmt);
-      const nvx = obj.vx * cosA - obj.vy * sinA;
-      const nvy = obj.vx * sinA + obj.vy * cosA;
-      obj.vx = nvx; obj.vy = nvy;
-    }
-
-    obj.vx *= ACORN_FRICTION;
-    obj.vy *= ACORN_FRICTION;
-
-    const prevX = obj.x, prevY = obj.y;
-    obj.x += obj.vx;
-    obj.y += obj.vy;
-
-    let clacked = false, clackIntensity = 0;
-    if (obj.x < r) { obj.x = r + WALL_NUDGE; obj.vx = wallBounce(obj.vx); clacked = true; clackIntensity = Math.abs(obj.vx); }
-    if (obj.x > W - r) { obj.x = W - r - WALL_NUDGE; obj.vx = wallBounce(obj.vx); clacked = true; clackIntensity = Math.abs(obj.vx); }
-    if (obj.y < r) { obj.y = r + WALL_NUDGE; obj.vy = wallBounce(obj.vy); clacked = true; clackIntensity = Math.abs(obj.vy); }
-    if (obj.y > H - r) { obj.y = H - r - WALL_NUDGE; obj.vy = wallBounce(obj.vy); clacked = true; clackIntensity = Math.abs(obj.vy); }
-    if (clacked && clackIntensity > 0.6) playClack(clackIntensity);
-
-    const rollStep = Math.hypot(obj.x - prevX, obj.y - prevY);
-    obj.spin += rollStep / r;
-
-    // the pivot this is currently circling, read back out from the live heading rather
-    // than driven as its own separate state — see the note above
-    const speedForPivot = Math.hypot(obj.vx, obj.vy);
-    if (speedForPivot > 0.01) {
-      const hx = obj.vx / speedForPivot, hy = obj.vy / speedForPivot;
-      obj.pivotX = obj.x - hy * ACORN_PIVOT_R * obj.curlDir;
-      obj.pivotY = obj.y + hx * ACORN_PIVOT_R * obj.curlDir;
-      const towardPivot = Math.atan2(obj.pivotY - obj.y, obj.pivotX - obj.x);
-      const target = towardPivot - Math.PI / 2;
-      let d = ((target - obj.acornAngle + Math.PI) % (2 * Math.PI)) - Math.PI;
-      if (d < -Math.PI) d += 2 * Math.PI;
-      obj.acornAngle += d * 0.18;
-    }
-
-    setRumble(speedForPivot, 'acorn');
-  }
-
   function step(){
     tiltX += (rawTiltX - tiltX) * SMOOTHING;
     tiltY += (rawTiltY - tiltY) * SMOOTHING;
 
-    if (activeType === 'acorn') { stepAcornPivot(); return; }
-
     const spec = OBJECTS[activeType];
-    // a cone doesn't get shoved straight downhill by tilt the way a ball does — its
-    // own shape resists being dragged sideways off whatever circle it's already
+    // a curling object doesn't get shoved straight downhill by tilt the way a ball
+    // does — its own shape resists being dragged sideways off whatever circle it's already
     // rolling on. So tilt mostly speeds a curling object up or slows it down along
     // its current heading (the tangential component); the sideways component that
     // would drag it off its own arc is left out entirely below the slide threshold
@@ -733,11 +591,9 @@
       // however long the tilt keeps being held — reads as the object getting stuck
       // rolling in place on one spot instead of actually continuing across the tray.
       if (spec.curlRate && speedNow > 2 && curlSpeed > 0.01 && !nearWall) {
-        // the jellybean isn't a clean cone, so it doesn't hold one steady curl — its
-        // curl strength wobbles in step with its own uneven spin below, so the path
-        // snakes rather than tracing a single tidy arc. (The acorn used to share this
-        // same mechanism too; it now has its own dedicated pivot-based rolling in
-        // stepAcornPivot above instead.)
+        // the jellybean isn't a clean, uniform taper, so it doesn't hold one steady
+        // curl — its curl strength wobbles in step with its own uneven spin below, so
+        // the path snakes rather than tracing a single tidy arc.
         const curlAmt = (activeType === 'jellybean')
           ? spec.curlRate * (1 + 0.9 * Math.sin(2 * obj.jellySpin))
           : spec.curlRate;
@@ -994,37 +850,11 @@
     ctx.restore();
   }
 
-  // ---------- acorn silhouette ----------
-  // A real acorn is an elongated, slightly asymmetric teardrop under a
-  // textured cap — not a smooth ball with a smaller ball stuck on top.
-  // These vertices are hand-placed (with small fixed jitter baked in, not
-  // recomputed per frame) to read as a drawn silhouette rather than a
-  // perfect geometric ellipse.
-  const ACORN_BODY = [
-    [0.00, -0.90], [0.30, -0.78], [0.52, -0.52], [0.62, -0.18],
-    [0.63,  0.18], [0.54,  0.50], [0.34,  0.78], [0.12,  0.95],
-    [0.00,  1.02], [-0.13, 0.94], [-0.36, 0.76], [-0.56, 0.48],
-    [-0.64, 0.15], [-0.60, -0.20], [-0.48, -0.53], [-0.27, -0.79],
-  ];
-  const ACORN_CAP = [
-    [0.00, -0.90], [0.22, -0.94], [0.44, -0.90], [0.62, -0.76],
-    [0.72, -0.55], [0.66, -0.40], [0.46, -0.48], [0.24, -0.56],
-    [0.02, -0.60], [-0.22, -0.55], [-0.44, -0.47], [-0.66, -0.38],
-    [-0.73, -0.55], [-0.60, -0.77], [-0.40, -0.90], [-0.20, -0.94],
-  ];
-  // small scale marks scattered over the cap, each a short curved dash —
-  // this is what reads as "textured cap" rather than a smooth dome
-  const CAP_SCALES = [
-    [-0.42,-0.82,0.1],[-0.20,-0.86,-0.15],[0.05,-0.87,0.08],[0.30,-0.84,-0.1],[0.50,-0.76,0.15],
-    [-0.55,-0.68,0.05],[-0.30,-0.72,-0.12],[-0.05,-0.73,0.1],[0.20,-0.71,-0.08],[0.44,-0.65,0.12],
-    [-0.60,-0.52,-0.1],[-0.38,-0.56,0.08],[-0.12,-0.58,-0.1],[0.14,-0.57,0.1],[0.38,-0.52,-0.08],[0.58,-0.46,0.1],
-  ];
-
   // ---------- jellybean stone silhouette ----------
   // An elongated stone, gently asymmetric — fuller toward one end,
-  // tapering toward the other — with the same small hand-placed jitter
-  // as the acorn's outline, so it reads as drawn rather than a perfect
-  // geometric capsule.
+  // tapering toward the other — with small hand-placed jitter baked into
+  // the vertices (not recomputed per frame) so it reads as a drawn
+  // silhouette rather than a perfect geometric capsule.
   const JELLYBEAN_BODY = [
     [0.00, -0.95], [0.28, -0.88], [0.48, -0.65], [0.58, -0.30],
     [0.60,  0.05], [0.52,  0.42], [0.36,  0.72], [0.14,  0.92],
@@ -1034,15 +864,26 @@
 
   function drawJellybean(){
     const r = OBJECTS.jellybean.radius;
+    // its off-centre mass doesn't just bend the path (the curl, in step()) — it
+    // physically rocks the stone as it turns over: taller and slower over its wide
+    // middle, lower and quicker over its narrow ends, same phase as jellyRadFactor in
+    // step() (twice per full turn) so the rock and the roll rate agree with each other
+    // rather than the object visibly gliding smooth while the numbers say otherwise
+    const wobblePhase = Math.cos(2 * obj.jellySpin);
+    const bob = wobblePhase * r * 0.11;
+    const squash = 1 + wobblePhase * 0.07;
+
     ctx.save();
-    ctx.translate(obj.x, obj.y);
-    // shadow
+    ctx.translate(obj.x, obj.y + bob);
+    // shadow — stays screen-aligned and eases with the same rock, a touch bigger and
+    // softer when the stone rises up onto its wide middle
     ctx.beginPath();
-    ctx.ellipse(1, r*0.75, r*0.68, r*0.28, 0, 0, Math.PI*2);
+    ctx.ellipse(1, r*0.75 - bob*0.5, r*(0.68 + wobblePhase*0.05), r*0.28, 0, 0, Math.PI*2);
     ctx.fillStyle = 'rgba(20,12,4,0.28)';
     ctx.fill();
 
     ctx.rotate(obj.jellySpin);
+    ctx.scale(1, squash);
 
     const body = ctx.createRadialGradient(-r*0.2, -r*0.35, r*0.1, 0, r*0.05, r*1.1);
     body.addColorStop(0, '#e8dcc4');
@@ -1055,8 +896,7 @@
     ctx.lineWidth = Math.max(1, r*0.025);
     ctx.stroke();
 
-    // a soft highlight stroke down its length, the same brushed-shading
-    // touch used on the acorn's body
+    // a soft highlight stroke down its length, a brushed-shading touch
     ctx.save();
     pathFromPoints(ctx, JELLYBEAN_BODY, 0, 0, r, r);
     ctx.clip();
@@ -1088,51 +928,11 @@
     c.closePath();
   }
 
-  function drawAcorn(){
-    const r = OBJECTS.acorn.radius;
-    ctx.save();
-    ctx.translate(obj.x, obj.y);
-
-    // soft contact shadow — screen-aligned, so it stays beneath the acorn
-    // as the sprite turns through its arc
-    ctx.beginPath();
-    ctx.ellipse(1, r*0.5, r*1.0, r*0.42, 0, 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(20,12,4,0.28)';
-    ctx.fill();
-
-    // acornAngle is the slow lean (tip toward the centre of the arc, like a
-    // real cone) — still a plain rotation. obj.spin (radians = distance
-    // travelled / radius) picks which of the real photographed angles is
-    // currently facing the camera, the way a real tumbling cone would show
-    // a different facet — but snapping between just those still angles
-    // with no rotation in between reads as a slideshow, not a roll around.
-    // So within whichever angle's own slice of the turn, the sprite still
-    // rotates continuously through it, centred on that real photo's own
-    // angle, and only swaps to the next real photo once it's rolled all
-    // the way through the current one's slice.
-    const n = acornFrames.length;
-    const slice = (Math.PI * 2) / n;
-    const rawIdx = obj.spin / slice;
-    const frameIdx = ((Math.floor(rawIdx) % n) + n) % n;
-    const withinSlice = rawIdx - Math.floor(rawIdx);
-    const fineRotate = (withinSlice - 0.5) * slice;
-    ctx.rotate(obj.acornAngle + fineRotate);
-    const frame = acornFrames[frameIdx];
-    if (frame.ready) {
-      const dh = r * 2.7;
-      const dw = dh * frame.naturalWidth / frame.naturalHeight;
-      ctx.drawImage(frame, -dw/2, -dh/2, dw, dh);
-    }
-
-    ctx.restore();
-  }
-
   function render(){
     drawTray();
-    if (activeType === 'pebble') drawPebble();
-    else if (activeType === 'disc') drawDisc();
+    if (activeType === 'disc') drawDisc();
     else if (activeType === 'jellybean') drawJellybean();
-    else drawAcorn();
+    else drawPebble();
   }
 
   function loop(){
