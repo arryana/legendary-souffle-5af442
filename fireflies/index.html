@@ -229,12 +229,21 @@
 
   function drawGrass(t){
     const base=horizonY();
-    const g=ctx.createLinearGradient(0,base,0,H);
-    const nearC=lerpColor([26,34,20],[3,5,4],dark), farC=lerpColor([16,22,14],[2,3,3],dark);
-    g.addColorStop(0, rgb(farC)); g.addColorStop(1, rgb(nearC));
-    ctx.fillStyle=g; ctx.fillRect(0,base,W,H-base);
+    // the photo above is full of visible detail (stars, a treeline of its own) right up to
+    // the crop edge, so dropping straight into an opaque fill at a dead-flat line read as the
+    // whole scene being sliced in half. Feathering the top of the fill in over a band, and
+    // keeping a light floor under the two grass tones (rather than crushing them to near-zero
+    // at high darkness), turns that hard seam into a soft fade instead.
+    const feather=Math.min(90,(H-base)*0.5);
+    const nearC=lerpColor([30,38,24],[11,14,11],dark), farC=lerpColor([18,24,16],[7,10,8],dark);
+    const g=ctx.createLinearGradient(0,base-feather,0,H);
+    const featherStop=feather/(feather+(H-base));
+    g.addColorStop(0, rgb(farC,0));
+    g.addColorStop(featherStop, rgb(farC,1));
+    g.addColorStop(1, rgb(nearC,1));
+    ctx.fillStyle=g; ctx.fillRect(0,base-feather,W,H-base+feather);
 
-    ctx.strokeStyle=rgb(lerpColor([10,16,9],[1,2,2],dark), 0.8);
+    ctx.strokeStyle=rgb(lerpColor([10,16,9],[5,7,5],dark), 0.8);
     ctx.lineWidth=1;
     const windAmt = wind*10;
     for(const b of blades){
