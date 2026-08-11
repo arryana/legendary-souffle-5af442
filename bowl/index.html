@@ -64,10 +64,16 @@
   .pickerOption.active{ opacity:1; border-color:#e8c383; }
   .pickerOption img{ width:100%; height:100%; object-fit:contain; padding:7px; box-sizing:border-box; display:block; }
   .pickerOption.bowlThumb img{ object-fit:cover; padding:0; }
-  .qtyBadge{ display:none; position:absolute; top:3px; right:3px; min-width:15px; height:15px; padding:0 3px;
-    border-radius:8px; background:#e8c383; color:#1c1712; font-size:10px; line-height:15px;
-    text-align:center; font-family:Georgia, serif; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,.4); }
-  .qtyBadge.show{ display:block; }
+  .pickerOption.objOption img{ padding-right:18px; }
+  .qtyCol{ position:absolute; right:4px; top:4px; bottom:4px; width:11px;
+    display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:2px; }
+  .qtyDot{ width:9px; height:9px; flex:0 0 auto; border-radius:50%; padding:0; cursor:pointer;
+    background:transparent; border:1.3px solid rgba(232,195,131,.65); transition:background .15s ease, border-color .15s ease; }
+  .qtyDot.filled{ background:#e8c383; border-color:#e8c383; }
+  .qtyClear{ width:11px; height:11px; flex:0 0 auto; border-radius:50%; padding:0; cursor:pointer;
+    background:transparent; border:1.3px solid rgba(232,195,131,.65); position:relative; }
+  .qtyClear::after{ content:''; position:absolute; left:1px; right:1px; top:50%; height:1.3px;
+    background:rgba(232,195,131,.85); transform:translateY(-50%) rotate(-45deg); }
 </style>
 </head>
 <body>
@@ -291,22 +297,37 @@
   function buildObjOverlay(){
     objList.innerHTML='';
     KINDS.forEach(k=>{
-      const btn=document.createElement('button');
-      btn.type='button'; btn.className='pickerOption objOption'+(k.count>0?' active':'');
-      btn.setAttribute('aria-label', k.id+' — tap to add or cycle how many');
-      const img=document.createElement('img'); img.src=k.img; img.alt='';
-      btn.appendChild(img);
-      const badge=document.createElement('span'); badge.className='qtyBadge'+(k.count>0?' show':'');
-      badge.textContent=k.count;
-      btn.appendChild(badge);
-      btn.addEventListener('click', ()=>{
-        const next=(k.count+1)%(KIND_MAX+1);
-        setKindCount(k.id,next);
-        btn.classList.toggle('active',next>0);
-        badge.textContent=next;
-        badge.classList.toggle('show',next>0);
+      const tile=document.createElement('div');
+      tile.className='pickerOption objOption'+(k.count>0?' active':'');
+      const img=document.createElement('img'); img.src=k.img; img.alt=k.id;
+      tile.appendChild(img);
+
+      const col=document.createElement('div'); col.className='qtyCol';
+
+      const clearBtn=document.createElement('button');
+      clearBtn.type='button'; clearBtn.className='qtyClear';
+      clearBtn.setAttribute('aria-label', k.id+' — remove from bowl');
+      clearBtn.addEventListener('click', ()=>{
+        setKindCount(k.id,0);
+        tile.classList.remove('active');
+        col.querySelectorAll('.qtyDot').forEach(d=>d.classList.remove('filled'));
       });
-      objList.appendChild(btn);
+      col.appendChild(clearBtn);
+
+      // top-to-bottom: 4, 3, 2, 1 — so the dots fill from the bottom up, like a level
+      for(let n=KIND_MAX;n>=1;n--){
+        const dot=document.createElement('button');
+        dot.type='button'; dot.className='qtyDot'+(k.count>=n?' filled':'');
+        dot.setAttribute('aria-label', k.id+' — set to '+n);
+        dot.addEventListener('click', ()=>{
+          setKindCount(k.id,n);
+          tile.classList.toggle('active',n>0);
+          col.querySelectorAll('.qtyDot').forEach((d,i)=>d.classList.toggle('filled', (KIND_MAX-i)<=n));
+        });
+        col.appendChild(dot);
+      }
+      tile.appendChild(col);
+      objList.appendChild(tile);
     });
   }
   objTrigger.addEventListener('click', ()=>objOverlay.classList.add('open'));
@@ -320,9 +341,14 @@
       const resp=1/o.weight;
       let ax=f.vx*FLOW_SCALE*speedAmt*resp;
       let ay=f.vy*FLOW_SCALE*speedAmt*resp;
-      // the faintest natural drift, present even with speed at zero
-      ax += Math.sin(t*0.55+o.phase)*BASE_JITTER*resp;
-      ay += Math.cos(t*0.47+o.phase*1.3)*BASE_JITTER*resp;
+      // the faintest natural drift, present even with speed at zero — gated by a
+      // slow envelope that spends long stretches near zero (cubed so it lingers
+      // there rather than just dipping through it), so calm water actually goes
+      // still for a while instead of jittering forever at low amplitude
+      const idleEnvelope = Math.pow(Math.max(0, Math.sin(t*0.11 + o.phase*0.9)), 3);
+      const jitter = BASE_JITTER*0.35*idleEnvelope;
+      ax += Math.sin(t*0.55+o.phase)*jitter*resp;
+      ay += Math.cos(t*0.47+o.phase*1.3)*jitter*resp;
 
       // stay within the water — soft containment near the inner wall
       const dx=o.x-cx, dy=o.y-cy, dist=Math.hypot(dx,dy)||0.001;

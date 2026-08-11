@@ -1516,8 +1516,13 @@ function render() {
   flameClipRect.setAttribute('height', flameClipBottom + 60);
 
   // on the burned pillar, lift the glow's centre up toward the flame tip
-  // so the halo sits higher, above the rim rather than around the body
-  glowCircle.setAttribute('cy', wellFloorY - 10 - hollowT * 45);
+  // so the halo sits higher, above the rim rather than around the body.
+  // A wide candle's flat top is lit by its own inner glow (waxGlow/
+  // waxBaseGlow below) across a lot more area than a thin candle's, which
+  // pulls the eye's read of the halo's centre down toward that broad lit
+  // top — so also lift it in proportion to how wide the candle is, to
+  // keep it reading as centred on the flame at every size.
+  glowCircle.setAttribute('cy', wellFloorY - 10 - hollowT * 45 - (halfW - HALF_W_MIN) * 0.6);
   // the burned pillar hides most of the flame, so its warm halo above the
   // rim is the main light — make that glow noticeably larger than the
   // ordinary candle's

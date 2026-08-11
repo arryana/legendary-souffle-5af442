@@ -203,81 +203,129 @@
     });
   })();
 
-  // the real globe, as a set of 32 real rendered rotation angles — swapped frame
-  // to frame as it idles, rather than a hand-drawn continent outline. there's no
-  // longitude control here (only latitude), so instead the globe spins slowly on
-  // its own — a lazy ambient rotation that eventually brings every part of the
-  // world into view, purely decorative and independent of both the time-speed
-  // slider and the latitude drag (which only reads the chord's height, unaffected
-  // by which way the sphere is currently turned).
+  // the real globe, rendered as simplified continent silhouettes on a rotating
+  // sphere (orthographic projection, polygons clipped to the visible hemisphere)
+  // instead of pre-rendered photo frames. Rotation is now continuous real math
+  // rather than a swap between 32 stills, so it's exactly as smooth as the
+  // display's own frame rate — no dipping through black between frames, and no
+  // baked-in artifacts (the old frames carried garbled text labels) to fight.
+  // There's no longitude control here (only latitude), so instead the globe
+  // spins slowly on its own — a lazy ambient rotation that eventually brings
+  // every part of the world into view, purely decorative and independent of
+  // both the time-speed slider and the latitude drag (which only reads the
+  // chord's height, unaffected by which way the sphere is currently turned).
   const GLOBE_SPIN_DEG_PER_SEC = 4;
-  const GLOBE_FRAME_COUNT = 32;
-  const globeFrames = Array.from({length: GLOBE_FRAME_COUNT}, (_, i) => {
-    const img = new Image();
-    img.ready = false;
-    img.onload = () => { img.ready = true; };
-    img.src = `globe-${i}.png`;
-    return img;
-  });
+  // simplified continent outlines, [lon,lat] degrees — stylized silhouettes
+  // traced roughly to real coastlines, sized for an ~80px decoration rather
+  // than surveyed accuracy.
+  const CONTINENTS = [
+    [[-165,68],[-140,71],[-110,72],[-95,75],[-75,68],[-60,50],[-53,47],[-65,45],
+     [-75,35],[-81,25],[-97,18],[-92,14],[-84,9],[-79,8],[-105,20],[-110,25],
+     [-117,32],[-124,40],[-124,49],[-130,55],[-140,60],[-165,68]], // North America
+    [[-79,8],[-77,0],[-80,-5],[-81,-15],[-71,-18],[-70,-30],[-73,-40],[-68,-52],
+     [-65,-55],[-58,-52],[-57,-38],[-48,-25],[-35,-8],[-50,0],[-60,5],[-70,10],[-79,8]], // South America
+    [[-9,43],[-9,52],[-5,58],[5,62],[15,68],[25,70],[30,60],[27,45],[19,42],
+     [13,38],[3,43],[-9,43]], // Europe
+    [[-17,15],[-17,21],[-6,35],[10,37],[20,32],[32,31],[43,12],[51,12],[42,-1],
+     [40,-15],[35,-25],[27,-34],[18,-34],[12,-18],[9,4],[-5,5],[-11,7],[-17,15]], // Africa
+    [[27,45],[40,45],[60,55],[70,55],[90,50],[110,52],[130,55],[145,60],[160,65],
+     [178,68],[178,60],[160,55],[142,45],[130,35],[122,30],[110,20],[103,10],
+     [95,15],[80,8],[77,20],[68,25],[60,25],[48,30],[35,32],[27,36],[27,45]], // Asia
+    [[113,-22],[122,-18],[130,-12],[137,-12],[142,-11],[145,-16],[153,-28],
+     [150,-37],[140,-38],[132,-32],[122,-34],[115,-35],[113,-22]], // Australia
+    [[-45,60],[-38,66],[-25,71],[-25,77],[-45,77],[-55,70],[-52,63],[-45,60]], // Greenland
+  ];
+  const ICE_CAP_LAT = -58; // Antarctica, approximated as a polar cap
+
+  // orthographic projection of a lon/lat point onto the sphere as currently
+  // rotated; z<0 means it's on the far side, facing away from the viewer
+  function sphereProject(lonDeg, latDeg, rotDeg, R, gcx, gcy){
+    const lon=(lonDeg-rotDeg)*Math.PI/180, lat=latDeg*Math.PI/180;
+    const x=Math.cos(lat)*Math.sin(lon), y=Math.sin(lat), z=Math.cos(lat)*Math.cos(lon);
+    return { x: gcx+R*x, y: gcy-R*y, z };
+  }
+  // fills a continent polygon, clipped to the visible (z>=0) hemisphere. Where
+  // an edge crosses the horizon, the crossing point lands exactly on the
+  // sphere's own silhouette circle — so clipping in 3D reduces to snapping
+  // that interpolated point onto the circle, no separate 2D clip pass needed.
+  function drawContinent(poly, rotDeg, R, gcx, gcy){
+    const pts = poly.map(([lon,lat]) => sphereProject(lon,lat,rotDeg,R,gcx,gcy));
+    const clipped = [];
+    for(let i=0;i<pts.length;i++){
+      const a=pts[i], b=pts[(i+1)%pts.length];
+      if(a.z>=0) clipped.push(a);
+      if((a.z>=0)!==(b.z>=0)){
+        const tt=a.z/(a.z-b.z);
+        const ix=a.x+(b.x-a.x)*tt, iy=a.y+(b.y-a.y)*tt;
+        const dx=ix-gcx, dy=iy-gcy, d=Math.hypot(dx,dy)||1;
+        clipped.push({x:gcx+dx/d*R, y:gcy+dy/d*R, z:0});
+      }
+    }
+    if(clipped.length<3) return;
+    gctx.beginPath();
+    gctx.moveTo(clipped[0].x,clipped[0].y);
+    for(let i=1;i<clipped.length;i++) gctx.lineTo(clipped[i].x,clipped[i].y);
+    gctx.closePath();
+    gctx.fill();
+  }
   function drawGlobe(t){
     const w=globeCanvas.width, h=globeCanvas.height, R=w/2*0.90;
     const gcx=w/2, gcy=h/2;
     gctx.clearRect(0,0,w,h);
+    const rotDeg = (12 + t*GLOBE_SPIN_DEG_PER_SEC) % 360;
 
-    const lonDeg = (12 + t*GLOBE_SPIN_DEG_PER_SEC) % 360;
-    const sliceDeg = 360/GLOBE_FRAME_COUNT;
-    const rawIdx = lonDeg/sliceDeg;
-    const frameIdx = Math.floor(rawIdx) % GLOBE_FRAME_COUNT;
-    const nextIdx = (frameIdx+1) % GLOBE_FRAME_COUNT;
-    const frac = rawIdx - Math.floor(rawIdx);
-    const frame = globeFrames[frameIdx];
-    const nextFrame = globeFrames[nextIdx];
-    if (frame.ready){
-      gctx.save();
-      gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.clip();
-      // a straight alpha cross-dissolve between two stills sounds like the fix for a hard
-      // jump-cut, but these frames carry sharp baked-in text labels (city names, pins) —
-      // mixing two of those at once doesn't read as a sphere turning, it reads as
-      // unreadable double-exposed ghosting for a big chunk of every ~2.8s dwell. Dipping
-      // through the dark backdrop instead — fade the current frame out, then fade the next
-      // one in — never shows two frames' pixels at once, so there's no ghosting, only a
-      // quick, deliberate dip that still avoids the old instant jump.
-      const holdFrac = 0.85;
-      let curAlpha = 1, nextAlpha = 0;
-      if (frac >= holdFrac){
-        const t2 = (frac-holdFrac)/(1-holdFrac);
-        if (t2 < 0.5){ curAlpha = 1-t2/0.5; }
-        else { curAlpha = 0; nextAlpha = (t2-0.5)/0.5; }
+    gctx.save();
+    gctx.beginPath(); gctx.arc(gcx,gcy,R,0,Math.PI*2); gctx.clip();
+
+    // ocean — a soft sphere-shaded base rather than a flat fill
+    const ocean=gctx.createRadialGradient(gcx-R*0.35,gcy-R*0.4,R*0.15,gcx,gcy,R*1.05);
+    ocean.addColorStop(0,'#3f7aa8'); ocean.addColorStop(0.55,'#265f8c'); ocean.addColorStop(1,'#0e2f4c');
+    gctx.fillStyle=ocean; gctx.fillRect(gcx-R,gcy-R,R*2,R*2);
+
+    // graticule — parallels are fixed chords (see the latitude line below);
+    // meridians slide sideways as the globe turns, the clearest visual cue
+    // that it's actually rotating rather than just sitting there
+    gctx.strokeStyle='rgba(255,255,255,0.16)'; gctx.lineWidth=0.6;
+    [-60,-30,0,30,60].forEach(pLat=>{
+      const ply=gcy-Math.sin(pLat*Math.PI/180)*R, plx=Math.cos(pLat*Math.PI/180)*R;
+      gctx.beginPath(); gctx.moveTo(gcx-plx,ply); gctx.lineTo(gcx+plx,ply); gctx.stroke();
+    });
+    for(let mLon=0; mLon<360; mLon+=45){
+      const delta=((mLon-rotDeg)%360+540)%360-180; // wrapped to -180..180
+      if(Math.abs(delta)>=90) continue; // facing away — the far half of this meridian
+      const dRad=delta*Math.PI/180;
+      gctx.beginPath();
+      for(let i=0;i<=18;i++){
+        const phi=(-90+i*10)*Math.PI/180;
+        const px=gcx+R*Math.cos(phi)*Math.sin(dRad), py=gcy-R*Math.sin(phi);
+        if(i===0) gctx.moveTo(px,py); else gctx.lineTo(px,py);
       }
-      // cover-fit: scale so the frame's own globe circle fills our circle exactly,
-      // cropping any excess rather than leaving letterboxed gaps at the edges
-      if (curAlpha > 0){
-        const scale = (R*2)/Math.min(frame.naturalWidth, frame.naturalHeight);
-        const dw = frame.naturalWidth*scale, dh = frame.naturalHeight*scale;
-        gctx.globalAlpha = curAlpha;
-        gctx.drawImage(frame, gcx-dw/2, gcy-dh/2, dw, dh);
-        gctx.globalAlpha = 1;
-      }
-      if (nextAlpha > 0 && nextFrame.ready){
-        const nscale = (R*2)/Math.min(nextFrame.naturalWidth, nextFrame.naturalHeight);
-        const ndw = nextFrame.naturalWidth*nscale, ndh = nextFrame.naturalHeight*nscale;
-        gctx.globalAlpha = nextAlpha;
-        gctx.drawImage(nextFrame, gcx-ndw/2, gcy-ndh/2, ndw, ndh);
-        gctx.globalAlpha = 1;
-      }
-      // soft dark vignette right at the rim, so any bright edge in the source
-      // photo (specular highlight, faint crop fringe) blends into the page
-      // background instead of showing as a hard ring
-      const vign=gctx.createRadialGradient(gcx,gcy,R*0.8,gcx,gcy,R);
-      vign.addColorStop(0,'rgba(5,8,12,0)');
-      vign.addColorStop(1,'rgba(5,8,12,0.85)');
-      gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.fillStyle=vign; gctx.fill();
-      gctx.restore();
-    } else {
-      const shade=gctx.createRadialGradient(gcx-R*0.35,gcy-R*0.4,R*0.1,gcx,gcy,R*1.05);
-      shade.addColorStop(0,'#3a352c'); shade.addColorStop(1,'#151310');
-      gctx.beginPath(); gctx.arc(gcx,gcy,R,0,7); gctx.fillStyle=shade; gctx.fill();
+      gctx.stroke();
     }
+
+    // continents
+    gctx.fillStyle='#7c9b6e';
+    CONTINENTS.forEach(poly => drawContinent(poly, rotDeg, R, gcx, gcy));
+
+    // south polar ice cap — it wraps every longitude, so seen from this
+    // equatorial camera it's simply the circle segment below its latitude
+    gctx.save();
+    const capY = gcy - Math.sin(ICE_CAP_LAT*Math.PI/180)*R;
+    gctx.beginPath(); gctx.rect(gcx-R, capY, R*2, gcy+R-capY); gctx.clip();
+    gctx.fillStyle='rgba(235,242,246,0.88)';
+    gctx.beginPath(); gctx.arc(gcx,gcy,R,0,Math.PI*2); gctx.fill();
+    gctx.restore();
+
+    // sphere shading (soft highlight, darker toward the rim) plus the same
+    // dark vignette the old photo-frame version used, so the disc still
+    // blends cleanly into the page background at its edge
+    const shade=gctx.createRadialGradient(gcx-R*0.35,gcy-R*0.4,R*0.1,gcx,gcy,R);
+    shade.addColorStop(0,'rgba(255,255,255,0.14)');
+    shade.addColorStop(0.55,'rgba(0,0,0,0)');
+    shade.addColorStop(1,'rgba(0,0,0,0.6)');
+    gctx.fillStyle=shade; gctx.beginPath(); gctx.arc(gcx,gcy,R,0,Math.PI*2); gctx.fill();
+
+    gctx.restore();
 
     // the chosen latitude — a plain chord, its own length and height the whole control.
     // white rather than the site's usual gold so it actually stands out against the
