@@ -56,22 +56,17 @@
   #permissionGate{
     position:fixed; inset:0; z-index:60;
     background:rgba(10,13,20,0.92);
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:18px; text-align:center; padding:30px;
+    display:flex; align-items:center; justify-content:center;
+    gap:28px; text-align:center; padding:30px;
   }
   #permissionGate.hidden{ display:none; }
-  #permissionGate p{ max-width:340px; opacity:.75; font-size:15px; line-height:1.5; margin:0; }
-  #tiltBtn{
+  .gateBtn{
     background:transparent; border:1px solid rgba(201,151,78,0.6);
-    color:var(--brass); font-family:inherit; font-size:16px;
-    padding:12px 28px; border-radius:30px; cursor:pointer;
-    letter-spacing:.05em;
+    color:var(--brass); font-family:inherit; font-size:34px;
+    width:92px; height:92px; border-radius:50%; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
   }
-  #tiltBtn:hover{ background:rgba(201,151,78,0.12); }
-  #skipDesktop{
-    background:none; border:none; color:var(--parchment); opacity:.4;
-    font-size:13px; text-decoration:underline; cursor:pointer; font-family:inherit;
-  }
+  .gateBtn:hover{ background:rgba(201,151,78,0.12); }
 
   #dock{
     position:fixed; bottom:0; left:0; right:0;
@@ -164,9 +159,8 @@
 <div id="hint">tilt your device<br>or move your mouse</div>
 
 <div id="permissionGate">
-  <p>tilt phone or tablet</p>
-  <button id="tiltBtn">enable tilt</button>
-  <button id="skipDesktop">desktop — use mouse</button>
+  <button id="tiltBtn" class="gateBtn" title="phone/tablet tilt" aria-label="phone/tablet tilt">📱</button>
+  <button id="skipDesktop" class="gateBtn" title="desktop, use mouse/trackpad" aria-label="desktop, use mouse/trackpad">🖱️</button>
 </div>
 
 <div id="stage">
