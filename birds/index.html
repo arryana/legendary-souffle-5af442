@@ -260,30 +260,44 @@
     sprite('crow-fly-8.png',261,277,185,165,1),
   ];
   const CROW_LAND_APPROACH=sprite('crow-land-approach.png',268,262,195,135,1);
-  // halfW is wide enough to clear each crow's actual foot/toe spread — too narrow, and this
-  // trim (meant only to fade the excess baked-in branch beyond the feet) cuts into the toes
-  // themselves, leaving a smudged stub instead of a crisp foot on the wire.
-  const CROW_TOUCHDOWN=sprite('crow-touchdown.png',292,269,172,236,1,{bandY:188,halfW:58,cutY:237,feather:4});
+  // touchdown and every perch variant below replaced entirely (not just re-masked) with real
+  // reference photos from the birdbest sheet — the old touchdown crop had a branch baked in at
+  // a real diagonal angle that no amount of retuning the trim band ever fully cleared (see the
+  // git history for two prior attempts), and rather than keep patching a source image that
+  // fights the trim approach by construction, these are cut clean with no perch/branch baked in
+  // at all, so no masking is needed here. Only three single-bird poses were available (a fourth
+  // shows two crows preening each other, not usable as one sprite), so perch-back reuses the
+  // calm perch pose and perch-sleep/touchdown share the head-down foraging pose — an honest
+  // reuse, not a bug, same as the owl above. Flight frames are untouched: the existing 8-frame
+  // flap cycle is already real reference photos of good quality, no fix needed there.
+  const CROW_TOUCHDOWN=sprite('crow-touchdown.png',206,148,86,147,1);
   const CROW_PERCH_VARIANTS=[
-    sprite('crow-perch.png',217,239,103,224,1,{bandY:150,halfW:62,cutY:225,feather:4}),
-    sprite('crow-perch-alt.png',234,222,112.5,209,1,{bandY:148,halfW:65,cutY:210,feather:4}),
-    sprite('crow-perch-back.png',232,218,110.5,205,1,{bandY:130,halfW:68,cutY:206,feather:4}),
-    sprite('crow-perch-sleep.png',236,209,113.5,197,1,{bandY:138,halfW:65,cutY:198,feather:4}),
+    sprite('crow-perch.png',125,192,60,164,1),
+    sprite('crow-perch-alt.png',184,190,127.5,189,1),
+    sprite('crow-perch-back.png',125,192,60,164,1),
+    sprite('crow-perch-sleep.png',206,148,86,147,1),
   ];
   const CROW_SCALE=0.17;   // crows read as a noticeably bigger bird than sparrows, tuned by eye
 
   // ---- owls: a third species, and the only one that ever shows up once night has fallen —
   // no other bird here would plausibly be out at that hour, so on the night background these
   // replace sparrows and crows entirely, and rarely: at most one at a time, see owlTimer below.
+  // real reference photos now (from the same "study each species separately" pass that
+  // produced the birdbest sheet), replacing the small, low-res stock-clipart owl this used to
+  // be. Only one clean flying pose was available (a wide, broad-wing glide) rather than a full
+  // flap cycle — used for both fly frames and reused for the approach, which is an honest
+  // simplification, not a placeholder: a real owl's flight is slow and near-silent, close to a
+  // held glide rather than a fast flap, so a near-static wing pose across these three reads
+  // as more correct for this species than it would for a sparrow or crow.
   const OWL_FLY=[
-    sprite('owl-fly-1.png',170,168,78,64,-1),
-    sprite('owl-fly-2.png',170,168,85,85,1),
+    sprite('owl-fly-1.png',440,200,220,90,1),
+    sprite('owl-fly-2.png',440,200,220,90,1),
   ];
-  const OWL_LAND_APPROACH=sprite('owl-land-approach.png',170,171,86,100,-1);
-  const OWL_TOUCHDOWN=sprite('owl-touchdown.png',170,171,85,128,1,{bandY:112,halfW:6,cutY:129,feather:7});
+  const OWL_LAND_APPROACH=sprite('owl-land-approach.png',440,200,220,90,1);
+  const OWL_TOUCHDOWN=sprite('owl-touchdown.png',150,232,75,215,1,{bandY:180,halfW:8,cutY:222,feather:6});
   const OWL_PERCH_VARIANTS=[
-    sprite('owl-perch.png',170,180,78,120,1,{bandY:104,halfW:6,cutY:121,feather:7}),
-    sprite('owl-perch-alt.png',170,180,76.5,120,1,{bandY:104,halfW:6,cutY:121,feather:7}),
+    sprite('owl-perch.png',190,232,78,215,1,{bandY:180,halfW:8,cutY:222,feather:6}),
+    sprite('owl-perch-alt.png',150,232,75,215,1,{bandY:180,halfW:8,cutY:222,feather:6}),
   ];
   const OWL_SCALE=0.19;   // a barn owl reads as bigger again than a crow, tuned by eye
 
