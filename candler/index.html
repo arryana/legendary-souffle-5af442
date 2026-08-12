@@ -66,10 +66,11 @@
   .candle-wrap {
     flex: 1;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     width: 100%;
     min-height: 0;
+    padding-top: 4vh;
   }
 
   svg#scene {
@@ -544,11 +545,6 @@
       <button type="button" class="icon-option" data-icon="⏰" title="Alarm" aria-label="Alarm">⏰</button>
     </div>
     <div class="panel">
-      <div class="ctrl" id="sizeCtrl">
-        <span class="icon">🕯️</span>
-        <input id="sizeSlider" type="range" min="0" max="100" value="100" aria-label="candle size">
-      </div>
-      <div class="divider"></div>
       <div class="ctrl" id="windCtrl">
         <span class="icon">💨</span>
         <input id="windSlider" type="range" min="0" max="100" value="15" aria-label="wind strength">
@@ -574,6 +570,11 @@
       </div>
     </div>
     <div class="panel" id="pillarPanel" style="padding-top:6px;padding-bottom:6px;">
+      <div class="ctrl" id="sizeCtrl">
+        <span class="icon">🕯️</span>
+        <input id="sizeSlider" type="range" min="0" max="100" value="100" aria-label="candle size">
+      </div>
+      <div class="divider"></div>
       <div class="ctrl">
         <input id="pillarCheck" type="checkbox" aria-label="pillar candle mode">
         <span class="icon">🗓️</span>
