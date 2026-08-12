@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>roller — sagne</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="description" content="Tip the tray and watch a pebble, disc, or stone roll around.">
 <meta name="theme-color" content="#0e1c30">
 <link rel="canonical" href="https://sagne.co.uk/roller/">
@@ -571,12 +574,17 @@
       // rolling in place on one spot instead of actually continuing across the tray.
       if (spec.curlRate && speedNow > 2 && curlSpeed > 0.01 && !nearWall) {
         // the jellybean isn't a clean, uniform taper, so it doesn't hold one steady
-        // curl — its curl strength wobbles in step with its own uneven spin below, so
-        // the path snakes rather than tracing a single tidy arc.
+        // curl — whichever side is currently down leans it one way, and that flips
+        // as it turns over, so the curl direction itself alternates in step with its
+        // own uneven spin rather than just varying in strength. That's what actually
+        // makes the path snake — a lopsided stone weaves side to side as it rolls,
+        // it doesn't just trace one lazy circle. curlDir is a slight per-stone bias
+        // on top (which lobe of the weave runs a little stronger/longer), not a fixed
+        // one-way direction any more.
         const curlAmt = (activeType === 'jellybean')
-          ? spec.curlRate * (1 + 0.9 * Math.sin(2 * obj.jellySpin))
-          : spec.curlRate;
-        const rotAmt = curlAmt * obj.curlDir * curlSpeed;
+          ? spec.curlRate * (0.25 * obj.curlDir + 1.15 * Math.sin(2 * obj.jellySpin))
+          : spec.curlRate * obj.curlDir;
+        const rotAmt = curlAmt * curlSpeed;
         const cosA = Math.cos(rotAmt), sinA = Math.sin(rotAmt);
         const nvx = obj.vx * cosA - obj.vy * sinA;
         const nvy = obj.vx * sinA + obj.vy * cosA;

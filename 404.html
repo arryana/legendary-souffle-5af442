@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e1c30">
+<meta name="robots" content="noindex">
+<style>
+  :root{
+    --bg1:#0f1420; --bg2:#1c2433;
+    --parchment:#f2e9d8;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%; margin:0;
+    background: radial-gradient(ellipse at 50% 35%, var(--bg2) 0%, var(--bg1) 75%);
+    font-family: Georgia, serif; color:var(--parchment);
+  }
+  #backlink{
+    position:fixed; top:18px; left:22px; z-index:50;
+    color:var(--parchment); opacity:.5; text-decoration:none;
+    font-size:14px; letter-spacing:.04em; transition:opacity .3s ease;
+  }
+  #backlink:hover{opacity:.9;}
+  #wrap{
+    min-height:100vh; min-height:100dvh;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #icon{
+    font-size:56px; opacity:.55;
+  }
+</style>
+</head>
+<body>
+<a id="backlink" href="index.html">← sagne</a>
+<div id="wrap">
+  <div id="icon" aria-hidden="true">⛓️‍💥</div>
+</div>
+</body>
+</html>
