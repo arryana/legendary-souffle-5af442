@@ -154,6 +154,8 @@
       settle: 0.15+Math.random()*0.85,   // freshly landed drops sit visibly before they're even eligible to slide
       stick: 0.75+Math.random()*0.6,
       vmaxMul: 0.8+Math.random()*0.45,
+      pauseT: 0,          // a real, variable-length hold once it snags — not just a one-frame speed dip
+      shedFloor: 2.6,     // how small it can shed down to before running out of pull — set for real once it actually breaks free, from its size at that moment (see below)
       // how readily this particular drop locks onto a trail it passes right next to — many
       // drops never do, same as real rain doesn't uniformly funnel into every streak it
       // happens to pass near
@@ -187,17 +189,29 @@
       if(d.settle>0){ d.settle-=dt; continue; }    // freshly landed — visibly sits before it can even be evaluated
       const mass = d.r*d.r;
       const pull = g*mass;                       // gravity pull grows with size
-      const pinStatic = 1.6*d.r*d.stick;         // surface tension pins by contact width — breaks free at a realistic (smaller) size
-      if(!d.moving && pull>pinStatic) d.moving=true;   // only breaks free once heavy enough
+      const pinStatic = 1.35*d.r*d.stick;        // surface tension pins by contact width — breaks free at a realistic (smaller) size
+      if(!d.moving && pull>pinStatic){
+        d.moving=true;
+        // how small it's allowed to shed down to before it runs out of pull, fixed at the
+        // size it actually broke free with — a drop that only just condensed past its own
+        // threshold has little to spare and stalls out again soon; one that broke free big
+        // (spawned big, or grew via merging) keeps far more margin and is the one that
+        // realistically makes it all the way to the bottom
+        d.shedFloor = Math.max(1.15, d.r*0.55);
+      }
       d.px=d.x;
       if(d.moving){
-        const pinKinetic = 0.6*d.r*d.stick;      // weaker grip once it's sliding (hysteresis)
+        // a real, variable-length hold rather than a one-frame speed dip — some are barely
+        // a flicker, some a proper stick before it lets go again, same as real glass
+        if(d.pauseT>0){ d.pauseT-=dt; d.py=d.y; continue; }
+        const trailEase = d.joinedTrail ? 0.55 : 1;  // an already-wet channel grips far less
+        const pinKinetic = 0.6*d.r*d.stick*trailEase;      // weaker grip once it's sliding (hysteresis)
         d.vy += ((pull-pinKinetic)/mass)*dt*2.4;
         d.vy *= 0.94;
         // small drops carry far less momentum and snag on the glass's own texture much
         // more readily than big ones — a heavy drop barely notices the same fleck of dust
-        const snagChance = (0.0016 + 0.019/d.r)*dt;
-        if(Math.random()<snagChance) d.vy *= 0.06+Math.random()*0.2;
+        const snagChance = (0.00028 + 0.0032/d.r)*dt;
+        if(Math.random()<snagChance){ d.pauseT = 6 + Math.random()*Math.random()*84; d.vy*=0.12; }
         if(d.vy<0) d.vy=0;
         // smaller drops also have a lower real terminal velocity, not just the same cap
         // scaled by a size-blind random trait — gives the small/big ends of the population
@@ -222,14 +236,16 @@
           }
           if(d.joinedTrail) d.x += (d.joinedTrail.x-d.x)*Math.min(1,0.16*dt);
         }
-        if(d.vy>0.4) d.r=Math.max(2.6, d.r-0.006*dt);   // sheds slowly — stays visible leading its own trail
-        if(d.vy<0.06 && pull<=pinStatic){ d.moving=false; d.vy=0; d.joinedTrail=null; }  // re-pins if it slows & is light
+        if(d.vy>0.4) d.r=Math.max(d.shedFloor, d.r-0.006*dt);   // sheds slowly — stays visible leading its own trail
+        if(d.vy<0.06 && pull<=pinStatic*trailEase){ d.moving=false; d.vy=0; d.joinedTrail=null; }  // re-pins if it slows & is light — unless a wet trail is still carrying it
         // leaves its passage behind as a trail a later drop can find and join
         let seg=trails.find(t=>Math.abs(t.x-d.x)<5 && d.y>=t.yTop-20 && d.py<=t.yBot+40);
         if(seg){ seg.x=seg.x*0.75+d.x*0.25; seg.yTop=Math.min(seg.yTop,d.py); seg.yBot=Math.max(seg.yBot,d.y); seg.life=110; }
         else trails.push({x:d.x, yTop:Math.min(d.py,d.y), yBot:Math.max(d.py,d.y), life:110});
-      } else {                                    // stalled — condensation slowly feeds it
-        d.vy=0; d.py=d.y; if(d.r<11) d.r += (0.0026 + 0.0016*tilt)*dt;  // gentle condensation; runs mostly triggered by rain landing & merging
+      } else {                                    // stalled — condensation slowly feeds it, but only up to a size that's
+                                                    // still modest at low tilt — a standing drop shouldn't outgrow what a
+                                                    // steeper tilt would actually earn it through merging while sliding
+        d.vy=0; d.py=d.y; if(d.r<6.5) d.r += (0.0026 + 0.0016*tilt)*dt;
       }
     }
     trails=trails.filter(t=>(t.life-=dt)>0);
