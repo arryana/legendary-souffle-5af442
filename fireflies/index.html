@@ -185,7 +185,7 @@
   // everything below horizonY(), same as it always has, so the photos never need to be
   // cropped or aligned to our horizon — cover-fit fills the frame and the bottom is simply
   // covered up.
-  const SKY_STAGE_COUNT=5;
+  const SKY_STAGE_COUNT=7;
   const skyStages=Array.from({length:SKY_STAGE_COUNT}, (_,i)=>{
     const img=new Image(); img.src=`firefly-sky-${i}.png`; return img;
   });
@@ -234,20 +234,12 @@
 
   function drawGrass(t){
     const base=horizonY();
-    // the photo above is full of visible detail (stars, a treeline of its own) right up to
-    // the crop edge, so dropping straight into an opaque fill at a dead-flat line read as the
-    // whole scene being sliced in half. Feathering the top of the fill in over a band, and
-    // keeping a light floor under the two grass tones (rather than crushing them to near-zero
-    // at high darkness), turns that hard seam into a soft fade instead.
-    const feather=Math.min(90,(H-base)*0.5);
-    const nearC=lerpColor([30,38,24],[11,14,11],dark), farC=lerpColor([18,24,16],[7,10,8],dark);
-    const g=ctx.createLinearGradient(0,base-feather,0,H);
-    const featherStop=feather/(feather+(H-base));
-    g.addColorStop(0, rgb(farC,0));
-    g.addColorStop(featherStop, rgb(farC,1));
-    g.addColorStop(1, rgb(nearC,1));
-    ctx.fillStyle=g; ctx.fillRect(0,base-feather,W,H-base+feather);
-
+    // the five sky photos are now real, matched frames of the same meadow — same crop, same
+    // horizon, dusk through night — so there's no misalignment to hide any more, and the real
+    // photographed grass in the lower part of each one can just stay visible on its own. All
+    // that's drawn here now is a thin layer of individually swaying blades close to the camera,
+    // over the photo rather than instead of it — the interactive bit (wind, depth, fireflies
+    // rising through them) a still photo can't provide by itself.
     ctx.strokeStyle=rgb(lerpColor([10,16,9],[5,7,5],dark), 0.8);
     ctx.lineWidth=1;
     const windAmt = wind*10;
