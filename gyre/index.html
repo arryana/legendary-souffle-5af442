@@ -337,6 +337,7 @@
   const lampScrewLocalTrue={x:lampScrewLocalRaw.x/LAMP_GS, y:lampScrewLocalRaw.y/LAMP_GS};
   const LAMP_SCREW_ENGAGE_R=lampWormHalfHRaw/LAMP_GS;
   const LAMP_HIT_R=Math.hypot(LB_bw,LB_bh)/2/LAMP_GS;
+  const LAMP_HALF_W=LB_bw/2/LAMP_GS, LAMP_HALF_H=LB_bh/2/LAMP_GS;   // the box's true rectangular footprint, for gear/box collision
 
   function loadImg(src){ const im=new Image(); im.src=src; return im; }
   const lampBoxImg=loadImg('gyre-lamp-box.png'), lampCapL=loadImg('gyre-lamp-screw-capL.png'),
@@ -423,6 +424,47 @@
           g.x=o.x+Math.cos(a)*minD; g.y=o.y+Math.sin(a)*minD; moved=true; } }
       if(!moved) break; }
   }
+  // a lamp box is a solid rectangle (it can sit at any 90°-facing), not just a frame gears draw
+  // over — this finds how far a circle (a gear, by its outer tooth radius) needs to move to
+  // clear that rotated rectangle, in the rectangle's own local axes, then hands back the
+  // cleared position in world space. Returns null if the circle doesn't overlap the rect at all.
+  function pushCircleFromRect(cx,cy,r,rectCx,rectCy,rectAngle,halfW,halfH){
+    const c=Math.cos(rectAngle), s=Math.sin(rectAngle);
+    const dx=cx-rectCx, dy=cy-rectCy;
+    const lx=dx*c+dy*s, ly=-dx*s+dy*c;
+    const cxL=Math.max(-halfW,Math.min(halfW,lx)), cyL=Math.max(-halfH,Math.min(halfH,ly));
+    const nx=lx-cxL, ny=ly-cyL, d=Math.hypot(nx,ny);
+    let nlx, nly;
+    if(d>=r) return null;
+    if(d>1e-6){ nlx=cxL+nx/d*r; nly=cyL+ny/d*r; }
+    else {                             // circle's centre is inside the rect — push out the nearest side
+      const left=lx+halfW, right=halfW-lx, top=ly+halfH, bottom=halfH-ly, m=Math.min(left,right,top,bottom);
+      if(m===left) { nlx=-halfW-r; nly=ly; }
+      else if(m===right) { nlx=halfW+r; nly=ly; }
+      else if(m===top) { nlx=lx; nly=-halfH-r; }
+      else { nlx=lx; nly=halfH+r; }
+    }
+    return { x: rectCx+nlx*c-nly*s, y: rectCy+nlx*s+nly*c };
+  }
+  // dragging a gear near a lamp box: push the gear clear of the box, same physical rule as
+  // two gears not being able to share space
+  function resolveBoxOverlap(g){
+    const r=outerR(g.N);
+    for(const lamp of lamps){
+      const pushed=pushCircleFromRect(g.x,g.y,r,lamp.x,lamp.y,lampFacingAngle(lamp),LAMP_HALF_W,LAMP_HALF_H);
+      if(pushed){ g.x=pushed.x; g.y=pushed.y; }
+    }
+  }
+  // dragging the lamp box itself near a gear: same collision, but it's the box that has to
+  // move — reuse the circle/rect math from the gear's point of view, then apply the opposite
+  // shift to the box (moving either shape by the same relative amount clears the same overlap)
+  function resolveLampOverlap(lamp){
+    for(const g of gears){
+      const r=outerR(g.N);
+      const pushed=pushCircleFromRect(g.x,g.y,r,lamp.x,lamp.y,lampFacingAngle(lamp),LAMP_HALF_W,LAMP_HALF_H);
+      if(pushed){ lamp.x-=(pushed.x-g.x); lamp.y-=(pushed.y-g.y); }
+    }
+  }
   canvas.addEventListener('pointerdown',e=>{ const {x,y}=P(e);
     for(const t of trayRects){ if(Math.hypot(x-t.cx,y-t.cy)<t.hit){ const g=mk(t.N,x,y,false); gears.push(g); drag={kind:'gear',obj:g,ox:0,oy:0}; canvas.setPointerCapture(e.pointerId); return; } }
     if(lampTrayRect && Math.hypot(x-lampTrayRect.cx,y-lampTrayRect.cy)<lampTrayRect.hit){
@@ -438,7 +480,8 @@
     } }
   });
   canvas.addEventListener('pointermove',e=>{ if(!drag) return; const {x,y}=P(e); drag.obj.x=x-drag.ox; drag.obj.y=y-drag.oy;
-    if(drag.kind==='gear') resolveOverlap(drag.obj); });
+    if(drag.kind==='gear'){ resolveOverlap(drag.obj); resolveBoxOverlap(drag.obj); }
+    else resolveLampOverlap(drag.obj); });
   function endDrag(e){ if(!drag) return; const {x,y}=P(e);
     if(drag.kind==='gear'){ const g=drag.obj;
       if(y<130 && !g.fixed){ gears=gears.filter(k=>k!==g); }   // dropped in the tray band -> remove (never the driver)

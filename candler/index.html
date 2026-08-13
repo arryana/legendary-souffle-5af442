@@ -74,9 +74,15 @@
   }
 
   svg#scene {
-    width: min(440px, 78vw);
+    /* the 440px cap used to hold the candle to a small fixed size no
+       matter how big the window got, so on a wide desktop monitor it
+       sat small and alone with the (fixed-size) control panel below it
+       reading as the bigger, busier thing on screen. Letting both caps
+       grow gives the candle far more presence on a big screen; phones
+       already get their own much larger sizing below. */
+    width: min(640px, 78vw);
     height: 100%;
-    max-height: 64vh;
+    max-height: 78vh;
     overflow: visible;
   }
 
@@ -148,9 +154,9 @@
   input[type=checkbox] {
     appearance: none;
     -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 6px;
+    width: 17px;
+    height: 17px;
+    border-radius: 5px;
     border: 1.5px solid rgba(183, 140, 86, 0.6);
     background: rgba(0,0,0,0.25);
     cursor: pointer;
@@ -164,8 +170,8 @@
   }
   input[type=checkbox]:checked::after {
     content: "";
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 2px;
     background: #1a1420;
   }
@@ -187,7 +193,7 @@
     .ctrl { gap: 4px; }
     .ctrl .icon { font-size: 14px; }
     input[type=range] { width: 46px; }
-    input[type=checkbox] { width: 18px; height: 18px; }
+    input[type=checkbox] { width: 15px; height: 15px; }
     .divider { display: none; }
     /* the candle itself: same proportions (SVG's own aspect-ratio
        scaling keeps it exact), just sized up so the wax nearly
@@ -201,7 +207,7 @@
   .readout {
     margin-top: 10px;
     min-height: 14px;
-    font-size: 12px;
+    font-size: 10px;
     letter-spacing: 0.02em;
     color: var(--ink-dim);
     text-align: center;
@@ -231,7 +237,7 @@
   .add-pin-btn { font-size: 16px; font-weight: 700; }
 
   .stage-time {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--ink-dim);
     min-width: 30px;
     text-align: center;
@@ -293,7 +299,7 @@
     border: 1px solid rgba(183, 140, 86, 0.25);
     border-radius: 999px;
     padding: 3px 8px;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--ink-dim);
     white-space: nowrap;
   }
@@ -303,7 +309,7 @@
     border: none;
     color: inherit;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 10px;
     padding: 0;
     line-height: 1;
     opacity: 0.7;
@@ -545,24 +551,21 @@
       <button type="button" class="icon-option" data-icon="⏰" title="Alarm" aria-label="Alarm">⏰</button>
     </div>
     <div class="panel">
-      <div class="ctrl" id="windCtrl">
-        <span class="icon">💨</span>
-        <input id="windSlider" type="range" min="0" max="100" value="15" aria-label="wind strength">
-      </div>
-      <div class="divider"></div>
       <div class="ctrl" id="soundCtrl">
         <span class="icon">🔊</span>
         <input id="soundCheck" type="checkbox" aria-label="crackle sound">
       </div>
       <div class="divider"></div>
-      <div class="divider"></div>
-      <div class="ctrl" id="pitchCtrl">
-        <span class="icon">🔔</span>
-        <input id="pitchSlider" type="range" min="0" max="100" value="50" aria-label="chime pitch">
-      </div>
+      <!-- timer checkbox sits right against the alarm volume, which sits right
+           against repeat — one unbroken group, since the volume and repeat
+           toggle only ever matter when the timer is the thing that's on -->
       <div class="ctrl">
         <span class="icon">⏱️</span>
         <input id="timerCheck" type="checkbox" aria-label="timer">
+      </div>
+      <div class="ctrl" id="pitchCtrl">
+        <span class="icon">🔔</span>
+        <input id="pitchSlider" type="range" min="0" max="100" value="50" aria-label="chime pitch">
       </div>
       <div class="ctrl" id="repeatCtrl" style="opacity:0;width:0;overflow:hidden;margin:0 -11px;">
         <span class="icon">💤</span>
@@ -616,8 +619,6 @@ const sizeSlider     = document.getElementById('sizeSlider');
 const sizeCtrl       = document.getElementById('sizeCtrl');
 const pillarCheck    = document.getElementById('pillarCheck');
 const pillarSlider   = document.getElementById('pillarSlider');
-const windSlider     = document.getElementById('windSlider');
-const windCtrl       = document.getElementById('windCtrl');
 const timerCheck     = document.getElementById('timerCheck');
 const repeatCheck    = document.getElementById('repeatCheck');
 const repeatCtrl     = document.getElementById('repeatCtrl');
@@ -642,7 +643,7 @@ function syncFill(el) {
   const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
   el.style.setProperty('--fill', pct + '%');
 }
-[sizeSlider, windSlider, pitchSlider, pillarSlider].forEach(syncFill);
+[sizeSlider, pitchSlider, pillarSlider].forEach(syncFill);
 
 // ---------- geometry constants ----------
 const CENTER_X = 190;   // horizontal center of the whole scene
@@ -651,6 +652,14 @@ const CENTER_X = 190;   // horizontal center of the whole scene
 // drawn on top of it) — that layer's true shape is what does the
 // curve-matching, not the candle itself.
 const CUP_BASE_Y = 495;
+// where a fallen pin actually comes to rest: the visible copper floor of
+// the saucer/tray, measured from its own photo. This sits well below
+// CUP_BASE_Y (the candle's base, up at the cup) because the real
+// photographed stand has the tray as its own separate layer further
+// down — unlike the old flat vector stand where the plate was right
+// under the candle. Pillar mode has no separate tray (the candle sits
+// straight on the wide plate), so it still lands just under its own base.
+const CUP_TRAY_LANDING_Y = 569;
 // the wide pillar plate's own front-rim curve, measured from its photo —
 // the pillar candle's base follows this exact arc (see waxBottomPath())
 // instead of a flat line, so it reads as resting ON the curved plate
@@ -935,7 +944,7 @@ function setPinIcon(pin, icon) {
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     text.setAttribute('x', plateFaceX);
     text.setAttribute('y', pinY);
-    text.setAttribute('font-size', '17');
+    text.setAttribute('font-size', '19');
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('dominant-baseline', 'central');
     text.style.userSelect = 'none';
@@ -1035,8 +1044,8 @@ function pinMarkup(pin, pinY, fullH, halfW) {
   // easier to see, aim for, and grab — especially with a finger on a
   // small phone screen
   const side = pin.side || 1; // 1 = right, -1 = left — alternates per pin so a row of pins doesn't collide on one face
-  const insertionDepth = 16;
-  const protrusion = 30;
+  const insertionDepth = 20;
+  const protrusion = 37;
   const surfaceX = CENTER_X + side * halfW;
   const plateFaceX = surfaceX + side * protrusion;
 
@@ -1058,7 +1067,7 @@ function pinMarkup(pin, pinY, fullH, halfW) {
   const html = `
     <image href="candlerpin-head.png" x="${imgX.toFixed(1)}" y="${imgY.toFixed(1)}"
            width="${renderW.toFixed(1)}" height="${renderH.toFixed(1)}"${mirror}/>
-    ${pin.icon ? `<text x="${plateFaceX}" y="${pinY}" font-size="17" text-anchor="middle" dominant-baseline="central" style="user-select:none">${pin.icon}</text>` : ''}
+    ${pin.icon ? `<text x="${plateFaceX}" y="${pinY}" font-size="19" text-anchor="middle" dominant-baseline="central" style="user-select:none">${pin.icon}</text>` : ''}
   `;
   return { html, surfaceX, plateFaceX };
 }
@@ -1099,7 +1108,7 @@ function movePinTo(pin, fraction) {
 // usually stricter than) the timing one above it.
 const ALARM_MIN_WAIT_MINUTES = 1;
 const ALARM_MIN_REMAINING_MINUTES = 2;
-const PIN_MIN_RIM_CLEARANCE = 45; // viewBox units above the candle's base
+const PIN_MIN_RIM_CLEARANCE = 51; // viewBox units above the candle's base — a little taller now that the pin itself is bigger
 function fractionBounds() {
   const totalMinutes = burnDurationMs(state.size) / 60_000;
   const minWaitFraction = ALARM_MIN_WAIT_MINUTES / totalMinutes;
@@ -1296,7 +1305,7 @@ function firePin(pin) {
   pin.firing = true;
   const anchorX = parseFloat(pin.el.getAttribute('data-anchor-x')) || CENTER_X;
   const anchorY = parseFloat(pin.el.getAttribute('data-anchor-y')) || 300;
-  const plateY = baseY() + 6; // brass plate surface, where it actually lands
+  const plateY = state.pillarMode ? baseY() + 6 : CUP_TRAY_LANDING_Y; // where it actually lands
   const fallDistance = plateY - anchorY;
   const fallMs = 420 + fallDistance * 0.6; // taller drop takes a little longer
 
@@ -1348,8 +1357,6 @@ function repeatRing() {
 // single default pin.
 function enterTimerMode(seedPins) {
   state.timerMode = true;
-  windSlider.disabled = true;
-  windCtrl.style.opacity = 0.35;
   repeatCtrl.classList.remove('hidden');
   repeatCtrl.style.opacity = 1;
   repeatCtrl.style.width = '';
@@ -1368,8 +1375,6 @@ function enterTimerMode(seedPins) {
 
 function exitTimerMode() {
   state.timerMode = false;
-  windSlider.disabled = false;
-  windCtrl.style.opacity = 1;
   repeatCtrl.style.opacity = 0;
   repeatCtrl.style.width = '0';
   repeatCtrl.style.margin = '0 -11px';
@@ -1438,10 +1443,6 @@ pillarSlider.addEventListener('input', () => {
   syncFill(pillarSlider);
   if (state.pillarMode) resetCandle(); // only actually a different candle while pillar mode is engaged
   saveState();
-});
-windSlider.addEventListener('input', () => {
-  state.wind = windSlider.value / 100;
-  syncFill(windSlider);
 });
 pitchSlider.addEventListener('input', () => {
   // 0.65..1.65 range, centered on the original tone at the slider's midpoint
@@ -1723,8 +1724,6 @@ function render() {
     // time — every pin would already have rung while it was away
     timerCheck.checked = true;
     state.timerMode = true;
-    windSlider.disabled = true;
-    windCtrl.style.opacity = 0.35;
     repeatCtrl.classList.remove('hidden');
     repeatCtrl.style.opacity = 1;
   }
