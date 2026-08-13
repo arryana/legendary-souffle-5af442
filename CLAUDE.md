@@ -203,6 +203,21 @@ undid** in one sentence.
   Netlify↔GitHub permissions/connection problem, not a code problem — same rule applies: explain
   it in plain terms once, don't loop on fixes yourself, and see the escalation guardrail below.
 
+## The standard: does it behave like the real thing?
+
+This is the actual spec for every piece on this site, not a nice-to-have. The whole premise the
+owner is offering a visitor is **touch this, see what happens — and trust that what happens is
+what would happen in the real world.** A pin that doesn't land where a dropped pin would land, or
+a gear ratio that doesn't actually change anything, isn't a polish issue — it's a broken physical
+promise, and it matters more than it looks like it should.
+
+That changes what "verify before claiming done" means here: don't just check that a change
+*looks* right in a screenshot. Where a piece claims to model something physical (an object
+falling, a ratio driving a speed, a shape changing a flame), check the actual behavior — pull
+real numbers out of the running page (position, speed, whatever the claim is), not just an
+eyeballed picture. A bug report on this site is really "this lied to me physically," and that's
+the bar to hold your own testing to as well, not just the owner's.
+
 ## Guardrails
 
 - Keep each change **small and self-contained** — one idea at a time.
