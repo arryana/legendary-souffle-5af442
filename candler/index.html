@@ -664,6 +664,12 @@ const CUP_BASE_Y = 495;
 // under the candle. Pillar mode has no separate tray (the candle sits
 // straight on the wide plate), so it still lands just under its own base.
 const CUP_TRAY_LANDING_Y = 569;
+// how far a fallen pin can sit from centre and still be on the visible
+// copper floor at that landing height, measured from the saucer's own
+// photo — past this it'd be sitting out over the rim or off the tray
+// entirely, which is where a wide enough candle plus several already-
+// landed pins spreading out could otherwise push it.
+const CUP_TRAY_SAFE_HALF_WIDTH = 90;
 // the wide pillar plate's own front-rim curve, measured from its photo —
 // the pillar candle's base follows this exact arc (see waxBottomPath())
 // instead of a flat line, so it reads as resting ON the curved plate
@@ -1311,6 +1317,8 @@ candleBody.addEventListener('pointerdown', (e) => {
 candleBody.addEventListener('click', (e) => e.stopPropagation());
 
 // ---------- alarm ----------
+// how often a fallen pin turns out to be the bent one, purely cosmetic
+const FALLEN_PIN_VARIANT_CHANCE = 0.12;
 // Fired once per pin, the moment the candle burns down past it. Once a
 // pin starts falling, render() never touches it again — only this
 // function and its own timeout own that pin's element from here on,
@@ -1322,7 +1330,11 @@ function firePin(pin) {
   const anchorY = parseFloat(pin.el.getAttribute('data-anchor-y')) || 300;
   const plateY = state.pillarMode ? baseY() + 6 : CUP_TRAY_LANDING_Y; // where it actually lands
   const fallDistance = plateY - anchorY;
-  const fallMs = 420 + fallDistance * 0.6; // taller drop takes a little longer
+  // a falling object's time scales with the SQUARE ROOT of the distance
+  // (gravity, not a constant speed) — the flat 420ms base plus a linear
+  // 0.6/unit this used to be didn't follow that at all, and for a typical
+  // drop worked out to roughly 3x slower than an actual short fall
+  const fallMs = 17 * Math.sqrt(Math.max(0, fallDistance));
 
   // every pin falls to the same spot on the rim (same anchorX, same
   // plateY) since they're pinned into whichever side they were placed on —
@@ -1332,7 +1344,13 @@ function firePin(pin) {
   // or a pin stuck into the left face falls "backwards" and ends up
   // propped at an angle instead of lying flat like its right-side twins.
   const side = pin.side || 1;
-  const landingOffsetX = (8 + state.landedSlots * 16) * side;
+  // the spread has to shrink around however far this pin's own side of the
+  // candle already sits from centre, or a wide candle plus several landed
+  // pins pushes the later ones out past the tray's own edge
+  const halfWFromAnchor = Math.abs(anchorX - CENTER_X);
+  const maxSpread = state.pillarMode ? (8 + state.landedSlots * 16) : Math.max(6, CUP_TRAY_SAFE_HALF_WIDTH - halfWFromAnchor);
+  const spread = Math.min(8 + state.landedSlots * 16, maxSpread);
+  const landingOffsetX = spread * side;
   state.landedSlots++;
 
   pin.el.style.transition = `transform ${fallMs}ms cubic-bezier(.5,0,1,1)`;
@@ -1347,6 +1365,14 @@ function firePin(pin) {
   setTimeout(() => {
     pinLanded();
     pin.fallen = true;
+    // a bent old pin, rarely, once it's actually down on the plate — its
+    // dimensions are close enough to the normal pin's that it drops in
+    // without needing its own geometry, since this is purely cosmetic on
+    // an already-landed, no-longer-interactive pin
+    if (Math.random() < FALLEN_PIN_VARIANT_CHANCE) {
+      const img = pin.el.querySelector('image');
+      if (img) img.setAttribute('href', 'candlerpin-fallen.png');
+    }
     renderPinList();
     // once every pin you've set has rung, repeat (if on) keeps chiming
     // on an interval until turned off — there's nothing left to re-arm
