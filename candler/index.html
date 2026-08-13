@@ -630,6 +630,10 @@ const candleBody     = document.getElementById('candleBody');
 const flameGroup     = document.getElementById('flameGroup');
 const flameClipRect  = document.getElementById('flameClipRect');
 flameGroup.setAttribute('clip-path', 'url(#flameClip)');
+// purely decorative — its halo/glow shapes are large and sit above the pins in
+// z-order, so without this they silently swallow clicks meant for any pin
+// near the flame instead of ever reaching it
+flameGroup.style.pointerEvents = 'none';
 const pinsGroup      = document.getElementById('pinsGroup');
 const glowCircle     = document.getElementById('glowCircle');
 const cupImg         = document.getElementById('cupImg');
@@ -1218,6 +1222,12 @@ function attachPinInteractions(pin) {
   pin.el.addEventListener('pointerleave', () => {
     if (draggingPin !== pin) hidePinTooltip();
   });
+
+  // every pointerdown+pointerup also fires a plain 'click' right after —
+  // without this, the document-level "click outside closes the popup"
+  // listener below sees that click, decides it landed outside the popup,
+  // and closes the very popup pointerup just opened, same instant
+  pin.el.addEventListener('click', (e) => e.stopPropagation());
 }
 
 function addPin(fraction) {
@@ -1294,6 +1304,11 @@ candleBody.addEventListener('pointerdown', (e) => {
     iconPopup.classList.add('open');
   }
 });
+// same race as the pin's own click listener above: the pointerdown that just
+// opened the popup is immediately followed by a plain 'click', which the
+// document-level "click outside closes it" listener would otherwise treat
+// as a click outside the popup and close it right back
+candleBody.addEventListener('click', (e) => e.stopPropagation());
 
 // ---------- alarm ----------
 // Fired once per pin, the moment the candle burns down past it. Once a
