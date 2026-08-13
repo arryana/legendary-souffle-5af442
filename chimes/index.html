@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>chimes — sagne</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="Wind chimes you build and hang yourself.">
+<meta name="theme-color" content="#141c2c">
+<link rel="canonical" href="https://sagne.co.uk/chimes/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="sagne">
+<meta property="og:title" content="chimes — sagne">
+<meta property="og:description" content="Wind chimes you build and hang yourself.">
+<meta property="og:url" content="https://sagne.co.uk/chimes/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="chimes — sagne">
+<meta name="twitter:description" content="Wind chimes you build and hang yourself.">
+<style>
+  :root{ --brass:#c9974e; --parchment:#f2e9d8; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{ height:100%; margin:0; overflow:hidden; font-family: Georgia, serif; color:var(--parchment);
+    background: radial-gradient(ellipse at 50% 0%, #2c3c58 0%, #17202f 55%, #0c111c 100%); }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:var(--parchment); opacity:.6; text-decoration:none; font-size:14px; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.5); transition:opacity .3s ease; }
+  #backlink:hover{opacity:1;}
+  canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+
+  #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px 14px;
+    padding:10px 16px 18px; background:linear-gradient(to top, rgba(8,11,18,.55), rgba(8,11,18,0)); z-index:40; }
+  .group{ display:flex; align-items:center; gap:6px; background:rgba(20,26,38,.4); border:1px solid rgba(242,233,216,.12); border-radius:12px; padding:6px 10px; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
+  .swatchBtn{ width:30px; height:30px; border-radius:7px; padding:0; border:2px solid transparent; background-size:cover; background-position:center; cursor:pointer; opacity:.62; transition:opacity .2s, border-color .2s, transform .15s; }
+  .swatchBtn:hover{ opacity:.9; transform:translateY(-1px); }
+  .swatchBtn.selected{ opacity:1; border-color:var(--brass); box-shadow:0 0 8px rgba(201,151,78,.5); }
+  input[type=range]{ -webkit-appearance:none; appearance:none; width:110px; height:3px; border-radius:3px; background:rgba(242,233,216,.35); outline:none; vertical-align:middle; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--brass); cursor:pointer; box-shadow:0 0 6px rgba(0,0,0,.4); }
+  input[type=range]::-moz-range-thumb{ width:13px; height:13px; border-radius:50%; background:var(--brass); border:none; cursor:pointer; }
+
+  #startHint{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:60; color:var(--parchment); font-size:15px; opacity:.75; letter-spacing:.03em; background:rgba(8,11,18,.25); cursor:pointer; text-align:center; padding:20px; }
+
+  .lenPopup{ position:fixed; z-index:55; display:none; flex-direction:column; align-items:center; gap:4px;
+    background:rgba(16,20,30,.85); border:1px solid rgba(242,233,216,.18); border-radius:12px; padding:10px 12px;
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,.4); }
+  .lenPopup.open{ display:flex; }
+  .lenPopup input[type=range]{ width:120px; }
+  .lenPopup .hz{ font-size:11px; opacity:.7; letter-spacing:.03em; }
+</style>
+</head>
+<body>
+<a id="backlink" href="../index.html">← sagne</a>
+<canvas id="c"></canvas>
+<div id="startHint">touch or click to hang your chimes</div>
+
+<div class="lenPopup" id="lenPopup">
+  <input type="range" id="lenPopupSlider" aria-label="this rod's length">
+  <span class="hz" id="lenPopupHz"></span>
+</div>
+
+<div id="dock">
+  <div class="group" id="rodMaterialGroup" title="rod material" aria-label="rod material"></div>
+  <div class="group" id="cordMaterialGroup" title="cord or chain" aria-label="cord or chain"></div>
+  <div class="group">
+    <span style="font-size:13px;opacity:.75;" aria-hidden="true">🎐</span>
+    <input type="range" id="countSlider" min="5" max="9" step="1" value="7" aria-label="number of rods">
+  </div>
+  <div class="group">
+    <span style="font-size:13px;opacity:.75;" aria-hidden="true">🧵</span>
+    <input type="range" id="cordLenSlider" min="40" max="170" step="1" value="95" aria-label="hanging length">
+  </div>
+  <div class="group">
+    <span style="font-size:13px;opacity:.75;" aria-hidden="true">🍃</span>
+    <input type="range" id="windSlider" min="0" max="100" step="1" value="35" aria-label="wind strength">
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+  const startHint = document.getElementById('startHint');
+  let W=0, H=0, DPR=1;
+
+  const G = 900;
+  const PITCH_K = 4200000;
+  const ROD_LEN_MIN = 70, ROD_LEN_MAX = 180;
+  const ROD_THICK = 12;
+  const CORD_THICK = { rope:7, chain:5, string:3 };
+  const HANGER_W = 172;
+
+  // ---- assets ----
+  function loadImg(src){ const i=new Image(); i.src=src; return i; }
+  const rodImgs = {
+    glass:  loadImg('chime-rod-glass.png'),
+    silver: loadImg('chime-rod-silver.png'),
+    brass:  loadImg('chime-rod-brass.png'),
+    wood:   loadImg('chime-rod-wood.png'),
+  };
+  const cordImgs = {
+    rope:   loadImg('chime-cord-rope.png'),
+    chain:  loadImg('chime-cord-chain.png'),
+    string: loadImg('chime-cord-string.png'),
+  };
+  const hangerImg = loadImg('chime-hanger.png');
+
+  // ---- state ----
+  const state = {
+    rodMaterial: 'brass',
+    cordMaterial: 'chain',
+    count: 7,
+    wind: 0.35,
+    cordLength: 95, // shared by every rod, so the tops all hang level
+    rods: [],
+  };
+
+  function defaultRodLength(i, n){
+    const t = n>1 ? i/(n-1) : 0.5;
+    return ROD_LEN_MAX - t*(ROD_LEN_MAX-ROD_LEN_MIN); // left = long/low, right = short/high, like a real set
+  }
+
+  function rebuildRods(preserve){
+    const old = state.rods;
+    const rods = [];
+    for(let i=0;i<state.count;i++){
+      const prev = preserve && old[i];
+      rods.push({
+        rodLength: prev ? prev.rodLength : defaultRodLength(i, state.count),
+        angle: (Math.random()-0.5)*0.2,
+        angVel: 0,
+        lastStrike: {},
+      });
+    }
+    state.rods = rods;
+    closePopup();
+  }
+
+  // ---- layout ----
+  let hangerX=0, hangerTopY=60, hangerDrawH=0, pivotY=0, ringSpan=0;
+  function layout(){
+    hangerX = W/2;
+    hangerDrawH = HANGER_W * (hangerImg.height / hangerImg.width || 164/145);
+    pivotY = hangerTopY + hangerDrawH*0.90;
+    ringSpan = HANGER_W*0.85;
+  }
+  function pivotX(i, n){
+    if(n<=1) return hangerX;
+    return hangerX + (i - (n-1)/2) * (ringSpan/(n-1));
+  }
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W*DPR; canvas.height = H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    layout();
+  }
+  window.addEventListener('resize', resize);
+
+  // ---- audio ----
+  let audioCtx = null;
+  function ensureAudio(){ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); }
+
+  function strike(freq, velocity, material){
+    if(!audioCtx) return;
+    const t = audioCtx.currentTime;
+    const vol = Math.min(0.5, 0.08 + velocity/500);
+    const out = audioCtx.createGain();
+    out.gain.value = vol;
+    out.connect(audioCtx.destination);
+
+    if(material === 'glass'){
+      const o1 = audioCtx.createOscillator(); o1.type='sine'; o1.frequency.value=freq;
+      const o2 = audioCtx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*2.76;
+      const g1 = audioCtx.createGain(), g2 = audioCtx.createGain();
+      g1.gain.setValueAtTime(1,t); g1.gain.exponentialRampToValueAtTime(0.0001,t+2.4);
+      g2.gain.setValueAtTime(0.35,t); g2.gain.exponentialRampToValueAtTime(0.0001,t+1.4);
+      o1.connect(g1); g1.connect(out); o2.connect(g2); g2.connect(out);
+      o1.start(t); o1.stop(t+2.5); o2.start(t); o2.stop(t+1.5);
+    } else if(material === 'silver'){
+      const o1 = audioCtx.createOscillator(); o1.type='sine'; o1.frequency.value=freq;
+      const o2 = audioCtx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*1.006;
+      const o3 = audioCtx.createOscillator(); o3.type='triangle'; o3.frequency.value=freq*3.0;
+      const g1 = audioCtx.createGain(), g3 = audioCtx.createGain();
+      g1.gain.setValueAtTime(1,t); g1.gain.exponentialRampToValueAtTime(0.0001,t+1.9);
+      g3.gain.setValueAtTime(0.22,t); g3.gain.exponentialRampToValueAtTime(0.0001,t+0.9);
+      o1.connect(g1); o2.connect(g1); g1.connect(out); o3.connect(g3); g3.connect(out);
+      o1.start(t); o1.stop(t+2); o2.start(t); o2.stop(t+2); o3.start(t); o3.stop(t+1);
+    } else if(material === 'brass'){
+      const o1 = audioCtx.createOscillator(); o1.type='sine'; o1.frequency.value=freq;
+      const o2 = audioCtx.createOscillator(); o2.type='sawtooth'; o2.frequency.value=freq;
+      const filt = audioCtx.createBiquadFilter(); filt.type='bandpass'; filt.frequency.value=freq*2.1; filt.Q.value=1.6;
+      const g1 = audioCtx.createGain(), g2 = audioCtx.createGain();
+      g1.gain.setValueAtTime(1,t); g1.gain.exponentialRampToValueAtTime(0.0001,t+1.3);
+      g2.gain.setValueAtTime(0.2,t); g2.gain.exponentialRampToValueAtTime(0.0001,t+0.7);
+      o1.connect(g1); g1.connect(out); o2.connect(filt); filt.connect(g2); g2.connect(out);
+      o1.start(t); o1.stop(t+1.3); o2.start(t); o2.stop(t+0.7);
+    } else { // wood
+      const bufSize = audioCtx.sampleRate*0.2;
+      const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1) * (1 - i/bufSize);
+      const noise = audioCtx.createBufferSource(); noise.buffer = buf;
+      const filt = audioCtx.createBiquadFilter(); filt.type='bandpass'; filt.frequency.value=freq; filt.Q.value=2.2;
+      const o1 = audioCtx.createOscillator(); o1.type='sine'; o1.frequency.value=freq*0.5;
+      const g1 = audioCtx.createGain(), gn = audioCtx.createGain();
+      g1.gain.setValueAtTime(0.6,t); g1.gain.exponentialRampToValueAtTime(0.0001,t+0.32);
+      gn.gain.setValueAtTime(0.9,t); gn.gain.exponentialRampToValueAtTime(0.0001,t+0.22);
+      o1.connect(g1); g1.connect(out); noise.connect(filt); filt.connect(gn); gn.connect(out);
+      o1.start(t); o1.stop(t+0.35); noise.start(t);
+    }
+  }
+  function pitchFor(rodLength){ return PITCH_K/(rodLength*rodLength); }
+
+  // ---- physics + draw ----
+  let lastT = null, elapsed = 0;
+  function bobX(r, i, n){
+    const eff = state.cordLength + r.rodLength*0.5;
+    return pivotX(i,n) + Math.sin(r.angle)*eff;
+  }
+
+  function tick(now){
+    if(lastT===null) lastT = now;
+    const dt = Math.min((now-lastT)/1000, 1/45); lastT = now;
+    elapsed += dt;
+    const n = state.rods.length;
+    const windAmp = state.wind * 260;
+
+    for(let i=0;i<n;i++){
+      const r = state.rods[i];
+      const eff = state.cordLength + r.rodLength*0.5;
+      const gust = windAmp * (Math.sin(elapsed*0.55)*0.65 + Math.sin(elapsed*2.1 + i*0.7)*0.35);
+      const damping = 0.42;
+      const angAcc = -(G/eff)*Math.sin(r.angle) - damping*r.angVel + (gust/eff)*0.03;
+      r.angVel += angAcc*dt;
+      r.angle += r.angVel*dt;
+    }
+    // collisions between neighbors
+    for(let i=0;i<n-1;i++){
+      const a = state.rods[i], b = state.rods[i+1];
+      const ax = bobX(a,i,n), bx = bobX(b,i+1,n);
+      const dist = Math.abs(ax-bx);
+      const collideDist = ROD_THICK + 2;
+      if(dist < collideDist){
+        const key = 'n';
+        if(!a.lastStrike[key] || now - a.lastStrike[key] > 140){
+          a.lastStrike[key] = now;
+          const effA = state.cordLength+a.rodLength*0.5, effB = state.cordLength+b.rodLength*0.5;
+          const relSpeed = Math.abs(a.angVel*effA - b.angVel*effB);
+          if(relSpeed > 6){
+            ensureAudio();
+            strike(pitchFor(a.rodLength), relSpeed, state.rodMaterial);
+            strike(pitchFor(b.rodLength), relSpeed, state.rodMaterial);
+          }
+          const push = 0.35;
+          a.angVel -= push/effA*10; b.angVel += push/effB*10;
+        }
+      }
+    }
+
+    draw();
+    if(popupOpenIdx>=0) positionPopupOnRod();
+    requestAnimationFrame(tick);
+  }
+
+  function drawRodsAndCords(rodImg, cordImg, cordThick, n){
+    for(let i=0;i<n;i++){
+      const r = state.rods[i];
+      const px = pivotX(i,n);
+      ctx.save();
+      ctx.translate(px, pivotY);
+      ctx.rotate(r.angle);
+
+      if(cordImg && cordImg.complete && cordImg.naturalWidth){
+        ctx.drawImage(cordImg, 0, 0, cordImg.naturalWidth, cordImg.naturalHeight, -cordThick/2, 0, cordThick, state.cordLength);
+      }
+      if(rodImg && rodImg.complete && rodImg.naturalWidth){
+        ctx.drawImage(rodImg, -ROD_THICK/2, state.cordLength, ROD_THICK, r.rodLength);
+      }
+      ctx.restore();
+    }
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const n = state.rods.length;
+    if(hangerImg.complete && hangerImg.naturalWidth){
+      ctx.drawImage(hangerImg, hangerX-HANGER_W/2, hangerTopY, HANGER_W, hangerDrawH);
+    }
+    drawRodsAndCords(rodImgs[state.rodMaterial], cordImgs[state.cordMaterial], CORD_THICK[state.cordMaterial], n);
+  }
+
+  // world position of the point midway down a rod's body -- used to anchor its length popup
+  function rodMidWorld(i, n){
+    const r = state.rods[i];
+    const mid = state.cordLength + r.rodLength*0.5;
+    const px = pivotX(i,n);
+    return { x: px - Math.sin(r.angle)*mid, y: pivotY + Math.cos(r.angle)*mid };
+  }
+  // inverse of the canvas translate+rotate used to draw rod i, for hit-testing a click point
+  function hitTestRod(clientX, clientY, n){
+    for(let i=n-1;i>=0;i--){
+      const r = state.rods[i];
+      const px = pivotX(i,n);
+      const dx = clientX-px, dy = clientY-pivotY;
+      const cosA = Math.cos(r.angle), sinA = Math.sin(r.angle);
+      // inverse of the canvas rotate(angle) transform used to draw this rod
+      const lx = dx*cosA + dy*sinA, ly = -dx*sinA + dy*cosA;
+      const padX = 12, padTop = 8, padBottom = 12;
+      if(lx > -ROD_THICK/2-padX && lx < ROD_THICK/2+padX &&
+         ly > state.cordLength-padTop && ly < state.cordLength+r.rodLength+padBottom){
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  // ---- UI ----
+  const rodMaterialGroup = document.getElementById('rodMaterialGroup');
+  const cordMaterialGroup = document.getElementById('cordMaterialGroup');
+  const rodMaterials = [
+    {key:'glass', file:'chime-swatch-rod-glass.png', label:'glass'},
+    {key:'silver', file:'chime-swatch-rod-silver.png', label:'brushed silver'},
+    {key:'brass', file:'chime-swatch-rod-brass.png', label:'aged brass'},
+    {key:'wood', file:'chime-swatch-rod-wood.png', label:'polished walnut'},
+  ];
+  const cordMaterials = [
+    {key:'rope', file:'chime-swatch-cord-rope.png', label:'jute rope'},
+    {key:'chain', file:'chime-swatch-cord-chain.png', label:'silver chain'},
+    {key:'string', file:'chime-swatch-cord-string.png', label:'black cord'},
+  ];
+  function buildSwatchGroup(container, list, stateKey){
+    container.innerHTML = '';
+    list.forEach(m=>{
+      const b = document.createElement('button');
+      b.className = 'swatchBtn' + (state[stateKey]===m.key ? ' selected' : '');
+      b.style.backgroundImage = `url(${m.file})`;
+      b.title = m.label; b.setAttribute('aria-label', m.label);
+      b.addEventListener('click', ()=>{
+        state[stateKey] = m.key;
+        [...container.children].forEach(c=>c.classList.remove('selected'));
+        b.classList.add('selected');
+      });
+      container.appendChild(b);
+    });
+  }
+  buildSwatchGroup(rodMaterialGroup, rodMaterials, 'rodMaterial');
+  buildSwatchGroup(cordMaterialGroup, cordMaterials, 'cordMaterial');
+
+  const countSlider = document.getElementById('countSlider');
+  countSlider.addEventListener('input', ()=>{
+    state.count = +countSlider.value;
+    rebuildRods(true);
+  });
+  const windSlider = document.getElementById('windSlider');
+  windSlider.addEventListener('input', ()=>{ state.wind = (+windSlider.value)/100; });
+  const cordLenSlider = document.getElementById('cordLenSlider');
+  cordLenSlider.addEventListener('input', ()=>{ state.cordLength = +cordLenSlider.value; });
+
+  // ---- per-rod length popup: tap a rod to tune just its length ----
+  const lenPopup = document.getElementById('lenPopup');
+  const lenPopupSlider = document.getElementById('lenPopupSlider');
+  const lenPopupHz = document.getElementById('lenPopupHz');
+  let popupOpenIdx = -1;
+
+  function positionPopupOnRod(){
+    const n = state.rods.length;
+    const mid = rodMidWorld(popupOpenIdx, n);
+    const popupW = lenPopup.offsetWidth || 150, popupH = lenPopup.offsetHeight || 70;
+    let left = mid.x - popupW/2;
+    let top = mid.y - popupH - 16;
+    left = Math.max(8, Math.min(left, window.innerWidth - popupW - 8));
+    top = Math.max(8, top);
+    lenPopup.style.left = `${left}px`;
+    lenPopup.style.top = `${top}px`;
+  }
+  function openPopupForRod(i){
+    popupOpenIdx = i;
+    const r = state.rods[i];
+    lenPopupSlider.min = ROD_LEN_MIN; lenPopupSlider.max = ROD_LEN_MAX; lenPopupSlider.value = r.rodLength;
+    lenPopupHz.textContent = `${Math.round(pitchFor(r.rodLength))} Hz`;
+    lenPopup.classList.add('open');
+    positionPopupOnRod();
+  }
+  function closePopup(){
+    popupOpenIdx = -1;
+    lenPopup.classList.remove('open');
+  }
+  lenPopupSlider.addEventListener('input', ()=>{
+    if(popupOpenIdx<0) return;
+    const r = state.rods[popupOpenIdx];
+    r.rodLength = +lenPopupSlider.value;
+    lenPopupHz.textContent = `${Math.round(pitchFor(r.rodLength))} Hz`;
+  });
+  lenPopup.addEventListener('click', e=> e.stopPropagation());
+  canvas.addEventListener('click', (e)=>{
+    const hit = hitTestRod(e.clientX, e.clientY, state.rods.length);
+    if(hit>=0){
+      openPopupForRod(hit);
+      e.stopPropagation();
+    }
+  });
+  document.addEventListener('click', (e)=>{
+    if(lenPopup.classList.contains('open') && !lenPopup.contains(e.target)){
+      closePopup();
+    }
+  });
+
+  function begin(){
+    ensureAudio();
+    startHint.style.display = 'none';
+    window.removeEventListener('pointerdown', begin);
+  }
+  window.addEventListener('pointerdown', begin, {once:true});
+  startHint.addEventListener('click', begin, {once:true});
+
+  resize();
+  rebuildRods(false);
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
