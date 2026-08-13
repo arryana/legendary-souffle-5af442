@@ -670,6 +670,11 @@ const CUP_TRAY_LANDING_Y = 569;
 // entirely, which is where a wide enough candle plus several already-
 // landed pins spreading out could otherwise push it.
 const CUP_TRAY_SAFE_HALF_WIDTH = 90;
+// same idea for the wide pillar plate, measured from its own photo — a wide
+// pillar candle's own insertion point already sits close to this edge, so
+// without a floor here the "flat lying" pin overhangs the plate's actual
+// (elliptical, tapering) visible surface and reads as dangling off it.
+const PILLAR_PLATE_SAFE_HALF_WIDTH = 105;
 // the wide pillar plate's own front-rim curve, measured from its photo —
 // the pillar candle's base follows this exact arc (see waxBottomPath())
 // instead of a flat line, so it reads as resting ON the curved plate
@@ -1344,19 +1349,27 @@ function firePin(pin) {
   // or a pin stuck into the left face falls "backwards" and ends up
   // propped at an angle instead of lying flat like its right-side twins.
   const side = pin.side || 1;
-  // the spread has to shrink around however far this pin's own side of the
-  // candle already sits from centre, or a wide candle plus several landed
-  // pins pushes the later ones out past the tray's own edge
-  const halfWFromAnchor = Math.abs(anchorX - CENTER_X);
-  const maxSpread = state.pillarMode ? (8 + state.landedSlots * 16) : Math.max(6, CUP_TRAY_SAFE_HALF_WIDTH - halfWFromAnchor);
-  const spread = Math.min(8 + state.landedSlots * 16, maxSpread);
-  const landingOffsetX = spread * side;
+  // clamp the pin's actual final resting spot (not just how far it spreads
+  // from its own anchor) to the tray/plate's real safe width — a wide
+  // candle's own insertion point can already sit close to that edge before
+  // any spread is even added, so limiting only the spread isn't enough
+  const safeHalfWidth = state.pillarMode ? PILLAR_PLATE_SAFE_HALF_WIDTH : CUP_TRAY_SAFE_HALF_WIDTH;
+  const rawSpread = 8 + state.landedSlots * 16;
+  const tentativeX = anchorX + rawSpread * side;
+  const clampedX = Math.min(CENTER_X + safeHalfWidth, Math.max(CENTER_X - safeHalfWidth, tentativeX));
+  const landingOffsetX = clampedX - anchorX;
   state.landedSlots++;
 
+  // the saucer is viewed close to face-on, so a pin has to rotate almost onto
+  // its back (~82°) to read as lying flat on it; the wide pillar plate is
+  // viewed from almost directly above, where that same rotation instead
+  // reads as hanging off the edge like a pendant — it only needs a small
+  // tilt to look like it's resting on a surface seen nearly overhead
+  const landRotateDeg = state.pillarMode ? 10 : 82;
   pin.el.style.transition = `transform ${fallMs}ms cubic-bezier(.5,0,1,1)`;
   pin.el.style.transformOrigin = `${anchorX}px ${anchorY}px`;
   // pin works loose from where it's stuck in and drops, landing flat on the plate
-  pin.el.style.transform = `translate(${landingOffsetX}px, ${fallDistance}px) rotate(${82 * side}deg)`;
+  pin.el.style.transform = `translate(${landingOffsetX}px, ${fallDistance}px) rotate(${landRotateDeg * side}deg)`;
 
   // the clink is the sound of it actually hitting the brass plate, not
   // the moment it comes loose — so the ring is timed to land with impact.
