@@ -96,13 +96,18 @@
   const MESH_TOL=7;      // teeth engage within this of the exact centre distance
   const SNAP_TOL=18;     // on drop, if this close to a valid mesh, nudge to exact distance
 
+  // shared placement counter across BOTH gears and lamps, so whichever
+  // piece was set down more recently draws on top of the other — a
+  // lamp box is a solid object on the board just like a gear, not a
+  // fixed frame that everything else has to sit behind.
+  let placeOrder=0;
   let gears=[], idc=0;
-  const mk=(N,x,y,fixed)=>({id:idc++,N,x,y,angle:0,fixed:!!fixed});
+  const mk=(N,x,y,fixed)=>({id:idc++,N,x,y,angle:0,fixed:!!fixed,zOrder:placeOrder++});
 
   // ---- signal-lamp: a real-photo box+lights piece whose screw is its only connection to
   // the gear train (see lamp geometry block below, near the sprite/drawing code)
   let lamps=[], lampIdc=0;
-  const mkLamp=(x,y)=>({id:lampIdc++,x,y,facing:0,bigAngle:-0.113,smallAngle:Math.PI/10,phase:0,speed:0,engaged:false});
+  const mkLamp=(x,y)=>({id:lampIdc++,x,y,facing:0,bigAngle:-0.113,smallAngle:Math.PI/10,phase:0,speed:0,engaged:false,zOrder:placeOrder++});
   const lampPreview=mkLamp(0,0);   // static, never added to lamps[] — only used to draw the tray's catalogue icon (box + its gears + screw), so the picker shows what you're actually picking
 
   const TRAY=[8,12,16,22,30,40];
@@ -525,9 +530,15 @@
       // gears match every other gear's true size) — multiply that back in here so the tray icon
       // ends up the same on-screen size as before, now with its gears and screw visible too.
       const s=Math.min(1,(lampTrayRect.hit*1.7)/Math.max(LB_bw,LB_bh))*LAMP_GS; ctx.scale(s,s); drawLamp(lampPreview,false); ctx.restore(); }
-    // board gears — dim the ones not part of the running train
-    for(let i=0;i<gears.length;i++){ const g=gears[i]; drawGear(g, !connected.has(i) && !g.fixed); }
-    for(const lamp of lamps) drawLamp(lamp, !lamp.engaged);
+    // board gears and lamps — dim the ones not part of the running train,
+    // and draw whichever piece was placed more recently on top, so a gear
+    // dropped over part of a lamp box (or vice versa) reads as one solid
+    // object sitting on another, not gears seen "through" a fixed frame
+    const boardPieces=[
+      ...gears.map((g,i)=>({kind:'gear',obj:g,zOrder:g.zOrder,dim:!connected.has(i)&&!g.fixed})),
+      ...lamps.map(lamp=>({kind:'lamp',obj:lamp,zOrder:lamp.zOrder,dim:!lamp.engaged})),
+    ].sort((a,b)=>a.zOrder-b.zOrder);
+    for(const p of boardPieces){ if(p.kind==='gear') drawGear(p.obj,p.dim); else drawLamp(p.obj,p.dim); }
     requestAnimationFrame(tick);
   }
   resize(); requestAnimationFrame(tick);
