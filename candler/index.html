@@ -70,13 +70,13 @@
     justify-content: center;
     width: 100%;
     min-height: 0;
-    padding-top: 4vh;
+    padding-top: 1.5vh;
   }
 
   svg#scene {
-    width: min(380px, 70vw);
+    width: min(440px, 78vw);
     height: 100%;
-    max-height: 56vh;
+    max-height: 64vh;
     overflow: visible;
   }
 
@@ -192,7 +192,7 @@
     /* the candle itself: same proportions (SVG's own aspect-ratio
        scaling keeps it exact), just sized up so the wax nearly
        touches the phone's left and right edges */
-    svg#scene { width: 96vw; max-height: 88vh; }
+    svg#scene { width: 98vw; max-height: 80vh; }
   }
 
   #repeatCtrl { transition: opacity 0.25s ease, width 0.25s ease; }
@@ -367,7 +367,7 @@
 
 <div class="stage">
   <div class="candle-wrap">
-    <svg id="scene" viewBox="0 0 380 520" xmlns="http://www.w3.org/2000/svg">
+    <svg id="scene" viewBox="0 0 380 660" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <radialGradient id="glow" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stop-color="var(--flame-glow)"/>
@@ -527,7 +527,7 @@
       <g id="flameGroup"></g>
 
       <!-- paper grain -->
-      <rect x="0" y="0" width="380" height="520" filter="url(#paperGrain)" opacity="0.05" style="mix-blend-mode:overlay" pointer-events="none"/>
+      <rect x="0" y="0" width="380" height="660" filter="url(#paperGrain)" opacity="0.05" style="mix-blend-mode:overlay" pointer-events="none"/>
     </svg>
   </div>
 
@@ -1023,6 +1023,13 @@ pinList.addEventListener('click', (e) => {
 // and pin.fraction (0..1) is how much wax will be left when it fires — so
 // higher on the candle = fires sooner, lower = fires later. Dragging a pin
 // up/down just recomputes fraction from its new height.
+// the real photographed pin (candlerpin-head.png): a hammered-brass ball
+// head on a dark iron shaft, pre-rotated horizontal (tip on the left,
+// head on the right). These are its own tip/head reference points,
+// measured directly from the cutout, in the source image's own pixels.
+const PIN_IMG_W = 290, PIN_IMG_H = 95;
+const PIN_IMG_TIP_X = 5, PIN_IMG_HEAD_X = 240, PIN_IMG_CENTER_Y = 47.5;
+
 function pinMarkup(pin, pinY, fullH, halfW) {
   // sized up from the original (larger head + thicker rod) so a pin is
   // easier to see, aim for, and grab — especially with a finger on a
@@ -1031,26 +1038,26 @@ function pinMarkup(pin, pinY, fullH, halfW) {
   const insertionDepth = 16;
   const protrusion = 30;
   const surfaceX = CENTER_X + side * halfW;
-  const tipX = surfaceX - side * insertionDepth;
-  const tipR = 2.8;
-  const rodR = 4.6;
-  const plateR = 13;
-  const plateThickness = 4;
-  const rodEndX = surfaceX + side * (protrusion - plateThickness);
   const plateFaceX = surfaceX + side * protrusion;
-  const connectorX = Math.min(rodEndX, plateFaceX);
+
+  // build the image as if it were always the side=1 case (tip on the
+  // candle's right face, head pointing right) — a left-side pin then
+  // just mirrors that same rendering around the candle's own centreline,
+  // which flips both its position AND its facing correctly in one move.
+  // The icon text is kept out of that mirror (mirrored emoji look wrong)
+  // and placed separately at the real, unmirrored plateFaceX.
+  const canonicalSurfaceX = CENTER_X + halfW;
+  const canonicalTipX = canonicalSurfaceX - insertionDepth;
+  const scale = (protrusion + insertionDepth) / (PIN_IMG_HEAD_X - PIN_IMG_TIP_X);
+  const renderW = PIN_IMG_W * scale;
+  const renderH = PIN_IMG_H * scale;
+  const imgX = canonicalTipX - PIN_IMG_TIP_X * scale;
+  const imgY = pinY - PIN_IMG_CENTER_Y * scale;
+  const mirror = side === -1 ? ` transform="translate(${2 * CENTER_X},0) scale(-1,1)"` : '';
+
   const html = `
-    <path d="M ${tipX} ${pinY - tipR}
-             L ${rodEndX} ${pinY - rodR}
-             L ${rodEndX} ${pinY + rodR}
-             L ${tipX} ${pinY + tipR} Z"
-          fill="url(#pinMetal)" stroke="#5a4322" stroke-width="0.5"/>
-    <rect x="${connectorX}" y="${pinY - plateR}" width="${plateThickness}" height="${plateR * 2}"
-          fill="#8a6636"/>
-    <circle cx="${plateFaceX}" cy="${pinY}" r="${plateR}" fill="#c9a06b" stroke="#5a4322" stroke-width="0.8"/>
-    <circle cx="${plateFaceX}" cy="${pinY}" r="${plateR - 2.2}" fill="none" stroke="#8a6636" stroke-width="0.6" opacity="0.6"/>
-    <ellipse cx="${plateFaceX - side * plateR * 0.35}" cy="${pinY - plateR * 0.35}" rx="${plateR * 0.4}" ry="${plateR * 0.22}"
-             fill="#f2dcae" opacity="0.45"/>
+    <image href="candlerpin-head.png" x="${imgX.toFixed(1)}" y="${imgY.toFixed(1)}"
+           width="${renderW.toFixed(1)}" height="${renderH.toFixed(1)}"${mirror}/>
     ${pin.icon ? `<text x="${plateFaceX}" y="${pinY}" font-size="17" text-anchor="middle" dominant-baseline="central" style="user-select:none">${pin.icon}</text>` : ''}
   `;
   return { html, surfaceX, plateFaceX };
@@ -1085,16 +1092,21 @@ function movePinTo(pin, fraction) {
 
 // The valid range a pin's fraction can sit in right now: never above the
 // current wax top (nothing to stick into up there), never so high it'd
-// ring in less than a minute, and never so low that ringing it would
-// leave less than ALARM_MIN_REMAINING_MINUTES of candle left.
+// ring in less than a minute, never so low that ringing it would leave
+// less than ALARM_MIN_REMAINING_MINUTES of candle left, and never so low
+// that the pin's head would sit down behind the stand's rim where it's
+// hard to see or grab — that's a visual floor, independent of (and
+// usually stricter than) the timing one above it.
 const ALARM_MIN_WAIT_MINUTES = 1;
 const ALARM_MIN_REMAINING_MINUTES = 2;
+const PIN_MIN_RIM_CLEARANCE = 45; // viewBox units above the candle's base
 function fractionBounds() {
   const totalMinutes = burnDurationMs(state.size) / 60_000;
   const minWaitFraction = ALARM_MIN_WAIT_MINUTES / totalMinutes;
   const minRemainingFraction = ALARM_MIN_REMAINING_MINUTES / totalMinutes;
+  const minClearanceFraction = PIN_MIN_RIM_CLEARANCE / candleHeight(state.size);
   let maxFraction = Math.min(state.waxFraction, state.waxFraction - minWaitFraction);
-  let minFraction = minRemainingFraction;
+  let minFraction = Math.max(minRemainingFraction, minClearanceFraction);
   if (maxFraction < minFraction) maxFraction = minFraction;
   return { minFraction: Math.max(0.001, minFraction), maxFraction: Math.max(0.001, maxFraction) };
 }
@@ -1154,7 +1166,7 @@ function attachPinInteractions(pin) {
     if (draggingPin === pin) {
       if (Math.abs(e.clientY - pin._dragStartClientY) > 3) pin._moved = true;
       const rect = scene.getBoundingClientRect();
-      const scale = 520 / rect.height; // viewBox units per on-screen pixel
+      const scale = 660 / rect.height; // viewBox units per on-screen pixel
       const fullH = candleHeight(state.size);
       const deltaSvg = (e.clientY - pin._dragStartClientY) * scale;
       const startPinY = baseY() - fullH * pin._dragStartFraction;
@@ -1262,7 +1274,7 @@ candleBody.addEventListener('pointerdown', (e) => {
   if (!state.timerMode || draggingPin) return;
   if (state.pins.length >= MAX_PINS) return;
   const rect = scene.getBoundingClientRect();
-  const scale = 520 / rect.height;
+  const scale = 660 / rect.height;
   const svgY = (e.clientY - rect.top) * scale;
   const fullH = candleHeight(state.size);
   const rawFraction = (baseY() - svgY) / fullH;

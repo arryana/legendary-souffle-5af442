@@ -267,15 +267,16 @@
   // fights the trim approach by construction, these are cut clean with no perch/branch baked in
   // at all, so no masking is needed here. Only three single-bird poses were available (a fourth
   // shows two crows preening each other, not usable as one sprite), so perch-back reuses the
-  // calm perch pose and perch-sleep/touchdown share the head-down foraging pose — an honest
-  // reuse, not a bug, same as the owl above. Flight frames are untouched: the existing 8-frame
-  // flap cycle is already real reference photos of good quality, no fix needed there.
+  // calm perch pose. crow-perch-sleep.png is NOT a resting pose despite the name — it shows a
+  // wing half-spread mid-flutter, so it's used only for the brief touchdown moment below, never
+  // as one of the static perched variants (a crow would otherwise sit holding that off-balance
+  // pose indefinitely). Flight frames are untouched: the existing 8-frame flap cycle is already
+  // real reference photos of good quality, no fix needed there.
   const CROW_TOUCHDOWN=sprite('crow-touchdown.png',206,148,86,147,1);
   const CROW_PERCH_VARIANTS=[
     sprite('crow-perch.png',125,192,60,164,1),
     sprite('crow-perch-alt.png',184,190,127.5,189,1),
     sprite('crow-perch-back.png',125,192,60,164,1),
-    sprite('crow-perch-sleep.png',206,148,86,147,1),
   ];
   const CROW_SCALE=0.17;   // crows read as a noticeably bigger bird than sparrows, tuned by eye
 
