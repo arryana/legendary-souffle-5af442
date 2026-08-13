@@ -31,9 +31,6 @@
   #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px 14px;
     padding:10px 16px 18px; background:linear-gradient(to top, rgba(8,11,18,.55), rgba(8,11,18,0)); z-index:40; }
   .group{ display:flex; align-items:center; gap:6px; background:rgba(20,26,38,.4); border:1px solid rgba(242,233,216,.12); border-radius:12px; padding:6px 10px; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
-  .swatchBtn{ width:30px; height:30px; border-radius:7px; padding:0; border:2px solid transparent; background-size:cover; background-position:center; cursor:pointer; opacity:.62; transition:opacity .2s, border-color .2s, transform .15s; }
-  .swatchBtn:hover{ opacity:.9; transform:translateY(-1px); }
-  .swatchBtn.selected{ opacity:1; border-color:var(--brass); box-shadow:0 0 8px rgba(201,151,78,.5); }
   input[type=range]{ -webkit-appearance:none; appearance:none; width:110px; height:3px; border-radius:3px; background:rgba(242,233,216,.35); outline:none; vertical-align:middle; }
   input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--brass); cursor:pointer; box-shadow:0 0 6px rgba(0,0,0,.4); }
   input[type=range]::-moz-range-thumb{ width:13px; height:13px; border-radius:50%; background:var(--brass); border:none; cursor:pointer; }
@@ -43,6 +40,19 @@
     -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,.4); }
   .lenPopup.open{ display:flex; }
   .lenPopup input[type=range]{ width:120px; }
+
+  /* material pickers -- a small swatch trigger that opens a wordless popup list, matching warmler's finish picker */
+  .matTrigger{ width:40px; height:30px; border-radius:6px; border:1.5px solid rgba(201,151,78,.5); cursor:pointer; padding:0; overflow:hidden; flex-shrink:0; box-shadow:0 6px 16px rgba(0,0,0,.5); transition:transform .25s ease, border-color .25s ease; }
+  .matTrigger:hover{ transform:translateY(-1px); border-color:#e8c383; }
+  .matTrigger img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .matOverlay{ position:fixed; inset:0; z-index:100; background:rgba(5,7,12,.72); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:24px 0; }
+  .matOverlay.open{ display:flex; }
+  .matPopup{ width:min(80vw,200px); max-height:70vh; max-height:70dvh; background:#0d1420; border:1px solid rgba(201,151,78,.4); border-radius:14px; box-shadow:0 30px 80px rgba(0,0,0,.6); overflow:hidden; }
+  .matList{ overflow-y:auto; padding:12px 12px 18px; display:flex; flex-direction:column; gap:9px; }
+  .matOption{ background:transparent; border:1.5px solid rgba(201,151,78,.18); border-radius:7px; padding:0; cursor:pointer; overflow:hidden; display:block; transition:border-color .2s ease; }
+  .matOption:hover{ border-color:rgba(232,195,131,.6); }
+  .matOption.selected{ border-color:#e8c383; }
+  .matOption img{ width:100%; height:44px; object-fit:cover; display:block; }
 </style>
 </head>
 <body>
@@ -52,9 +62,25 @@
   <input type="range" id="lenPopupSlider" aria-label="this rod's length">
 </div>
 
+<div class="matOverlay" id="rodMatOverlay">
+  <div class="matPopup"><div class="matList" id="rodMatList">
+    <button class="matOption" data-key="glass" aria-label="glass rods"><img src="chime-swatch-rod-glass.png" alt=""></button>
+    <button class="matOption" data-key="silver" aria-label="brushed silver rods"><img src="chime-swatch-rod-silver.png" alt=""></button>
+    <button class="matOption" data-key="brass" aria-label="aged brass rods"><img src="chime-swatch-rod-brass.png" alt=""></button>
+    <button class="matOption" data-key="wood" aria-label="polished walnut rods"><img src="chime-swatch-rod-wood.png" alt=""></button>
+  </div></div>
+</div>
+<div class="matOverlay" id="cordMatOverlay">
+  <div class="matPopup"><div class="matList" id="cordMatList">
+    <button class="matOption" data-key="rope" aria-label="jute rope"><img src="chime-swatch-cord-rope.png" alt=""></button>
+    <button class="matOption" data-key="chain" aria-label="silver chain"><img src="chime-swatch-cord-chain.png" alt=""></button>
+    <button class="matOption" data-key="string" aria-label="black cord"><img src="chime-swatch-cord-string.png" alt=""></button>
+  </div></div>
+</div>
+
 <div id="dock">
-  <div class="group" id="rodMaterialGroup" title="rod material" aria-label="rod material"></div>
-  <div class="group" id="cordMaterialGroup" title="cord or chain" aria-label="cord or chain"></div>
+  <button class="matTrigger" id="rodMatTrigger" aria-label="choose rod material"><img id="rodMatTriggerImg" src="chime-swatch-rod-brass.png" alt=""></button>
+  <button class="matTrigger" id="cordMatTrigger" aria-label="choose cord or chain"><img id="cordMatTriggerImg" src="chime-swatch-cord-chain.png" alt=""></button>
   <div class="group">
     <span style="font-size:13px;opacity:.75;" aria-hidden="true">🎐</span>
     <input type="range" id="countSlider" min="5" max="9" step="1" value="7" aria-label="number of rods">
@@ -64,7 +90,7 @@
     <input type="range" id="cordLenSlider" min="40" max="170" step="1" value="95" aria-label="hanging length">
   </div>
   <div class="group">
-    <span style="font-size:13px;opacity:.75;" aria-hidden="true">🍃</span>
+    <span style="font-size:13px;opacity:.75;" aria-hidden="true">🌀</span>
     <input type="range" id="windSlider" min="0" max="100" step="1" value="35" aria-label="wind strength">
   </div>
 </div>
@@ -75,6 +101,7 @@
   let W=0, H=0, DPR=1;
 
   const G = 900;
+  const WIND_MAX = 250;
   const PITCH_K = 4200000;
   const ROD_LEN_MIN = 70, ROD_LEN_MAX = 180;
   const ROD_THICK = 12;
@@ -132,7 +159,7 @@
   function layout(){
     hangerX = W/2;
     hangerDrawH = HANGER_W * (hangerImg.height / hangerImg.width || 164/145);
-    pivotY = hangerTopY + hangerDrawH*0.90;
+    pivotY = hangerTopY + hangerDrawH*0.965;
     ringSpan = HANGER_W*0.85;
   }
   function pivotX(i, n){
@@ -216,14 +243,16 @@
     const dt = Math.min((now-lastT)/1000, 1/45); lastT = now;
     elapsed += dt;
     const n = state.rods.length;
-    const windAmp = state.wind * 260;
+    const windAmp = state.wind * WIND_MAX;
 
     for(let i=0;i<n;i++){
       const r = state.rods[i];
       const eff = state.cordLength + r.rodLength*0.5;
       const gust = windAmp * (Math.sin(elapsed*0.55)*0.65 + Math.sin(elapsed*2.1 + i*0.7)*0.35);
       const damping = 0.42;
-      const angAcc = -(G/eff)*Math.sin(r.angle) - damping*r.angVel + (gust/eff)*0.03;
+      // a horizontal wind force at the bob has lever arm eff*cos(theta) about the pivot,
+      // same derivation as gravity's -(G/eff)*sin(theta) restoring term
+      const angAcc = -(G/eff)*Math.sin(r.angle) - damping*r.angVel + (gust/eff)*Math.cos(r.angle);
       r.angVel += angAcc*dt;
       r.angle += r.angVel*dt;
     }
@@ -307,36 +336,26 @@
   }
 
   // ---- UI ----
-  const rodMaterialGroup = document.getElementById('rodMaterialGroup');
-  const cordMaterialGroup = document.getElementById('cordMaterialGroup');
-  const rodMaterials = [
-    {key:'glass', file:'chime-swatch-rod-glass.png', label:'glass'},
-    {key:'silver', file:'chime-swatch-rod-silver.png', label:'brushed silver'},
-    {key:'brass', file:'chime-swatch-rod-brass.png', label:'aged brass'},
-    {key:'wood', file:'chime-swatch-rod-wood.png', label:'polished walnut'},
-  ];
-  const cordMaterials = [
-    {key:'rope', file:'chime-swatch-cord-rope.png', label:'jute rope'},
-    {key:'chain', file:'chime-swatch-cord-chain.png', label:'silver chain'},
-    {key:'string', file:'chime-swatch-cord-string.png', label:'black cord'},
-  ];
-  function buildSwatchGroup(container, list, stateKey){
-    container.innerHTML = '';
-    list.forEach(m=>{
-      const b = document.createElement('button');
-      b.className = 'swatchBtn' + (state[stateKey]===m.key ? ' selected' : '');
-      b.style.backgroundImage = `url(${m.file})`;
-      b.title = m.label; b.setAttribute('aria-label', m.label);
-      b.addEventListener('click', ()=>{
-        state[stateKey] = m.key;
-        [...container.children].forEach(c=>c.classList.remove('selected'));
-        b.classList.add('selected');
-      });
-      container.appendChild(b);
+  // material pickers: a small trigger swatch that opens a wordless popup list, same pattern as warmler's finish picker
+  function wireMatPicker(stateKey, swatchFile, triggerBtn, triggerImg, overlay, list){
+    function apply(key){
+      state[stateKey] = key;
+      triggerImg.src = swatchFile(key);
+      list.querySelectorAll('.matOption').forEach(o => o.classList.toggle('selected', o.dataset.key === key));
+    }
+    apply(state[stateKey]);
+    triggerBtn.addEventListener('click', () => overlay.classList.add('open'));
+    overlay.addEventListener('click', (e) => { if(e.target === overlay) overlay.classList.remove('open'); });
+    list.querySelectorAll('.matOption').forEach(opt => {
+      opt.addEventListener('click', () => { apply(opt.dataset.key); overlay.classList.remove('open'); });
     });
   }
-  buildSwatchGroup(rodMaterialGroup, rodMaterials, 'rodMaterial');
-  buildSwatchGroup(cordMaterialGroup, cordMaterials, 'cordMaterial');
+  wireMatPicker('rodMaterial', k => `chime-swatch-rod-${k}.png`,
+    document.getElementById('rodMatTrigger'), document.getElementById('rodMatTriggerImg'),
+    document.getElementById('rodMatOverlay'), document.getElementById('rodMatList'));
+  wireMatPicker('cordMaterial', k => `chime-swatch-cord-${k}.png`,
+    document.getElementById('cordMatTrigger'), document.getElementById('cordMatTriggerImg'),
+    document.getElementById('cordMatOverlay'), document.getElementById('cordMatList'));
 
   const countSlider = document.getElementById('countSlider');
   countSlider.addEventListener('input', ()=>{
