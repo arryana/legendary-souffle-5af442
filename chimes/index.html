@@ -34,25 +34,18 @@
   .swatchBtn{ width:30px; height:30px; border-radius:7px; padding:0; border:2px solid transparent; background-size:cover; background-position:center; cursor:pointer; opacity:.62; transition:opacity .2s, border-color .2s, transform .15s; }
   .swatchBtn:hover{ opacity:.9; transform:translateY(-1px); }
   .swatchBtn.selected{ opacity:1; border-color:var(--brass); box-shadow:0 0 8px rgba(201,151,78,.5); }
-  .glyphBtn{ width:30px; height:30px; border-radius:50%; border:1px solid rgba(242,233,216,.25); background:rgba(20,24,34,.5); color:#f2e9d8; font-size:14px; line-height:1; cursor:pointer; opacity:.65; transition:opacity .2s, color .2s, border-color .2s; }
-  .glyphBtn:hover{opacity:1;}
-  .glyphBtn.active{ color:#f0d69a; border-color:rgba(201,151,78,.7); opacity:1; }
   input[type=range]{ -webkit-appearance:none; appearance:none; width:110px; height:3px; border-radius:3px; background:rgba(242,233,216,.35); outline:none; vertical-align:middle; }
   input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--brass); cursor:pointer; box-shadow:0 0 6px rgba(0,0,0,.4); }
   input[type=range]::-moz-range-thumb{ width:13px; height:13px; border-radius:50%; background:var(--brass); border:none; cursor:pointer; }
 
-  #tuneRail{ position:fixed; left:10px; top:64px; bottom:74px; z-index:41; display:none; flex-direction:column; justify-content:center; }
-  #tuneRail.open{ display:flex; }
-  #tuneInner{ max-height:100%; overflow-y:auto; background:rgba(16,20,30,.68); border:1px solid rgba(242,233,216,.14); border-radius:12px; padding:8px 9px; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); width:92px; }
-  .rodRow{ display:flex; flex-direction:column; align-items:stretch; gap:2px; padding:5px 0; font-size:10px; opacity:.85; border-bottom:1px solid rgba(242,233,216,.08); }
-  .rodRow:last-child{ border-bottom:none; }
-  .rodRow .idx{ text-align:center; opacity:.5; font-size:9px; }
-  .rodRow label{ display:flex; align-items:center; gap:4px; }
-  .rodRow label span{ font-size:10px; flex-shrink:0; }
-  .rodRow input[type=range]{ width:100%; height:2px; }
-  .rodRow input[type=range]::-webkit-slider-thumb{ width:10px; height:10px; }
-
   #startHint{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:60; color:var(--parchment); font-size:15px; opacity:.75; letter-spacing:.03em; background:rgba(8,11,18,.25); cursor:pointer; text-align:center; padding:20px; }
+
+  .lenPopup{ position:fixed; z-index:55; display:none; flex-direction:column; align-items:center; gap:4px;
+    background:rgba(16,20,30,.85); border:1px solid rgba(242,233,216,.18); border-radius:12px; padding:10px 12px;
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,.4); }
+  .lenPopup.open{ display:flex; }
+  .lenPopup input[type=range]{ width:120px; }
+  .lenPopup .hz{ font-size:11px; opacity:.7; letter-spacing:.03em; }
 </style>
 </head>
 <body>
@@ -60,7 +53,10 @@
 <canvas id="c"></canvas>
 <div id="startHint">touch or click to hang your chimes</div>
 
-<div id="tuneRail"><div id="tuneInner"></div></div>
+<div class="lenPopup" id="lenPopup">
+  <input type="range" id="lenPopupSlider" aria-label="this rod's length">
+  <span class="hz" id="lenPopupHz"></span>
+</div>
 
 <div id="dock">
   <div class="group" id="rodMaterialGroup" title="rod material" aria-label="rod material"></div>
@@ -70,11 +66,12 @@
     <input type="range" id="countSlider" min="5" max="9" step="1" value="7" aria-label="number of rods">
   </div>
   <div class="group">
-    <span style="font-size:13px;opacity:.75;" aria-hidden="true">🍃</span>
-    <input type="range" id="windSlider" min="0" max="100" step="1" value="35" aria-label="wind strength">
+    <span style="font-size:13px;opacity:.75;" aria-hidden="true">🧵</span>
+    <input type="range" id="cordLenSlider" min="40" max="170" step="1" value="95" aria-label="hanging length">
   </div>
   <div class="group">
-    <button class="glyphBtn" id="tuneBtn" title="adjust each rod" aria-label="adjust each rod">🎚️</button>
+    <span style="font-size:13px;opacity:.75;" aria-hidden="true">🍃</span>
+    <input type="range" id="windSlider" min="0" max="100" step="1" value="35" aria-label="wind strength">
   </div>
 </div>
 
@@ -87,7 +84,6 @@
   const G = 900;
   const PITCH_K = 4200000;
   const ROD_LEN_MIN = 70, ROD_LEN_MAX = 180;
-  const CORD_LEN_MIN = 40, CORD_LEN_MAX = 170;
   const ROD_THICK = 12;
   const CORD_THICK = { rope:7, chain:5, string:3 };
   const HANGER_W = 172;
@@ -113,16 +109,13 @@
     cordMaterial: 'chain',
     count: 7,
     wind: 0.35,
+    cordLength: 95, // shared by every rod, so the tops all hang level
     rods: [],
   };
 
   function defaultRodLength(i, n){
     const t = n>1 ? i/(n-1) : 0.5;
     return ROD_LEN_MAX - t*(ROD_LEN_MAX-ROD_LEN_MIN); // left = long/low, right = short/high, like a real set
-  }
-  function defaultCordLength(i, n){
-    const stagger = [0, 18, -8, 26, -14, 10, -20, 22, -4];
-    return 90 + (stagger[i % stagger.length]);
   }
 
   function rebuildRods(preserve){
@@ -132,16 +125,14 @@
       const prev = preserve && old[i];
       rods.push({
         rodLength: prev ? prev.rodLength : defaultRodLength(i, state.count),
-        cordLength: prev ? clamp(prev.cordLength, CORD_LEN_MIN, CORD_LEN_MAX) : clamp(defaultCordLength(i,state.count), CORD_LEN_MIN, CORD_LEN_MAX),
         angle: (Math.random()-0.5)*0.2,
         angVel: 0,
         lastStrike: {},
       });
     }
     state.rods = rods;
-    buildTunePanel();
+    closePopup();
   }
-  function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
 
   // ---- layout ----
   let hangerX=0, hangerTopY=60, hangerDrawH=0, pivotY=0, ringSpan=0;
@@ -223,7 +214,7 @@
   // ---- physics + draw ----
   let lastT = null, elapsed = 0;
   function bobX(r, i, n){
-    const eff = r.cordLength + r.rodLength*0.5;
+    const eff = state.cordLength + r.rodLength*0.5;
     return pivotX(i,n) + Math.sin(r.angle)*eff;
   }
 
@@ -236,7 +227,7 @@
 
     for(let i=0;i<n;i++){
       const r = state.rods[i];
-      const eff = r.cordLength + r.rodLength*0.5;
+      const eff = state.cordLength + r.rodLength*0.5;
       const gust = windAmp * (Math.sin(elapsed*0.55)*0.65 + Math.sin(elapsed*2.1 + i*0.7)*0.35);
       const damping = 0.42;
       const angAcc = -(G/eff)*Math.sin(r.angle) - damping*r.angVel + (gust/eff)*0.03;
@@ -253,7 +244,7 @@
         const key = 'n';
         if(!a.lastStrike[key] || now - a.lastStrike[key] > 140){
           a.lastStrike[key] = now;
-          const effA = a.cordLength+a.rodLength*0.5, effB = b.cordLength+b.rodLength*0.5;
+          const effA = state.cordLength+a.rodLength*0.5, effB = state.cordLength+b.rodLength*0.5;
           const relSpeed = Math.abs(a.angVel*effA - b.angVel*effB);
           if(relSpeed > 6){
             ensureAudio();
@@ -267,6 +258,7 @@
     }
 
     draw();
+    if(popupOpenIdx>=0) positionPopupOnRod();
     requestAnimationFrame(tick);
   }
 
@@ -279,20 +271,10 @@
       ctx.rotate(r.angle);
 
       if(cordImg && cordImg.complete && cordImg.naturalWidth){
-        const srcW = cordImg.naturalWidth, srcH = cordImg.naturalHeight;
-        const tileSrcH = Math.min(140, srcH);
-        const tileDstH = tileSrcH * (cordThick/srcW);
-        let y = 0;
-        while(y < r.cordLength - 0.5){
-          const remain = r.cordLength - y;
-          const drawDstH = Math.min(tileDstH, remain);
-          const drawSrcH = drawDstH / tileDstH * tileSrcH;
-          ctx.drawImage(cordImg, 0, 0, srcW, drawSrcH, -cordThick/2, y, cordThick, drawDstH);
-          y += tileDstH;
-        }
+        ctx.drawImage(cordImg, 0, 0, cordImg.naturalWidth, cordImg.naturalHeight, -cordThick/2, 0, cordThick, state.cordLength);
       }
       if(rodImg && rodImg.complete && rodImg.naturalWidth){
-        ctx.drawImage(rodImg, -ROD_THICK/2, r.cordLength, ROD_THICK, r.rodLength);
+        ctx.drawImage(rodImg, -ROD_THICK/2, state.cordLength, ROD_THICK, r.rodLength);
       }
       ctx.restore();
     }
@@ -304,6 +286,31 @@
       ctx.drawImage(hangerImg, hangerX-HANGER_W/2, hangerTopY, HANGER_W, hangerDrawH);
     }
     drawRodsAndCords(rodImgs[state.rodMaterial], cordImgs[state.cordMaterial], CORD_THICK[state.cordMaterial], n);
+  }
+
+  // world position of the point midway down a rod's body -- used to anchor its length popup
+  function rodMidWorld(i, n){
+    const r = state.rods[i];
+    const mid = state.cordLength + r.rodLength*0.5;
+    const px = pivotX(i,n);
+    return { x: px - Math.sin(r.angle)*mid, y: pivotY + Math.cos(r.angle)*mid };
+  }
+  // inverse of the canvas translate+rotate used to draw rod i, for hit-testing a click point
+  function hitTestRod(clientX, clientY, n){
+    for(let i=n-1;i>=0;i--){
+      const r = state.rods[i];
+      const px = pivotX(i,n);
+      const dx = clientX-px, dy = clientY-pivotY;
+      const cosA = Math.cos(r.angle), sinA = Math.sin(r.angle);
+      // inverse of the canvas rotate(angle) transform used to draw this rod
+      const lx = dx*cosA + dy*sinA, ly = -dx*sinA + dy*cosA;
+      const padX = 12, padTop = 8, padBottom = 12;
+      if(lx > -ROD_THICK/2-padX && lx < ROD_THICK/2+padX &&
+         ly > state.cordLength-padTop && ly < state.cordLength+r.rodLength+padBottom){
+        return i;
+      }
+    }
+    return -1;
   }
 
   // ---- UI ----
@@ -345,29 +352,57 @@
   });
   const windSlider = document.getElementById('windSlider');
   windSlider.addEventListener('input', ()=>{ state.wind = (+windSlider.value)/100; });
+  const cordLenSlider = document.getElementById('cordLenSlider');
+  cordLenSlider.addEventListener('input', ()=>{ state.cordLength = +cordLenSlider.value; });
 
-  const tuneBtn = document.getElementById('tuneBtn');
-  const tuneRail = document.getElementById('tuneRail');
-  tuneBtn.addEventListener('click', ()=>{
-    tuneRail.classList.toggle('open');
-    tuneBtn.classList.toggle('active');
-  });
+  // ---- per-rod length popup: tap a rod to tune just its length ----
+  const lenPopup = document.getElementById('lenPopup');
+  const lenPopupSlider = document.getElementById('lenPopupSlider');
+  const lenPopupHz = document.getElementById('lenPopupHz');
+  let popupOpenIdx = -1;
 
-  function buildTunePanel(){
-    const inner = document.getElementById('tuneInner');
-    inner.innerHTML = '';
-    state.rods.forEach((r,i)=>{
-      const row = document.createElement('div');
-      row.className = 'rodRow';
-      row.innerHTML = `<span class="idx">${i+1}</span>
-        <label title="cord length">🧵<input type="range" min="${CORD_LEN_MIN}" max="${CORD_LEN_MAX}" value="${r.cordLength}" aria-label="rod ${i+1} cord length"></label>
-        <label title="rod length">🎼<input type="range" min="${ROD_LEN_MIN}" max="${ROD_LEN_MAX}" value="${r.rodLength}" aria-label="rod ${i+1} rod length"></label>`;
-      const [cordInput, rodInput] = row.querySelectorAll('input');
-      cordInput.addEventListener('input', ()=>{ r.cordLength = +cordInput.value; });
-      rodInput.addEventListener('input', ()=>{ r.rodLength = +rodInput.value; });
-      inner.appendChild(row);
-    });
+  function positionPopupOnRod(){
+    const n = state.rods.length;
+    const mid = rodMidWorld(popupOpenIdx, n);
+    const popupW = lenPopup.offsetWidth || 150, popupH = lenPopup.offsetHeight || 70;
+    let left = mid.x - popupW/2;
+    let top = mid.y - popupH - 16;
+    left = Math.max(8, Math.min(left, window.innerWidth - popupW - 8));
+    top = Math.max(8, top);
+    lenPopup.style.left = `${left}px`;
+    lenPopup.style.top = `${top}px`;
   }
+  function openPopupForRod(i){
+    popupOpenIdx = i;
+    const r = state.rods[i];
+    lenPopupSlider.min = ROD_LEN_MIN; lenPopupSlider.max = ROD_LEN_MAX; lenPopupSlider.value = r.rodLength;
+    lenPopupHz.textContent = `${Math.round(pitchFor(r.rodLength))} Hz`;
+    lenPopup.classList.add('open');
+    positionPopupOnRod();
+  }
+  function closePopup(){
+    popupOpenIdx = -1;
+    lenPopup.classList.remove('open');
+  }
+  lenPopupSlider.addEventListener('input', ()=>{
+    if(popupOpenIdx<0) return;
+    const r = state.rods[popupOpenIdx];
+    r.rodLength = +lenPopupSlider.value;
+    lenPopupHz.textContent = `${Math.round(pitchFor(r.rodLength))} Hz`;
+  });
+  lenPopup.addEventListener('click', e=> e.stopPropagation());
+  canvas.addEventListener('click', (e)=>{
+    const hit = hitTestRod(e.clientX, e.clientY, state.rods.length);
+    if(hit>=0){
+      openPopupForRod(hit);
+      e.stopPropagation();
+    }
+  });
+  document.addEventListener('click', (e)=>{
+    if(lenPopup.classList.contains('open') && !lenPopup.contains(e.target)){
+      closePopup();
+    }
+  });
 
   function begin(){
     ensureAudio();
