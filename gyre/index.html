@@ -549,7 +549,14 @@
       // gears meshing the same rack-like thread from opposite sides turn opposite ways
       // for the teeth to actually mesh, not the same way, so this is a "+", not the "-"
       // it'd be if the engaging gear were on the same side as the small gear
-      const bigSpeed = ni>=0 ? angVel[ni]*(gears[ni].N/LAMP_BIG_N) : 0;
+      // the engaging gear's own angular velocity, unscaled — angVel[ni] already carries
+      // (driver.N/ni.N) baked in from the drive chain, so re-scaling by (ni.N/LAMP_BIG_N)
+      // here (as this used to) cancels that back out to just the driver's own speed no
+      // matter which gear or how many hops away it is: a size-8 gear and a size-40 gear
+      // driving the screw would always produce the exact same brightness. Using the
+      // engaging gear's real speed directly is what actually makes a small, fast gear
+      // drive the lamp bright and a big, slow one drive it dim.
+      const bigSpeed = ni>=0 ? angVel[ni] : 0;
       lamp.bigAngle += bigSpeed*dt;
       lamp.smallAngle -= (LAMP_BIG_N/LAMP_SMALL_N)*bigSpeed*dt;
       // the screw's thread scroll must match the small gear's actual contact-point motion
