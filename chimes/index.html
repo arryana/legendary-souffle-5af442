@@ -434,8 +434,18 @@
         state.wind = liveWind/100;
         windSlider.value = Math.round(liveWind);
         windLocFlag.classList.add('live');
+        hideWindLocNote();
+      } else {
+        throw new Error('unexpected response shape');
       }
-    } catch(e){ /* keep last known value silently */ }
+    } catch(e){
+      // silence here would mean quietly keeping the chimes swaying to a wind speed that's
+      // no longer real without ever admitting it -- this is opt-in and the popup starts
+      // closed anyway, so there's no harm in saying so plainly the first time it happens
+      showWindLocNote(liveWind!=null
+        ? "couldn't reach the weather just now — still showing the last real reading"
+        : "couldn't reach the weather — try again, or type a place below");
+    }
   }
   function showWindLocNote(msg){ if(msg) windLocNoteText.textContent = msg; windLocNote.classList.add('visible'); }
   function hideWindLocNote(){ windLocNote.classList.remove('visible'); }

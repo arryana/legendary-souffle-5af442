@@ -217,6 +217,8 @@
   let unit = 'f';
   let currentTempF = 65;
   let lat = null, lon = null;
+  let weatherFetchFailures = 0; // consecutive failed weather fetches (location already known) --
+  // separate from a geolocation failure, which has its own note text and its own counter-less path
 
   const bulbLayer = document.getElementById('bulb-layer');
   const tagLayer = document.getElementById('tag-layer');
@@ -316,14 +318,25 @@
       if (data && data.current && typeof data.current.temperature_2m === 'number'){
         currentTempF = data.current.temperature_2m;
         updatePositions();
+        if (weatherFetchFailures > 0){ weatherFetchFailures = 0; hideLocationNote(); }
+      } else {
+        throw new Error('unexpected response shape');
       }
-    } catch(e){ /* keep last known value silently */ }
+    } catch(e){
+      // a single missed refresh isn't worth interrupting anyone over (open-meteo refreshes
+      // every 10 minutes, and one blip is normal) -- but silence past that point would mean
+      // quietly showing a stale reading as if it were still real, which is the one thing
+      // this site promises never to do
+      weatherFetchFailures++;
+      if (weatherFetchFailures >= 2) showLocationNote("couldn't reach the weather just now — showing the last real reading, still trying quietly");
+    }
   }
 
   // silent until now — if the browser can't (or won't) hand over a real location, the
   // reading was quietly using this fallback with no sign to the visitor that anything was off
-  function showLocationNote(){
+  function showLocationNote(msg){
     const note = document.getElementById('loc-note');
+    if (msg){ const text = document.getElementById('loc-note-text'); if (text) text.textContent = msg; }
     if (note) note.classList.add('visible');
   }
   function hideLocationNote(){

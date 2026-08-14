@@ -623,8 +623,10 @@
   // silent until now — if the browser can't (or won't) hand over a real location, everything
   // downstream — sun/moon timing as well as live weather — was quietly using this fallback
   // with no sign to the visitor that anything was off. Surface it instead of guessing quietly.
-  function showLocationNote(){
+  let weatherFetchFailures = 0; // consecutive failed weather fetches (location already known)
+  function showLocationNote(msg){
     const note = document.getElementById('loc-note');
+    if (msg){ const text = document.getElementById('loc-note-text'); if (text) text.textContent = msg; }
     if (note) note.classList.add('visible');
   }
   function hideLocationNote(){
@@ -953,8 +955,17 @@
           code: data.hourly.weather_code,
           cloud: data.hourly.cloud_cover,
         };
+        if (weatherFetchFailures > 0){ weatherFetchFailures = 0; hideLocationNote(); }
+      } else {
+        throw new Error('unexpected response shape');
       }
-    } catch(e){ /* keep last known state silently */ }
+    } catch(e){
+      // a single missed refresh isn't worth interrupting anyone over -- but silence past
+      // that point would mean quietly showing stale sky conditions as if they were still real
+      if(!liveWeatherOn) return;
+      weatherFetchFailures++;
+      if (weatherFetchFailures >= 2) showLocationNote("couldn't reach the weather just now — showing the last real sky, still trying quietly");
+    }
   }
   // called every render() tick while the toggle is on — cheap linear scan over at most ~770
   // hourly points, once a second, well under anything worth optimizing
