@@ -220,8 +220,18 @@
         temp = liveTemp;
         tempSlider.value = Math.round(liveTemp);
         locFlag.classList.add('live');
+        hideLocNote();
+      } else {
+        throw new Error('unexpected response shape');
       }
-    } catch(e){ /* keep last known value silently */ }
+    } catch(e){
+      // silence here would mean quietly keeping the slider on a temperature that's no
+      // longer real without ever admitting it -- this is opt-in and the popup starts
+      // closed anyway, so there's no harm in saying so plainly the first time it happens
+      showLocNote(liveTemp!=null
+        ? "couldn't reach the weather just now — still showing the last real reading"
+        : "couldn't reach the weather — try again, or type a place below");
+    }
   }
   function showLocNote(msg){ if(msg) locNoteText.textContent = msg; locNote.classList.add('visible'); }
   function hideLocNote(){ locNote.classList.remove('visible'); }

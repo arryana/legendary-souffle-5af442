@@ -280,10 +280,12 @@
   };
 
   let lat = 55.19, lon = -1.56; // fallback: north-east England
+  let humidityFetchFailures = 0; // consecutive failed humidity fetches (location already known)
   // silent until now — if the browser can't (or won't) hand over a real location, the
   // reading was quietly using this fallback with no sign to the visitor that anything was off
-  function showLocationNote(){
+  function showLocationNote(msg){
     const note = document.getElementById('loc-note');
+    if (msg){ const text = document.getElementById('loc-note-text'); if (text) text.textContent = msg; }
     if (note) note.classList.add('visible');
   }
   function hideLocationNote(){
@@ -445,8 +447,16 @@
       if (data && data.current && typeof data.current.relative_humidity_2m === 'number'){
         liveHumidity = data.current.relative_humidity_2m;
         if (els.chkLive.checked) renderCone();
+        if (humidityFetchFailures > 0){ humidityFetchFailures = 0; hideLocationNote(); }
+      } else {
+        throw new Error('unexpected response shape');
       }
-    } catch(e){ /* keep last known value silently */ }
+    } catch(e){
+      // a single missed refresh isn't worth interrupting anyone over -- but silence past
+      // that point would mean quietly showing a stale reading as if it were still real
+      humidityFetchFailures++;
+      if (humidityFetchFailures >= 2) showLocationNote("couldn't reach the humidity just now — showing the last real reading, still trying quietly");
+    }
   }
 
   /* ---- tooltip ---- */
