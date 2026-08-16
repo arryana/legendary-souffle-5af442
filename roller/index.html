@@ -413,7 +413,7 @@
   const OBJECTS = {
     pebble:    { friction: 0.985, radius: 30, wobble: 0 },
     disc:      { friction: 0.976, radius: 34, wobble: 0, spinOnImpact: 1 },
-    jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.0045 },
+    jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.018, slewOnImpact: 1 },
   };
 
   let activeType = 'pebble';
@@ -581,8 +581,23 @@
         // it doesn't just trace one lazy circle. curlDir is a slight per-stone bias
         // on top (which lobe of the weave runs a little stronger/longer), not a fixed
         // one-way direction any more.
+        // The weave's SPEED matters more than its strength, which is not
+        // obvious. At sin(2 * jellySpin) the steering reversed about five and a
+        // half times per crossing of the tray — fast enough that each swing was
+        // undone by the next before the path could actually move, so the bean
+        // wiggled on the spot and the path merely leaned. Halving that to
+        // sin(jellySpin) is what makes the weave show up as travel rather than
+        // as jitter; the strength (curlRate) then just sets how wide it is.
+        // Measured across the tray: 0.0045 at the old speed wandered 29px and
+        // reversed 0.1 times — a bent line. This wanders far more and genuinely
+        // snakes. Pushed harder than this it stops being a weave and loops.
+        // The constant lean is 0.05 rather than 0.25 for the same reason the
+        // brief asked for: it should wobble side to side, not curve away while
+        // doing it. Some rolls still drift and some hold the line, depending on
+        // where in its tumble the bean starts — that is the stone's character,
+        // not an error, and forcing every roll to stay centred would be a lie.
         const curlAmt = (activeType === 'jellybean')
-          ? spec.curlRate * (0.25 * obj.curlDir + 1.15 * Math.sin(2 * obj.jellySpin))
+          ? spec.curlRate * (0.05 * obj.curlDir + 1.15 * Math.sin(obj.jellySpin))
           : spec.curlRate * obj.curlDir;
         const rotAmt = curlAmt * curlSpeed;
         const cosA = Math.cos(rotAmt), sinA = Math.sin(rotAmt);
@@ -613,10 +628,28 @@
 
     let clacked = false;
     let clackIntensity = 0;
-    if (obj.x < r) { obj.x = r + WALL_NUDGE; obj.vx = wallBounce(obj.vx); clacked = true; clackIntensity = Math.abs(obj.vx); if (spec.spinOnImpact) obj.discAngVel += obj.vy * 0.05; }
-    if (obj.x > W - r) { obj.x = W - r - WALL_NUDGE; obj.vx = wallBounce(obj.vx); clacked = true; clackIntensity = Math.abs(obj.vx); if (spec.spinOnImpact) obj.discAngVel -= obj.vy * 0.05; }
-    if (obj.y < r) { obj.y = r + WALL_NUDGE; obj.vy = wallBounce(obj.vy); clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel -= obj.vx * 0.05; }
-    if (obj.y > H - r) { obj.y = H - r - WALL_NUDGE; obj.vy = wallBounce(obj.vy); clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel += obj.vx * 0.05; }
+    // A round pebble hitting a wall just bounces. An elongated stone almost
+    // never hits square: the blow lands off its centre and slews it round.
+    // How much depends on how far its long axis is from square to the wall —
+    // nothing at all when it meets the wall end-on or flat-on, most at
+    // forty-five degrees between, which is what sin(2 * angle) describes. The
+    // first term is the glancing part, sliding along the wall as it hits, the
+    // same effect the disc already gets; the second is the leverage of its
+    // own length. Clamped, because a hard corner hit could otherwise spin it
+    // like a propeller.
+    // Note this is not just cosmetic: the bean's tumble angle is also what
+    // drives its weave, so a knock sends it off the wall snaking a different
+    // way, which is exactly what a real one does.
+    // Nothing here fires when it is pinned — a trapped bean has no impact to
+    // take, and its tumble is driven by distance actually moved, which is
+    // zero when it cannot go anywhere.
+    const beanSlew = (tangential, normal, sign) => Math.max(-0.6, Math.min(0.6,
+      tangential * 0.05 + sign * Math.abs(normal) * Math.sin(2 * obj.jellySpin) * 0.07));
+
+    if (obj.x < r) { obj.x = r + WALL_NUDGE; obj.vx = wallBounce(obj.vx); clacked = true; clackIntensity = Math.abs(obj.vx); if (spec.spinOnImpact) obj.discAngVel += obj.vy * 0.05; if (spec.slewOnImpact) obj.jellySpin += beanSlew(obj.vy, obj.vx, 1); }
+    if (obj.x > W - r) { obj.x = W - r - WALL_NUDGE; obj.vx = wallBounce(obj.vx); clacked = true; clackIntensity = Math.abs(obj.vx); if (spec.spinOnImpact) obj.discAngVel -= obj.vy * 0.05; if (spec.slewOnImpact) obj.jellySpin += beanSlew(-obj.vy, obj.vx, -1); }
+    if (obj.y < r) { obj.y = r + WALL_NUDGE; obj.vy = wallBounce(obj.vy); clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel -= obj.vx * 0.05; if (spec.slewOnImpact) obj.jellySpin += beanSlew(-obj.vx, obj.vy, -1); }
+    if (obj.y > H - r) { obj.y = H - r - WALL_NUDGE; obj.vy = wallBounce(obj.vy); clacked = true; clackIntensity = Math.abs(obj.vy); if (spec.spinOnImpact) obj.discAngVel += obj.vx * 0.05; if (spec.slewOnImpact) obj.jellySpin += beanSlew(obj.vx, obj.vy, 1); }
 
     // real rolling: how far it's actually MOVED this frame determines how
     // much it's turned, exactly like a wheel — measured after wall contact

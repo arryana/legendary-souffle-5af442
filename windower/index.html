@@ -722,6 +722,7 @@
     skyMoon: document.getElementById('sky-moon'),
     hills: document.getElementById('hills'),
     hillsSnow: document.getElementById('hills-snow'),
+    frameImg: document.getElementById('frame-img'),
     beamSun: document.getElementById('beam-sun'),
     beamMoon: document.getElementById('beam-moon'),
     moonWrap: document.getElementById('moon-disc-wrap'),
@@ -945,7 +946,7 @@
     if(lat==null || lon==null) return;
     try{
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-        `&hourly=weather_code,cloud_cover&past_days=16&forecast_days=16&timezone=UTC`;
+        `&hourly=weather_code,cloud_cover&past_days=30&forecast_days=16&timezone=UTC`;
       const res = await fetch(url);
       const data = await res.json();
       if(!liveWeatherOn) return;   // the toggle may have been switched off while this was in flight
@@ -982,6 +983,12 @@
   function updateLiveWeatherToggle(){
     liveWeatherOn = els.chkWeather.checked;
     if(liveWeatherOn){
+      // switching the weather on shortens the slider's reach, so anything
+      // already parked beyond the forecast has to come back to its edge —
+      // otherwise it would sit past the end of its own track showing weather
+      // that does not exist for that day
+      if(offsetDays > FORECAST_DAYS){ offsetDays = FORECAST_DAYS; }
+      updateSliderVisual();
       fetchLiveWeather();
       if(!weatherPoll) weatherPoll = setInterval(fetchLiveWeather, 10*60*1000);
     } else {
@@ -1276,8 +1283,26 @@
   }
 
   /* ===================== SLIDER ===================== */
-  function offsetToPct(o){ return 50 + (o/30)*50; }
-  function pctToOffset(pct){ return ((pct-50)/50)*30; }
+  // How far the slider may travel is not a fixed range: it is however far there
+  // is something true to show. Backwards is always 30 days, and the weather
+  // request now asks for 30 past days to match (open-meteo serves up to 92, so
+  // that history genuinely exists and simply was not being requested).
+  // Forwards is 30 with the weather off — sun and moon are CALCULATED, so their
+  // positions, phase and rise/set times are exact at any date — but only 16 with
+  // it on, because 16 days is open-meteo's actual forecast horizon and there is
+  // no 17-day forecast anywhere to fetch. Previously the slider ran to 30 either
+  // way and the lookup simply held the last hour it had, so "25 days ahead"
+  // showed day 16's weather while saying otherwise. A shorter honest range beats
+  // a longer one that quietly repeats itself.
+  const PAST_DAYS = 30, FORECAST_DAYS = 16;
+  function maxAhead(){ return liveWeatherOn ? FORECAST_DAYS : PAST_DAYS; }
+  function clampOffset(o){ return Math.max(-PAST_DAYS, Math.min(maxAhead(), o)); }
+  function offsetToPct(o){
+    return o >= 0 ? 50 + (o/maxAhead())*50 : 50 + (o/PAST_DAYS)*50;
+  }
+  function pctToOffset(pct){
+    return pct >= 50 ? ((pct-50)/50)*maxAhead() : ((pct-50)/50)*PAST_DAYS;
+  }
 
   function updateSliderVisual(){
     const pct = Math.max(0, Math.min(100, offsetToPct(offsetDays)));
@@ -1293,7 +1318,7 @@
   function pointerToOffset(clientX){
     const rect = els.sliderTrack.getBoundingClientRect();
     const pct = ((clientX - rect.left) / rect.width) * 100;
-    return pctToOffset(Math.max(0, Math.min(100, pct)));
+    return clampOffset(pctToOffset(Math.max(0, Math.min(100, pct))));
   }
 
   els.sliderTrack.addEventListener('pointerdown', e=>{
@@ -1444,7 +1469,18 @@
     // light is actually getting through. Thin clouds barely touch it; a
     // heavy overcast knocks it down to a bare trace rather than zeroing it
     // outright, since some diffuse light still gets through in reality.
-    const beamCloudAtten = 1 - cloudCoverage*0.88;
+    // A beam is a SHAPE, and a shape needs a small, bright source. Cloud does
+    // not merely dim the sun, it spreads it into a broad grey source, and a
+    // broad source casts no defined patch at all — so the patch must reach real
+    // zero under heavy overcast even though the room stays perfectly bright
+    // from diffuse light. The old 1 - cloud*0.88 confused those two things: it
+    // left a sharp-edged sunbeam at 0.164 on the sill under a 95% clouded sky,
+    // reasoning that "some diffuse light still gets through". True of the light,
+    // false of the beam. Broken cloud barely touches it — the sun is usually
+    // still in a gap — then it collapses and is gone once the sky is mostly
+    // covered.
+    const cc = Math.max(0, Math.min(1, (cloudCoverage - 0.35) / 0.45));
+    const beamCloudAtten = 1 - cc*cc*(3 - 2*cc);
     const beamSunOpacity = Math.max(0, Math.min(1, (sunAltDeg + 4) / 14)) * beamCloudAtten;
     // beam-specific altitude factor — a wide ramp so the moon has to climb well clear of
     // the horizon before the beam reaches full strength, staying dim through moonrise/set
@@ -1452,6 +1488,16 @@
     // a genuinely full-ish moon lights the floor plainly — a thin crescent is barely there
     const beamMoonAlt = Math.max(0, Math.min(1, moonAltDeg / 35));
     const beamMoonOpacity = Math.pow(illum.fraction, 1.8) * beamMoonAlt * (1 - dayF) * 0.85 * beamCloudAtten;
+    // The frame and sill are a photograph, and it was the one element in the
+    // scene never dimmed — lit at full daylight strength around the clock, so a
+    // correctly black moonless sky sat inside a sunlit window. Everything else
+    // here already dims: hills, snow, cloud. It now follows the same day factor,
+    // lifted a little by whatever moon there actually is, and floored rather
+    // than taken to black, because a real sill at night is dim, not invisible.
+    const frameMoonLift = Math.pow(illum.fraction, 1.4) * beamMoonAlt * (1 - dayF);
+    els.frameImg.style.filter =
+      `brightness(${(0.30 + 0.70*dayF + 0.16*frameMoonLift).toFixed(3)})`;
+
     els.beamSun.style.opacity = beamSunOpacity;
     els.beamMoon.style.opacity = beamMoonOpacity;
 
