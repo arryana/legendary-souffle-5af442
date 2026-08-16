@@ -516,13 +516,17 @@
         <image id="cupImg" href="candlerstand-cup.png" x="100.9" y="438.1" width="178.25" height="116.25"/>
       </g>
 
-      <!-- LONG-TERM pillar stand (days): a different object entirely, from its
-           own photo — a wide flat brass plate on a baluster stem over its own
-           base. A multi-day pillar rests on top of it; nothing from the
-           short-term stand appears here. -->
+      <!-- LONG-TERM pillar stand (days): a different object entirely, and the
+           WHOLE of it in one picture — flat brass plate, baluster stem,
+           hammered copper dish, lion-paw feet — cut straight out of its own
+           photo. It is deliberately a single image and not a stack of parts:
+           the previous version was a crop of just the plate, which had no
+           bottom of its own and so borrowed the short-term stand's base. A
+           multi-day pillar rests on the plate; nothing from the short-term
+           stand appears here. -->
       <g id="pillarStand" style="display:none">
-        <image id="pillarPlateImg" href="candlerstand-pillarplate.png"
-               x="40" y="406.1" width="300" height="143.6"/>
+        <image href="candlerstand-pillar.png"
+               x="27.8" y="425.5" width="323.1" height="234.5"/>
       </g>
 
       <!-- glow -->
@@ -691,12 +695,16 @@ const CUP_TRAY_SAFE_HALF_WIDTH = 90;
 // pillar candle's own insertion point already sits close to this edge, so
 // without a floor here the "flat lying" pin overhangs the plate's actual
 // (elliptical, tapering) visible surface and reads as dangling off it.
-const PILLAR_PLATE_SAFE_HALF_WIDTH = 105;
-// the wide pillar plate's own front-rim curve, measured from its photo —
-// the pillar candle's base follows this exact arc (see waxBottomPath())
-// instead of a flat line, so it reads as resting ON the curved plate
-// rather than cutting straight through it.
-const PLATE_RIM_CX = 190, PLATE_RIM_CY = 438.6, PLATE_RIM_RX = 139.7, PLATE_RIM_RY = 25.1;
+const PILLAR_PLATE_SAFE_HALF_WIDTH = 84;
+// the pillar plate's own front-rim curve, measured off candlerstand-pillar.png
+// itself rather than guessed: in that cut-out the plate's widest row sits 42px
+// down from the top with its rim spanning 234.5px either side of centre, and
+// the picture is drawn at 0.45 scale from x=27.8, y=425.5 — which puts the
+// rim ellipse exactly here. The pillar candle's base follows this arc (see
+// waxBottomPath()) instead of a flat line, so it reads as resting ON the
+// curved plate rather than cutting straight through it. Re-measure these if
+// the stand picture or its placement ever changes.
+const PLATE_RIM_CX = 190, PLATE_RIM_CY = 444.4, PLATE_RIM_RX = 105.5, PLATE_RIM_RY = 18.9;
 // the candle sits toward the back of the plate rather than right at its
 // front edge, so a visible strip of plate shows in front of it — same
 // curve as the plate's true rim, just lifted.
