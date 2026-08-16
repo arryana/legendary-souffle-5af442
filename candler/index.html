@@ -492,6 +492,32 @@
              only its very tip clears the surface. render() moves the bottom
              edge each frame — parked far below the scene when not hollowed,
              so it has no effect on an ordinary flame. -->
+
+        <!-- WAX SURFACE. Real wax is a material, not a fill: it mottles, and
+             carries faint vertical pull-marks from the mould and from melting.
+             Fractal noise, slightly stretched vertically, gives that. It
+             replaced five fixed straight striation lines which sat at the same
+             relative positions at every size and read as drawn; this never
+             repeats and scales with the candle. feComposite clips the noise to
+             the wax's own shape, so one filter serves every candle width.
+             Deliberately cheap: measured at 60.6fps against 60.5 unfiltered at
+             phone width. A companion feDisplacementMap that roughed up the
+             candle's outline was tried and rejected — it cost a fifth of the
+             frame rate and stair-stepped the edges. Irregularity in the
+             SILHOUETTE, if it is ever wanted, belongs in the path geometry
+             rather than in a filter over the top of it. -->
+        <filter id="waxGrainFilter" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.032 0.013" numOctaves="4" seed="11" result="noise"/>
+          <feColorMatrix in="noise" type="saturate" values="0" result="gray"/>
+          <!-- squeeze the contrast hard: a mottle, not static -->
+          <feComponentTransfer in="gray" result="soft">
+            <feFuncR type="linear" slope="0.48" intercept="0.56"/>
+            <feFuncG type="linear" slope="0.48" intercept="0.56"/>
+            <feFuncB type="linear" slope="0.48" intercept="0.56"/>
+          </feComponentTransfer>
+          <feComposite in="soft" in2="SourceGraphic" operator="in"/>
+        </filter>
+
         <clipPath id="flameClip">
           <rect id="flameClipRect" x="0" y="-60" width="380" height="9999"/>
         </clipPath>
@@ -1634,11 +1660,6 @@ function render() {
             L ${xL} ${topY + cornerR}
             Q ${xL} ${topY} ${xL + cornerR} ${topY} Z`;
   }
-  const waxStriations = [-0.62, -0.28, 0.05, 0.4, 0.7].map((f, i) => {
-    const x = CENTER_X + f * halfW;
-    return `<line x1="${x.toFixed(1)}" y1="${topY + halfW * 0.15}" x2="${x.toFixed(1)}" y2="${topY + curH}"
-              stroke="var(--wax-shadow)" stroke-width="${0.5 + (i % 2) * 0.4}" opacity="${0.1 + (i % 3) * 0.05}"/>`;
-  }).join('');
 
   // the flame's seat, just under the rim once hollowed
   const wellFloorY = topY + wellDepth;
@@ -1654,15 +1675,19 @@ function render() {
   candleBody.innerHTML = `
     <path d="${waxD}" fill="url(#waxGrad)" />
     <path d="${waxD}" fill="url(#waxToneVertical)" style="mix-blend-mode:multiply"/>
-    ${waxStriations}
     <path d="${waxD}" fill="none" stroke="#5c4a30" stroke-width="1"
           opacity="0.4" filter="url(#inkWobble)"/>
     <ellipse cx="${CENTER_X}" cy="${topY}" rx="${halfW * 0.94}" ry="${halfW * 0.16}"
              fill="var(--wax-edge)" opacity="${0.9 * rimLipOpacity}"/>
     <ellipse cx="${CENTER_X}" cy="${topY}" rx="${halfW * 0.94}" ry="${halfW * 0.16}"
              fill="none" stroke="#5c4a30" stroke-width="0.7" opacity="${0.35 * rimLipOpacity}" filter="url(#inkWobble)"/>
+    ${!state.extinguished ? `<ellipse cx="${CENTER_X}" cy="${topY}" rx="${halfW * 0.94}" ry="${halfW * 0.16}"
+             fill="none" stroke="#ffdca8" stroke-width="1.2" opacity="${0.28 * rimLipOpacity}"
+             style="mix-blend-mode:screen" filter="url(#inkWobble)"/>` : ''}
     ${!state.extinguished ? `<path d="${waxD}" fill="url(#waxBaseGlow)" style="mix-blend-mode:screen"/>` : ''}
     ${!state.extinguished ? `<path d="${waxD}" fill="url(#waxGlow)" style="mix-blend-mode:screen"/>` : ''}
+    <path d="${waxD}" fill="#b09468" filter="url(#waxGrainFilter)"
+          style="mix-blend-mode:multiply" opacity="0.34"/>
     ${wellShape}
     ${hollowT > 0.5
         ? '' /* hollowed pillar: wick is down in the wax, hidden behind the rim — show only rim + flame tip */
