@@ -221,6 +221,17 @@
     gap: 6px;
   }
 
+  /* On a wide screen the two control pills sit side by side instead of
+     stacked. Stacking is the phone case: each pill is a full-width row that
+     scrolls sideways when a narrow screen cannot fit it. That column rule was
+     unconditional, so a 1200px desktop inherited the phone layout — two pills
+     stacked, with empty space either side, spending ~50px of vertical room on
+     the screens least short of horizontal room. Must stay AFTER the
+     .panel-wrap rule above: same specificity, so source order decides. */
+  @media (min-width: 820px) {
+    .panel-wrap { flex-direction: row; align-items: center; gap: 14px; }
+  }
+
   .icon-btn {
     font-size: 17px;
     line-height: 1;
@@ -302,6 +313,26 @@
     font-size: 10px;
     color: var(--ink-dim);
     white-space: nowrap;
+  }
+  /* The chip's time is an input, not a label. A pin IS the alarm, so being
+     able to type into it is what lets someone ask for "25m" exactly, without
+     adding a single control to the screen. Styled to read as text until you
+     put the cursor in it. */
+  .pin-chip input.pin-time {
+    background: none;
+    border: none;
+    border-bottom: 1px dotted rgba(183, 140, 86, 0.45);
+    color: inherit;
+    font: inherit;
+    width: 4.4em;
+    text-align: center;
+    padding: 0 1px;
+    cursor: text;
+  }
+  .pin-chip input.pin-time:focus {
+    outline: none;
+    border-bottom-color: rgba(230, 190, 120, 0.9);
+    color: var(--ink);
   }
   .pin-chip.fallen { opacity: 0.45; cursor: pointer; }
   .pin-chip button {
@@ -1126,17 +1157,86 @@ function hidePinTooltip() {
 }
 
 // ---------- pin list (the little chips under the panel) ----------
+// Index of the chip currently being typed into, or null. The list re-renders
+// about once a second as the candle burns; without this guard that redraw
+// replaces the input under the cursor and eats the digits as they are typed.
+let editingPinIdx = null;
+
 function renderPinList() {
+  if (editingPinIdx !== null) return;
   const total = burnDurationMs(state.size);
   pinList.innerHTML = state.pins.map((pin, i) => {
-    const icon = pin.icon || '📌';
+    const icon = pin.icon || '\u{1F4CC}';
     if (pin.fallen) {
       return `<span class="pin-chip fallen" data-snooze="${i}" aria-label="Rung. Tap to ring again in ${SNOOZE_MINUTES} minutes" title="Rung — tap to ring again in ${SNOOZE_MINUTES}m">${icon}</span>`;
     }
     const remainMs = Math.max(0, state.waxFraction - pin.fraction) * total;
-    return `<span class="pin-chip">${icon} ${formatDuration(remainMs)}<button type="button" data-remove="${i}" aria-label="Remove pin">✕</button></span>`;
+    const t = formatDuration(remainMs);
+    return `<span class="pin-chip">${icon} <input class="pin-time" type="text" spellcheck="false"
+        data-time="${i}" value="${t}" aria-label="Rings in ${t}. Type a new time."
+        title="Type a time — 25m, 1h30, 2d">` +
+      `<button type="button" data-remove="${i}" aria-label="Remove pin">\u2715</button></span>`;
   }).join('');
 }
+
+// Accepts what someone would actually type: 25m, 90, 1h, 1h30, 1h30m, 2d, 45s.
+// A bare number means minutes, which is the overwhelmingly common case.
+function parsePinDuration(text) {
+  const t = String(text).trim().toLowerCase().replace(/\s+/g, '');
+  if (!t) return null;
+  if (/^\d+(\.\d+)?$/.test(t)) return parseFloat(t) * 60_000;
+  const unit = { d: 86_400_000, h: 3_600_000, m: 60_000, s: 1000 };
+  const re = /(\d+(?:\.\d+)?)(d|h|m|s)/g;
+  let match, ms = 0, any = false, consumed = 0;
+  while ((match = re.exec(t))) {
+    any = true; consumed = re.lastIndex;
+    ms += parseFloat(match[1]) * unit[match[2]];
+  }
+  // a trailing bare number carries the next unit down, so "1h30" is 90 minutes
+  const tail = t.slice(consumed);
+  if (/^\d+$/.test(tail)) {
+    const last = t[consumed - 1];
+    ms += parseFloat(tail) * (last === 'd' ? 3_600_000 : last === 'h' ? 60_000 : 1000);
+    any = true;
+  }
+  return any ? ms : null;
+}
+
+// Typing a time runs the chip's own sum backwards: the chip shows
+// (waxFraction - pin.fraction) * total, so a wanted wait gives the height the
+// pin has to move to. clampPinFraction then applies the same limits dragging
+// obeys — a pin cannot sit above the wax that is left, or nearer than the
+// minimum wait — so an impossible request lands on the closest honest answer
+// rather than being accepted and quietly lied about.
+function commitPinTime(idx, text) {
+  editingPinIdx = null;
+  const pin = state.pins[idx];
+  if (!pin || pin.fallen) { renderPinList(); return; }
+  const ms = parsePinDuration(text);
+  if (ms === null) { renderPinList(); return; }
+  const total = burnDurationMs(state.size);
+  movePinTo(pin, clampPinFraction(state.waxFraction - ms / total, pin));
+  renderPinList();
+  saveState();
+}
+
+pinList.addEventListener('focusin', (e) => {
+  const idx = e.target.getAttribute && e.target.getAttribute('data-time');
+  if (idx === null || idx === undefined) return;
+  editingPinIdx = parseInt(idx, 10);
+  e.target.select();
+});
+pinList.addEventListener('focusout', (e) => {
+  const idx = e.target.getAttribute && e.target.getAttribute('data-time');
+  if (idx === null || idx === undefined) return;
+  commitPinTime(parseInt(idx, 10), e.target.value);
+});
+pinList.addEventListener('keydown', (e) => {
+  const idx = e.target.getAttribute && e.target.getAttribute('data-time');
+  if (idx === null || idx === undefined) return;
+  if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+  else if (e.key === 'Escape') { e.preventDefault(); editingPinIdx = null; renderPinList(); }
+});
 pinList.addEventListener('click', (e) => {
   const removeIdx = e.target.getAttribute('data-remove');
   if (removeIdx !== null) { removePin(parseInt(removeIdx, 10)); return; }
