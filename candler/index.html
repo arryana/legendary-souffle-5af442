@@ -497,20 +497,33 @@
         </clipPath>
       </defs>
 
-      <!-- real photographed brass-and-copper stand. The saucer+cup render
-           behind the candle; the candle's own bottom edge is curved to
-           match the rim's curve (see PLATE_RIM_*/CUP_RIM_* in the script)
-           so it sits AT the rim rather than cutting through it, and the
-           front lip redraws on top of that so the candle reads as behind
-           the near wall / in front of the far wall, like it actually
-           would sitting inside a cup. -->
-      <image href="candlerstand-saucer-cutout.png" x="50.5" y="523.3" width="271.25" height="124.0"/>
-      <image id="cupImg" href="candlerstand-cup.png" x="100.9" y="438.1" width="178.25" height="116.25"/>
-      <!-- wide flat plate, swapped in for pillar mode in place of the cup —
-           a multi-day pillar just rests on top rather than sitting in a
-           cup sized for a normal candle. Hidden otherwise. -->
-      <image id="pillarPlateImg" href="candlerstand-pillarplate.png"
-             x="40" y="406.1" width="300" height="143.6" style="display:none"/>
+      <!-- TWO SEPARATE STANDS, two separate photographed objects. Exactly one
+           of them is ever on screen: the short-term stand for candles that
+           burn in hours, the pillar stand for the multi-day pillar. They are
+           NOT layers of one another and must never both render — mixing them
+           stacks two different bases into one impossible object. Each group
+           below holds one whole stand, and setStandForMode() swaps them. -->
+
+      <!-- SHORT-TERM stand (hours): its own photo — footed copper saucer with
+           the brass cup sitting on it. The candle's bottom edge is curved to
+           match the cup rim (see CUP_RIM_* in the script) so it sits AT the
+           rim rather than cutting through it, and #lipImg — the cup's near
+           rim, also from this same photo — redraws on top of the candle so it
+           reads as nested inside the cup, behind the near wall and in front
+           of the far wall, like it actually would. -->
+      <g id="shortStand">
+        <image href="candlerstand-saucer-cutout.png" x="50.5" y="523.3" width="271.25" height="124.0"/>
+        <image id="cupImg" href="candlerstand-cup.png" x="100.9" y="438.1" width="178.25" height="116.25"/>
+      </g>
+
+      <!-- LONG-TERM pillar stand (days): a different object entirely, from its
+           own photo — a wide flat brass plate on a baluster stem over its own
+           base. A multi-day pillar rests on top of it; nothing from the
+           short-term stand appears here. -->
+      <g id="pillarStand" style="display:none">
+        <image id="pillarPlateImg" href="candlerstand-pillarplate.png"
+               x="40" y="406.1" width="300" height="143.6"/>
+      </g>
 
       <!-- glow -->
       <circle id="glowCircle" cx="190" cy="300" r="70" fill="url(#glow)"/>
@@ -518,9 +531,11 @@
       <!-- candle body -->
       <g id="candleBody"></g>
 
-      <!-- front lip: the cup's near rim, redrawn in front of the candle
-           so it visually nests inside. Specific to the narrow cup, so
-           pillar mode (the flat plate) hides it. -->
+      <!-- front lip: part of the SHORT-TERM stand — the cup's near rim, from
+           that same photo, redrawn in front of the candle so it visually nests
+           inside. Lives outside #shortStand only because it has to paint after
+           the candle body; setStandForMode() shows and hides it in lockstep
+           with the rest of that stand. -->
       <image id="lipImg" href="candlerstand-lip.png" x="100.9" y="438.1" width="178.25" height="116.25"/>
 
       <!-- timer pins: each pin gets its own persistent <g>, created in
@@ -638,7 +653,9 @@ const pinsGroup      = document.getElementById('pinsGroup');
 const glowCircle     = document.getElementById('glowCircle');
 const cupImg         = document.getElementById('cupImg');
 const lipImg         = document.getElementById('lipImg');
-const pillarPlateImg = document.getElementById('pillarPlateImg');
+// the two stands, each a whole object — see updateStandForMode()
+const shortStand     = document.getElementById('shortStand');
+const pillarStand    = document.getElementById('pillarStand');
 const readout        = document.getElementById('readout');
 const pinTooltip     = document.getElementById('pinTooltip');
 const scene          = document.getElementById('scene');
@@ -1485,12 +1502,18 @@ pillarCheck.addEventListener('change', () => {
   saveState();
 });
 
-// swap the narrow cup (+ its front lip and wick-trimmer tool) for the wide
-// flat plate, and back, whenever pillar mode is toggled or restored
+// swap the WHOLE short-term stand for the WHOLE pillar stand, and back,
+// whenever pillar mode is toggled or restored. These are two separate
+// photographed objects, so this is a straight either/or — never show one
+// stand's parts on top of the other's, which stacks two different bases
+// into a single impossible stand. #lipImg belongs to the short-term stand
+// too; it only sits outside that group because it has to paint after the
+// candle body, so it toggles together with it here.
 function updateStandForMode() {
-  cupImg.style.display = state.pillarMode ? 'none' : '';
-  lipImg.style.display = state.pillarMode ? 'none' : '';
-  pillarPlateImg.style.display = state.pillarMode ? '' : 'none';
+  const pillar = state.pillarMode;
+  shortStand.style.display = pillar ? 'none' : '';
+  lipImg.style.display     = pillar ? 'none' : '';
+  pillarStand.style.display = pillar ? '' : 'none';
 }
 pillarSlider.addEventListener('input', () => {
   state.pillarDays = parseInt(pillarSlider.value, 10);
