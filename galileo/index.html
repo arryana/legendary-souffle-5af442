@@ -51,16 +51,30 @@
     padding:2vh 4vw;
     gap:1.2vh;
   }
-  #instrument-wrap{
-    width:min(20vw, 190px);
-    height:min(78vh, 720px);
+  /* Three instruments stand in a row, sized by HEIGHT with width left to follow,
+     so they read as a set on a shelf rather than three things squeezed into equal
+     boxes. Each vessel is a different shape and keeps its own proportions. */
+  #instruments{
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    gap:min(3vw, 30px);
+    /* Sized by height, with width following from each vessel's own proportions —
+       but the three together are 1.09 times as wide as they are tall, so on a
+       narrow screen height has to be capped by the width available or the set
+       runs off the sides (the body does not scroll, so it would simply be cut
+       off rather than reachable). The 1.15 leaves a little slack over that 1.09. */
+    height:min(74vh, 690px, calc((96vw - 60px) / 0.82));
+  }
+  .instrument{
+    height:100%;
     filter:drop-shadow(0 24px 46px rgba(0,0,0,.55));
   }
+  .instrument svg{ height:100%; width:auto; overflow:visible; display:block; }
   /* the flag and its note/search live in one tight cluster so a shown note doesn't add
      a whole extra row of #stage's gap on top of its own height — keeps the bottom of the
      control stack from getting pushed past the fold on shorter screens */
   #loc-cluster{ display:flex; flex-direction:column; align-items:center; gap:2px; }
-  #instrument-wrap svg{ width:100%; height:100%; overflow:visible; }
 
   .bulb-group{ transition: transform 1.4s cubic-bezier(.34,.1,.2,1); }
   .tag-chip{
@@ -129,8 +143,14 @@
     font-family:'Cormorant Garamond', serif; min-height:1.2em;
   }
 
+  /* On a phone all three still fit across, just small — the tags were already
+     too small to read at rest there and have always been tap-to-enlarge. What
+     changes is how big that enlargement gets: see HOVER_SCALE below, which goes
+     up substantially on a narrow screen so a tapped float is properly legible
+     rather than merely bigger. */
   @media (orientation:portrait){
-    #instrument-wrap{ width:min(52vw, 230px); height:min(66vh, 560px); }
+    #stage{ padding:2vh 2vw; }
+    #instruments{ gap:8px; height:min(62vh, 540px, calc((96vw - 30px) / 0.82)); }
   }
 </style>
 </head>
@@ -141,8 +161,8 @@
 </style>
 <a id="backlink" href="../index.html">← sagne</a>
 <div id="stage">
-  <div id="instrument-wrap">
-    <svg id="vessel-svg" viewBox="595 20 220 725" preserveAspectRatio="xMidYMid meet">
+  <!-- the defs live once, off-screen; each instrument's svg refers to them by id -->
+  <svg id="defs-holder" width="0" height="0" aria-hidden="true" style="position:absolute">
       <defs>
         <linearGradient id="liquidFill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="#d2d6d9"/>
@@ -163,16 +183,10 @@
           <stop offset="1" stop-color="#fff" stop-opacity="0"/>
         </linearGradient>
         <filter id="hlBlur" x="-200%" y="-40%" width="500%" height="180%"><feGaussianBlur stdDeviation="0.7"/></filter>
-        <mask id="hlMask"><rect x="649" y="500" width="13" height="138" fill="url(#hlY)"/></mask>
+        <mask id="hlMask"><rect x="54" y="480" width="13" height="138" fill="url(#hlY)"/></mask>
       </defs>
-      <g id="bulb-layer"></g>
-      <g id="tag-layer"></g>
-      <image href="vessel-dark.png" x="595" y="20" width="220" height="725" style="pointer-events:none;"/>
-      <rect x="649" y="500" width="13" height="138" fill="url(#hlX)" mask="url(#hlMask)" filter="url(#hlBlur)" style="pointer-events:none;"/>
-      <g id="hit-layer"></g>
-      <g id="hover-layer"></g>
-    </svg>
-  </div>
+  </svg>
+  <div id="instruments"></div>
 
   <div id="unit-toggle">
     <button id="btn-c" aria-label="Celsius">C</button>
@@ -193,26 +207,62 @@
 (function(){
   "use strict";
 
-  // twelve bulbs at a clean 5°F step (was nine at 7.5°) — finer resolution,
-  // same 30-85°F spread the thermometer has always covered
-  const BULBS_F = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85];
+  // ---- the three instruments ----
+  // A Galileo thermometer can only read inside the range its floats were made
+  // for: outside it every float sinks, or every float rises. One instrument
+  // tagged 30-85F had nothing whatever to say about a Dallas afternoon. Three of
+  // them, each made for a different stretch, cover 12F to 111F between them — and
+  // at a FINER step than the single one managed, 3F against 5F, because none of
+  // them is paying for degrees it never sees.
+  //
+  // Nothing here adapts and nothing is fetched. The tags are etched numbers, the
+  // same for every visitor, exactly as on the real objects; three instruments is
+  // simply what you would own if you wanted to read that much range.
+  //
+  // The two that are off-scale are not decoration, and they are deliberately not
+  // dimmed or hidden. Every float up means "colder than anything I can read";
+  // every float down means "hotter". Read together the three bracket the
+  // temperature even when only one of them is giving a number.
+  const STEP_F = 4;
+
+  // Interior geometry, measured off each cut-out. halfWidth is the room a float
+  // has either side of centre, sampled down the column — the teardrop is 105
+  // units across its belly and closes to 74 at the neck, so a float riding high
+  // in it genuinely has less room to drift than one sitting in the middle.
+  // (The last sample or two on the capsule were smoothed: the thick glass of the
+  // base confuses the trace where it meets the foot.)
+  const INSTRUMENTS = [
+    { key:'capsule', file:'vessel-capsule.png', vw:202, vh:612, scale:0.66,
+      cx:101.4, top:75, bot:557, from:12, count:8,
+      halfWidth:[37.2,52,58.8,61.2,65.2,69.6,69.6,70,72.8,72.8,70,67.2,66,66.8,66.8,69.6,69.2,72.4,72.4,72.8,72.4,72.4,72,72,72,72,72,71.2] },
+    { key:'tube', file:'vessel-dark.png', vw:220, vh:725, scale:1.00,
+      cx:109, top:143, bot:645, from:44, count:12,
+      // straight-sided, so one figure serves the whole column. Traced by hand
+      // rather than automatically: this photograph's walls are far fainter than
+      // the other two and the automatic trace loses them below the halfway mark.
+      halfWidth:[48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48],
+      highlight:{ x:54, y:480, w:13, h:138 } },
+    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.56,
+      cx:139.7, top:171, bot:554, from:92, count:5,
+      halfWidth:[38.4,42.8,47.6,52,58,67.2,72,76.4,80.8,85.2,89.2,92.4,95.6,98.4,100.8,102.8,104.4,105.2,105.2,105.2,103.6,101.2,97.6,92.8,86.4,78,66,48.8] },
+  ];
+
   const FLOAT_IMAGES = ['blue','aqua','green','yellow','gold','orange','red','pink','palepink','purple','lavender','silver'];
-  const X_JITTER = [-22, 18, -10, 24, -19, -27, 11, -16, 21, 26, -13, -5];
+  // The floats are standard spheres — the same objects, dropped into different
+  // vessels — so they come out the same size on screen wherever they are. Their
+  // size in a vessel's own units therefore has to divide back out both how many
+  // units tall that vessel is AND how far down it is scaled: a float in an
+  // instrument drawn at 0.56 must be 1/0.56 as large in its own coordinates to
+  // look identical to one in the tube. Which is also why the smaller instruments
+  // hold fewer of them — a smaller vessel, same spheres.
+  const FLOAT_W_AT_725 = 48;
+  const FLOAT_RATIO = 660/370;
+  const TAG_FONT_FRAC = 0.16;
 
-  // display size for each float sprite (native crop is 340x435)
-  // sized so a bulb reads as roughly a real pea against the tube (tube interior ~130 units wide)
-  const FLOAT_W = 48;
-  const FLOAT_H = FLOAT_W * (660/370);
-  const TAG_FONT_SIZE = FLOAT_W * 0.16;
-  const TAG_TEXT_X = 1;
-  // coin's true visual center measured at its widest row (y=95 of 107px sprite),
-  // plus a baseline correction since SVG text y= is the baseline, not the glyph's visual middle
-  const TAG_TEXT_Y = FLOAT_H/2 - FLOAT_H*0.08;
-
-  // tube interior bounds measured from the traced vessel (native SVG coords)
-  const TUBE_CX = 703;
-  const TUBE_Y_TOP = 163;
-  const TUBE_Y_BOTTOM = 632;
+  // How far a float sits from centre. Fixed per position so it never jitters
+  // frame to frame, spread so neighbours lean opposite ways, and scaled at draw
+  // time by whatever room the glass actually has at that height.
+  function leanFor(i){ return Math.sin(i*2.399 + 0.7) * 0.78; }
 
   let unit = 'f';
   let currentTempF = 65;
@@ -220,52 +270,110 @@
   let weatherFetchFailures = 0; // consecutive failed weather fetches (location already known) --
   // separate from a geolocation failure, which has its own note text and its own counter-less path
 
-  const bulbLayer = document.getElementById('bulb-layer');
-  const tagLayer = document.getElementById('tag-layer');
-  const hitLayer = document.getElementById('hit-layer');
-  const hoverLayer = document.getElementById('hover-layer');
+  const instrumentsWrap = document.getElementById('instruments');
   const btnC = document.getElementById('btn-c');
   const btnF = document.getElementById('btn-f');
 
-  const HOVER_SCALE = 2.4;
+  // A tapped float is shown enlarged. On a phone all three instruments are small,
+  // so the tags are unreadable at rest — they always were — and this enlargement
+  // is how you read one. It therefore has to be much bigger on a narrow screen,
+  // not the same 2.4x that suits a desktop.
+  function hoverScale(){ return window.matchMedia('(orientation:portrait)').matches ? 5.2 : 2.6; }
 
   function fToC(f){ return (f-32)*5/9; }
 
-  const bulbEls = BULBS_F.map((t,i)=>{
-    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-    g.setAttribute('class','bulb-group');
-    g.innerHTML = `<image href="floats/${FLOAT_IMAGES[i]}.png" x="${-FLOAT_W/2}" y="${-FLOAT_H/2}" width="${FLOAT_W}" height="${FLOAT_H}"/>`;
-    bulbLayer.appendChild(g);
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const bulbEls = [];
 
-    const tg = document.createElementNS('http://www.w3.org/2000/svg','g');
-    tg.setAttribute('class','tag-group');
-    tg.innerHTML = `<text x="${TAG_TEXT_X}" y="${TAG_TEXT_Y}" text-anchor="middle" font-size="${TAG_FONT_SIZE}" class="tag-chip" fill="#000000">${Math.round(t)}°</text>`;
-    tagLayer.appendChild(tg);
+  INSTRUMENTS.forEach((inst, instIdx) => {
+    const box = document.createElement('div');
+    box.className = 'instrument';
+    // The three are not the same size. Standing them at equal heights made the
+    // teardrop in particular look wrong — it is a wide shape, so matching the
+    // tube's height made it enormous beside it. A smaller instrument either side
+    // reads as what it is: a main one with two lesser ones kept for the ranges it
+    // cannot reach. They share a baseline, as things standing on a shelf do.
+    box.style.height = (inst.scale*100) + '%';
+    const svg = document.createElementNS(SVGNS,'svg');
+    svg.setAttribute('viewBox', `0 0 ${inst.vw} ${inst.vh}`);
+    svg.setAttribute('preserveAspectRatio','xMidYMax meet');
+    const bulbLayer = document.createElementNS(SVGNS,'g');
+    const tagLayer  = document.createElementNS(SVGNS,'g');
+    svg.appendChild(bulbLayer); svg.appendChild(tagLayer);
 
-    // zoomed-in clone shown on hover, rendered above the glass so it's never clipped
-    const hg = document.createElementNS('http://www.w3.org/2000/svg','g');
-    hg.setAttribute('class','hover-clone');
-    hg.innerHTML = `
-      <image href="floats/${FLOAT_IMAGES[i]}.png" x="${-FLOAT_W/2*HOVER_SCALE}" y="${-FLOAT_H/2*HOVER_SCALE}" width="${FLOAT_W*HOVER_SCALE}" height="${FLOAT_H*HOVER_SCALE}"/>
-      <text x="${TAG_TEXT_X*HOVER_SCALE}" y="${TAG_TEXT_Y*HOVER_SCALE}" text-anchor="middle" font-size="${TAG_FONT_SIZE*HOVER_SCALE}" class="tag-chip" fill="#000000">${Math.round(t)}°</text>
-    `;
-    hoverLayer.appendChild(hg);
+    const vessel = document.createElementNS(SVGNS,'image');
+    vessel.setAttribute('href', inst.file);
+    vessel.setAttribute('x',0); vessel.setAttribute('y',0);
+    vessel.setAttribute('width', inst.vw); vessel.setAttribute('height', inst.vh);
+    vessel.style.pointerEvents = 'none';
+    svg.appendChild(vessel);
 
-    // invisible larger hit target, easier to hover/tap than the tiny coin itself
-    const hit = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    hit.setAttribute('class','hit-circle');
-    hit.setAttribute('r', FLOAT_W*0.7);
-    hit.setAttribute('fill', 'transparent');
-    hitLayer.appendChild(hit);
+    if(inst.highlight){
+      const h = inst.highlight;
+      const r = document.createElementNS(SVGNS,'rect');
+      r.setAttribute('x',h.x); r.setAttribute('y',h.y);
+      r.setAttribute('width',h.w); r.setAttribute('height',h.h);
+      r.setAttribute('fill','url(#hlX)'); r.setAttribute('mask','url(#hlMask)');
+      r.setAttribute('filter','url(#hlBlur)');
+      r.style.pointerEvents = 'none';
+      svg.appendChild(r);
+    }
 
-    function showZoom(){ hg.classList.add('show'); }
-    function hideZoom(){ hg.classList.remove('show'); }
-    hit.addEventListener('pointerenter', showZoom);
-    hit.addEventListener('pointerleave', hideZoom);
-    hit.addEventListener('touchstart', (e)=>{ e.preventDefault(); showZoom(); }, {passive:false});
-    hit.addEventListener('touchend', hideZoom);
+    const hitLayer   = document.createElementNS(SVGNS,'g');
+    const hoverLayer = document.createElementNS(SVGNS,'g');
+    svg.appendChild(hitLayer); svg.appendChild(hoverLayer);
+    box.appendChild(svg);
+    instrumentsWrap.appendChild(box);
 
-    return { el: g, tagEl: tg, hoverEl: hg, hitEl: hit, hoverText: hg.querySelector('text'), temp: t, x: X_JITTER[i] };
+    const fw = FLOAT_W_AT_725 * (inst.vh/725) / inst.scale;
+    const fh = fw * FLOAT_RATIO;
+    inst.fw = fw; inst.fh = fh;
+
+    for(let i=0;i<inst.count;i++){
+      const t = inst.from + i*STEP_F;
+      const img = FLOAT_IMAGES[(i + instIdx*5) % FLOAT_IMAGES.length];
+      const tagY = fh/2 - fh*0.08;
+      const fs = fw*TAG_FONT_FRAC;
+
+      const g = document.createElementNS(SVGNS,'g');
+      g.setAttribute('class','bulb-group');
+      g.innerHTML = `<image href="floats/${img}.png" x="${-fw/2}" y="${-fh/2}" width="${fw}" height="${fh}"/>`;
+      bulbLayer.appendChild(g);
+
+      const tg = document.createElementNS(SVGNS,'g');
+      tg.setAttribute('class','tag-group');
+      tg.innerHTML = `<text x="1" y="${tagY}" text-anchor="middle" font-size="${fs}" class="tag-chip" fill="#000000">${Math.round(t)}°</text>`;
+      tagLayer.appendChild(tg);
+
+      // zoomed clone shown on hover/tap, above the glass so it is never clipped.
+      // Built at 1x and scaled by an attribute so the amount can change with the
+      // screen without rebuilding anything.
+      const hg = document.createElementNS(SVGNS,'g');
+      hg.setAttribute('class','hover-clone');
+      const inner = document.createElementNS(SVGNS,'g');
+      inner.innerHTML = `
+        <image href="floats/${img}.png" x="${-fw/2}" y="${-fh/2}" width="${fw}" height="${fh}"/>
+        <text x="1" y="${tagY}" text-anchor="middle" font-size="${fs}" class="tag-chip" fill="#000000">${Math.round(t)}°</text>`;
+      hg.appendChild(inner);
+      hoverLayer.appendChild(hg);
+
+      const hit = document.createElementNS(SVGNS,'circle');
+      hit.setAttribute('class','hit-circle');
+      hit.setAttribute('r', fw*0.7);
+      hit.setAttribute('fill','transparent');
+      hitLayer.appendChild(hit);
+
+      const show = ()=>{ hg.classList.add('show'); };
+      const hide = ()=>{ hg.classList.remove('show'); };
+      hit.addEventListener('pointerenter', show);
+      hit.addEventListener('pointerleave', hide);
+      hit.addEventListener('touchstart', (e)=>{ e.preventDefault(); show(); }, {passive:false});
+      hit.addEventListener('touchend', hide);
+
+      bulbEls.push({ inst, el:g, tagEl:tg, hoverEl:hg, hoverInner:inner,
+                     hitEl:hit, hoverText:inner.querySelector('text'),
+                     temp:t, lean:leanFor(i) });
+    }
   });
 
   function tagLabel(tempF){
@@ -281,23 +389,75 @@
     });
   }
 
-  function updatePositions(){
-    const n = BULBS_F.length;
-    bulbEls.forEach((b,i)=>{
-      const buoyancy = b.temp - currentTempF;
-      const k = 0.11;
-      let frac = 0.5 - 0.5*Math.tanh(buoyancy*k);
-      const stagger = (i - (n-1)/2) * 14;
-      let y = TUBE_Y_TOP + frac*(TUBE_Y_BOTTOM-TUBE_Y_TOP) + stagger;
-      y = Math.max(TUBE_Y_TOP+8, Math.min(TUBE_Y_BOTTOM-8, y));
-      const x = TUBE_CX + b.x;
-      b.el.setAttribute('transform', `translate(${x},${y})`);
-      b.tagEl.setAttribute('transform', `translate(${x},${y})`);
-      b.hoverEl.setAttribute('transform', `translate(${x},${y})`);
-      b.hitEl.setAttribute('cx', x);
-      b.hitEl.setAttribute('cy', y);
-    });
+  // room either side of centre at a given height, read off the vessel's profile
+  function roomAt(inst, y){
+    const p = inst.halfWidth;
+    const f = Math.max(0, Math.min(1, (y - inst.top)/(inst.bot - inst.top)));
+    const k = f*(p.length-1), i = Math.floor(k), frac = k - i;
+    const hw = i >= p.length-1 ? p[p.length-1] : p[i] + (p[i+1]-p[i])*frac;
+    return Math.max(0, hw - inst.fw*0.5);
   }
+
+  function updatePositions(){
+    for(const inst of INSTRUMENTS){
+      const list = bulbEls.filter(b=>b.inst===inst);
+      const span = inst.bot - inst.top;
+
+      // where each float wants to be, from how far the temperature is from its tag
+      // Buoyancy is a threshold, not a slope: a sphere is either lighter than the
+      // liquid or heavier, and only the one within a degree of neutral hangs
+      // anywhere in between. At 0.11 the curve was so soft that half the floats
+      // sat permanently mid-column, which left no visible gap between the group
+      // that is up and the group that is down — and that gap IS the reading. At
+      // 0.45 a float one step from the temperature is already 97% of the way to
+      // its end, so the two groups separate cleanly and the lowest one still up
+      // is unmistakable.
+      for(const b of list){
+        const k = 0.45;
+        b.want = inst.top + (0.5 - 0.5*Math.tanh((b.temp - currentTempF)*k)) * span;
+      }
+
+      // A float's tag is the temperature at which it is neutrally buoyant, so a
+      // higher tag means a LESS dense sphere — and in a fluid at rest, lighter
+      // always sits above heavier, in the floating cluster and the sunken pile
+      // alike. Sorting by tag and then letting them rest on one another gets that
+      // for free. The old code staggered them by index and clamped to the ends,
+      // which left the sunk pile jumbled: at 62F it read 60, 55, 30, 35, 40, 50,
+      // 45 from the top down. The reading itself was right, but the pile was not
+      // an arrangement any liquid would produce.
+      const order = list.slice().sort((a,b)=> b.temp - a.temp);   // lightest first
+      const gap = inst.fw*0.42;                                   // resting against each other
+      // A float is drawn centred on its y, but the sprite is not symmetrical: a
+      // glass tip reaching 0.892*fw above the centre, and below the bulb a metal
+      // tag hanging to 0.875*fw. Placing a centre at the column's floor therefore
+      // dropped the tag straight through the base of the vessel. Inset both ends
+      // by what the sprite actually reaches, so a sunken float rests ON the floor
+      // by its tag — which is what it rests on in the real thing — and a risen one
+      // stops with its tip at the surface instead of poking out through the neck.
+      const hi = inst.top + inst.fw*0.892, lo = inst.bot - inst.fw*0.875;
+
+      let prev = -Infinity;
+      for(const b of order){ b.y = Math.max(b.want, prev + gap); prev = b.y; }
+      // if the stack has run out of the bottom of the glass, settle it back up
+      let next = lo;
+      for(let i=order.length-1;i>=0;i--){ order[i].y = Math.min(order[i].y, next); next = order[i].y - gap; }
+      prev = hi;
+      for(let i=0;i<order.length;i++){ order[i].y = Math.max(order[i].y, prev); prev = order[i].y + gap; }
+
+      const hs = hoverScale();
+      for(const b of list){
+        const x = inst.cx + b.lean * roomAt(inst, b.y);
+        const tr = `translate(${x},${b.y})`;
+        b.el.setAttribute('transform', tr);
+        b.tagEl.setAttribute('transform', tr);
+        b.hoverEl.setAttribute('transform', tr);
+        b.hoverInner.setAttribute('transform', `scale(${hs})`);
+        b.hitEl.setAttribute('cx', x);
+        b.hitEl.setAttribute('cy', b.y);
+      }
+    }
+  }
+  window.addEventListener('resize', updatePositions);
 
   function setUnit(u){
     unit = u;
