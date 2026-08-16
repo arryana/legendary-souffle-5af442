@@ -600,7 +600,7 @@
       <div class="ctrl">
         <input id="pillarCheck" type="checkbox" aria-label="pillar candle mode">
         <span class="icon">🗓️</span>
-        <input id="pillarSlider" type="range" min="2" max="7" step="1" value="4" aria-label="pillar burn length in days">
+        <input id="pillarSlider" type="range" min="2" max="5" step="1" value="4" aria-label="pillar burn length in days">
       </div>
     </div>
   </div>
@@ -732,7 +732,13 @@ const MAX_BURN_MINUTES = 1440;  // largest candle, full burn-down (24 hours)
 // candle wider than it is tall, a squat drum rather than a pillar.
 const PILLAR_HEIGHT = 380;
 const PILLAR_MIN_DAYS = 2;
-const PILLAR_MAX_DAYS = 7;
+// capped at 5 because that is the widest candle the real plate can actually
+// hold: the burn-time-from-wax-volume maths gives a 6-day pillar a half-width
+// of 112.6 and a 7-day one 121.3, against a plate whose rim measures 105.5 —
+// so those two hung over the edge resting on nothing. Raising this again means
+// solving that first (a narrower, taller pillar, or a wider frame), not just
+// changing the number — the slider's own max attribute has to match too.
+const PILLAR_MAX_DAYS = 5;
 // once this fraction of the pillar's total burn has elapsed, the flame
 // has sunk below the rim and the hollow-well rendering takes over
 const HOLLOW_START_FRACTION = 0.14; // roughly "day 1" of a 7-day burn
