@@ -64,7 +64,7 @@
        narrow screen height has to be capped by the width available or the set
        runs off the sides (the body does not scroll, so it would simply be cut
        off rather than reachable). The 1.15 leaves a little slack over that 1.09. */
-    height:min(74vh, 690px, calc((96vw - 60px) / 0.98));
+    height:min(74vh, 690px, calc((96vw - 60px) / 0.82));
   }
   .instrument{
     height:100%;
@@ -150,7 +150,7 @@
      rather than merely bigger. */
   @media (orientation:portrait){
     #stage{ padding:2vh 2vw; }
-    #instruments{ gap:8px; height:min(62vh, 540px, calc((96vw - 30px) / 0.98)); }
+    #instruments{ gap:8px; height:min(62vh, 540px, calc((96vw - 30px) / 0.82)); }
   }
 </style>
 </head>
@@ -233,7 +233,7 @@
   // base confuses the trace where it meets the foot.)
   const INSTRUMENTS = [
     { key:'capsule', file:'vessel-capsule.png', vw:202, vh:612,
-      cx:101.4, top:75, bot:584, from:12, count:14, scale:0.80,
+      cx:101.4, top:75, bot:527, from:12, count:14, scale:0.66,
       halfWidth:[37.2,52.8,60.4,62.8,68,69.6,70,70.4,72.8,70,67.2,66,66.8,69.6,69.6,72.8,72.4,72.8,72.4,72.4,72,72,72,72,71.2,58,39.6,47.2] },
     { key:'tube', file:'vessel-dark.png', vw:220, vh:725,
       cx:109, top:143, bot:612, from:54, count:12, scale:1.00,
@@ -242,7 +242,7 @@
       halfWidth:[48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48],
       highlight:{ x:54, y:480, w:13, h:138 } },
     { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615,
-      cx:139.7, top:89, bot:586, from:90, count:8, scale:0.72,
+      cx:139.7, top:100, bot:549, from:90, count:8, scale:0.56,
       halfWidth:[22.4,25.6,28.4,32,36,41.6,47.6,54.4,65.6,72,78,83.6,88.4,93.2,97.6,100.8,103.2,104.8,105.2,104.8,102.8,98.4,92.4,83.6,70.4,48.8,42,52.4] },
   ];
 
@@ -413,7 +413,14 @@
       // an arrangement any liquid would produce.
       const order = list.slice().sort((a,b)=> b.temp - a.temp);   // lightest first
       const gap = inst.fw*0.52;                                   // resting against each other
-      const hi = inst.top, lo = inst.bot;
+      // A float is drawn centred on its y, but the sprite is not symmetrical: a
+      // glass tip reaching 0.892*fw above the centre, and below the bulb a metal
+      // tag hanging to 0.875*fw. Placing a centre at the column's floor therefore
+      // dropped the tag straight through the base of the vessel. Inset both ends
+      // by what the sprite actually reaches, so a sunken float rests ON the floor
+      // by its tag — which is what it rests on in the real thing — and a risen one
+      // stops with its tip at the surface instead of poking out through the neck.
+      const hi = inst.top + inst.fw*0.892, lo = inst.bot - inst.fw*0.875;
 
       let prev = -Infinity;
       for(const b of order){ b.y = Math.max(b.want, prev + gap); prev = b.y; }
