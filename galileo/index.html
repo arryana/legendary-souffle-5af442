@@ -259,10 +259,17 @@
   const FLOAT_RATIO = 660/370;
   const TAG_FONT_FRAC = 0.16;
 
-  // How far a float sits from centre. Fixed per position so it never jitters
-  // frame to frame, spread so neighbours lean opposite ways, and scaled at draw
-  // time by whatever room the glass actually has at that height.
-  function leanFor(i){ return Math.sin(i*2.399 + 0.7) * 0.78; }
+  // How far a float sits from centre, as a fraction of the room the glass has
+  // there. Fixed per position so it never jitters frame to frame.
+  //
+  // Neighbours must lean firmly OPPOSITE, not merely differently: two spheres can
+  // only nest into each other if they are far enough apart sideways, and the old
+  // sequence happened to put several consecutive pairs nearly in line, which
+  // forced those to stack a full diameter apart and left the heap half tower.
+  // Strict alternation, varied a little in how far each goes so the heap does not
+  // look machined, packs them into two offset rows — which is how this many
+  // spheres actually settle in a vessel a bit over two floats wide.
+  function leanFor(i){ return (i % 2 ? -1 : 1) * (0.62 + 0.16*Math.sin(i*1.7)); }
 
   let unit = 'f';
   let currentTempF = 65;
@@ -401,58 +408,100 @@
   function updatePositions(){
     for(const inst of INSTRUMENTS){
       const list = bulbEls.filter(b=>b.inst===inst);
-      const span = inst.bot - inst.top;
+      const d = inst.fw*0.86;   // the bulb's own diameter, inside the taller sprite
 
-      // where each float wants to be, from how far the temperature is from its tag
-      // Buoyancy is a threshold, not a slope: a sphere is either lighter than the
-      // liquid or heavier, and only the one within a degree of neutral hangs
-      // anywhere in between. At 0.11 the curve was so soft that half the floats
-      // sat permanently mid-column, which left no visible gap between the group
-      // that is up and the group that is down — and that gap IS the reading. At
-      // 0.45 a float one step from the temperature is already 97% of the way to
-      // its end, so the two groups separate cleanly and the lowest one still up
-      // is unmistakable.
-      for(const b of list){
-        const k = 0.45;
-        b.want = inst.top + (0.5 - 0.5*Math.tanh((b.temp - currentTempF)*k)) * span;
-      }
-
-      // A float's tag is the temperature at which it is neutrally buoyant, so a
-      // higher tag means a LESS dense sphere — and in a fluid at rest, lighter
-      // always sits above heavier, in the floating cluster and the sunken pile
-      // alike. Sorting by tag and then letting them rest on one another gets that
-      // for free. The old code staggered them by index and clamped to the ends,
-      // which left the sunk pile jumbled: at 62F it read 60, 55, 30, 35, 40, 50,
-      // 45 from the top down. The reading itself was right, but the pile was not
-      // an arrangement any liquid would produce.
-      const order = list.slice().sort((a,b)=> b.temp - a.temp);   // lightest first
-      const gap = inst.fw*0.42;                                   // resting against each other
       // A float is drawn centred on its y, but the sprite is not symmetrical: a
       // glass tip reaching 0.892*fw above the centre, and below the bulb a metal
-      // tag hanging to 0.875*fw. Placing a centre at the column's floor therefore
-      // dropped the tag straight through the base of the vessel. Inset both ends
-      // by what the sprite actually reaches, so a sunken float rests ON the floor
-      // by its tag — which is what it rests on in the real thing — and a risen one
-      // stops with its tip at the surface instead of poking out through the neck.
+      // tag hanging to 0.875*fw. So the range a float may occupy is the column
+      // inset at both ends by what the sprite actually reaches — a sunken one
+      // then rests ON the floor by its tag, which is what it rests on in the real
+      // thing, and a risen one stops with its tip at the surface.
       const hi = inst.top + inst.fw*0.892, lo = inst.bot - inst.fw*0.875;
 
-      let prev = -Infinity;
-      for(const b of order){ b.y = Math.max(b.want, prev + gap); prev = b.y; }
-      // if the stack has run out of the bottom of the glass, settle it back up
-      let next = lo;
-      for(let i=order.length-1;i>=0;i--){ order[i].y = Math.min(order[i].y, next); next = order[i].y - gap; }
-      prev = hi;
-      for(let i=0;i<order.length;i++){ order[i].y = Math.max(order[i].y, prev); prev = order[i].y + gap; }
+      // Where each float wants to be. Buoyancy is a threshold, not a slope: a
+      // sphere is either lighter than the liquid or heavier, and only the one
+      // within about a degree of neutral hangs anywhere in between. A soft curve
+      // here left half of them permanently mid-column, so the group that is up
+      // and the group that is down ran into each other — and the gap between
+      // those groups IS the reading. At 0.45 a float one step away is already 97%
+      // of the way to its end.
+      //
+      // Measured over hi..lo rather than the raw column: asking for a position
+      // outside the range a float may occupy meant the coldest one always wanted
+      // to be below its own floor, which tripped the settle-up correction every
+      // frame and collapsed the floating group into a single spot.
+      for(const b of list){
+        const k = 0.45;
+        b.want = hi + (0.5 - 0.5*Math.tanh((b.temp - currentTempF)*k)) * (lo - hi);
+      }
+
+      // A float's tag is the temperature at which that sphere is neutrally
+      // buoyant, so a higher tag means a LESS dense sphere — and in a fluid at
+      // rest lighter always sits above heavier, in the floating cluster and the
+      // sunken heap alike. Placing them lightest-first, each resting on whatever
+      // is already there, gets that for free.
+      const order = list.slice().sort((a,b)=> b.temp - a.temp);
+
+      // Sunk floats collect on the bottom; they do not stand in a column. Spheres
+      // resting against one another nest — two side by side sit at nearly the
+      // same height, and only one directly above another has to be a whole
+      // diameter lower. So the drop a float needs is not a fixed gap but what the
+      // circles themselves demand, sqrt(d^2 - dx^2), falling to nothing once they
+      // are a diameter apart sideways. Which also means a wide vessel heaps its
+      // floats and a narrow one is forced to stack them, without either being
+      // told to: the capsule is a little over two floats across and packs into
+      // two offset rows, the tube barely fits two and comes out much more like a
+      // column. That difference is the glass, not a rule.
+      //
+      // Two passes, because the two facts are circular: how far off centre a
+      // float sits depends on the height it settles at, and that height depends
+      // on how far off centre its neighbours already are.
+      //
+      // The two groups settle against opposite ends and are packed separately.
+      // A float lighter than the liquid rises and rests against the top, or on
+      // whatever is already up there; a heavier one sinks and rests on the floor,
+      // or on the heap already down there. Packing the whole set in one direction
+      // cannot express that: from the top down the sunken heap ends up hanging
+      // off the floats above it, and from the floor up the floating group gets
+      // stacked on top of the sunken one and pushed clear out of the glass.
+      const settle = (seq, dir, others) => {
+        for(let pass=0; pass<2; pass++){
+          const placed = [];
+          for(const b of seq){
+            let y = dir > 0 ? Math.max(b.want, hi) : Math.min(b.want, lo);
+            let x = inst.cx + b.lean * roomAt(inst, y);
+            const clear = (a, away) => {
+              const dx = Math.abs(x - a.x);
+              const need = dx >= d ? 0 : Math.sqrt(d*d - dx*dx);
+              if(away > 0 ? (a.y + need > y) : (a.y - need < y)){
+                y = away > 0 ? a.y + need : a.y - need;
+                x = inst.cx + b.lean * roomAt(inst, y);
+              }
+            };
+            // the other group is settled against the far end, so it can only
+            // ever hold this one back — a float sitting at exactly its own
+            // temperature hangs mid-glass, and without this the group above
+            // settles straight down through it
+            for(const a of others) clear(a, -dir);
+            for(const a of placed) clear(a, dir);
+            b.y = y; b.x = x;
+            placed.push(b);
+          }
+        }
+      };
+      const up   = order.filter(b => b.temp >  currentTempF);            // lightest first
+      const down = order.filter(b => b.temp <= currentTempF).reverse();  // heaviest first
+      settle(up, 1, []);          // down from the top, resting against it
+      settle(down, -1, up);       // up from the floor, and clear of what is floating
 
       const hs = hoverScale();
       for(const b of list){
-        const x = inst.cx + b.lean * roomAt(inst, b.y);
-        const tr = `translate(${x},${b.y})`;
+        const tr = `translate(${b.x},${b.y})`;
         b.el.setAttribute('transform', tr);
         b.tagEl.setAttribute('transform', tr);
         b.hoverEl.setAttribute('transform', tr);
         b.hoverInner.setAttribute('transform', `scale(${hs})`);
-        b.hitEl.setAttribute('cx', x);
+        b.hitEl.setAttribute('cx', b.x);
         b.hitEl.setAttribute('cy', b.y);
       }
     }
