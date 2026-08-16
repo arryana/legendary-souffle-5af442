@@ -413,7 +413,7 @@
   const OBJECTS = {
     pebble:    { friction: 0.985, radius: 30, wobble: 0 },
     disc:      { friction: 0.976, radius: 34, wobble: 0, spinOnImpact: 1 },
-    jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.0045 },
+    jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.018 },
   };
 
   let activeType = 'pebble';
@@ -581,8 +581,23 @@
         // it doesn't just trace one lazy circle. curlDir is a slight per-stone bias
         // on top (which lobe of the weave runs a little stronger/longer), not a fixed
         // one-way direction any more.
+        // The weave's SPEED matters more than its strength, which is not
+        // obvious. At sin(2 * jellySpin) the steering reversed about five and a
+        // half times per crossing of the tray — fast enough that each swing was
+        // undone by the next before the path could actually move, so the bean
+        // wiggled on the spot and the path merely leaned. Halving that to
+        // sin(jellySpin) is what makes the weave show up as travel rather than
+        // as jitter; the strength (curlRate) then just sets how wide it is.
+        // Measured across the tray: 0.0045 at the old speed wandered 29px and
+        // reversed 0.1 times — a bent line. This wanders far more and genuinely
+        // snakes. Pushed harder than this it stops being a weave and loops.
+        // The constant lean is 0.05 rather than 0.25 for the same reason the
+        // brief asked for: it should wobble side to side, not curve away while
+        // doing it. Some rolls still drift and some hold the line, depending on
+        // where in its tumble the bean starts — that is the stone's character,
+        // not an error, and forcing every roll to stay centred would be a lie.
         const curlAmt = (activeType === 'jellybean')
-          ? spec.curlRate * (0.25 * obj.curlDir + 1.15 * Math.sin(2 * obj.jellySpin))
+          ? spec.curlRate * (0.05 * obj.curlDir + 1.15 * Math.sin(obj.jellySpin))
           : spec.curlRate * obj.curlDir;
         const rotAmt = curlAmt * curlSpeed;
         const cosA = Math.cos(rotAmt), sinA = Math.sin(rotAmt);
