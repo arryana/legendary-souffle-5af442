@@ -47,29 +47,44 @@ flat files at the repo root. The landing page links **19** pieces — the table 
 lists all of them; if you add a piece, add its row here too, or a later session will not
 know it exists.
 
-| File | On landing page? | What it is |
-|------|:---:|------------|
-| `index.html` | — | Landing page: the card grid ("sagne") |
-| `candler/index.html` | ✅ | *Sagne Candle* — an interactive candle. `candler_5.html` is an alternate version (not linked) |
-| `roller/index.html` | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse |
-| `lamp/index.html` | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. A fuel level you find by *tapping* the base is designed but not built; the note in the file records which way the pitch must go |
-| `warmler/index.html` | ✅ | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked) |
-| `rain/index.html` | ✅ | Rain on glass |
-| `ant/index.html` | ✅ | Ants |
-| `windower/index.html` | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock) |
-| `galileo/index.html` | ✅ | A **Galileo thermometer** whose floats rise and sink with the visitor's **real local temperature** (open-meteo API); has a °C/°F toggle |
-| `conometer/index.html` | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle |
-| `gyre/index.html` | ✅ | Meshable **gears** you place and connect on a board, plus a signal-lamp piece whose lights are driven by the gear train. See `gears.md` for how the gear math/rendering works |
-| `birds/index.html` | ✅ | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
-| `bowl/index.html` | ✅ | A still bowl of water for floating things on; has a breeze and an object picker |
-| `chimes/index.html` | ✅ | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern |
-| `chladni/index.html` | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound |
-| `fireflies/index.html` | ✅ | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
-| `kaleidoscope/index.html` | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring |
-| `musebox/index.html` | ✅ | A **music box** — set pins on the disc to write a tune |
-| `pendulum/index.html` | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search |
-| `storm/index.html` | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo) |
-| `crystal.html` | — | A crystal (not linked from the landing page) |
+**The Done column is the owner's call and nobody else's.** ✅ means she has said, in
+her own words, that the piece is finished. It is not a claim that the code is good, that
+the tests pass, or that a session ran out of things to fix — only she marks a piece done.
+Never set it yourself, and never quietly unset it either: if a fault turns up in a piece
+marked done, fix the fault and tell her, but leave the mark alone unless she takes it back.
+A blank means only "she hasn't ruled on it yet", not that anything is wrong with it.
+
+There are deliberately **no scores here.** Some pieces got one in conversation, but as she
+put it, a score needs a field to score against — lamp, conometer and bowl aren't versions
+of anything, so a number would be inventing a ranking she doesn't mean. The test that does
+apply to every piece is the one further down this file: *does it behave like the real
+thing?* That is a yes or a no.
+
+**9 of the 19 are done.**
+
+| File | On landing page? | Done? | What it is |
+|------|:---:|:---:|------------|
+| `index.html` | — | — | Landing page: the card grid ("sagne") |
+| `candler/index.html` | ✅ | ✅ | *Sagne Candle* — an interactive candle. `candler_5.html` is an alternate version (not linked)<br>**Done** — "as perfect as I can make it without overhauling the actual candle itself." |
+| `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does." |
+| `lamp/index.html` | ✅ | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. A fuel level you find by *tapping* the base is designed but not built; the note in the file records which way the pitch must go<br>**Done** as it stands — the tap-for-fuel idea is recorded as a future build, not a gap in it. |
+| `warmler/index.html` | ✅ |  | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked) |
+| `rain/index.html` | ✅ |  | Rain on glass |
+| `ant/index.html` | ✅ |  | Ants |
+| `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights. |
+| `galileo/index.html` | ✅ |  | A **Galileo thermometer** whose floats rise and sink with the visitor's **real local temperature** (open-meteo API); has a °C/°F toggle |
+| `conometer/index.html` | ✅ | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle<br>**Done**. |
+| `gyre/index.html` | ✅ | ✅ | Meshable **gears** you place and connect on a board, plus a signal-lamp piece whose lights are driven by the gear train. See `gears.md` for how the gear math/rendering works<br>**Done**. |
+| `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
+| `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**. |
+| `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material) — **awaiting her ears**, which is the only test that counts here. |
+| `chladni/index.html` | ✅ | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound<br>**Done**. |
+| `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
+| `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026 — **awaiting her verdict**. |
+| `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune |
+| `pendulum/index.html` | ✅ | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search<br>**Done** — precession, swing and pin ring all verified by measurement against the real physics. |
+| `storm/index.html` | ✅ |  | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo) |
+| `crystal.html` | — | — | A crystal (not linked from the landing page) |
 
 **Live-data pieces** — `galileo`, `conometer`, `windower` — read the visitor's **geolocation**
 and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that working; don't
