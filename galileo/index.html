@@ -223,7 +223,7 @@
   // dimmed or hidden. Every float up means "colder than anything I can read";
   // every float down means "hotter". Read together the three bracket the
   // temperature even when only one of them is giving a number.
-  const STEP_F = 3;
+  const STEP_F = 4;
 
   // Interior geometry, measured off each cut-out. halfWidth is the room a float
   // has either side of centre, sampled down the column — the teardrop is 105
@@ -232,23 +232,29 @@
   // (The last sample or two on the capsule were smoothed: the thick glass of the
   // base confuses the trace where it meets the foot.)
   const INSTRUMENTS = [
-    { key:'capsule', file:'vessel-capsule.png', vw:202, vh:612,
-      cx:101.4, top:75, bot:527, from:12, count:14, scale:0.66,
-      halfWidth:[37.2,52.8,60.4,62.8,68,69.6,70,70.4,72.8,70,67.2,66,66.8,69.6,69.6,72.8,72.4,72.8,72.4,72.4,72,72,72,72,71.2,58,39.6,47.2] },
-    { key:'tube', file:'vessel-dark.png', vw:220, vh:725,
-      cx:109, top:143, bot:612, from:54, count:12, scale:1.00,
-      // straight-sided, so one figure serves the whole column. Traced at a lower
-      // threshold than the others: this photograph's walls are much fainter.
+    { key:'capsule', file:'vessel-capsule.png', vw:202, vh:612, scale:0.66,
+      cx:101.4, top:75, bot:527, from:12, count:8,
+      halfWidth:[37.2,52,58.8,61.2,65.2,69.6,69.6,70,72.8,72.8,70,67.2,66,66.8,66.8,69.6,69.2,72.4,72.4,72.8,72.4,72.4,72,72,72,72,72,71.2] },
+    { key:'tube', file:'vessel-dark.png', vw:220, vh:725, scale:1.00,
+      cx:109, top:143, bot:612, from:44, count:12,
+      // straight-sided, so one figure serves the whole column. Traced by hand
+      // rather than automatically: this photograph's walls are far fainter than
+      // the other two and the automatic trace loses them below the halfway mark.
       halfWidth:[48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48],
       highlight:{ x:54, y:480, w:13, h:138 } },
-    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615,
-      cx:139.7, top:100, bot:549, from:90, count:8, scale:0.56,
-      halfWidth:[22.4,25.6,28.4,32,36,41.6,47.6,54.4,65.6,72,78,83.6,88.4,93.2,97.6,100.8,103.2,104.8,105.2,104.8,102.8,98.4,92.4,83.6,70.4,48.8,42,52.4] },
+    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.56,
+      cx:139.7, top:171, bot:549, from:92, count:5,
+      halfWidth:[38.4,42.8,47.6,52,58,67.2,72,76.4,80.8,85.2,89.2,92.4,95.6,98.4,100.8,102.8,104.4,105.2,105.2,105.2,103.6,101.2,97.6,92.8,86.4,78,66,48.8] },
   ];
 
   const FLOAT_IMAGES = ['blue','aqua','green','yellow','gold','orange','red','pink','palepink','purple','lavender','silver'];
-  // a float reads the same size on screen in every vessel, so its size in a
-  // vessel's own units scales with how many units tall that vessel is
+  // The floats are standard spheres — the same objects, dropped into different
+  // vessels — so they come out the same size on screen wherever they are. Their
+  // size in a vessel's own units therefore has to divide back out both how many
+  // units tall that vessel is AND how far down it is scaled: a float in an
+  // instrument drawn at 0.56 must be 1/0.56 as large in its own coordinates to
+  // look identical to one in the tube. Which is also why the smaller instruments
+  // hold fewer of them — a smaller vessel, same spheres.
   const FLOAT_W_AT_725 = 48;
   const FLOAT_RATIO = 660/370;
   const TAG_FONT_FRAC = 0.16;
@@ -319,7 +325,7 @@
     box.appendChild(svg);
     instrumentsWrap.appendChild(box);
 
-    const fw = FLOAT_W_AT_725 * (inst.vh/725);
+    const fw = FLOAT_W_AT_725 * (inst.vh/725) / inst.scale;
     const fh = fw * FLOAT_RATIO;
     inst.fw = fw; inst.fh = fh;
 
@@ -398,8 +404,16 @@
       const span = inst.bot - inst.top;
 
       // where each float wants to be, from how far the temperature is from its tag
+      // Buoyancy is a threshold, not a slope: a sphere is either lighter than the
+      // liquid or heavier, and only the one within a degree of neutral hangs
+      // anywhere in between. At 0.11 the curve was so soft that half the floats
+      // sat permanently mid-column, which left no visible gap between the group
+      // that is up and the group that is down — and that gap IS the reading. At
+      // 0.45 a float one step from the temperature is already 97% of the way to
+      // its end, so the two groups separate cleanly and the lowest one still up
+      // is unmistakable.
       for(const b of list){
-        const k = 0.11;
+        const k = 0.45;
         b.want = inst.top + (0.5 - 0.5*Math.tanh((b.temp - currentTempF)*k)) * span;
       }
 
@@ -412,7 +426,7 @@
       // 45 from the top down. The reading itself was right, but the pile was not
       // an arrangement any liquid would produce.
       const order = list.slice().sort((a,b)=> b.temp - a.temp);   // lightest first
-      const gap = inst.fw*0.52;                                   // resting against each other
+      const gap = inst.fw*0.42;                                   // resting against each other
       // A float is drawn centred on its y, but the sprite is not symmetrical: a
       // glass tip reaching 0.892*fw above the centre, and below the bulb a metal
       // tag hanging to 0.875*fw. Placing a centre at the column's floor therefore
