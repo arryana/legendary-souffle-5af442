@@ -497,20 +497,37 @@
         </clipPath>
       </defs>
 
-      <!-- real photographed brass-and-copper stand. The saucer+cup render
-           behind the candle; the candle's own bottom edge is curved to
-           match the rim's curve (see PLATE_RIM_*/CUP_RIM_* in the script)
-           so it sits AT the rim rather than cutting through it, and the
-           front lip redraws on top of that so the candle reads as behind
-           the near wall / in front of the far wall, like it actually
-           would sitting inside a cup. -->
-      <image href="candlerstand-saucer-cutout.png" x="50.5" y="523.3" width="271.25" height="124.0"/>
-      <image id="cupImg" href="candlerstand-cup.png" x="100.9" y="438.1" width="178.25" height="116.25"/>
-      <!-- wide flat plate, swapped in for pillar mode in place of the cup —
-           a multi-day pillar just rests on top rather than sitting in a
-           cup sized for a normal candle. Hidden otherwise. -->
-      <image id="pillarPlateImg" href="candlerstand-pillarplate.png"
-             x="40" y="406.1" width="300" height="143.6" style="display:none"/>
+      <!-- TWO SEPARATE STANDS, two separate photographed objects. Exactly one
+           of them is ever on screen: the short-term stand for candles that
+           burn in hours, the pillar stand for the multi-day pillar. They are
+           NOT layers of one another and must never both render — mixing them
+           stacks two different bases into one impossible object. Each group
+           below holds one whole stand, and setStandForMode() swaps them. -->
+
+      <!-- SHORT-TERM stand (hours): its own photo — footed copper saucer with
+           the brass cup sitting on it. The candle's bottom edge is curved to
+           match the cup rim (see CUP_RIM_* in the script) so it sits AT the
+           rim rather than cutting through it, and #lipImg — the cup's near
+           rim, also from this same photo — redraws on top of the candle so it
+           reads as nested inside the cup, behind the near wall and in front
+           of the far wall, like it actually would. -->
+      <g id="shortStand">
+        <image href="candlerstand-saucer-cutout.png" x="50.5" y="523.3" width="271.25" height="124.0"/>
+        <image id="cupImg" href="candlerstand-cup.png" x="100.9" y="438.1" width="178.25" height="116.25"/>
+      </g>
+
+      <!-- LONG-TERM pillar stand (days): a different object entirely, and the
+           WHOLE of it in one picture — flat brass plate, baluster stem,
+           hammered copper dish, lion-paw feet — cut straight out of its own
+           photo. It is deliberately a single image and not a stack of parts:
+           the previous version was a crop of just the plate, which had no
+           bottom of its own and so borrowed the short-term stand's base. A
+           multi-day pillar rests on the plate; nothing from the short-term
+           stand appears here. -->
+      <g id="pillarStand" style="display:none">
+        <image href="candlerstand-pillar.png"
+               x="12.3" y="421.9" width="355.4" height="238.1"/>
+      </g>
 
       <!-- glow -->
       <circle id="glowCircle" cx="190" cy="300" r="70" fill="url(#glow)"/>
@@ -518,9 +535,11 @@
       <!-- candle body -->
       <g id="candleBody"></g>
 
-      <!-- front lip: the cup's near rim, redrawn in front of the candle
-           so it visually nests inside. Specific to the narrow cup, so
-           pillar mode (the flat plate) hides it. -->
+      <!-- front lip: part of the SHORT-TERM stand — the cup's near rim, from
+           that same photo, redrawn in front of the candle so it visually nests
+           inside. Lives outside #shortStand only because it has to paint after
+           the candle body; setStandForMode() shows and hides it in lockstep
+           with the rest of that stand. -->
       <image id="lipImg" href="candlerstand-lip.png" x="100.9" y="438.1" width="178.25" height="116.25"/>
 
       <!-- timer pins: each pin gets its own persistent <g>, created in
@@ -581,7 +600,7 @@
       <div class="ctrl">
         <input id="pillarCheck" type="checkbox" aria-label="pillar candle mode">
         <span class="icon">🗓️</span>
-        <input id="pillarSlider" type="range" min="2" max="7" step="1" value="4" aria-label="pillar burn length in days">
+        <input id="pillarSlider" type="range" min="2" max="6" step="1" value="4" aria-label="pillar burn length in days">
       </div>
     </div>
   </div>
@@ -638,7 +657,9 @@ const pinsGroup      = document.getElementById('pinsGroup');
 const glowCircle     = document.getElementById('glowCircle');
 const cupImg         = document.getElementById('cupImg');
 const lipImg         = document.getElementById('lipImg');
-const pillarPlateImg = document.getElementById('pillarPlateImg');
+// the two stands, each a whole object — see updateStandForMode()
+const shortStand     = document.getElementById('shortStand');
+const pillarStand    = document.getElementById('pillarStand');
 const readout        = document.getElementById('readout');
 const pinTooltip     = document.getElementById('pinTooltip');
 const scene          = document.getElementById('scene');
@@ -674,12 +695,21 @@ const CUP_TRAY_SAFE_HALF_WIDTH = 90;
 // pillar candle's own insertion point already sits close to this edge, so
 // without a floor here the "flat lying" pin overhangs the plate's actual
 // (elliptical, tapering) visible surface and reads as dangling off it.
-const PILLAR_PLATE_SAFE_HALF_WIDTH = 105;
-// the wide pillar plate's own front-rim curve, measured from its photo —
-// the pillar candle's base follows this exact arc (see waxBottomPath())
-// instead of a flat line, so it reads as resting ON the curved plate
-// rather than cutting straight through it.
-const PLATE_RIM_CX = 190, PLATE_RIM_CY = 438.6, PLATE_RIM_RX = 139.7, PLATE_RIM_RY = 25.1;
+const PILLAR_PLATE_SAFE_HALF_WIDTH = 93;
+// the pillar plate's own front-rim curve, measured off candlerstand-pillar.png
+// itself rather than guessed: in that picture the plate's widest row sits 42px
+// down from the top with its rim spanning 234.5px either side of centre, and
+// it is drawn at 0.495 scale from x=12.3, y=421.9 — which puts the rim ellipse
+// exactly here. The pillar candle's base follows this arc (see waxBottomPath())
+// instead of a flat line, so it reads as resting ON the curved plate rather
+// than cutting straight through it. Re-measure these if the stand picture or
+// its placement ever changes.
+//
+// That 0.495 is as large as the stand can be drawn: bigger, and the candle
+// standing on the plate rises far enough that its flame leaves the top of the
+// frame. Shortening the stand's neck is what bought the extra size — see the
+// note on PILLAR_MAX_DAYS.
+const PLATE_RIM_CX = 190, PLATE_RIM_CY = 442.7, PLATE_RIM_RX = 116.1, PLATE_RIM_RY = 20.8;
 // the candle sits toward the back of the plate rather than right at its
 // front edge, so a visible strip of plate shows in front of it — same
 // curve as the plate's true rim, just lifted.
@@ -707,7 +737,21 @@ const MAX_BURN_MINUTES = 1440;  // largest candle, full burn-down (24 hours)
 // candle wider than it is tall, a squat drum rather than a pillar.
 const PILLAR_HEIGHT = 380;
 const PILLAR_MIN_DAYS = 2;
-const PILLAR_MAX_DAYS = 7;
+// capped at the widest candle the real plate can actually hold. The
+// burn-time-from-wax-volume maths gives a 6-day pillar a half-width of 112.6
+// and a 7-day one 121.3; the plate's rim measures 116.1, so 6 sits on it and 7
+// would hang over the edge resting on nothing.
+//
+// 116.1 is itself the most plate obtainable here, and it took shortening the
+// stand's neck to get it: the stand's width is what limits how large it can be
+// drawn, but its HEIGHT is what pushes the candle (and its flame) out of the
+// top of the frame. Squeezing 40px out of the plain shaft above and below the
+// collar ring — the ring itself untouched, since it is the only detail there —
+// made the stand shorter without making it narrower, so it could be drawn
+// bigger and the plate grew from 105.5 to 116.1. That bought exactly one more
+// day. Reaching 7 needs a taller frame or a narrower pillar, not more neck.
+// Changing this number means changing the slider's max attribute to match.
+const PILLAR_MAX_DAYS = 6;
 // once this fraction of the pillar's total burn has elapsed, the flame
 // has sunk below the rim and the hollow-well rendering takes over
 const HOLLOW_START_FRACTION = 0.14; // roughly "day 1" of a 7-day burn
@@ -1485,12 +1529,18 @@ pillarCheck.addEventListener('change', () => {
   saveState();
 });
 
-// swap the narrow cup (+ its front lip and wick-trimmer tool) for the wide
-// flat plate, and back, whenever pillar mode is toggled or restored
+// swap the WHOLE short-term stand for the WHOLE pillar stand, and back,
+// whenever pillar mode is toggled or restored. These are two separate
+// photographed objects, so this is a straight either/or — never show one
+// stand's parts on top of the other's, which stacks two different bases
+// into a single impossible stand. #lipImg belongs to the short-term stand
+// too; it only sits outside that group because it has to paint after the
+// candle body, so it toggles together with it here.
 function updateStandForMode() {
-  cupImg.style.display = state.pillarMode ? 'none' : '';
-  lipImg.style.display = state.pillarMode ? 'none' : '';
-  pillarPlateImg.style.display = state.pillarMode ? '' : 'none';
+  const pillar = state.pillarMode;
+  shortStand.style.display = pillar ? 'none' : '';
+  lipImg.style.display     = pillar ? 'none' : '';
+  pillarStand.style.display = pillar ? '' : 'none';
 }
 pillarSlider.addEventListener('input', () => {
   state.pillarDays = parseInt(pillarSlider.value, 10);
