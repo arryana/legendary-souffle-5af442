@@ -526,7 +526,7 @@
            stand appears here. -->
       <g id="pillarStand" style="display:none">
         <image href="candlerstand-pillar.png"
-               x="27.8" y="425.5" width="323.1" height="234.5"/>
+               x="12.3" y="421.9" width="355.4" height="238.1"/>
       </g>
 
       <!-- glow -->
@@ -600,7 +600,7 @@
       <div class="ctrl">
         <input id="pillarCheck" type="checkbox" aria-label="pillar candle mode">
         <span class="icon">🗓️</span>
-        <input id="pillarSlider" type="range" min="2" max="5" step="1" value="4" aria-label="pillar burn length in days">
+        <input id="pillarSlider" type="range" min="2" max="6" step="1" value="4" aria-label="pillar burn length in days">
       </div>
     </div>
   </div>
@@ -695,16 +695,21 @@ const CUP_TRAY_SAFE_HALF_WIDTH = 90;
 // pillar candle's own insertion point already sits close to this edge, so
 // without a floor here the "flat lying" pin overhangs the plate's actual
 // (elliptical, tapering) visible surface and reads as dangling off it.
-const PILLAR_PLATE_SAFE_HALF_WIDTH = 84;
+const PILLAR_PLATE_SAFE_HALF_WIDTH = 93;
 // the pillar plate's own front-rim curve, measured off candlerstand-pillar.png
-// itself rather than guessed: in that cut-out the plate's widest row sits 42px
+// itself rather than guessed: in that picture the plate's widest row sits 42px
 // down from the top with its rim spanning 234.5px either side of centre, and
-// the picture is drawn at 0.45 scale from x=27.8, y=425.5 — which puts the
-// rim ellipse exactly here. The pillar candle's base follows this arc (see
-// waxBottomPath()) instead of a flat line, so it reads as resting ON the
-// curved plate rather than cutting straight through it. Re-measure these if
-// the stand picture or its placement ever changes.
-const PLATE_RIM_CX = 190, PLATE_RIM_CY = 444.4, PLATE_RIM_RX = 105.5, PLATE_RIM_RY = 18.9;
+// it is drawn at 0.495 scale from x=12.3, y=421.9 — which puts the rim ellipse
+// exactly here. The pillar candle's base follows this arc (see waxBottomPath())
+// instead of a flat line, so it reads as resting ON the curved plate rather
+// than cutting straight through it. Re-measure these if the stand picture or
+// its placement ever changes.
+//
+// That 0.495 is as large as the stand can be drawn: bigger, and the candle
+// standing on the plate rises far enough that its flame leaves the top of the
+// frame. Shortening the stand's neck is what bought the extra size — see the
+// note on PILLAR_MAX_DAYS.
+const PLATE_RIM_CX = 190, PLATE_RIM_CY = 442.7, PLATE_RIM_RX = 116.1, PLATE_RIM_RY = 20.8;
 // the candle sits toward the back of the plate rather than right at its
 // front edge, so a visible strip of plate shows in front of it — same
 // curve as the plate's true rim, just lifted.
@@ -732,13 +737,21 @@ const MAX_BURN_MINUTES = 1440;  // largest candle, full burn-down (24 hours)
 // candle wider than it is tall, a squat drum rather than a pillar.
 const PILLAR_HEIGHT = 380;
 const PILLAR_MIN_DAYS = 2;
-// capped at 5 because that is the widest candle the real plate can actually
-// hold: the burn-time-from-wax-volume maths gives a 6-day pillar a half-width
-// of 112.6 and a 7-day one 121.3, against a plate whose rim measures 105.5 —
-// so those two hung over the edge resting on nothing. Raising this again means
-// solving that first (a narrower, taller pillar, or a wider frame), not just
-// changing the number — the slider's own max attribute has to match too.
-const PILLAR_MAX_DAYS = 5;
+// capped at the widest candle the real plate can actually hold. The
+// burn-time-from-wax-volume maths gives a 6-day pillar a half-width of 112.6
+// and a 7-day one 121.3; the plate's rim measures 116.1, so 6 sits on it and 7
+// would hang over the edge resting on nothing.
+//
+// 116.1 is itself the most plate obtainable here, and it took shortening the
+// stand's neck to get it: the stand's width is what limits how large it can be
+// drawn, but its HEIGHT is what pushes the candle (and its flame) out of the
+// top of the frame. Squeezing 40px out of the plain shaft above and below the
+// collar ring — the ring itself untouched, since it is the only detail there —
+// made the stand shorter without making it narrower, so it could be drawn
+// bigger and the plate grew from 105.5 to 116.1. That bought exactly one more
+// day. Reaching 7 needs a taller frame or a narrower pillar, not more neck.
+// Changing this number means changing the slider's max attribute to match.
+const PILLAR_MAX_DAYS = 6;
 // once this fraction of the pillar's total burn has elapsed, the flame
 // has sunk below the rim and the hollow-well rendering takes over
 const HOLLOW_START_FRACTION = 0.14; // roughly "day 1" of a 7-day burn
