@@ -86,6 +86,18 @@ thing?* That is a yes or a no.
 | `storm/index.html` | ✅ |  | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo) |
 | `crystal.html` | — | — | A crystal (not linked from the landing page) |
 
+### Coming: the apothecary chest (not built yet)
+
+The owner is splitting all the pieces into the drawers of an **apothecary chest** — that is
+the plan for the landing page, replacing the flat card grid. One of those drawers is called
+**instrumenta**. That is her word and it is the one to use: not "tools", which is what the
+page currently says in its copy.
+
+Nothing here is built. What is recorded is the name and the shape of the idea, so that a
+later session does not invent a different word for the same thing or quietly re-flatten the
+grid. The other drawers, and which piece belongs in which, are hers to decide — don't guess
+them, and don't start building the chest off the back of this note.
+
 **Live-data pieces** — `galileo`, `conometer`, `windower` — read the visitor's **geolocation**
 and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that working; don't
 break the geolocation or the fetch. (These are also why a *faithful* Preview matters — a plain
