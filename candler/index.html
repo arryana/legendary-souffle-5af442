@@ -526,7 +526,7 @@
            stand appears here. -->
       <g id="pillarStand" style="display:none">
         <image href="candlerstand-pillar.png"
-               x="12.3" y="421.9" width="355.4" height="238.1"/>
+               x="0" y="421.3" width="380" height="238.7"/>
       </g>
 
       <!-- glow -->
@@ -600,7 +600,7 @@
       <div class="ctrl">
         <input id="pillarCheck" type="checkbox" aria-label="pillar candle mode">
         <span class="icon">🗓️</span>
-        <input id="pillarSlider" type="range" min="2" max="6" step="1" value="4" aria-label="pillar burn length in days">
+        <input id="pillarSlider" type="range" min="2" max="7" step="1" value="4" aria-label="pillar burn length in days">
       </div>
     </div>
   </div>
@@ -695,7 +695,7 @@ const CUP_TRAY_SAFE_HALF_WIDTH = 90;
 // pillar candle's own insertion point already sits close to this edge, so
 // without a floor here the "flat lying" pin overhangs the plate's actual
 // (elliptical, tapering) visible surface and reads as dangling off it.
-const PILLAR_PLATE_SAFE_HALF_WIDTH = 93;
+const PILLAR_PLATE_SAFE_HALF_WIDTH = 99;
 // the pillar plate's own front-rim curve, measured off candlerstand-pillar.png
 // itself rather than guessed: in that picture the plate's widest row sits 42px
 // down from the top with its rim spanning 234.5px either side of centre, and
@@ -709,11 +709,11 @@ const PILLAR_PLATE_SAFE_HALF_WIDTH = 93;
 // standing on the plate rises far enough that its flame leaves the top of the
 // frame. Shortening the stand's neck is what bought the extra size — see the
 // note on PILLAR_MAX_DAYS.
-const PLATE_RIM_CX = 190, PLATE_RIM_CY = 442.7, PLATE_RIM_RX = 116.1, PLATE_RIM_RY = 20.8;
+const PLATE_RIM_CX = 190, PLATE_RIM_CY = 443.5, PLATE_RIM_RX = 124.1, PLATE_RIM_RY = 22.2;
 // the candle sits toward the back of the plate rather than right at its
 // front edge, so a visible strip of plate shows in front of it — same
 // curve as the plate's true rim, just lifted.
-const PILLAR_LIFT = 16;
+const PILLAR_LIFT = 10;
 const PILLAR_RIM_CY = PLATE_RIM_CY - PILLAR_LIFT;
 const PILLAR_BASE_Y = PILLAR_RIM_CY + PLATE_RIM_RY; // the arc's own lowest (front-center) point
 function baseY() { return state.pillarMode ? PILLAR_BASE_Y : CUP_BASE_Y; }
@@ -751,7 +751,7 @@ const PILLAR_MIN_DAYS = 2;
 // bigger and the plate grew from 105.5 to 116.1. That bought exactly one more
 // day. Reaching 7 needs a taller frame or a narrower pillar, not more neck.
 // Changing this number means changing the slider's max attribute to match.
-const PILLAR_MAX_DAYS = 6;
+const PILLAR_MAX_DAYS = 7;
 // once this fraction of the pillar's total burn has elapsed, the flame
 // has sunk below the rim and the hollow-well rendering takes over
 const HOLLOW_START_FRACTION = 0.14; // roughly "day 1" of a 7-day burn
