@@ -536,6 +536,20 @@
           <feComposite in="soft" in2="SourceGraphic" operator="in"/>
         </filter>
 
+        <!-- The cup and lip cut-outs are old and were erased with a soft,
+             partly-opaque eraser: both carry a wide smear of semi-transparent
+             leftovers down the cup's right side and below it, and the lip also
+             keeps large chunks of the rest of the cup it was cut from. On a dark
+             page that residue is invisible — but it paints over the copper
+             saucer, where it showed as squared-off dark notches bitten out of
+             the saucer's back rim. Clipping both to stop at the saucer's rim
+             line contains it: everything they legitimately contribute (the cup
+             and its front lip) sits above this line, and everything below it is
+             the saucer's own picture to draw. Containment, not a cure — the
+             real fix is to re-cut both from the original photograph. -->
+        <clipPath id="aboveSaucer">
+          <rect x="0" y="0" width="380" height="523.3"/>
+        </clipPath>
         <clipPath id="flameClip">
           <rect id="flameClipRect" x="0" y="-60" width="380" height="9999"/>
         </clipPath>
@@ -557,7 +571,7 @@
            of the far wall, like it actually would. -->
       <g id="shortStand">
         <image href="candlerstand-saucer-cutout.png" x="50.5" y="523.3" width="271.25" height="124.0"/>
-        <image id="cupImg" href="candlerstand-cup.png" x="100.9" y="438.1" width="178.25" height="116.25"/>
+        <image id="cupImg" clip-path="url(#aboveSaucer)" href="candlerstand-cup.png" x="100.9" y="438.1" width="178.25" height="116.25"/>
       </g>
 
       <!-- LONG-TERM pillar stand (days): a different object entirely, and the
@@ -584,7 +598,7 @@
            inside. Lives outside #shortStand only because it has to paint after
            the candle body; setStandForMode() shows and hides it in lockstep
            with the rest of that stand. -->
-      <image id="lipImg" href="candlerstand-lip.png" x="100.9" y="438.1" width="178.25" height="116.25"/>
+      <image id="lipImg" clip-path="url(#aboveSaucer)" href="candlerstand-lip.png" x="100.9" y="438.1" width="178.25" height="116.25"/>
 
       <!-- timer pins: each pin gets its own persistent <g>, created in
            addPin() and only ever touched again by firePin() — render()
