@@ -505,7 +505,25 @@
              candle's outline was tried and rejected — it cost a fifth of the
              frame rate and stair-stepped the edges. Irregularity in the
              SILHOUETTE, if it is ever wanted, belongs in the path geometry
-             rather than in a filter over the top of it. -->
+             rather than in a filter over the top of it.
+
+             IF YOU DO THAT, ONE RULE: THE TOP EDGE MUST STAY LEVEL. Making the
+             rim slump is the obvious next idea — real candles do — and it is
+             the one form of irregularity this piece cannot have. The pins are
+             an alarm clock: a pin's drawn height and the drawn rim both come
+             from a SINGLE wax-level number, so they agree by construction.
+             Give the rim a low side and the picture no longer has one level
+             while the timer still does — a pin sits visibly clear of the wax
+             while the clock says its moment has not come. The candle is short
+             and the burns are long, so that gap is expensive: one unit of
+             candle height is 26 minutes on a 7-day pillar, 8 on a 2-day, and
+             5.5 on a 24-hour candle. A slump deep enough to actually notice,
+             three or four units, is an hour and a half of ambiguity on the
+             longest setting.
+             The sides are free: bulges, a mould seam, drips running down from
+             the rim. None of those move the level, because they vary along the
+             direction the level travels rather than up and down it. So: level
+             rim, uneven sides. -->
         <filter id="waxGrainFilter" x="-5%" y="-5%" width="110%" height="110%">
           <feTurbulence type="fractalNoise" baseFrequency="0.032 0.013" numOctaves="4" seed="11" result="noise"/>
           <feColorMatrix in="noise" type="saturate" values="0" result="gray"/>
@@ -1845,6 +1863,16 @@ function render() {
     }
   }
 
+  // Pins whose moment passed while the tab was shut come back bunched, not
+  // spread: addPin() clamps each one to fractionBounds(), whose ceiling is the
+  // wax level that is actually left, and late in a burn that band is narrower
+  // than MIN_PIN_GAP — so several overdue pins land on the same spot and ring
+  // together a moment after reopening. That is KNOWN AND DELIBERATE, not an
+  // oversight: no alarm is lost, and every one of them does ring. It only
+  // shows up in the "came back having missed several" corner, where two pins
+  // can draw on top of each other and you see fewer than you set. Separating
+  // them would mean either placing overdue pins outside the wax that remains,
+  // or ringing them retroactively — both worse lies than the overlap.
   if (saved.timerMode && !burnedOutWhileAway) {
     timerCheck.checked = true;
     enterTimerMode(Array.isArray(saved.pins) ? saved.pins : null);
