@@ -274,6 +274,38 @@
     hissFilter.frequency.setTargetAtTime(500 + wick*900, audioCtx.currentTime, 0.2);
   }
 
+  // ---------- NOT BUILT YET: fuel, and finding out how much is left ----------
+  // Agreed direction for a future build, written down so the physics is not
+  // re-derived wrongly. There is currently no fuel in this piece at all — no
+  // reservoir, no level, nothing depleting — so this is a new dimension rather
+  // than a tweak.
+  //
+  // The intent: a bigger flame burns fuel faster, and you CANNOT see how much
+  // is left. That is true of most real lamps, and it is the point rather than a
+  // limitation — you find out by tapping the base with a small metal object,
+  // exactly as you would in life. The knowledge costs an action.
+  //
+  // THE DIRECTION OF THE PITCH IS THE EASY THING TO GET WRONG, because the two
+  // ways of sounding a part-filled vessel run opposite ways:
+  //   - BLOWN across the top: more liquid -> HIGHER pitch (shorter air column).
+  //   - STRUCK, which is this one: more liquid -> LOWER pitch. The liquid
+  //     mass-loads the walls and drags the frequency down.
+  // So: full lamp = low, dull note. Empty lamp = high, bright ring. Building it
+  // the other way round would match most people's bottle-blowing memory and be
+  // wrong, which matters more here than it would elsewhere.
+  //
+  // Sustain carries the same information and is the half people feel without
+  // being able to name it: oil damps the shell, so a full lamp dies quickly and
+  // an empty one rings on. Pitch and decay should move together.
+  //
+  // Optional, if it ever earns its place: WHERE you tap. Above the oil line it
+  // rings, below it knocks dully — so the level can be found by tapping down
+  // the side, the way you find it on a gas cylinder.
+  //
+  // The tapper should be a photographed object like candler's pins, not an
+  // emoji: it is a thing in the scene, not a control.
+  // -------------------------------------------------------------------------
+
   // ---------- rendering ----------
   // ---------- rendering: the base, collar, and glass are the actual
   // photograph (wicklamp.png) rather than a redrawn illustration — only
