@@ -43,7 +43,9 @@ address `/<slug>/` (e.g. `warmler.html` → `warmler/index.html`, live at `/warm
 `_redirects` file at the repo root forwards the old flat addresses (`/warmler.html`, etc.) to
 the new ones, so existing bookmarks/links still work. Pages **not** on the landing page
 (`candler_5.html`, `crystal.html`, `warmler-picker-concept.html`) are unaffected and remain
-flat files at the repo root.
+flat files at the repo root. The landing page links **19** pieces — the table below
+lists all of them; if you add a piece, add its row here too, or a later session will not
+know it exists.
 
 | File | On landing page? | What it is |
 |------|:---:|------------|
@@ -59,6 +61,14 @@ flat files at the repo root.
 | `conometer/index.html` | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle |
 | `gyre/index.html` | ✅ | Meshable **gears** you place and connect on a board, plus a signal-lamp piece whose lights are driven by the gear train. See `gears.md` for how the gear math/rendering works |
 | `birds/index.html` | ✅ | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
+| `bowl/index.html` | ✅ | A still bowl of water for floating things on; has a breeze and an object picker |
+| `chimes/index.html` | ✅ | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern |
+| `chladni/index.html` | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound |
+| `fireflies/index.html` | ✅ | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
+| `kaleidoscope/index.html` | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring |
+| `musebox/index.html` | ✅ | A **music box** — set pins on the disc to write a tune |
+| `pendulum/index.html` | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search |
+| `storm/index.html` | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo) |
 | `crystal.html` | — | A crystal (not linked from the landing page) |
 
 **Live-data pieces** — `galileo`, `conometer`, `windower` — read the visitor's **geolocation**
