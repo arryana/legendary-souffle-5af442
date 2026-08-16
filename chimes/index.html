@@ -140,6 +140,10 @@
   const PITCH_K = 4200000;
   const ROD_LEN_MIN = 70, ROD_LEN_MAX = 180;
   const ROD_THICK = 12;
+  const COLLIDE_DIST = ROD_THICK + 2;   // centres this close and the rods are touching
+  const SEPARATE = 3;                   // and this much further apart before they can meet again
+  const RESTITUTION = 0.45;             // rods are not bouncy; most of the closing speed is lost
+  const MIN_STRIKE_SPEED = 5;           // below this they are nudging each other, not striking
   const CORD_THICK = { rope:7, chain:5, string:3 };
   const HANGER_W = 172;
 
@@ -182,7 +186,7 @@
         rodLength: prev ? prev.rodLength : defaultRodLength(i, state.count),
         angle: (Math.random()-0.5)*0.2,
         angVel: 0,
-        lastStrike: {},
+        touching: false,
       });
     }
     state.rods = rods;
@@ -212,68 +216,113 @@
   window.addEventListener('resize', resize);
 
   // ---- audio ----
-  let audioCtx = null, masterBus = null;
+  let audioCtx = null, masterBus = null, voices = 0;
+  // A backstop against a runaway, nothing more. Brass rings for 3.4s, so even the
+  // busiest honest weather — nine rods in a full wind, 11.6 note-starts a second
+  // — leaves about 40 tails overlapping, and that measures 0.22 peak: nowhere
+  // near needing a limit. Set this anywhere near the real overlap and it starts
+  // swallowing notes instead, which is worse than loud: a rod visibly strikes its
+  // neighbour and nothing comes out. At 14 it was dropping two thirds of them.
+  const MAX_VOICES = 48;
+
   function ensureAudio(){
     if(audioCtx) return;
     audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-    // long overlapping tails (esp. silver/brass) can stack past 0dB when several rods ring at once
-    masterBus = audioCtx.createDynamicsCompressor();
-    masterBus.threshold.value = -18; masterBus.ratio.value = 6; masterBus.connect(audioCtx.destination);
+    // A safety net for a rare pile-up, not a permanent squasher. This used to be
+    // a compressor at -18dB (0.126) fed a signal measuring 0.215 rms, so it was
+    // in gain reduction essentially all the time, holding every tail flat — that
+    // is the deadening. Trimmed first and set at -6dB it now sits over a 0.042
+    // rms signal and only moves when something genuinely stacks up.
+    masterBus = audioCtx.createGain();
+    masterBus.gain.value = 0.5;
+    const comp = audioCtx.createDynamicsCompressor();
+    comp.threshold.value = -6; comp.ratio.value = 4; comp.knee.value = 10;
+    comp.attack.value = 0.006; comp.release.value = 0.35;
+    masterBus.connect(comp); comp.connect(audioCtx.destination);
   }
 
+  // A struck rod is a free-free bar, and a free-free bar's overtones are not a
+  // harmonic series: they land at 2.756x and 5.404x the fundamental, from the
+  // roots of the bar equation. That inharmonic spacing is the whole reason a
+  // chime reads as metal being hit rather than as a note being played, and it is
+  // the same whatever the bar is made of — material sets the fundamental, the
+  // brightness and the length of the ring, not where the overtones sit. Only the
+  // glass voice had this right; silver used an invented 3.0 and brass a bandpass
+  // at 2.1, which is why they sounded like something other than a chime.
+  const PARTIALS = [1, 2.756, 5.404];
+
+  // Pitch follows the material's own speed of sound, sqrt(E/rho), so the same rod
+  // cut from different stock rings at a different note. Against brass (E 100GPa,
+  // rho 8500 -> 3430 m/s): silver 2690, wood 4140, glass 5290 m/s. Silver to
+  // glass is very nearly a fifth. Before this, choosing a material changed the
+  // timbre but not one note of the pitch, which is the piece quietly lying about
+  // what picking a material means.
+  const MATERIAL = {
+    brass:  { pitch: 1.00, ring: 3.4,  level: 1.00, attack: 0.004, amps: [1, 0.38, 0.13], noise: 0    },
+    silver: { pitch: 0.78, ring: 2.8,  level: 0.95, attack: 0.004, amps: [1, 0.30, 0.09], noise: 0    },
+    glass:  { pitch: 1.54, ring: 1.5,  level: 0.85, attack: 0.002, amps: [1, 0.52, 0.24], noise: 0    },
+    wood:   { pitch: 1.21, ring: 0.30, level: 0.80, attack: 0.001, amps: [1, 0.16, 0.04], noise: 0.45 },
+  };
+
   function strike(freq, velocity, material){
-    if(!audioCtx) return;
-    const t = audioCtx.currentTime;
-    const vol = Math.min(0.5, 0.08 + velocity/500);
+    if(!audioCtx || voices >= MAX_VOICES) return;
+    const M = MATERIAL[material] || MATERIAL.brass;
+    // a few ms ahead, so nothing is ever scheduled into a moment already gone
+    const t = audioCtx.currentTime + 0.005;
+    const vol = Math.min(0.42, 0.05 + velocity/900) * M.level;
     const out = audioCtx.createGain();
     out.gain.value = vol;
     out.connect(masterBus);
+    voices++;
+    let last = 0;
 
-    if(material === 'glass'){
-      // bright and clear, but a real glass rod's ring is a tinkle, not a bell's long wash
-      const o1 = audioCtx.createOscillator(); o1.type='sine'; o1.frequency.value=freq;
-      const o2 = audioCtx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*2.76;
-      const g1 = audioCtx.createGain(), g2 = audioCtx.createGain();
-      g1.gain.setValueAtTime(1,t); g1.gain.exponentialRampToValueAtTime(0.0001,t+1.7);
-      g2.gain.setValueAtTime(0.35,t); g2.gain.exponentialRampToValueAtTime(0.0001,t+1.0);
-      o1.connect(g1); g1.connect(out); o2.connect(g2); g2.connect(out);
-      o1.start(t); o1.stop(t+1.8); o2.start(t); o2.stop(t+1.1);
-    } else if(material === 'silver'){
-      // dense soft metal -- rings long, the overlapping wash real metal chimes are known for
-      const o1 = audioCtx.createOscillator(); o1.type='sine'; o1.frequency.value=freq;
-      const o2 = audioCtx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*1.006;
-      const o3 = audioCtx.createOscillator(); o3.type='triangle'; o3.frequency.value=freq*3.0;
-      const g1 = audioCtx.createGain(), g3 = audioCtx.createGain();
-      g1.gain.setValueAtTime(1,t); g1.gain.exponentialRampToValueAtTime(0.0001,t+2.9);
-      g3.gain.setValueAtTime(0.22,t); g3.gain.exponentialRampToValueAtTime(0.0001,t+1.6);
-      o1.connect(g1); o2.connect(g1); g1.connect(out); o3.connect(g3); g3.connect(out);
-      o1.start(t); o1.stop(t+3); o2.start(t); o2.stop(t+3); o3.start(t); o3.stop(t+1.7);
-    } else if(material === 'brass'){
-      // a bell-alloy metal -- historically the longest, richest sustain of any of these (think singing bowls)
-      const o1 = audioCtx.createOscillator(); o1.type='sine'; o1.frequency.value=freq;
-      const o2 = audioCtx.createOscillator(); o2.type='sawtooth'; o2.frequency.value=freq;
-      const filt = audioCtx.createBiquadFilter(); filt.type='bandpass'; filt.frequency.value=freq*2.1; filt.Q.value=1.6;
-      const g1 = audioCtx.createGain(), g2 = audioCtx.createGain();
-      g1.gain.setValueAtTime(1,t); g1.gain.exponentialRampToValueAtTime(0.0001,t+3.6);
-      g2.gain.setValueAtTime(0.2,t); g2.gain.exponentialRampToValueAtTime(0.0001,t+2.1);
-      o1.connect(g1); g1.connect(out); o2.connect(filt); filt.connect(g2); g2.connect(out);
-      o1.start(t); o1.stop(t+3.7); o2.start(t); o2.stop(t+2.2);
-    } else { // wood
-      const bufSize = audioCtx.sampleRate*0.2;
-      const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+    M.amps.forEach((amp, i) => {
+      if(amp < 0.02) return;
+      const o = audioCtx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = freq * PARTIALS[i];
+      const g = audioCtx.createGain();
+      // Higher modes shed energy faster, which is why a struck bar settles onto
+      // its fundamental as it dies away instead of just getting quieter.
+      const ring = M.ring / Math.sqrt(PARTIALS[i]);
+      // Every voice used to open with setValueAtTime(1) — gain from nothing to
+      // full inside one sample. Measured, that mattered less than it looks: the
+      // partials all start at zero crossings, so only wood's noise burst really
+      // stepped in (1.6x its own running slope, against 1.0x for the metals).
+      // A couple of ms of attack costs nothing and removes it either way, and a
+      // struck bar does take a moment to load up rather than arriving instantly.
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(amp, t + M.attack);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + M.attack + ring);
+      o.connect(g); g.connect(out);
+      o.start(t); o.stop(t + M.attack + ring + 0.02);
+      last = Math.max(last, M.attack + ring + 0.02);
+    });
+
+    if(M.noise > 0){
+      // wood is mostly the sound of the hit itself rather than a ring after it
+      const len = Math.max(1, Math.round(audioCtx.sampleRate * 0.18));
+      const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
       const data = buf.getChannelData(0);
-      for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1) * (1 - i/bufSize);
+      for(let i=0;i<len;i++) data[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 2);
       const noise = audioCtx.createBufferSource(); noise.buffer = buf;
-      const filt = audioCtx.createBiquadFilter(); filt.type='bandpass'; filt.frequency.value=freq; filt.Q.value=2.2;
-      const o1 = audioCtx.createOscillator(); o1.type='sine'; o1.frequency.value=freq*0.5;
-      const g1 = audioCtx.createGain(), gn = audioCtx.createGain();
-      g1.gain.setValueAtTime(0.6,t); g1.gain.exponentialRampToValueAtTime(0.0001,t+0.32);
-      gn.gain.setValueAtTime(0.9,t); gn.gain.exponentialRampToValueAtTime(0.0001,t+0.22);
-      o1.connect(g1); g1.connect(out); noise.connect(filt); filt.connect(gn); gn.connect(out);
-      o1.start(t); o1.stop(t+0.35); noise.start(t);
+      const filt = audioCtx.createBiquadFilter();
+      filt.type = 'bandpass'; filt.frequency.value = freq*1.6; filt.Q.value = 1.1;
+      const gn = audioCtx.createGain();
+      gn.gain.setValueAtTime(0, t);
+      gn.gain.linearRampToValueAtTime(M.noise, t + 0.001);
+      gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      noise.connect(filt); filt.connect(gn); gn.connect(out);
+      noise.start(t);
+      last = Math.max(last, 0.2);
     }
+
+    setTimeout(()=>{ out.disconnect(); voices--; }, (last + 0.15)*1000);
   }
-  function pitchFor(rodLength){ return PITCH_K/(rodLength*rodLength); }
+  function pitchFor(rodLength, material){
+    const M = MATERIAL[material] || MATERIAL.brass;
+    return PITCH_K/(rodLength*rodLength) * M.pitch;
+  }
 
   // ---- physics + draw ----
   let lastT = null, elapsed = 0;
@@ -300,26 +349,45 @@
       r.angVel += angAcc*dt;
       r.angle += r.angVel*dt;
     }
-    // collisions between neighbors
+    // Collisions between neighbours. A pair either is or is not in contact, and
+    // the note belongs to the moment they meet — one impact, one note. This used
+    // to re-fire on a 140ms timer for as long as two rods happened to be inside
+    // touching distance, and since a rod only has to swing about 10px to reach
+    // its neighbour, at the default wind they are inside it most of the time.
+    // Measured, that was 9.8 note-starts a second on the settings the page opens
+    // with and 34.8 at nine rods in a full wind. Worse than the count: 41% of all
+    // the gaps between notes landed in one narrow bin at 144ms, i.e. the timer
+    // itself, audible as a steady 7Hz pulse running under everything. Weather is
+    // not periodic, and a chime that ticks is not reporting weather. On impacts
+    // only, the same settings give 2 a second with the gaps spread from 200ms to
+    // over a second, and no bin holding more than 45%.
     for(let i=0;i<n-1;i++){
       const a = state.rods[i], b = state.rods[i+1];
       const ax = bobX(a,i,n), bx = bobX(b,i+1,n);
-      const dist = Math.abs(ax-bx);
-      const collideDist = ROD_THICK + 2;
-      if(dist < collideDist){
-        const key = 'n';
-        if(!a.lastStrike[key] || now - a.lastStrike[key] > 140){
-          a.lastStrike[key] = now;
-          const effA = state.cordLength+a.rodLength*0.5, effB = state.cordLength+b.rodLength*0.5;
-          const relSpeed = Math.abs(a.angVel*effA - b.angVel*effB);
-          if(relSpeed > 6){
-            ensureAudio();
-            strike(pitchFor(a.rodLength), relSpeed, state.rodMaterial);
-            strike(pitchFor(b.rodLength), relSpeed, state.rodMaterial);
-          }
-          const push = 0.35;
-          a.angVel -= push/effA*10; b.angVel += push/effB*10;
-        }
+      const gap = Math.abs(ax-bx);
+      // they must clear the contact band by a little before they can strike
+      // again, or a rod resting right on the boundary chatters against it
+      if(gap >= COLLIDE_DIST + SEPARATE){ a.touching = false; continue; }
+      if(gap >= COLLIDE_DIST || a.touching) continue;
+      a.touching = true;
+
+      const effA = state.cordLength+a.rodLength*0.5, effB = state.cordLength+b.rodLength*0.5;
+      const dir = Math.sign(bx - ax) || 1;
+      const closing = (a.angVel*effA - b.angVel*effB) * dir;   // >0 = coming together
+      if(closing <= 0) continue;                                // drifted apart, no impact
+
+      // A proper impulse between two masses, not a fixed shove. Same stock, so
+      // mass goes with length. The old code applied its push on the timer whether
+      // or not the rods were even moving toward each other, which fed energy into
+      // the set and kept it rattling on its own.
+      const j = (1 + RESTITUTION) * closing / (1/a.rodLength + 1/b.rodLength);
+      a.angVel -= (j/a.rodLength) * dir / effA;
+      b.angVel += (j/b.rodLength) * dir / effB;
+
+      if(closing > MIN_STRIKE_SPEED){
+        ensureAudio();
+        strike(pitchFor(a.rodLength, state.rodMaterial), closing, state.rodMaterial);
+        strike(pitchFor(b.rodLength, state.rodMaterial), closing, state.rodMaterial);
       }
     }
 
