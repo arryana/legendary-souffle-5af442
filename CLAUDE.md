@@ -255,6 +255,26 @@ real numbers out of the running page (position, speed, whatever the claim is), n
 eyeballed picture. A bug report on this site is really "this lied to me physically," and that's
 the bar to hold your own testing to as well, not just the owner's.
 
+### Being right is not enough if it reads as broken
+
+Two different faults, and they are not worth the same. The owner's words: *"it's one thing
+with candler's cup, which is 'invisibly' broken, and another with something that will just
+look wrong even though it's right."*
+
+The promise this site makes is to the **visitor's eye**. So a piece that is *correct* but
+presents a state a visitor will read as a fault costs more than an ugly cut-out nobody can
+see — even though the second is worse as code. Galileo had exactly this: three instruments
+butted end to end left a 4°F band at each join where none of them had a gap to read, so it
+sat there apparently doing nothing while being perfectly truthful. Correct, and no use.
+**Fix that kind now.**
+
+The hidden kind can wait — but **write down what is hiding it**, because that is what fails
+silently later. Candler's cup and lip are badly-cut selections with squared-off edges, and
+they are invisible only because a clipping rectangle is holding them so. The clip is
+load-bearing. Move that piece's geometry without knowing it and the fault comes straight
+back. "Invisibly broken" there means *conditionally* invisible, which is a parked problem,
+not a solved one.
+
 ## Guardrails
 
 - Keep each change **small and self-contained** — one idea at a time.
