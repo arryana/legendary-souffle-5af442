@@ -140,7 +140,10 @@
     if(e.key===' '||e.key==='Enter'){ e.preventDefault(); setEternal(!sandEternal); }
   });
   let sandLayer=null, sandCtx=null;
-  function clearSand(){ if(sandCtx) sandCtx.clearRect(0,0,sandLayer.width,sandLayer.height); }
+  // where the stylus was last frame; cleared with the sand so a wipe cannot leave
+  // a stray line drawn from wherever the bob happened to be before it
+  let sandPrev=null;
+  function clearSand(){ if(sandCtx) sandCtx.clearRect(0,0,sandLayer.width,sandLayer.height); sandPrev=null; }
 
   // ---------- latitude: set by dragging a line across the small globe ----------
   // a line of latitude, viewed exactly edge-on (the standard way a globe is drawn
@@ -379,10 +382,15 @@
     fl.beginPath(); fl.arc(cx,cy,floorR*0.86,0,7); fl.stroke();
     sandLayer=document.createElement('canvas'); sandLayer.width=W; sandLayer.height=H;
     sandCtx=sandLayer.getContext('2d');
+    sandPrev=null;   // the old sand went with the old layer; don't draw across the gap
   }
   window.addEventListener('resize',resize);
 
-  // ---------- pins: a ring of 24 pegs, one per hour, that the bob nudges over
+  // ---------- pins: a ring of 24 pegs, 15 degrees apart — an hour's worth of
+  // turn each, but only at the pole, where the plane really does come round at
+  // 15 deg/hour. Everywhere else the same peg takes 1/sin(latitude) times as
+  // long, which is the point: the ring is a clock that runs slower the further
+  // you are from the pole, and stops on the equator. The bob nudges them over
   // as it reaches each extreme of its swing — the bob only ever touches the
   // ring on whichever side it's currently swung out to, so a pin and the one
   // opposite it fall half a swing apart, not together, alternating with the
@@ -478,15 +486,28 @@
     // near the pivot — this is what actually makes the rotation legible
     const amp=floorR*0.72;
 
-    // sand trace: a stylus-thin mark laid down along the current plane each
-    // frame, on a layer that never clears itself frame-to-frame — only the
-    // pin-ring reset (or never, in ∞ mode) wipes it, so it slowly fans into
-    // a rosette exactly the way a real sand-tray Foucault demonstration does
-    sandCtx.save();
-    sandCtx.translate(cx,cy); sandCtx.rotate(planeAngle);
-    sandCtx.strokeStyle='rgba(233,217,168,0.045)'; sandCtx.lineWidth=1;
-    sandCtx.beginPath(); sandCtx.moveTo(-amp,0); sandCtx.lineTo(amp,0); sandCtx.stroke();
-    sandCtx.restore();
+    const bx=Math.cos(planeAngle)*amp*swingFrac, by=Math.sin(planeAngle)*amp*swingFrac;
+
+    // Sand trace: the stylus is on the bob, so the mark is the ground the bob has
+    // actually crossed since last frame — not the whole swing line. Laying the
+    // full chord every frame drew sand an average 35% of the way out past wherever
+    // the bob had got to, and it made the darkness depend on the frame rate rather
+    // than on the pendulum: the same pixel was repainted every frame instead of
+    // once per pass. Tracking the bob fixes both, and gets the real trace's
+    // signature for free — the bob is barely moving at each end of its swing, so
+    // several frames' worth of marks pile up in the same place and the turning
+    // points come out dark, while it races through the middle and leaves the
+    // faintest line there. The layer never clears itself; only the pin-ring reset
+    // (or never, in ∞ mode) wipes it, so it fans slowly into a rosette.
+    if(sandPrev){
+      sandCtx.save();
+      sandCtx.translate(cx,cy);
+      sandCtx.strokeStyle='rgba(233,217,168,0.16)';
+      sandCtx.lineWidth=1; sandCtx.lineCap='round';
+      sandCtx.beginPath(); sandCtx.moveTo(sandPrev.x,sandPrev.y); sandCtx.lineTo(bx,by); sandCtx.stroke();
+      sandCtx.restore();
+    }
+    sandPrev={x:bx,y:by};
 
     ctx.clearRect(0,0,W,H);
     ctx.drawImage(floorLayer,0,0,W,H);
@@ -501,7 +522,6 @@
     ctx.lineTo(-Math.cos(planeAngle)*amp, -Math.sin(planeAngle)*amp);
     ctx.stroke();
 
-    const bx=Math.cos(planeAngle)*amp*swingFrac, by=Math.sin(planeAngle)*amp*swingFrac;
     // thread from the (implied, off the top of the frame) pivot
     ctx.strokeStyle='rgba(20,17,14,.5)'; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(bx,by); ctx.stroke();

@@ -169,6 +169,17 @@
   }
   .anchor.pos-title .anchor-q:hover, .anchor.pos-title .anchor-q:focus-visible{ opacity:.72; }
   .anchor.pos-title .anchor-copy{ max-width:min(520px,86vw); text-align:center; margin-top:14px; transform:translateY(-6px); }
+  /* the name doesn't say how to say it, so a pronunciation sits under the
+     wordmark — set small and faint enough to read as a dictionary's note rather
+     than as a line of the page's own copy. Always there, not tucked inside the
+     popup: someone who never clicks the title is exactly who needs it. The font
+     stack names fallbacks because Jost's Google subset has no IPA glyphs, so the
+     ɪ would otherwise be picked up by whatever the browser happened to reach for. */
+  .anchor.pos-title .pronounce{
+    margin:7px 0 0; font-size:12px; line-height:1; letter-spacing:.05em;
+    color:var(--parchment); opacity:.34;
+    font-family:'Jost', system-ui, 'Segoe UI', 'Noto Sans', 'DejaVu Sans', sans-serif;
+  }
 
   /* foot anchor: sits after the last card, in the normal flow of the page —
      you only find it by scrolling all the way down, it isn't pinned to the viewport */
@@ -178,6 +189,7 @@
 <div id="wrap">
   <div class="anchor pos-title">
     <h1><button class="anchor-q" type="button" aria-expanded="false" aria-controls="anchor-copy-title" aria-label="what is this?">sagne</button></h1>
+    <p class="pronounce" lang="en-fonipa">/seɪn/</p>
     <p class="anchor-copy" id="anchor-copy-title">tools and toys for twiddling. no scores, no goals, no timers (except the tools which are timers), no links, no likes, no ads, no in-game purchases. nothing exciting, but hopefully something enjoyable.</p>
   </div>
 
