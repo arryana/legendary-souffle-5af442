@@ -578,15 +578,28 @@
               // and y only, so a float sharing both with a nearer one has gone,
               // however honestly it was placed — and a float held up by something
               // hidden reads as held up by nothing. Penalise that, heavily.
-              let near = Infinity, buried = 0;
+              // ...and the GLASS is something to rest against too. That is the
+              // piece that was missing, and it only shows up in a narrow vessel: a
+              // float landing on an empty floor had nothing to roll toward, so the
+              // first one sat dead centre, and the tube's floor is 2.35 bulb widths
+              // across — half of it, 0.675, is less than the one full width a
+              // neighbour needs to sit level. So nothing could ever fit beside the
+              // first float and all twelve had to go on top of it. That is the
+              // narrow tower. The capsule's floor is wider and heaped correctly all
+              // along, which is why this hid.
+              //
+              // Counting the wall as contact sends the first float to the side and
+              // lets the floor fill across before the heap starts to build up.
+              const rr = roomAt(inst, at.y);
+              let gap = (rr - Math.hypot(at.x - inst.cx, at.z))/bw;   // 0 = against the glass
+              let buried = 0;
               for(const a of mine){
-                const dd = Math.hypot(at.x-a.x, at.z-a.z, (at.y-a.y)*(bw/bh));
-                if(dd < near) near = dd;
+                const d3 = Math.hypot(at.x-a.x, at.z-a.z, (at.y-a.y)*(bw/bh))/bw;
+                if(d3 - 1 < gap) gap = d3 - 1;                        // 0 = against a neighbour
                 const seen = Math.hypot((at.x-a.x)/bw, (at.y-a.y)/bh);
                 if(at.z < a.z - bw*0.06 && seen < 0.85) buried = Math.max(buried, 0.85 - seen);
               }
-              if(near === Infinity) near = Math.hypot(sx, sz);
-              const huddle = -near/bw - buried*3;
+              const huddle = -Math.abs(gap) - buried*3;
               const cand = { x: at.x, y: at.y, z: at.z, depth, huddle };
               if(!fallback || depth > fallback.depth) fallback = cand;
               b.x = at.x; b.y = at.y; b.z = at.z;
