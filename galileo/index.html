@@ -233,17 +233,17 @@
   // base confuses the trace where it meets the foot.)
   const INSTRUMENTS = [
     { key:'capsule', file:'vessel-capsule.png', vw:202, vh:612, scale:0.66,
-      cx:101.4, top:75, bot:557, from:12, count:8,
+      cx:101.4, top:75, bot:557, from:12, count:7,
       halfWidth:[37.2,52,58.8,61.2,65.2,69.6,69.6,70,72.8,72.8,70,67.2,66,66.8,66.8,69.6,69.2,72.4,72.4,72.8,72.4,72.4,72,72,72,72,72,71.2] },
     { key:'tube', file:'vessel-dark.png', vw:220, vh:725, scale:1.00,
-      cx:109, top:143, bot:645, from:40, count:13,
+      cx:109, top:143, bot:645, from:36, count:12,
       // straight-sided, so one figure serves the whole column. Traced by hand
       // rather than automatically: this photograph's walls are far fainter than
       // the other two and the automatic trace loses them below the halfway mark.
       halfWidth:[48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48],
       highlight:{ x:54, y:480, w:13, h:138 } },
     { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.66,
-      cx:140, top:151, bot:536, from:88, count:6,
+      cx:140, top:151, bot:536, from:80, count:8,
       halfWidth:[33.2,36.4,41.2,45.6,50.8,56,65.6,70.4,75.2,79.6,84.4,88.4,91.6,95.2,98.4,100.8,102.4,104,105.2,105.2,105.2,103.6,101.2,97.6,92.8,86.4,77.2,64.8] },
   ];
 
@@ -473,12 +473,12 @@
       // further along that way, so this always terminates — letting the two groups
       // shove each other in opposite directions inside the loop does not converge
       // at all, and leaves floats sitting inside one another.
-      const drop = (b, t, dir, mine, limit) => {
+      const drop = (b, t, dir, mine, limit, from) => {
         // Never past the float placed before it. Rolling into a gap is fine, but
         // these are spheres in a fluid: buoyancy sorts them, lighter always above
         // heavier. Without this a lighter one could roll into a low gap, and since
         // the reading IS the lowest float still up, that gives a wrong number.
-        let y = dir > 0 ? Math.max(b.want, hi, limit) : Math.min(b.want, lo, limit);
+        let y = dir > 0 ? Math.max(from, hi, limit) : Math.min(from, lo, limit);
         let x = inst.cx + t * roomAt(inst, y);
         for(let step=0; step<80; step++){
           let moved = false;
@@ -501,9 +501,17 @@
         let limit = dir > 0 ? -Infinity : Infinity;
         for(const b of seq){
           let best = null, fallback = null;
-          for(let c=0;c<TRIES;c++){
-            const t = (c/(TRIES-1))*2 - 1;                  // -1 .. +1 across the glass
-            const at = drop(b, t, dir, mine, limit);
+          // Two heights to start the fall from, tried in turn: where buoyancy
+          // wants this float, and failing that the boundary its group rests
+          // against. A float sitting at exactly its own tag is neutral and hangs
+          // mid-glass, and once the group above is deep enough to reach down into
+          // that spot there is nowhere at its wanted height for it to be — so it
+          // gives up on hanging and settles onto the heap instead, which is what
+          // it would really do rather than sharing space with another sphere.
+          for(let c=0;c<TRIES*2;c++){
+            const t = ((c % TRIES)/(TRIES-1))*2 - 1;        // -1 .. +1 across the glass
+            const from = c < TRIES ? b.want : (dir > 0 ? hi : lo);
+            const at = drop(b, t, dir, mine, limit, from);
             if(at.y > lo + 0.01 || at.y < hi - 0.01) continue;   // no room for it here
             // furthest along the way it was going, i.e. deepest into the heap
             const depth = dir > 0 ? -at.y : at.y;
