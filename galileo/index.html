@@ -249,30 +249,32 @@
     // no real one has. The sprites are transparent throughout and depict no fill
     // line, so it cannot be read off the image and has to be stated.
     //
-    // scale 0.80, up from 0.66, and this is the change that makes the instrument
-    // READ. What you read on a galileo is the gap: a cluster up, a cluster down,
-    // and the lowest float still up is the temperature. Emptying the neck cost this
-    // vessel liquid, and at 0.66 it had only 3.75 bulb heights of it — the floats
-    // themselves used nearly all of that and the two clusters closed up against
-    // each other, gap 0.03. No float count fixed it; even down to six the gap
-    // stayed under one bulb height, because the fill line caps it.
+    // 285, and scale 0.76 up from 0.66. Together these are what make the instrument
+    // READ. What you read on a galileo is the gap: a cluster up, a cluster down, and
+    // the lowest float still up is the temperature. At 0.66 with the neck emptied
+    // this vessel had 3.75 bulb heights of liquid, the floats used nearly all of it
+    // and the two clusters closed against each other — gap 0.03. No float count
+    // fixed that; even down to six the gap stayed under one bulb height.
     //
-    // The cause is that this vessel is DRAWN small. All three are the same height
-    // on screen, so a vessel drawn at 66% needs floats 1/0.66 as big in its own
-    // coordinates to look the same size — 61.7 units inside an interior only 385
-    // tall. Drawing it larger shrinks its floats in its own units without changing
-    // how big they look. At 0.80 they are 50.9, the liquid is 4.81 bulb heights and
-    // the gap 2.25, longest stack 2, everything clean. At 0.66 nothing works.
+    // Two levers, and I reached for the wrong one first. Size: all three vessels
+    // stand the same height on screen, so one drawn at 66% needs floats 1/0.66 as
+    // large in its own coordinates to look the same size — 61.7 units inside an
+    // interior only 385 tall. Drawing it larger shrinks its floats in its own units
+    // without changing how big they look. I took that to 0.80, which works but is
+    // more than is needed, and she was right to say so.
     //
-    // The cost is that the teardrop is no longer the same size as the capsule.
-    // Between a matched silhouette and an instrument that shows its reading, the
-    // reading wins — but the silhouette is hers, and 0.90 or a smaller float count
-    // are both on the table if she would rather pay differently.
+    // The better lever is the fill line, because RAISING it adds liquid instead of
+    // spending it, and lifts the clusters out of the middle of the glass at the same
+    // time. The two trade against each other: more liquid also means more room to
+    // queue up the taper. Swept together, 0.76 with the line at 285 gives 5.29 bulb
+    // heights, a worst gap of 1.98 and a longest stack of 2, everything clean —
+    // where 0.80 with the line at 315 needed a bigger vessel for a gap barely wider.
+    // Below about 0.74 the two clusters start closing again whatever the fill line.
     //
     // The tube's own reference photograph is filled near its top, and there is no
     // reference for the capsule, so neither of those is given a fill line.
-    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.80,
-      cx:140, top:151, bot:536, from:80, count:8, fill:315,
+    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.76,
+      cx:140, top:151, bot:536, from:80, count:8, fill:285,
       halfWidth:[18,20,21,21.5,23,26,29,32,33.5,36.5,39,41,44,47.5,50,51.5,53.5,55.5,58.5,57.5,69.5,73,74,74.5,71.5,68,57.5,49] },
   ];
 
