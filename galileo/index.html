@@ -497,8 +497,24 @@
       // supports what stays visible. A deliberate compromise, and worth naming:
       // the reading is the number on the lowest float still up, and a piece that
       // cannot be read is no use however faithfully its spheres are arranged.
-      const Z_LIMIT = 0.34;
-      const RINGS = [0, 0.5, 0.85, 1.0], SPOKES = 10;
+      // ...and the depth allowed has to be the depth the glass HAS. A vessel is a
+      // cylinder — as deep across as it is wide — so z gets the same room x does.
+      // Held to a third of that, the heap was flat, and in a flat heap bulbs that
+      // touch cannot overlap on screen, so there was no clumping available at any
+      // spacing. That is the whole of what went missing.
+      //
+      // The reason it was ever clamped still stands: a float held up by one hidden
+      // behind it reads as held up by nothing. But contact in 3D at this size means
+      // two floats separated mostly in depth are also nearly on top of each other
+      // on screen, which reads as the crowd it is. The case to guard is only the
+      // one where a float goes fully behind a nearer one, and the buried penalty
+      // below does that where it belongs — in choosing the spot, not by flattening
+      // every arrangement in advance.
+      const Z_LIMIT = 1.0;
+      // Nesting into the notch between two floats below needs a spot near that
+      // notch to exist in the first place. Ten spokes on three rings is too coarse
+      // to find one, so the huddle rule would settle for whatever it could reach.
+      const RINGS = [0, 0.3, 0.55, 0.75, 0.9, 1.0], SPOKES = 14;
       const SPOTS = [];
       for(const r of RINGS){
         if(r === 0){ SPOTS.push([0,0]); continue; }
@@ -547,25 +563,36 @@
               const at = drop(b, sx, sz, dir, mine, limit, from);
               if(at.y > lo + 0.01 || at.y < hi - 0.01) continue;
               const depth = dir > 0 ? -at.y : at.y;
-              // Among positions that settle equally deep, take the one furthest
-              // from everything already placed. On a flat line the same job was
-              // done by rolling toward the glass, but a round vessel has a back
-              // wall too, and "toward the glass" sent floats directly behind one
-              // another where they hid each other completely. Spreading over the
-              // base is both what a settled layer does and what leaves the tags
-              // where they can be read.
-              let out = Infinity;
+              // Among positions that settle equally deep, take the one resting
+              // AGAINST its neighbours — a heap of floats in a glass is a huddle,
+              // not a lattice. This used to read "take the one furthest from
+              // everything already placed", which is the opposite, and it went
+              // unnoticed only because the interior was guessed narrow enough that
+              // barely one column fitted, so there were no far-apart spots to
+              // take. Tracing the real glass handed that rule the room to spread
+              // and the clumping vanished. Gravity still comes first: an offset
+              // spot that settles LOWER beats a spot directly above a neighbour,
+              // which is what makes them nest rather than stack in a tower.
+              //
+              // The one thing contact must not buy is invisibility. Screen shows x
+              // and y only, so a float sharing both with a nearer one has gone,
+              // however honestly it was placed — and a float held up by something
+              // hidden reads as held up by nothing. Penalise that, heavily.
+              let near = Infinity, buried = 0;
               for(const a of mine){
                 const dd = Math.hypot(at.x-a.x, at.z-a.z, (at.y-a.y)*(bw/bh));
-                if(dd < out) out = dd;
+                if(dd < near) near = dd;
+                const seen = Math.hypot((at.x-a.x)/bw, (at.y-a.y)/bh);
+                if(at.z < a.z - bw*0.06 && seen < 0.85) buried = Math.max(buried, 0.85 - seen);
               }
-              if(out === Infinity) out = Math.hypot(sx, sz);
-              const cand = { x: at.x, y: at.y, z: at.z, depth, out };
+              if(near === Infinity) near = Math.hypot(sx, sz);
+              const huddle = -near/bw - buried*3;
+              const cand = { x: at.x, y: at.y, z: at.z, depth, huddle };
               if(!fallback || depth > fallback.depth) fallback = cand;
               b.x = at.x; b.y = at.y; b.z = at.z;
               if(clashes(b, others)) continue;
               if(!best || depth > best.depth + bh*0.40 ||
-                 (depth > best.depth - bh*0.40 && out > best.out)) best = cand;
+                 (depth > best.depth - bh*0.40 && huddle > best.huddle)) best = cand;
             }
           }
           const pick = best || fallback || { x: inst.cx, y: dir > 0 ? hi : lo, z: 0 };
