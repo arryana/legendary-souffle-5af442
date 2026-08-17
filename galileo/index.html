@@ -242,8 +242,27 @@
       // the other two and the automatic trace loses them below the halfway mark.
       halfWidth:[48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48],
       highlight:{ x:54, y:480, w:13, h:138 } },
+    // fill: the liquid surface. A float rises to the surface, not into the air
+    // above it, and this vessel's reference photograph shows its long neck plainly
+    // EMPTY — the floats raft across the wide part with clear glass above them.
+    // Without that, buoyancy walked them single file up the taper, which is a queue
+    // no real one has. The sprites are transparent throughout and depict no fill
+    // line, so it cannot be read off the image and has to be stated.
+    //
+    // 315 is as low as this vessel will take, and the limit is capacity, not taste.
+    // Lowering the fill line shortens the liquid, and eight floats need a certain
+    // depth of it: at 360 there are only 2.73 bulb heights left and the heap starts
+    // breaking density order, at 330 the bulbs press into each other. 315 leaves
+    // 3.75 and comes out clean on every check, taking the longest vertical run from
+    // five floats down to three — three nested in a heap, not a queue up a taper.
+    // Getting a wider raft than that means fewer floats in this vessel, which would
+    // cost either its 4-degree steps or its 80-108 range, so it is not mine to
+    // trade away.
+    //
+    // The tube's own reference photograph is filled near its top, and there is no
+    // reference for the capsule, so neither of those is given a fill line.
     { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.66,
-      cx:140, top:151, bot:536, from:80, count:8,
+      cx:140, top:151, bot:536, from:80, count:8, fill:315,
       halfWidth:[18,20,21,21.5,23,26,29,32,33.5,36.5,39,41,44,47.5,50,51.5,53.5,55.5,58.5,57.5,69.5,73,74,74.5,71.5,68,57.5,49] },
   ];
 
@@ -420,14 +439,35 @@
       // glass tip reaching 0.892*fw above the centre, and below the bulb a metal
       // tag hanging to 0.875*fw.
       //
-      // Insetting the bottom by that full tag length was wrong, and it is why the
-      // sunken ones sat clear of the floor instead of crowding it: the tag was
-      // propping the bulb up two thirds of a float-width above the glass. On a real
-      // one the tag hangs from a wire loop and folds against the bottom — it does
-      // not hold the bulb off it. So the bottom is inset by what the BULB reaches
-      // (0.216*fw below the sprite's centre) plus a little, and the tag is allowed
-      // to lie over the thick glass of the base, which is where it would lie.
-      const hi = inst.top + inst.fw*0.892, lo = inst.bot - inst.fw*0.30;
+      // Letting the tag lie over the thick glass of the base was too generous: it
+      // put the bottom floats' tags down inside the metal foot. In the reference
+      // photographs the lowest float's tag hangs clear below its bulb and rests on
+      // the floor of the liquid — the bulb genuinely does sit a tag-length up. So
+      // the whole sprite, tag included, stays inside the liquid.
+      //
+      // And a float cannot go where the glass is narrower than the float. roomAt
+      // clamps the room at zero, which quietly PERMITTED exactly that: in the
+      // teardrop's neck the interior is about 43 units across and the bulb is 52,
+      // so floats queued up a taper they could never physically enter, poking
+      // through both walls at once. That is the teardrop's chain. The reference for
+      // this vessel has them heaped on the bottom, never stacked up the neck.
+      //
+      // Worth naming why this hid: the check for a float outside its glass measures
+      // how far it sits from the centre line, and in the neck that answer is zero.
+      // A float wider than the glass around it passes a test written that way.
+      const halfAt = (y) => {
+        const p = inst.halfWidth;
+        const f = Math.max(0, Math.min(1, (y - inst.top)/(inst.bot - inst.top)));
+        const k = f*(p.length-1), i = Math.floor(k);
+        return i >= p.length-1 ? p[p.length-1] : p[i] + (p[i+1]-p[i])*(k - i);
+      };
+      const admits = (y) => halfAt(y) >= inst.fw*0.5;
+      const stepY = (inst.bot - inst.top)/500;
+      let roof = inst.top, sole = inst.bot;
+      while(roof < inst.bot && !admits(roof)) roof += stepY;
+      while(sole > roof && !admits(sole)) sole -= stepY;
+      const hi = Math.max(inst.top + inst.fw*0.892, roof, inst.fill || 0);
+      const lo = Math.max(hi, Math.min(inst.bot - inst.fw*0.892, sole));
 
       // Where each float wants to be. Buoyancy is a threshold, not a slope: a
       // sphere is either lighter than the liquid or heavier, and only the one
