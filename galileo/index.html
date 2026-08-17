@@ -445,48 +445,92 @@
       // Sunk floats collect on the bottom; they do not stand in a column. Spheres
       // resting against one another nest — two side by side sit at nearly the
       // same height, and only one directly above another has to be a whole
-      // diameter lower. So the drop a float needs is not a fixed gap but what the
-      // circles themselves demand, sqrt(d^2 - dx^2), falling to nothing once they
-      // are a diameter apart sideways. Which also means a wide vessel heaps its
-      // floats and a narrow one is forced to stack them, without either being
-      // told to: the capsule is a little over two floats across and packs into
-      // two offset rows, the tube barely fits two and comes out much more like a
-      // column. That difference is the glass, not a rule.
+      // diameter lower — so the drop a float needs is what the circles themselves
+      // demand, sqrt(d^2 - dx^2), falling to nothing once they are a diameter
+      // apart sideways.
       //
-      // Two passes, because the two facts are circular: how far off centre a
-      // float sits depends on the height it settles at, and that height depends
-      // on how far off centre its neighbours already are.
+      // But which sideways position? A fixed left-right alternation gave every
+      // vessel exactly TWO columns however wide it was, so the teardrop's belly —
+      // wide enough for three abreast — showed the same narrow pair as the tube.
+      // Instead each float tries a spread of lateral positions and takes the one
+      // that lets it settle furthest in the direction it is going, which is what
+      // a sphere does: it rolls into whatever gap is lowest. A wide vessel then
+      // fills across before it builds up, a narrow one has no choice but to stack,
+      // and neither is told which to do. The tube still comes out a near-column
+      // because two floats genuinely will not fit side by side in it.
       //
-      // The two groups settle against opposite ends and are packed separately.
-      // A float lighter than the liquid rises and rests against the top, or on
+      // The two groups settle against opposite ends and are packed separately. A
+      // float lighter than the liquid rises and rests against the top, or on
       // whatever is already up there; a heavier one sinks and rests on the floor,
       // or on the heap already down there. Packing the whole set in one direction
-      // cannot express that: from the top down the sunken heap ends up hanging
-      // off the floats above it, and from the floor up the floating group gets
-      // stacked on top of the sunken one and pushed clear out of the glass.
-      const settle = (seq, dir, others) => {
-        for(let pass=0; pass<2; pass++){
-          const placed = [];
-          for(const b of seq){
-            let y = dir > 0 ? Math.max(b.want, hi) : Math.min(b.want, lo);
-            let x = inst.cx + b.lean * roomAt(inst, y);
-            const clear = (a, away) => {
-              const dx = Math.abs(x - a.x);
-              const need = dx >= d ? 0 : Math.sqrt(d*d - dx*dx);
-              if(away > 0 ? (a.y + need > y) : (a.y - need < y)){
-                y = away > 0 ? a.y + need : a.y - need;
-                x = inst.cx + b.lean * roomAt(inst, y);
-              }
-            };
-            // the other group is settled against the far end, so it can only
-            // ever hold this one back — a float sitting at exactly its own
-            // temperature hangs mid-glass, and without this the group above
-            // settles straight down through it
-            for(const a of others) clear(a, -dir);
-            for(const a of placed) clear(a, dir);
-            b.y = y; b.x = x;
-            placed.push(b);
+      // cannot express that: from the top down the sunken heap hangs off the
+      // floats above it, and from the floor up the floating group gets stacked on
+      // the sunken one and pushed clean out of the glass.
+      const TRIES = 15;
+      // Settling one float: try a spread of lateral positions, let each fall (or
+      // rise) until it rests on what is already there, and keep the one that gets
+      // furthest. Every push goes the SAME way, and y is only ever allowed to move
+      // further along that way, so this always terminates — letting the two groups
+      // shove each other in opposite directions inside the loop does not converge
+      // at all, and leaves floats sitting inside one another.
+      const drop = (b, t, dir, mine, limit) => {
+        // Never past the float placed before it. Rolling into a gap is fine, but
+        // these are spheres in a fluid: buoyancy sorts them, lighter always above
+        // heavier. Without this a lighter one could roll into a low gap, and since
+        // the reading IS the lowest float still up, that gives a wrong number.
+        let y = dir > 0 ? Math.max(b.want, hi, limit) : Math.min(b.want, lo, limit);
+        let x = inst.cx + t * roomAt(inst, y);
+        for(let step=0; step<80; step++){
+          let moved = false;
+          for(const a of mine){
+            const dx = Math.abs(x - a.x);
+            if(dx >= d) continue;
+            const need = Math.sqrt(d*d - dx*dx);
+            const want = dir > 0 ? a.y + need : a.y - need;
+            if(dir > 0 ? want > y + 1e-6 : want < y - 1e-6){ y = want; moved = true; }
           }
+          if(!moved) break;
+          x = inst.cx + t * roomAt(inst, y);   // the glass narrows as it travels
+        }
+        return { x, y };
+      };
+      const clashes = (b, list) => list.some(a => Math.hypot(b.x-a.x, b.y-a.y) < d - 0.5);
+
+      const settle = (seq, dir, others) => {
+        const mine = [];
+        let limit = dir > 0 ? -Infinity : Infinity;
+        for(const b of seq){
+          let best = null, fallback = null;
+          for(let c=0;c<TRIES;c++){
+            const t = (c/(TRIES-1))*2 - 1;                  // -1 .. +1 across the glass
+            const at = drop(b, t, dir, mine, limit);
+            if(at.y > lo + 0.01 || at.y < hi - 0.01) continue;   // no room for it here
+            // furthest along the way it was going, i.e. deepest into the heap
+            const depth = dir > 0 ? -at.y : at.y;
+            // Ties broken toward the GLASS, not toward the middle. A sphere
+            // settling on a floor rolls until something stops it, which is the
+            // wall or another sphere — and packing outward-in is the only way to
+            // get three into a row with room for exactly three. Landing the first
+            // one short of the wall blocks the third for good, which is why the
+            // teardrop's belly showed two abreast when it fits three. Sign taken
+            // from the float's own preferred side, so a heap keeps some variety.
+            const out = Math.abs(t) + (Math.sign(t) === Math.sign(b.lean) ? 0.02 : 0);
+            const cand = { x: at.x, y: at.y, depth, out };
+            if(!fallback || depth > fallback.depth) fallback = cand;
+            // The other group is settled against the far end, and a float may not
+            // end up inside it. Rather than push back — which is what would not
+            // converge — the position is simply rejected and another tried.
+            b.x = at.x; b.y = at.y;
+            if(clashes(b, others)) continue;
+            if(!best || depth > best.depth + d*0.10 ||
+               (depth > best.depth - d*0.10 && out > best.out)) best = cand;
+          }
+          // nothing clear of the other group means the vessel is genuinely too
+          // full for its float count; take the deepest and let it show
+          const pick = best || fallback || { x: inst.cx, y: dir > 0 ? hi : lo };
+          b.x = pick.x; b.y = pick.y;
+          limit = pick.y;
+          mine.push(b);
         }
       };
       const up   = order.filter(b => b.temp >  currentTempF);            // lightest first
