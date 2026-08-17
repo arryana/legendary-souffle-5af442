@@ -244,7 +244,7 @@
       highlight:{ x:54, y:480, w:13, h:138 } },
     { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.66,
       cx:140, top:151, bot:536, from:80, count:8,
-      halfWidth:[33.2,36.4,41.2,45.6,50.8,56,65.6,70.4,75.2,79.6,84.4,88.4,91.6,95.2,98.4,100.8,102.4,104,105.2,105.2,105.2,103.6,101.2,97.6,92.8,86.4,77.2,64.8] },
+      halfWidth:[18,20,21,21.5,23,26,29,32,33.5,36.5,39,41,44,47.5,50,51.5,53.5,55.5,58.5,57.5,69.5,73,74,74.5,71.5,68,57.5,49] },
   ];
 
   const FLOAT_IMAGES = ['blue','aqua','green','yellow','gold','orange','red','pink','palepink','purple','lavender','silver'];
@@ -488,14 +488,16 @@
       // height, clearance is the 3D distance between two bulbs, and the floats are
       // finally drawn back to front. Depth costs nothing physically — the glass
       // is as deep as it is wide — and buys the one thing that was missing.
-      // Depth is real but it is also the one axis the viewer cannot see along, so
-      // it is held to a little over half the radius. Floats still sit behind and
-      // in front of each other and still overlap through the glass, which is the
-      // whole point — but none can hide completely behind another, and the tags
-      // stay readable. A deliberate compromise: the reading is the number on the
-      // lowest float still up, and a piece you cannot read is no use however
-      // faithfully its spheres are arranged.
-      const Z_LIMIT = 0.55;
+      // Depth is real, but it is the one axis the viewer cannot see along, and two
+      // things go wrong if it is given free rein. Tags disappear behind nearer
+      // floats, and — worse — a float resting on one BEHIND it reads as resting on
+      // nothing at all, because whatever is holding it up is hidden. Held to about
+      // a third of the radius, floats still sit in front of and behind each other
+      // and still overlap through the glass, which is the whole point, while what
+      // supports what stays visible. A deliberate compromise, and worth naming:
+      // the reading is the number on the lowest float still up, and a piece that
+      // cannot be read is no use however faithfully its spheres are arranged.
+      const Z_LIMIT = 0.34;
       const RINGS = [0, 0.5, 0.85, 1.0], SPOKES = 10;
       const SPOTS = [];
       for(const r of RINGS){
@@ -587,7 +589,7 @@
           const flat = Math.hypot(b.x-a.x, b.z-a.z)/bw, dy = (b.y-a.y)/bh;
           if(flat*flat + dy*dy < 1.55) touching++;
         }
-        b.tilt = Math.min(3, touching)/3 * 9 * (b.lean >= 0 ? 1 : -1)
+        b.tilt = Math.min(3, touching)/3 * 4 * (b.lean >= 0 ? 1 : -1)
                * (0.55 + 0.45*Math.abs(Math.sin(b.temp*1.7)));
       }
 
