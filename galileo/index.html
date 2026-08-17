@@ -64,7 +64,7 @@
        narrow screen height has to be capped by the width available or the set
        runs off the sides (the body does not scroll, so it would simply be cut
        off rather than reachable). The 1.15 leaves a little slack over that 1.09. */
-    height:min(74vh, 690px, calc((96vw - 60px) / 0.82));
+    height:min(74vh, 690px, calc((96vw - 60px) / 0.86));
   }
   .instrument{
     height:100%;
@@ -150,7 +150,7 @@
      rather than merely bigger. */
   @media (orientation:portrait){
     #stage{ padding:2vh 2vw; }
-    #instruments{ gap:8px; height:min(62vh, 540px, calc((96vw - 30px) / 0.82)); }
+    #instruments{ gap:8px; height:min(62vh, 540px, calc((96vw - 30px) / 0.86)); }
   }
 </style>
 </head>
@@ -242,9 +242,9 @@
       // the other two and the automatic trace loses them below the halfway mark.
       halfWidth:[48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48],
       highlight:{ x:54, y:480, w:13, h:138 } },
-    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.56,
-      cx:139.7, top:171, bot:554, from:88, count:6,
-      halfWidth:[38.4,42.8,47.6,52,58,67.2,72,76.4,80.8,85.2,89.2,92.4,95.6,98.4,100.8,102.8,104.4,105.2,105.2,105.2,103.6,101.2,97.6,92.8,86.4,78,66,48.8] },
+    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.66,
+      cx:140, top:151, bot:536, from:88, count:6,
+      halfWidth:[33.2,36.4,41.2,45.6,50.8,56,65.6,70.4,75.2,79.6,84.4,88.4,91.6,95.2,98.4,100.8,102.4,104,105.2,105.2,105.2,103.6,101.2,97.6,92.8,86.4,77.2,64.8] },
   ];
 
   const FLOAT_IMAGES = ['blue','aqua','green','yellow','gold','orange','red','pink','palepink','purple','lavender','silver'];
