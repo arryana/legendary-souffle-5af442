@@ -249,19 +249,29 @@
     // no real one has. The sprites are transparent throughout and depict no fill
     // line, so it cannot be read off the image and has to be stated.
     //
-    // 315 is as low as this vessel will take, and the limit is capacity, not taste.
-    // Lowering the fill line shortens the liquid, and eight floats need a certain
-    // depth of it: at 360 there are only 2.73 bulb heights left and the heap starts
-    // breaking density order, at 330 the bulbs press into each other. 315 leaves
-    // 3.75 and comes out clean on every check, taking the longest vertical run from
-    // five floats down to three — three nested in a heap, not a queue up a taper.
-    // Getting a wider raft than that means fewer floats in this vessel, which would
-    // cost either its 4-degree steps or its 80-108 range, so it is not mine to
-    // trade away.
+    // scale 0.80, up from 0.66, and this is the change that makes the instrument
+    // READ. What you read on a galileo is the gap: a cluster up, a cluster down,
+    // and the lowest float still up is the temperature. Emptying the neck cost this
+    // vessel liquid, and at 0.66 it had only 3.75 bulb heights of it — the floats
+    // themselves used nearly all of that and the two clusters closed up against
+    // each other, gap 0.03. No float count fixed it; even down to six the gap
+    // stayed under one bulb height, because the fill line caps it.
+    //
+    // The cause is that this vessel is DRAWN small. All three are the same height
+    // on screen, so a vessel drawn at 66% needs floats 1/0.66 as big in its own
+    // coordinates to look the same size — 61.7 units inside an interior only 385
+    // tall. Drawing it larger shrinks its floats in its own units without changing
+    // how big they look. At 0.80 they are 50.9, the liquid is 4.81 bulb heights and
+    // the gap 2.25, longest stack 2, everything clean. At 0.66 nothing works.
+    //
+    // The cost is that the teardrop is no longer the same size as the capsule.
+    // Between a matched silhouette and an instrument that shows its reading, the
+    // reading wins — but the silhouette is hers, and 0.90 or a smaller float count
+    // are both on the table if she would rather pay differently.
     //
     // The tube's own reference photograph is filled near its top, and there is no
     // reference for the capsule, so neither of those is given a fill line.
-    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.66,
+    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.80,
       cx:140, top:151, bot:536, from:80, count:8, fill:315,
       halfWidth:[18,20,21,21.5,23,26,29,32,33.5,36.5,39,41,44,47.5,50,51.5,53.5,55.5,58.5,57.5,69.5,73,74,74.5,71.5,68,57.5,49] },
   ];
