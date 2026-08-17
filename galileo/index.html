@@ -64,7 +64,7 @@
        narrow screen height has to be capped by the width available or the set
        runs off the sides (the body does not scroll, so it would simply be cut
        off rather than reachable). The 1.15 leaves a little slack over that 1.09. */
-    height:min(74vh, 690px, calc((96vw - 60px) / 0.82));
+    height:min(74vh, 690px, calc((96vw - 60px) / 0.86));
   }
   .instrument{
     height:100%;
@@ -150,7 +150,7 @@
      rather than merely bigger. */
   @media (orientation:portrait){
     #stage{ padding:2vh 2vw; }
-    #instruments{ gap:8px; height:min(62vh, 540px, calc((96vw - 30px) / 0.82)); }
+    #instruments{ gap:8px; height:min(62vh, 540px, calc((96vw - 30px) / 0.86)); }
   }
 </style>
 </head>
@@ -233,18 +233,49 @@
   // base confuses the trace where it meets the foot.)
   const INSTRUMENTS = [
     { key:'capsule', file:'vessel-capsule.png', vw:202, vh:612, scale:0.66,
-      cx:101.4, top:75, bot:557, from:12, count:8,
+      cx:101.4, top:75, bot:557, from:12, count:7,
       halfWidth:[37.2,52,58.8,61.2,65.2,69.6,69.6,70,72.8,72.8,70,67.2,66,66.8,66.8,69.6,69.2,72.4,72.4,72.8,72.4,72.4,72,72,72,72,72,71.2] },
     { key:'tube', file:'vessel-dark.png', vw:220, vh:725, scale:1.00,
-      cx:109, top:143, bot:645, from:40, count:13,
+      cx:109, top:143, bot:645, from:36, count:12,
       // straight-sided, so one figure serves the whole column. Traced by hand
       // rather than automatically: this photograph's walls are far fainter than
       // the other two and the automatic trace loses them below the halfway mark.
       halfWidth:[48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48],
       highlight:{ x:54, y:480, w:13, h:138 } },
-    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.56,
-      cx:139.7, top:171, bot:554, from:88, count:6,
-      halfWidth:[38.4,42.8,47.6,52,58,67.2,72,76.4,80.8,85.2,89.2,92.4,95.6,98.4,100.8,102.8,104.4,105.2,105.2,105.2,103.6,101.2,97.6,92.8,86.4,78,66,48.8] },
+    // fill: the liquid surface. A float rises to the surface, not into the air
+    // above it, and this vessel's reference photograph shows its long neck plainly
+    // EMPTY — the floats raft across the wide part with clear glass above them.
+    // Without that, buoyancy walked them single file up the taper, which is a queue
+    // no real one has. The sprites are transparent throughout and depict no fill
+    // line, so it cannot be read off the image and has to be stated.
+    //
+    // 285, and scale 0.76 up from 0.66. Together these are what make the instrument
+    // READ. What you read on a galileo is the gap: a cluster up, a cluster down, and
+    // the lowest float still up is the temperature. At 0.66 with the neck emptied
+    // this vessel had 3.75 bulb heights of liquid, the floats used nearly all of it
+    // and the two clusters closed against each other — gap 0.03. No float count
+    // fixed that; even down to six the gap stayed under one bulb height.
+    //
+    // Two levers, and I reached for the wrong one first. Size: all three vessels
+    // stand the same height on screen, so one drawn at 66% needs floats 1/0.66 as
+    // large in its own coordinates to look the same size — 61.7 units inside an
+    // interior only 385 tall. Drawing it larger shrinks its floats in its own units
+    // without changing how big they look. I took that to 0.80, which works but is
+    // more than is needed, and she was right to say so.
+    //
+    // The better lever is the fill line, because RAISING it adds liquid instead of
+    // spending it, and lifts the clusters out of the middle of the glass at the same
+    // time. The two trade against each other: more liquid also means more room to
+    // queue up the taper. Swept together, 0.76 with the line at 285 gives 5.29 bulb
+    // heights, a worst gap of 1.98 and a longest stack of 2, everything clean —
+    // where 0.80 with the line at 315 needed a bigger vessel for a gap barely wider.
+    // Below about 0.74 the two clusters start closing again whatever the fill line.
+    //
+    // The tube's own reference photograph is filled near its top, and there is no
+    // reference for the capsule, so neither of those is given a fill line.
+    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.76,
+      cx:140, top:151, bot:536, from:80, count:8, fill:285,
+      halfWidth:[18,20,21,21.5,23,26,29,32,33.5,36.5,39,41,44,47.5,50,51.5,53.5,55.5,58.5,57.5,69.5,73,74,74.5,71.5,68,57.5,49] },
   ];
 
   const FLOAT_IMAGES = ['blue','aqua','green','yellow','gold','orange','red','pink','palepink','purple','lavender','silver'];
@@ -305,8 +336,8 @@
     svg.setAttribute('viewBox', `0 0 ${inst.vw} ${inst.vh}`);
     svg.setAttribute('preserveAspectRatio','xMidYMax meet');
     const bulbLayer = document.createElementNS(SVGNS,'g');
-    const tagLayer  = document.createElementNS(SVGNS,'g');
-    svg.appendChild(bulbLayer); svg.appendChild(tagLayer);
+    svg.appendChild(bulbLayer);
+    inst.layer = bulbLayer;
 
     const vessel = document.createElementNS(SVGNS,'image');
     vessel.setAttribute('href', inst.file);
@@ -344,13 +375,10 @@
 
       const g = document.createElementNS(SVGNS,'g');
       g.setAttribute('class','bulb-group');
-      g.innerHTML = `<image href="floats/${img}.png" x="${-fw/2}" y="${-fh/2}" width="${fw}" height="${fh}"/>`;
+      g.innerHTML = `<image href="floats/${img}.png" x="${-fw/2}" y="${-fh/2}" width="${fw}" height="${fh}"/>` +
+        `<text x="1" y="${tagY}" text-anchor="middle" font-size="${fs}" class="tag-chip" fill="#000000">${Math.round(t)}°</text>`;
       bulbLayer.appendChild(g);
-
-      const tg = document.createElementNS(SVGNS,'g');
-      tg.setAttribute('class','tag-group');
-      tg.innerHTML = `<text x="1" y="${tagY}" text-anchor="middle" font-size="${fs}" class="tag-chip" fill="#000000">${Math.round(t)}°</text>`;
-      tagLayer.appendChild(tg);
+      const tg = g;   // the tag travels with its own float now
 
       // zoomed clone shown on hover/tap, above the glass so it is never clipped.
       // Built at 1x and scaled by an attribute so the amount can change with the
@@ -402,21 +430,62 @@
     const f = Math.max(0, Math.min(1, (y - inst.top)/(inst.bot - inst.top)));
     const k = f*(p.length-1), i = Math.floor(k), frac = k - i;
     const hw = i >= p.length-1 ? p[p.length-1] : p[i] + (p[i+1]-p[i])*frac;
-    return Math.max(0, hw - inst.fw*0.5);
+    // Inset by the BULB, not by the sprite box. The sprite is fw wide but the bulb
+    // inside it is only 0.850*fw — the rest is transparent margin around the glass
+    // tip and the tag. Subtracting the whole sprite treated that margin as solid and
+    // held every float 0.075*fw short of the glass on each side, which is why they
+    // never reached the walls. What actually touches the wall is the widest row of
+    // the bulb, so that is what the wall has to clear.
+    return Math.max(0, hw - inst.fw*0.425);
   }
 
   function updatePositions(){
     for(const inst of INSTRUMENTS){
       const list = bulbEls.filter(b=>b.inst===inst);
-      const d = inst.fw*0.86;   // the bulb's own diameter, inside the taller sprite
+      // The bulb is an onion, not a ball: measured off the sprite it is 0.850*fw
+      // across but only 0.717*fw tall, and its widest point is one row. Enforcing
+      // the width in every direction held stacked neighbours 0.13*fw further apart
+      // than their outlines actually meet — which is most of why they sat holding
+      // polite distance instead of pressed together the way they do in a real one.
+      // Two equal ellipses clear each other when (dx/W)^2 + (dy/H)^2 >= 1, so the
+      // drop a float needs is H*sqrt(1 - (dx/W)^2).
+      const bw = inst.fw*0.850, bh = inst.fw*0.717;
+      const d = bw;                        // still the reach at which they can touch at all
+      const clearance = (dx) => dx >= bw ? 0 : bh*Math.sqrt(1 - (dx/bw)*(dx/bw));
 
       // A float is drawn centred on its y, but the sprite is not symmetrical: a
       // glass tip reaching 0.892*fw above the centre, and below the bulb a metal
-      // tag hanging to 0.875*fw. So the range a float may occupy is the column
-      // inset at both ends by what the sprite actually reaches — a sunken one
-      // then rests ON the floor by its tag, which is what it rests on in the real
-      // thing, and a risen one stops with its tip at the surface.
-      const hi = inst.top + inst.fw*0.892, lo = inst.bot - inst.fw*0.875;
+      // tag hanging to 0.875*fw.
+      //
+      // Letting the tag lie over the thick glass of the base was too generous: it
+      // put the bottom floats' tags down inside the metal foot. In the reference
+      // photographs the lowest float's tag hangs clear below its bulb and rests on
+      // the floor of the liquid — the bulb genuinely does sit a tag-length up. So
+      // the whole sprite, tag included, stays inside the liquid.
+      //
+      // And a float cannot go where the glass is narrower than the float. roomAt
+      // clamps the room at zero, which quietly PERMITTED exactly that: in the
+      // teardrop's neck the interior is about 43 units across and the bulb is 52,
+      // so floats queued up a taper they could never physically enter, poking
+      // through both walls at once. That is the teardrop's chain. The reference for
+      // this vessel has them heaped on the bottom, never stacked up the neck.
+      //
+      // Worth naming why this hid: the check for a float outside its glass measures
+      // how far it sits from the centre line, and in the neck that answer is zero.
+      // A float wider than the glass around it passes a test written that way.
+      const halfAt = (y) => {
+        const p = inst.halfWidth;
+        const f = Math.max(0, Math.min(1, (y - inst.top)/(inst.bot - inst.top)));
+        const k = f*(p.length-1), i = Math.floor(k);
+        return i >= p.length-1 ? p[p.length-1] : p[i] + (p[i+1]-p[i])*(k - i);
+      };
+      const admits = (y) => halfAt(y) >= inst.fw*0.425;   // the bulb, same as roomAt
+      const stepY = (inst.bot - inst.top)/500;
+      let roof = inst.top, sole = inst.bot;
+      while(roof < inst.bot && !admits(roof)) roof += stepY;
+      while(sole > roof && !admits(sole)) sole -= stepY;
+      const hi = Math.max(inst.top + inst.fw*0.892, roof, inst.fill || 0);
+      const lo = Math.max(hi, Math.min(inst.bot - inst.fw*0.892, sole));
 
       // Where each float wants to be. Buoyancy is a threshold, not a slope: a
       // sphere is either lighter than the liquid or heavier, and only the one
@@ -445,58 +514,221 @@
       // Sunk floats collect on the bottom; they do not stand in a column. Spheres
       // resting against one another nest — two side by side sit at nearly the
       // same height, and only one directly above another has to be a whole
-      // diameter lower. So the drop a float needs is not a fixed gap but what the
-      // circles themselves demand, sqrt(d^2 - dx^2), falling to nothing once they
-      // are a diameter apart sideways. Which also means a wide vessel heaps its
-      // floats and a narrow one is forced to stack them, without either being
-      // told to: the capsule is a little over two floats across and packs into
-      // two offset rows, the tube barely fits two and comes out much more like a
-      // column. That difference is the glass, not a rule.
+      // diameter lower — so the drop a float needs is what the circles themselves
+      // demand, sqrt(d^2 - dx^2), falling to nothing once they are a diameter
+      // apart sideways.
       //
-      // Two passes, because the two facts are circular: how far off centre a
-      // float sits depends on the height it settles at, and that height depends
-      // on how far off centre its neighbours already are.
+      // But which sideways position? A fixed left-right alternation gave every
+      // vessel exactly TWO columns however wide it was, so the teardrop's belly —
+      // wide enough for three abreast — showed the same narrow pair as the tube.
+      // Instead each float tries a spread of lateral positions and takes the one
+      // that lets it settle furthest in the direction it is going, which is what
+      // a sphere does: it rolls into whatever gap is lowest. A wide vessel then
+      // fills across before it builds up, a narrow one has no choice but to stack,
+      // and neither is told which to do. The tube still comes out a near-column
+      // because two floats genuinely will not fit side by side in it.
       //
-      // The two groups settle against opposite ends and are packed separately.
-      // A float lighter than the liquid rises and rests against the top, or on
+      // The two groups settle against opposite ends and are packed separately. A
+      // float lighter than the liquid rises and rests against the top, or on
       // whatever is already up there; a heavier one sinks and rests on the floor,
       // or on the heap already down there. Packing the whole set in one direction
-      // cannot express that: from the top down the sunken heap ends up hanging
-      // off the floats above it, and from the floor up the floating group gets
-      // stacked on top of the sunken one and pushed clear out of the glass.
-      const settle = (seq, dir, others) => {
-        for(let pass=0; pass<2; pass++){
-          const placed = [];
-          for(const b of seq){
-            let y = dir > 0 ? Math.max(b.want, hi) : Math.min(b.want, lo);
-            let x = inst.cx + b.lean * roomAt(inst, y);
-            const clear = (a, away) => {
-              const dx = Math.abs(x - a.x);
-              const need = dx >= d ? 0 : Math.sqrt(d*d - dx*dx);
-              if(away > 0 ? (a.y + need > y) : (a.y - need < y)){
-                y = away > 0 ? a.y + need : a.y - need;
-                x = inst.cx + b.lean * roomAt(inst, y);
-              }
-            };
-            // the other group is settled against the far end, so it can only
-            // ever hold this one back — a float sitting at exactly its own
-            // temperature hangs mid-glass, and without this the group above
-            // settles straight down through it
-            for(const a of others) clear(a, -dir);
-            for(const a of placed) clear(a, dir);
-            b.y = y; b.x = x;
-            placed.push(b);
+      // cannot express that: from the top down the sunken heap hangs off the
+      // floats above it, and from the floor up the floating group gets stacked on
+      // the sunken one and pushed clean out of the glass.
+      // A vessel is round, not flat. Floats sit at different DEPTHS as well as
+      // different sides, and seen from the front through glass a float behind
+      // another simply overlaps it — which is why the reference photographs read
+      // as a real crowd and a strictly side-by-side arrangement reads as a drawn
+      // lattice. Nothing here was allowed to be behind anything else, so nothing
+      // ever overlapped.
+      //
+      // So a position is (x, z) anywhere inside the interior circle at that
+      // height, clearance is the 3D distance between two bulbs, and the floats are
+      // finally drawn back to front. Depth costs nothing physically — the glass
+      // is as deep as it is wide — and buys the one thing that was missing.
+      // Depth is real, but it is the one axis the viewer cannot see along, and two
+      // things go wrong if it is given free rein. Tags disappear behind nearer
+      // floats, and — worse — a float resting on one BEHIND it reads as resting on
+      // nothing at all, because whatever is holding it up is hidden. Held to about
+      // a third of the radius, floats still sit in front of and behind each other
+      // and still overlap through the glass, which is the whole point, while what
+      // supports what stays visible. A deliberate compromise, and worth naming:
+      // the reading is the number on the lowest float still up, and a piece that
+      // cannot be read is no use however faithfully its spheres are arranged.
+      // ...and the depth allowed has to be the depth the glass HAS. A vessel is a
+      // cylinder — as deep across as it is wide — so z gets the same room x does.
+      // Held to a third of that, the heap was flat, and in a flat heap bulbs that
+      // touch cannot overlap on screen, so there was no clumping available at any
+      // spacing. That is the whole of what went missing.
+      //
+      // The reason it was ever clamped still stands: a float held up by one hidden
+      // behind it reads as held up by nothing. But contact in 3D at this size means
+      // two floats separated mostly in depth are also nearly on top of each other
+      // on screen, which reads as the crowd it is. The case to guard is only the
+      // one where a float goes fully behind a nearer one, and the buried penalty
+      // below does that where it belongs — in choosing the spot, not by flattening
+      // every arrangement in advance.
+      const Z_LIMIT = 1.0;
+      // Nesting into the notch between two floats below needs a spot near that
+      // notch to exist in the first place. Ten spokes on three rings is too coarse
+      // to find one, so the huddle rule would settle for whatever it could reach.
+      const RINGS = [0, 0.3, 0.55, 0.75, 0.9, 1.0], SPOKES = 14;
+      const SPOTS = [];
+      for(const r of RINGS){
+        if(r === 0){ SPOTS.push([0,0]); continue; }
+        for(let k=0;k<SPOKES;k++){
+          const a = (k/SPOKES)*Math.PI*2 + r*0.4;
+          SPOTS.push([Math.cos(a)*r, Math.sin(a)*r*Z_LIMIT]);
+        }
+      }
+      const drop = (b, sx, sz, dir, mine, limit, from) => {
+        let y = dir > 0 ? Math.max(from, hi, limit) : Math.min(from, lo, limit);
+        let room = roomAt(inst, y);
+        let x = inst.cx + sx*room, z = sz*room;
+        for(let step=0; step<50; step++){
+          let moved = false;
+          for(const a of mine){
+            const dx = (x - a.x), dz = (z - a.z);
+            const flat = Math.hypot(dx, dz);
+            if(flat >= bw) continue;
+            const need = bh*Math.sqrt(1 - (flat/bw)*(flat/bw));
+            const want = dir > 0 ? a.y + need : a.y - need;
+            if(dir > 0 ? want > y + 1e-6 : want < y - 1e-6){ y = want; moved = true; }
           }
+          if(!moved) break;
+          room = roomAt(inst, y);
+          x = inst.cx + sx*room; z = sz*room;   // the glass narrows as it travels
+        }
+        return { x, y, z };
+      };
+      const clashes = (b, list) => list.some(a => {
+        const flat = Math.hypot(b.x-a.x, b.z-a.z)/bw, dy = (b.y-a.y)/bh;
+        return flat*flat + dy*dy < 0.98;
+      });
+
+      const settle = (seq, dir, others) => {
+        const mine = [];
+        let limit = dir > 0 ? -Infinity : Infinity;
+        for(const b of seq){
+          let best = null, fallback = null;
+          // two heights to start the fall from: where buoyancy wants this float,
+          // and failing that the boundary its own group rests against — a float at
+          // exactly its own tag is neutral and hangs mid-glass, and once the group
+          // above reaches down into that spot it must settle onto the heap instead
+          for(let pass=0; pass<2; pass++){
+            const from = pass === 0 ? b.want : (dir > 0 ? hi : lo);
+            for(const [sx, sz] of SPOTS){
+              const at = drop(b, sx, sz, dir, mine, limit, from);
+              if(at.y > lo + 0.01 || at.y < hi - 0.01) continue;
+              const depth = dir > 0 ? -at.y : at.y;
+              // Among positions that settle equally deep, take the one resting
+              // AGAINST its neighbours — a heap of floats in a glass is a huddle,
+              // not a lattice. This used to read "take the one furthest from
+              // everything already placed", which is the opposite, and it went
+              // unnoticed only because the interior was guessed narrow enough that
+              // barely one column fitted, so there were no far-apart spots to
+              // take. Tracing the real glass handed that rule the room to spread
+              // and the clumping vanished. Gravity still comes first: an offset
+              // spot that settles LOWER beats a spot directly above a neighbour,
+              // which is what makes them nest rather than stack in a tower.
+              //
+              // The one thing contact must not buy is invisibility. Screen shows x
+              // and y only, so a float sharing both with a nearer one has gone,
+              // however honestly it was placed — and a float held up by something
+              // hidden reads as held up by nothing. Penalise that, heavily.
+              // ...and the GLASS is something to rest against too. That is the
+              // piece that was missing, and it only shows up in a narrow vessel: a
+              // float landing on an empty floor had nothing to roll toward, so the
+              // first one sat dead centre, and the tube's floor is 2.35 bulb widths
+              // across — half of it, 0.675, is less than the one full width a
+              // neighbour needs to sit level. So nothing could ever fit beside the
+              // first float and all twelve had to go on top of it. That is the
+              // narrow tower. The capsule's floor is wider and heaped correctly all
+              // along, which is why this hid.
+              //
+              // Counting the wall as contact sends the first float to the side and
+              // lets the floor fill across before the heap starts to build up.
+              const rr = roomAt(inst, at.y);
+              let gap = (rr - Math.hypot(at.x - inst.cx, at.z))/bw;   // 0 = against the glass
+              let buried = 0;
+              for(const a of mine){
+                const d3 = Math.hypot(at.x-a.x, at.z-a.z, (at.y-a.y)*(bw/bh))/bw;
+                if(d3 - 1 < gap) gap = d3 - 1;                        // 0 = against a neighbour
+                const seen = Math.hypot((at.x-a.x)/bw, (at.y-a.y)/bh);
+                if(at.z < a.z - bw*0.06 && seen < 0.85) buried = Math.max(buried, 0.85 - seen);
+              }
+              const huddle = -Math.abs(gap) - buried*3;
+              const cand = { x: at.x, y: at.y, z: at.z, depth, huddle };
+              if(!fallback || depth > fallback.depth) fallback = cand;
+              b.x = at.x; b.y = at.y; b.z = at.z;
+              if(clashes(b, others)) continue;
+              if(!best || depth > best.depth + bh*0.40 ||
+                 (depth > best.depth - bh*0.40 && huddle > best.huddle)) best = cand;
+            }
+          }
+          const pick = best || fallback || { x: inst.cx, y: dir > 0 ? hi : lo, z: 0 };
+          b.x = pick.x; b.y = pick.y; b.z = pick.z;
+          limit = pick.y;
+          mine.push(b);
         }
       };
       const up   = order.filter(b => b.temp >  currentTempF);            // lightest first
       const down = order.filter(b => b.temp <= currentTempF).reverse();  // heaviest first
-      settle(up, 1, []);          // down from the top, resting against it
-      settle(down, -1, up);       // up from the floor, and clear of what is floating
+
+      // The reading float hangs ALONE, which is the whole point of the instrument:
+      // a cluster up, a cluster down, and one float in the gap telling you the
+      // temperature. It is the lowest tag still above the temperature, so it is the
+      // one closest to neutral — the least buoyant thing still floating — and it
+      // does not press up into the pack the way the strongly buoyant ones do. It was
+      // being packed into the bottom of the top cluster with everything else, so
+      // there was no float to read.
+      //
+      // Only this one float is treated this way. Giving them all a soft curve was
+      // tried and is worse: half of them end up mid-column and the two clusters run
+      // into each other, and the gap between the clusters IS the reading.
+      const reader = (up.length && down.length) ? up[up.length-1] : null;   // heaviest still up
+      const pack = reader ? up.slice(0, -1) : up;
+      settle(pack, 1, []);        // down from the top, resting against it
+      settle(down, -1, pack);     // up from the floor, and clear of what is floating
+
+      if(reader){
+        // How far it hangs depends on how near neutral it is: a tag barely above the
+        // temperature is almost neutral and sinks nearly to the heap, a tag a full
+        // step above is buoyant enough to sit just under the pack. So the float
+        // visibly drifts DOWN as the day warms toward its own number, which is what
+        // a real one does.
+        const f = Math.max(0, Math.min(1, (reader.temp - currentTempF)/STEP_F));
+        const clear = bh*1.06;   // directly below a float, the ellipse needs a full bh, not 0.8
+        const above = pack.length ? Math.max(...pack.map(b=>b.y)) : hi;
+        const below = down.length ? Math.min(...down.map(b=>b.y)) : lo;
+        const room  = (below - clear) - (above + clear);
+        reader.y = room > 0 ? (above + clear) + room*(1-f) : (above + below)/2;
+        reader.x = inst.cx;       // alone in the glass, so it hangs down the middle
+        reader.z = 0;
+      }
+
+      // A float hanging free sits upright — the metal tag weights its bottom. One
+      // wedged into a crowd cannot, and in the photographs every bulb in a pressed
+      // band leans. Lean each by how crowded it actually is.
+      for(const b of list){
+        let touching = 0;
+        for(const a of list){
+          if(a === b) continue;
+          const flat = Math.hypot(b.x-a.x, b.z-a.z)/bw, dy = (b.y-a.y)/bh;
+          if(flat*flat + dy*dy < 1.55) touching++;
+        }
+        b.tilt = Math.min(3, touching)/3 * 4 * (b.lean >= 0 ? 1 : -1)
+               * (0.55 + 0.45*Math.abs(Math.sin(b.temp*1.7)));
+      }
+
+      // finally, draw them back to front, or the depth means nothing
+      const byDepth = list.slice().sort((a,b)=> a.z - b.z);
+      for(const b of byDepth) inst.layer.appendChild(b.el);
 
       const hs = hoverScale();
+      const pivot = -inst.fw*0.142;   // the bulb's centre, above the sprite's
       for(const b of list){
-        const tr = `translate(${b.x},${b.y})`;
+        const tr = `translate(${b.x},${b.y}) rotate(${b.tilt.toFixed(1)} 0 ${pivot.toFixed(1)})`;
         b.el.setAttribute('transform', tr);
         b.tagEl.setAttribute('transform', tr);
         b.hoverEl.setAttribute('transform', tr);
