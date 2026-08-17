@@ -408,7 +408,16 @@
   function updatePositions(){
     for(const inst of INSTRUMENTS){
       const list = bulbEls.filter(b=>b.inst===inst);
-      const d = inst.fw*0.86;   // the bulb's own diameter, inside the taller sprite
+      // The bulb is an onion, not a ball: measured off the sprite it is 0.850*fw
+      // across but only 0.717*fw tall, and its widest point is one row. Enforcing
+      // the width in every direction held stacked neighbours 0.13*fw further apart
+      // than their outlines actually meet — which is most of why they sat holding
+      // polite distance instead of pressed together the way they do in a real one.
+      // Two equal ellipses clear each other when (dx/W)^2 + (dy/H)^2 >= 1, so the
+      // drop a float needs is H*sqrt(1 - (dx/W)^2).
+      const bw = inst.fw*0.850, bh = inst.fw*0.717;
+      const d = bw;                        // still the reach at which they can touch at all
+      const clearance = (dx) => dx >= bw ? 0 : bh*Math.sqrt(1 - (dx/bw)*(dx/bw));
 
       // A float is drawn centred on its y, but the sprite is not symmetrical: a
       // glass tip reaching 0.892*fw above the centre, and below the bulb a metal
@@ -494,7 +503,10 @@
         }
         return { x, y };
       };
-      const clashes = (b, list) => list.some(a => Math.hypot(b.x-a.x, b.y-a.y) < d - 0.5);
+      const clashes = (b, list) => list.some(a => {
+        const dx = (b.x-a.x)/bw, dy = (b.y-a.y)/bh;
+        return dx*dx + dy*dy < 0.98;
+      });
 
       const settle = (seq, dir, others) => {
         const mine = [];
@@ -546,9 +558,29 @@
       settle(up, 1, []);          // down from the top, resting against it
       settle(down, -1, up);       // up from the floor, and clear of what is floating
 
-      const hs = hoverScale();
+      // A float hanging free sits upright — the metal tag weights its bottom. One
+      // wedged into a crowd cannot: in the reference photographs the bulbs in a
+      // pressed-together band lean at all angles, some nearly sideways, and that
+      // tilt is most of what separates a real pile from a drawn lattice. So lean
+      // each one by how crowded it actually is, counting the neighbours close
+      // enough to be touching it. A lone float stays vertical; one with company on
+      // both sides leans hardest. It pivots about the bulb rather than the middle
+      // of the sprite, so the tag swings underneath the way it really would.
       for(const b of list){
-        const tr = `translate(${b.x},${b.y})`;
+        let touching = 0;
+        for(const a of list){
+          if(a === b) continue;
+          const dx = (b.x-a.x)/bw, dy = (b.y-a.y)/bh;
+          if(dx*dx + dy*dy < 1.55) touching++;
+        }
+        b.tilt = Math.min(3, touching)/3 * 22 * (b.lean >= 0 ? 1 : -1)
+               * (0.55 + 0.45*Math.abs(Math.sin(b.temp*1.7)));
+      }
+
+      const hs = hoverScale();
+      const pivot = -inst.fw*0.142;   // the bulb's centre, above the sprite's
+      for(const b of list){
+        const tr = `translate(${b.x},${b.y}) rotate(${b.tilt.toFixed(1)} 0 ${pivot.toFixed(1)})`;
         b.el.setAttribute('transform', tr);
         b.tagEl.setAttribute('transform', tr);
         b.hoverEl.setAttribute('transform', tr);
