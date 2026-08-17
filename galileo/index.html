@@ -430,7 +430,13 @@
     const f = Math.max(0, Math.min(1, (y - inst.top)/(inst.bot - inst.top)));
     const k = f*(p.length-1), i = Math.floor(k), frac = k - i;
     const hw = i >= p.length-1 ? p[p.length-1] : p[i] + (p[i+1]-p[i])*frac;
-    return Math.max(0, hw - inst.fw*0.5);
+    // Inset by the BULB, not by the sprite box. The sprite is fw wide but the bulb
+    // inside it is only 0.850*fw — the rest is transparent margin around the glass
+    // tip and the tag. Subtracting the whole sprite treated that margin as solid and
+    // held every float 0.075*fw short of the glass on each side, which is why they
+    // never reached the walls. What actually touches the wall is the widest row of
+    // the bulb, so that is what the wall has to clear.
+    return Math.max(0, hw - inst.fw*0.425);
   }
 
   function updatePositions(){
@@ -473,7 +479,7 @@
         const k = f*(p.length-1), i = Math.floor(k);
         return i >= p.length-1 ? p[p.length-1] : p[i] + (p[i+1]-p[i])*(k - i);
       };
-      const admits = (y) => halfAt(y) >= inst.fw*0.5;
+      const admits = (y) => halfAt(y) >= inst.fw*0.425;   // the bulb, same as roomAt
       const stepY = (inst.bot - inst.top)/500;
       let roof = inst.top, sole = inst.bot;
       while(roof < inst.bot && !admits(roof)) roof += stepY;
@@ -668,8 +674,38 @@
       };
       const up   = order.filter(b => b.temp >  currentTempF);            // lightest first
       const down = order.filter(b => b.temp <= currentTempF).reverse();  // heaviest first
-      settle(up, 1, []);          // down from the top, resting against it
-      settle(down, -1, up);       // up from the floor, and clear of what is floating
+
+      // The reading float hangs ALONE, which is the whole point of the instrument:
+      // a cluster up, a cluster down, and one float in the gap telling you the
+      // temperature. It is the lowest tag still above the temperature, so it is the
+      // one closest to neutral — the least buoyant thing still floating — and it
+      // does not press up into the pack the way the strongly buoyant ones do. It was
+      // being packed into the bottom of the top cluster with everything else, so
+      // there was no float to read.
+      //
+      // Only this one float is treated this way. Giving them all a soft curve was
+      // tried and is worse: half of them end up mid-column and the two clusters run
+      // into each other, and the gap between the clusters IS the reading.
+      const reader = (up.length && down.length) ? up[up.length-1] : null;   // heaviest still up
+      const pack = reader ? up.slice(0, -1) : up;
+      settle(pack, 1, []);        // down from the top, resting against it
+      settle(down, -1, pack);     // up from the floor, and clear of what is floating
+
+      if(reader){
+        // How far it hangs depends on how near neutral it is: a tag barely above the
+        // temperature is almost neutral and sinks nearly to the heap, a tag a full
+        // step above is buoyant enough to sit just under the pack. So the float
+        // visibly drifts DOWN as the day warms toward its own number, which is what
+        // a real one does.
+        const f = Math.max(0, Math.min(1, (reader.temp - currentTempF)/STEP_F));
+        const clear = bh*1.06;   // directly below a float, the ellipse needs a full bh, not 0.8
+        const above = pack.length ? Math.max(...pack.map(b=>b.y)) : hi;
+        const below = down.length ? Math.min(...down.map(b=>b.y)) : lo;
+        const room  = (below - clear) - (above + clear);
+        reader.y = room > 0 ? (above + clear) + room*(1-f) : (above + below)/2;
+        reader.x = inst.cx;       // alone in the glass, so it hangs down the middle
+        reader.z = 0;
+      }
 
       // A float hanging free sits upright — the metal tag weights its bottom. One
       // wedged into a crowd cannot, and in the photographs every bulb in a pressed
