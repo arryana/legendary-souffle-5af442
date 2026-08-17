@@ -305,8 +305,8 @@
     svg.setAttribute('viewBox', `0 0 ${inst.vw} ${inst.vh}`);
     svg.setAttribute('preserveAspectRatio','xMidYMax meet');
     const bulbLayer = document.createElementNS(SVGNS,'g');
-    const tagLayer  = document.createElementNS(SVGNS,'g');
-    svg.appendChild(bulbLayer); svg.appendChild(tagLayer);
+    svg.appendChild(bulbLayer);
+    inst.layer = bulbLayer;
 
     const vessel = document.createElementNS(SVGNS,'image');
     vessel.setAttribute('href', inst.file);
@@ -344,13 +344,10 @@
 
       const g = document.createElementNS(SVGNS,'g');
       g.setAttribute('class','bulb-group');
-      g.innerHTML = `<image href="floats/${img}.png" x="${-fw/2}" y="${-fh/2}" width="${fw}" height="${fh}"/>`;
+      g.innerHTML = `<image href="floats/${img}.png" x="${-fw/2}" y="${-fh/2}" width="${fw}" height="${fh}"/>` +
+        `<text x="1" y="${tagY}" text-anchor="middle" font-size="${fs}" class="tag-chip" fill="#000000">${Math.round(t)}°</text>`;
       bulbLayer.appendChild(g);
-
-      const tg = document.createElementNS(SVGNS,'g');
-      tg.setAttribute('class','tag-group');
-      tg.innerHTML = `<text x="1" y="${tagY}" text-anchor="middle" font-size="${fs}" class="tag-chip" fill="#000000">${Math.round(t)}°</text>`;
-      tagLayer.appendChild(tg);
+      const tg = g;   // the tag travels with its own float now
 
       // zoomed clone shown on hover/tap, above the glass so it is never clipped.
       // Built at 1x and scaled by an attribute so the amount can change with the
@@ -421,11 +418,16 @@
 
       // A float is drawn centred on its y, but the sprite is not symmetrical: a
       // glass tip reaching 0.892*fw above the centre, and below the bulb a metal
-      // tag hanging to 0.875*fw. So the range a float may occupy is the column
-      // inset at both ends by what the sprite actually reaches — a sunken one
-      // then rests ON the floor by its tag, which is what it rests on in the real
-      // thing, and a risen one stops with its tip at the surface.
-      const hi = inst.top + inst.fw*0.892, lo = inst.bot - inst.fw*0.875;
+      // tag hanging to 0.875*fw.
+      //
+      // Insetting the bottom by that full tag length was wrong, and it is why the
+      // sunken ones sat clear of the floor instead of crowding it: the tag was
+      // propping the bulb up two thirds of a float-width above the glass. On a real
+      // one the tag hangs from a wire loop and folds against the bottom — it does
+      // not hold the bulb off it. So the bottom is inset by what the BULB reaches
+      // (0.216*fw below the sprite's centre) plus a little, and the tag is allowed
+      // to lie over the thick glass of the base, which is where it would lie.
+      const hi = inst.top + inst.fw*0.892, lo = inst.bot - inst.fw*0.30;
 
       // Where each float wants to be. Buoyancy is a threshold, not a slope: a
       // sphere is either lighter than the liquid or heavier, and only the one
@@ -475,37 +477,57 @@
       // cannot express that: from the top down the sunken heap hangs off the
       // floats above it, and from the floor up the floating group gets stacked on
       // the sunken one and pushed clean out of the glass.
-      const TRIES = 15;
-      // Settling one float: try a spread of lateral positions, let each fall (or
-      // rise) until it rests on what is already there, and keep the one that gets
-      // furthest. Every push goes the SAME way, and y is only ever allowed to move
-      // further along that way, so this always terminates — letting the two groups
-      // shove each other in opposite directions inside the loop does not converge
-      // at all, and leaves floats sitting inside one another.
-      const drop = (b, t, dir, mine, limit, from) => {
-        // Never past the float placed before it. Rolling into a gap is fine, but
-        // these are spheres in a fluid: buoyancy sorts them, lighter always above
-        // heavier. Without this a lighter one could roll into a low gap, and since
-        // the reading IS the lowest float still up, that gives a wrong number.
+      // A vessel is round, not flat. Floats sit at different DEPTHS as well as
+      // different sides, and seen from the front through glass a float behind
+      // another simply overlaps it — which is why the reference photographs read
+      // as a real crowd and a strictly side-by-side arrangement reads as a drawn
+      // lattice. Nothing here was allowed to be behind anything else, so nothing
+      // ever overlapped.
+      //
+      // So a position is (x, z) anywhere inside the interior circle at that
+      // height, clearance is the 3D distance between two bulbs, and the floats are
+      // finally drawn back to front. Depth costs nothing physically — the glass
+      // is as deep as it is wide — and buys the one thing that was missing.
+      // Depth is real but it is also the one axis the viewer cannot see along, so
+      // it is held to a little over half the radius. Floats still sit behind and
+      // in front of each other and still overlap through the glass, which is the
+      // whole point — but none can hide completely behind another, and the tags
+      // stay readable. A deliberate compromise: the reading is the number on the
+      // lowest float still up, and a piece you cannot read is no use however
+      // faithfully its spheres are arranged.
+      const Z_LIMIT = 0.55;
+      const RINGS = [0, 0.5, 0.85, 1.0], SPOKES = 10;
+      const SPOTS = [];
+      for(const r of RINGS){
+        if(r === 0){ SPOTS.push([0,0]); continue; }
+        for(let k=0;k<SPOKES;k++){
+          const a = (k/SPOKES)*Math.PI*2 + r*0.4;
+          SPOTS.push([Math.cos(a)*r, Math.sin(a)*r*Z_LIMIT]);
+        }
+      }
+      const drop = (b, sx, sz, dir, mine, limit, from) => {
         let y = dir > 0 ? Math.max(from, hi, limit) : Math.min(from, lo, limit);
-        let x = inst.cx + t * roomAt(inst, y);
-        for(let step=0; step<80; step++){
+        let room = roomAt(inst, y);
+        let x = inst.cx + sx*room, z = sz*room;
+        for(let step=0; step<50; step++){
           let moved = false;
           for(const a of mine){
-            const dx = Math.abs(x - a.x);
-            if(dx >= d) continue;
-            const need = Math.sqrt(d*d - dx*dx);
+            const dx = (x - a.x), dz = (z - a.z);
+            const flat = Math.hypot(dx, dz);
+            if(flat >= bw) continue;
+            const need = bh*Math.sqrt(1 - (flat/bw)*(flat/bw));
             const want = dir > 0 ? a.y + need : a.y - need;
             if(dir > 0 ? want > y + 1e-6 : want < y - 1e-6){ y = want; moved = true; }
           }
           if(!moved) break;
-          x = inst.cx + t * roomAt(inst, y);   // the glass narrows as it travels
+          room = roomAt(inst, y);
+          x = inst.cx + sx*room; z = sz*room;   // the glass narrows as it travels
         }
-        return { x, y };
+        return { x, y, z };
       };
       const clashes = (b, list) => list.some(a => {
-        const dx = (b.x-a.x)/bw, dy = (b.y-a.y)/bh;
-        return dx*dx + dy*dy < 0.98;
+        const flat = Math.hypot(b.x-a.x, b.z-a.z)/bw, dy = (b.y-a.y)/bh;
+        return flat*flat + dy*dy < 0.98;
       });
 
       const settle = (seq, dir, others) => {
@@ -513,42 +535,39 @@
         let limit = dir > 0 ? -Infinity : Infinity;
         for(const b of seq){
           let best = null, fallback = null;
-          // Two heights to start the fall from, tried in turn: where buoyancy
-          // wants this float, and failing that the boundary its group rests
-          // against. A float sitting at exactly its own tag is neutral and hangs
-          // mid-glass, and once the group above is deep enough to reach down into
-          // that spot there is nowhere at its wanted height for it to be — so it
-          // gives up on hanging and settles onto the heap instead, which is what
-          // it would really do rather than sharing space with another sphere.
-          for(let c=0;c<TRIES*2;c++){
-            const t = ((c % TRIES)/(TRIES-1))*2 - 1;        // -1 .. +1 across the glass
-            const from = c < TRIES ? b.want : (dir > 0 ? hi : lo);
-            const at = drop(b, t, dir, mine, limit, from);
-            if(at.y > lo + 0.01 || at.y < hi - 0.01) continue;   // no room for it here
-            // furthest along the way it was going, i.e. deepest into the heap
-            const depth = dir > 0 ? -at.y : at.y;
-            // Ties broken toward the GLASS, not toward the middle. A sphere
-            // settling on a floor rolls until something stops it, which is the
-            // wall or another sphere — and packing outward-in is the only way to
-            // get three into a row with room for exactly three. Landing the first
-            // one short of the wall blocks the third for good, which is why the
-            // teardrop's belly showed two abreast when it fits three. Sign taken
-            // from the float's own preferred side, so a heap keeps some variety.
-            const out = Math.abs(t) + (Math.sign(t) === Math.sign(b.lean) ? 0.02 : 0);
-            const cand = { x: at.x, y: at.y, depth, out };
-            if(!fallback || depth > fallback.depth) fallback = cand;
-            // The other group is settled against the far end, and a float may not
-            // end up inside it. Rather than push back — which is what would not
-            // converge — the position is simply rejected and another tried.
-            b.x = at.x; b.y = at.y;
-            if(clashes(b, others)) continue;
-            if(!best || depth > best.depth + d*0.10 ||
-               (depth > best.depth - d*0.10 && out > best.out)) best = cand;
+          // two heights to start the fall from: where buoyancy wants this float,
+          // and failing that the boundary its own group rests against — a float at
+          // exactly its own tag is neutral and hangs mid-glass, and once the group
+          // above reaches down into that spot it must settle onto the heap instead
+          for(let pass=0; pass<2; pass++){
+            const from = pass === 0 ? b.want : (dir > 0 ? hi : lo);
+            for(const [sx, sz] of SPOTS){
+              const at = drop(b, sx, sz, dir, mine, limit, from);
+              if(at.y > lo + 0.01 || at.y < hi - 0.01) continue;
+              const depth = dir > 0 ? -at.y : at.y;
+              // Among positions that settle equally deep, take the one furthest
+              // from everything already placed. On a flat line the same job was
+              // done by rolling toward the glass, but a round vessel has a back
+              // wall too, and "toward the glass" sent floats directly behind one
+              // another where they hid each other completely. Spreading over the
+              // base is both what a settled layer does and what leaves the tags
+              // where they can be read.
+              let out = Infinity;
+              for(const a of mine){
+                const dd = Math.hypot(at.x-a.x, at.z-a.z, (at.y-a.y)*(bw/bh));
+                if(dd < out) out = dd;
+              }
+              if(out === Infinity) out = Math.hypot(sx, sz);
+              const cand = { x: at.x, y: at.y, z: at.z, depth, out };
+              if(!fallback || depth > fallback.depth) fallback = cand;
+              b.x = at.x; b.y = at.y; b.z = at.z;
+              if(clashes(b, others)) continue;
+              if(!best || depth > best.depth + bh*0.40 ||
+                 (depth > best.depth - bh*0.40 && out > best.out)) best = cand;
+            }
           }
-          // nothing clear of the other group means the vessel is genuinely too
-          // full for its float count; take the deepest and let it show
-          const pick = best || fallback || { x: inst.cx, y: dir > 0 ? hi : lo };
-          b.x = pick.x; b.y = pick.y;
+          const pick = best || fallback || { x: inst.cx, y: dir > 0 ? hi : lo, z: 0 };
+          b.x = pick.x; b.y = pick.y; b.z = pick.z;
           limit = pick.y;
           mine.push(b);
         }
@@ -559,23 +578,22 @@
       settle(down, -1, up);       // up from the floor, and clear of what is floating
 
       // A float hanging free sits upright — the metal tag weights its bottom. One
-      // wedged into a crowd cannot: in the reference photographs the bulbs in a
-      // pressed-together band lean at all angles, some nearly sideways, and that
-      // tilt is most of what separates a real pile from a drawn lattice. So lean
-      // each one by how crowded it actually is, counting the neighbours close
-      // enough to be touching it. A lone float stays vertical; one with company on
-      // both sides leans hardest. It pivots about the bulb rather than the middle
-      // of the sprite, so the tag swings underneath the way it really would.
+      // wedged into a crowd cannot, and in the photographs every bulb in a pressed
+      // band leans. Lean each by how crowded it actually is.
       for(const b of list){
         let touching = 0;
         for(const a of list){
           if(a === b) continue;
-          const dx = (b.x-a.x)/bw, dy = (b.y-a.y)/bh;
-          if(dx*dx + dy*dy < 1.55) touching++;
+          const flat = Math.hypot(b.x-a.x, b.z-a.z)/bw, dy = (b.y-a.y)/bh;
+          if(flat*flat + dy*dy < 1.55) touching++;
         }
-        b.tilt = Math.min(3, touching)/3 * 22 * (b.lean >= 0 ? 1 : -1)
+        b.tilt = Math.min(3, touching)/3 * 9 * (b.lean >= 0 ? 1 : -1)
                * (0.55 + 0.45*Math.abs(Math.sin(b.temp*1.7)));
       }
+
+      // finally, draw them back to front, or the depth means nothing
+      const byDepth = list.slice().sort((a,b)=> a.z - b.z);
+      for(const b of byDepth) inst.layer.appendChild(b.el);
 
       const hs = hoverScale();
       const pivot = -inst.fw*0.142;   // the bulb's centre, above the sprite's
