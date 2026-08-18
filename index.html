@@ -439,6 +439,28 @@
     shut(); outOne();
   });
 
+  // A piece can send you back to the shelf it came from -- /#systema opens the case
+  // already zoomed to that shelf. Nothing writes the hash; it is only ever read, so
+  // the case's own history is untouched.
+  // Arriving from a piece, whether the fragment is already on location when this
+  // runs is a race -- it lands before the script about half the time and after it
+  // the rest. So the hash is read at every moment it could turn up, and a flag
+  // makes sure the case is only ever moved once by it: a visitor who zooms back
+  // out is not dragged in again by a late-firing load event.
+  var hashUsed=false;
+  function fromHash(){
+    if(hashUsed) return;
+    var want=(location.hash||'').replace('#','');
+    if(!want) return;
+    GEO.shelves.forEach(function(sh,i){
+      if(sh.name===want){ hashUsed=true; toShelf(i); }
+    });
+  }
+  addEventListener('hashchange', fromHash);
+  addEventListener('load', fromHash);
+  setTimeout(fromHash, 0);
+  fromHash();
+
   fit();
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
   addEventListener('resize', fit);
