@@ -93,7 +93,7 @@
     transition:transform .25s cubic-bezier(.2,.7,.3,1), opacity .35s ease;
     transform-origin:50% 100%; }
   .piece img{ width:100%; height:100%; object-fit:cover; display:block;
-    border-radius:2px; box-shadow:0 3px 7px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.5); }
+    border-radius:2px; box-shadow:0 2px 4px rgba(0,0,0,.8), 0 0 0 1px rgba(0,0,0,.5); }
   .piece:hover{ transform:scale(1.14) translateY(calc(var(--h) * -0.0037)); z-index:5; }
   .piece:focus-visible{ outline:2px solid #b8903f; outline-offset:2px; }
 
@@ -180,13 +180,15 @@
     // deal taller than the brass, so the name sat low and off to one side of it.
     oval:{ x:421, y:74, w:158, h:49 },    // the brass oval on the crown
     plate:{ x:424, w:147, h:22 },         // the engraved area of a brass plate
-    disc:{ cx:495, cy:1160, d:50 },       // the brass disc, centred on the plinth shell
+    disc:{ cx:495, cy:1160, d:42 },       // the brass disc, centred on the plinth shell
     card:{ w:76, h:100 },
     // A card stands ON the board, not at the lip of it -- its foot goes back from
-    // the front edge by this much, so the lit top surface of the shelf shows in
-    // front of it. Standing them on the lip is what made them read as propped in
-    // front of the furniture rather than sitting in it.
-    seatBack:18,
+    // the front edge by this much, so a sliver of the lit top surface shows in
+    // front of it. Standing them on the lip made them read as propped in front of
+    // the furniture; setting them too far back read as hovering above it. This is
+    // the width of board that says "resting on", and the cards' shadow is a short
+    // contact one for the same reason.
+    seatBack:8,
     // ceil = underside of the shelf above; surf = the FRONT LIP of the board this
     // shelf's cards stand on; plateY = top of the brass plate on the front rail.
     // Aug 2026: every shelf was given the same 132px of headroom between its

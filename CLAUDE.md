@@ -119,9 +119,10 @@ with their scratchpad, so treat `shelves.jpg` as the source of truth.
 headroom: every one now has the same 132px between its ceiling and where a card's foot
 lands, done by stretching the flat dark band of back panel inside each shelf while the
 boards, rails, crown and plinth were carried across rigid. That took the photograph from
-1088 to 1232 tall. A card's foot sits `seatBack` (18px) behind the front lip, so the lit
-top of the shelf shows in front of it — standing them on the lip is what made them read as
-propped in front of the furniture. The three upper brass plates were in shadow and their
+1088 to 1232 tall. A card's foot sits `seatBack` (8px) behind the front lip, so a sliver of the
+lit top shows in front of it. That number is narrow on both sides: on the lip they read as
+propped in front of the furniture, and 18px back they read as hovering above it. The
+cards' shadow is a short contact one for the same reason. The three upper brass plates were in shadow and their
 names couldn't be read, so a lit plate was set into each of those sockets. The **?** is a
 brass disc of hers (`shelfdisk.png`) let into the middle of the plinth carving, with the
 question mark engraved into it; the case stands on the floor of the page rather than
