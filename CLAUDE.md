@@ -145,9 +145,25 @@ a visible label to this page.
 
 **The two sayings** the old flat landing page carried are still here, word for word, and
 still only on request: *sagne* on the crown opens the "tools and toys for twiddling" one,
-and the quiet **?** at the foot opens the "designed by one person" one. The case dims
+and the **?** on the plinth opens the "designed by one person" one. Aug 2026 she moved the
+two sentences about the lack of text out of the **?** and onto the end of the *sagne* one:
+they are a statement of what the site doesn't have, which is what that saying already is,
+and the **?** is left as a plain colophon. Her answer to the worry that announcing "no
+explanations" is itself an explanation: *"I don't think it's too ironic, considering it's
+the only place there's an explanation for anything at all."* The case dims
 behind whichever is open. They're the one exception to the rule above, because she asked
 for them.
+
+**Getting across, not just in and out.** Each piece carries two brass discs, both cut
+from `shelfdisk.png`. Left is the way back (an arrow, to the case). Right brings out the
+five shelf plates — the very plates, each cut from its own place in `shelves.jpg` — and
+rolling one unfolds that group's pieces beside it. A mouse hovers to unfold and clicks the
+plate to go; a thumb taps once to unfold and twice to go, the same bargain the case itself
+strikes. A plate links to `/index.html#<group>`, which opens the case already zoomed to
+that shelf. **That block is generated** — run `python3 tools/shelf-tags.py` from the repo
+root after changing the shelves table, and it rewrites the marked block on all 19 pages
+from the table itself. Don't hand-edit between the `shelf-tags` markers; the next run
+overwrites it.
 
 **Interaction.** On a touch screen it is three taps — shelf, then card, then open — because
 a phone cannot show a card big enough to read; her idea, and the right one. With a fine

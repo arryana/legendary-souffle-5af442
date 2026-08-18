@@ -114,7 +114,7 @@
     font-size:clamp(13px, 1.7vh, 16px); line-height:1.65; color:#9fb2c6;
     opacity:0; pointer-events:none; transition:opacity .6s ease, transform .6s ease; }
   .saying.open{ opacity:1; transform:translateX(-50%); pointer-events:auto; }
-  #say-sagne{ top:16%; }
+  #say-sagne{ top:13%; }
   #say-about{ bottom:9%; }
 
   /* Her brass disc, let into the middle of the plinth carving, with the ? cut into
@@ -154,13 +154,12 @@
     <p class="saying" id="say-sagne">tools and toys for twiddling. no scores, no goals, no
       timers (except the tools which are timers), no links (except for location accuracy), no
       likes, no ads, no in-game purchases. nothing exciting, but hopefully something
-      enjoyable.</p>
+      enjoyable. the lack of text and explanations throughout is an intentional choice for
+      universal (if simplistic) communication. the author trusts curiosity and ever-present
+      search engines to suffice where clarity is needed.</p>
     <p class="saying" id="say-about">sagne has been designed by one person, programming by
       claude and images by gemini. it is a single individual's attempt to bring to digital
-      life some of life's interesting modes and models. the lack of text and explanations
-      throughout is an intentional choice for universal (if simplistic) communication. the
-      author trusts curiosity and ever-present search engines to suffice where clarity is
-      needed.</p>
+      life some of life's interesting modes and models.</p>
   </div>
 <script>
 (function(){
@@ -438,6 +437,28 @@
     if(e.key!=='Escape') return;
     shut(); outOne();
   });
+
+  // A piece can send you back to the shelf it came from -- /#systema opens the case
+  // already zoomed to that shelf. Nothing writes the hash; it is only ever read, so
+  // the case's own history is untouched.
+  // Arriving from a piece, whether the fragment is already on location when this
+  // runs is a race -- it lands before the script about half the time and after it
+  // the rest. So the hash is read at every moment it could turn up, and a flag
+  // makes sure the case is only ever moved once by it: a visitor who zooms back
+  // out is not dragged in again by a late-firing load event.
+  var hashUsed=false;
+  function fromHash(){
+    if(hashUsed) return;
+    var want=(location.hash||'').replace('#','');
+    if(!want) return;
+    GEO.shelves.forEach(function(sh,i){
+      if(sh.name===want){ hashUsed=true; toShelf(i); }
+    });
+  }
+  addEventListener('hashchange', fromHash);
+  addEventListener('load', fromHash);
+  setTimeout(fromHash, 0);
+  fromHash();
 
   fit();
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
