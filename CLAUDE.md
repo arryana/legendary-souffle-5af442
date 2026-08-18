@@ -115,13 +115,30 @@ which had no vertical front edge at all, only a floor, had the fourth rail clone
 the floor line so its plate had something to sit on. The scripts that did all this are gone
 with their scratchpad, so treat `shelves.jpg` as the source of truth.
 
+**A card stands on the board, not at the lip of it.** Aug 2026 the shelves were given
+headroom: every one now has the same 132px between its ceiling and where a card's foot
+lands, done by stretching the flat dark band of back panel inside each shelf while the
+boards, rails, crown and plinth were carried across rigid. That took the photograph from
+1088 to 1232 tall. A card's foot sits `seatBack` (18px) behind the front lip, so the lit
+top of the shelf shows in front of it — standing them on the lip is what made them read as
+propped in front of the furniture. The three upper brass plates were in shadow and their
+names couldn't be read, so a lit plate was set into each of those sockets. The **?** is a
+brass disc of hers (`shelfdisk.png`) let into the middle of the plinth carving, with the
+question mark engraved into it; the case stands on the floor of the page rather than
+floating in the middle of it.
+
+**The favicon** is her own candle, cut off its ground and wrapped inside `favicon.svg`, so
+every page that already links to that file picks it up without a reference changing. The
+same cut-out makes `apple-touch-icon.png` and `icon-192/512.png` on the site's navy.
+
 **No words on it that aren't cut into it.** The only lettering on the shelf is engraved
 into the photograph: *sagne* on the crown oval and the five group names on the brass
 plates. The card names that used to float over a piece on hover were removed Aug 2026 —
 this site doesn't caption its objects — and so was the text **back** button; the way out
 of a zoom is the plate of the shelf you're in, a tap on the dark around the case, or
-Escape. The plate names size themselves to fill the brass (height first, then tracked out
-across the width, which is what an engraver does with a short word), and the oval's
+Escape. The plate names size themselves to the height of the brass and sit centred in it — they
+were tracked out across the width for a while, and it read as spaced-out rather than
+engraved. The oval's
 position comes from the brass measured out of the photograph by hue, not by eye. Don't add
 a visible label to this page.
 

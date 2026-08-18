@@ -30,15 +30,20 @@
      disappears and the case simply stands on a wall */
   html,body{ height:100%; margin:0; background:#122336; color:#e2d6bb;
     font-family:'Cormorant Garamond', Georgia, serif; }
-  body{ display:flex; align-items:center; justify-content:center; padding:2vh 2vw; }
+  /* The case stands on the floor of the page rather than floating in the middle of
+     it: on a phone its width is what limits it, so centring left as much empty dark
+     below the plinth as above the crown. Nothing sits under it now that the ? has
+     moved onto the plinth itself. */
+  body{ display:flex; align-items:flex-end; justify-content:center;
+    padding:2vh 2vw 3vh; }
 
   /* The frame clips, so a zoomed-in shelf fills it instead of overflowing the page.
      The case must fit the viewport in BOTH directions -- sized by height alone it ran
-     off the sides of a phone and the shelves were cut in half. 1088/990 is the case's
+     off the sides of a phone and the shelves were cut in half. 1232/990 is the case's
      own proportion, so this is the tallest it can be and still fit across. */
   #frame{ position:relative; overflow:hidden; flex:none;
-    --h: min(95vh, calc(96vw * 1.09899), 1088px);
-    height:var(--h); width:calc(var(--h) / 1.09899); }
+    --h: min(95vh, calc(96vw * 1.24444), 1232px);
+    height:var(--h); width:calc(var(--h) / 1.24444); }
   /* Sizes here are fractions of the case's own height, so the lettering keeps its
      proportion to the furniture at every screen size. They cannot be written as
      "unit x px" -- --h is a length, and a length times a length is not a size, so
@@ -112,14 +117,19 @@
   #say-sagne{ top:16%; }
   #say-about{ bottom:9%; }
 
-  /* the quiet ? at the foot of the page */
-  #ask{ position:absolute; left:50%; bottom:1.2%; transform:translateX(-50%);
-    appearance:none; border:0; background:none; cursor:pointer; z-index:31;
-    font-family:inherit; font-size:clamp(18px, 2.4vh, 23px); line-height:1;
-    color:#f2e9d8; opacity:.34; padding:4px 10px; border-radius:8px;
-    transition:opacity .45s ease; }
-  #ask:hover, #ask:focus-visible, #ask[aria-expanded="true"]{ opacity:.9; }
-  #ask:focus-visible{ outline:1px solid rgba(242,233,216,.4); outline-offset:4px; }
+  /* Her brass disc, let into the middle of the plinth carving, with the ? cut into
+     it the way the names are cut into the plates. It is part of the furniture now,
+     so it sits inside the case and takes the case's own scale. */
+  #ask{ position:absolute; display:grid; place-items:center; z-index:3;
+    appearance:none; border:0; background:none; padding:0; font-family:inherit;
+    cursor:pointer; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+  #ask img{ grid-area:1/1; width:100%; height:100%; display:block; }
+  #ask i{ grid-area:1/1; font-style:normal; font-weight:700; line-height:1;
+    color:#33230a; text-shadow:0 1px 0 rgba(255,238,196,.5), 0 -1px 1px rgba(0,0,0,.35); }
+  /* A disc this size is a small target on a phone, so the reach around it is wider
+     than the brass. Invisible, and behind nothing else. */
+  #ask::before{ content:''; position:absolute; inset:-55%; }
+  #ask:focus-visible{ outline:1px solid rgba(242,233,216,.45); outline-offset:4px; }
 
   @media (prefers-reduced-motion: reduce){
     #case, .piece{ transition:none; }
@@ -134,6 +144,8 @@
       <div id="sheen"></div>
       <button type="button" id="oval" aria-expanded="false" aria-controls="say-sagne"
               aria-label="what is this?">sagne</button>
+      <button type="button" id="ask" aria-expanded="false" aria-controls="say-about"
+              aria-label="about sagne"><img src="shelfdisk.png" alt=""><i>?</i></button>
     </div>
 
     <!-- The two sayings the flat landing page carried, kept word for word: the one
@@ -143,8 +155,6 @@
       timers (except the tools which are timers), no links (except for location accuracy), no
       likes, no ads, no in-game purchases. nothing exciting, but hopefully something
       enjoyable.</p>
-    <button type="button" id="ask" aria-expanded="false" aria-controls="say-about"
-            aria-label="about sagne">?</button>
     <p class="saying" id="say-about">sagne has been designed by one person, programming by
       claude and images by gemini. it is a single individual's attempt to bring to digital
       life some of life's interesting modes and models. the lack of text and explanations
@@ -162,7 +172,7 @@
   // percentages, which had to be retyped by hand every time the picture changed.
   // ---------------------------------------------------------------------------
   var GEO = {
-    W:990, H:1088,
+    W:990, H:1232,
     interior:{ left:148, right:845 },     // the opening between the two stiles
     // Measured off the photograph by hue, not by eye: the brass rides olive where
     // the walnut around it runs red, which puts the ellipse at x 421..579,
@@ -170,29 +180,40 @@
     // deal taller than the brass, so the name sat low and off to one side of it.
     oval:{ x:421, y:74, w:158, h:49 },    // the brass oval on the crown
     plate:{ x:424, w:147, h:22 },         // the engraved area of a brass plate
+    disc:{ cx:495, cy:1160, d:50 },       // the brass disc, centred on the plinth shell
     card:{ w:76, h:100 },
-    // ceil = underside of the shelf above; surf = the surface this shelf's cards
-    // stand on; plateY = top of the brass plate on this shelf's front rail
+    // A card stands ON the board, not at the lip of it -- its foot goes back from
+    // the front edge by this much, so the lit top surface of the shelf shows in
+    // front of it. Standing them on the lip is what made them read as propped in
+    // front of the furniture rather than sitting in it.
+    seatBack:18,
+    // ceil = underside of the shelf above; surf = the FRONT LIP of the board this
+    // shelf's cards stand on; plateY = top of the brass plate on the front rail.
+    // Aug 2026: every shelf was given the same 132px of headroom between its
+    // ceiling and where a card's foot actually lands, by stretching the flat dark
+    // band of back panel inside each one -- the boards, rails, crown and plinth are
+    // all carried across rigid, so no joinery moved. That took the photograph from
+    // 1088 to 1232 tall, and these figures with it.
     shelves:[
-      { name:'instrumenta', ceil:144, surf:293, plateY:300,
+      { name:'instrumenta', ceil:144, surf:294, plateY:301,
         pieces:[['candler','candler/index.html','candler/candle-card.png'],
                 ['conometer','conometer/index.html','conometer/conometer-card.png'],
                 ['galileo','galileo/index.html','galileo/galileo-card.png'],
                 ['windower','windower/index.html','windower/windower-card.png'],
                 ['storm','storm/index.html','storm/storm-card.png']] },
-      { name:'tactilia', ceil:330, surf:448, plateY:455,
+      { name:'tactilia', ceil:331, surf:481, plateY:488,
         pieces:[['warmler','warmler/index.html','warmler/warmler-card.png'],
                 ['roller','roller/index.html','roller/roller-card.png'],
                 ['kaleidoscope','kaleidoscope/index.html','kaleidoscope/kaleidoscope-card.png']] },
-      { name:'systema', ceil:487, surf:602, plateY:609,
+      { name:'systema', ceil:520, surf:670, plateY:677,
         pieces:[['musebox','musebox/index.html','musebox/musebox-card.png'],
                 ['gyre','gyre/index.html','gyre/gyre-card.png'],
                 ['chimes','chimes/index.html','chimes/chimes-card.png']] },
-      { name:'natura', ceil:641, surf:753, plateY:760,
+      { name:'natura', ceil:709, surf:859, plateY:866,
         pieces:[['birds','birds/index.html','birds/birds-card.png'],
                 ['fireflies','fireflies/index.html','fireflies/fireflies-card.png'],
                 ['ant','ant/index.html','ant/ant-card.png']] },
-      { name:'phenomena', ceil:791, surf:903, plateY:910,
+      { name:'phenomena', ceil:897, surf:1047, plateY:1054,
         pieces:[['lamp','lamp/index.html','lamp/lamp-card.png'],
                 ['rain','rain/index.html','rain/rain-card.png'],
                 ['bowl','bowl/index.html','bowl/bowl-card.png'],
@@ -220,6 +241,12 @@
   ovalEl.style.fontSize='calc(var(--h) * 0.0404)';
   // The veil takes the same box as the oval, a shade proud of it so the mask has
   // somewhere to fade out over the brass rather than at its rim.
+  var askEl=document.getElementById('ask');
+  askEl.style.left=pc(GEO.disc.cx-GEO.disc.d/2,W);
+  askEl.style.top=pc(GEO.disc.cy-GEO.disc.d/2,H);
+  askEl.style.width=pc(GEO.disc.d,W); askEl.style.height=pc(GEO.disc.d,H);
+  askEl.firstElementChild.nextElementSibling.style.fontSize='calc(var(--h) * 0.0262)';
+
   var sheen=document.getElementById('sheen');
   sheen.style.left=pc(GEO.oval.x-8,W);  sheen.style.top=pc(GEO.oval.y-6,H);
   sheen.style.width=pc(GEO.oval.w+16,W); sheen.style.height=pc(GEO.oval.h+12,H);
@@ -227,7 +254,7 @@
   GEO.shelves.forEach(function(sh,si){
     sh.pieces.forEach(function(p,i){
       var cx=slotX(sh.pieces.length,i);
-      var x=cx-GEO.card.w/2, y=sh.surf-GEO.card.h;
+      var x=cx-GEO.card.w/2, y=sh.surf-GEO.seatBack-GEO.card.h;
       var a=document.createElement('a');
       a.className='piece'; a.href=p[1]; a.setAttribute('aria-label',p[0]);
       a.style.left=pc(x,W); a.style.top=pc(y,H);
@@ -274,18 +301,10 @@
       size=Math.max(4, size*r);             // keeps it from ever settling exactly
       el.style.fontSize=size+'px';
     }
-    // A short name is now as tall as the brass allows and still only reaches half
-    // way across it. An engraver's answer, not a typesetter's: track the letters
-    // apart until they span the plate. Capped, or "natura" comes apart into six
-    // separate letters. The negative margin takes back the trailing space that
-    // letter-spacing adds after the last letter, which would push the word left.
-    inner.style.letterSpacing=''; inner.style.marginRight='';
-    var slack=boxW-inner.offsetWidth, n=inner.textContent.length;
-    if(slack>0 && n>1){
-      var ls=Math.min(slack/(n-1), size*0.42);
-      inner.style.letterSpacing=ls+'px';
-      inner.style.marginRight=(-ls)+'px';
-    }
+    // A short name is left centred at the size the height gives it. Tracking it out
+    // to span the plate was tried and it read as spaced-out rather than engraved:
+    // a long name fills its brass because it is long, and a short one should simply
+    // sit in the middle of its own.
   }
   function fit(){
     // None of the five names has a descender, so the letters can run the full
@@ -390,7 +409,7 @@
   // Opening one closes the other, so there is never more than a single block of
   // words on screen at a time.
   var SAYINGS=[[ovalEl, document.getElementById('say-sagne')],
-               [document.getElementById('ask'), document.getElementById('say-about')]];
+               [askEl, document.getElementById('say-about')]];
   function shut(){
     frame.classList.remove('asked');
     SAYINGS.forEach(function(pair){
