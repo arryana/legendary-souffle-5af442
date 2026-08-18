@@ -115,6 +115,40 @@ which had no vertical front edge at all, only a floor, had the fourth rail clone
 the floor line so its plate had something to sit on. The scripts that did all this are gone
 with their scratchpad, so treat `shelves.jpg` as the source of truth.
 
+**A card stands on the board, not at the lip of it.** Aug 2026 the shelves were given
+headroom: every one now has the same 132px between its ceiling and where a card's foot
+lands, done by stretching the flat dark band of back panel inside each shelf while the
+boards, rails, crown and plinth were carried across rigid. That took the photograph from
+1088 to 1232 tall. A card's foot sits `seatBack` (8px) behind the front lip, so a sliver of the
+lit top shows in front of it. That number is narrow on both sides: on the lip they read as
+propped in front of the furniture, and 18px back they read as hovering above it. The
+cards' shadow is a short contact one for the same reason. The three upper brass plates were in shadow and their
+names couldn't be read, so a lit plate was set into each of those sockets. The **?** is a
+brass disc of hers (`shelfdisk.png`) let into the middle of the plinth carving, with the
+question mark engraved into it; the case stands on the floor of the page rather than
+floating in the middle of it.
+
+**The favicon** is her own candle, cut off its ground and wrapped inside `favicon.svg`, so
+every page that already links to that file picks it up without a reference changing. The
+same cut-out makes `apple-touch-icon.png` and `icon-192/512.png` on the site's navy.
+
+**No words on it that aren't cut into it.** The only lettering on the shelf is engraved
+into the photograph: *sagne* on the crown oval and the five group names on the brass
+plates. The card names that used to float over a piece on hover were removed Aug 2026 —
+this site doesn't caption its objects — and so was the text **back** button; the way out
+of a zoom is the plate of the shelf you're in, a tap on the dark around the case, or
+Escape. The plate names size themselves to the height of the brass and sit centred in it — they
+were tracked out across the width for a while, and it read as spaced-out rather than
+engraved. The oval's
+position comes from the brass measured out of the photograph by hue, not by eye. Don't add
+a visible label to this page.
+
+**The two sayings** the old flat landing page carried are still here, word for word, and
+still only on request: *sagne* on the crown opens the "tools and toys for twiddling" one,
+and the quiet **?** at the foot opens the "designed by one person" one. The case dims
+behind whichever is open. They're the one exception to the rule above, because she asked
+for them.
+
 **Interaction.** On a touch screen it is three taps — shelf, then card, then open — because
 a phone cannot show a card big enough to read; her idea, and the right one. With a fine
 pointer a card opens on the first click instead, and the shelf zoom stays reachable from the
