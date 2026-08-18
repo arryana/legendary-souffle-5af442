@@ -158,9 +158,15 @@
       <canvas class="miniGlass" width="82" height="140"></canvas>
     </button>
     <button class="keyItem" type="button" data-cond="unsettled" aria-label="unsettled">
+      <!-- sun behind cloud: changeable. It wore a thermometer while this state was
+           misnamed 'warming', which was wrong twice over. -->
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 3.5a2 2 0 0 0-2 2v8.6a3.5 3.5 0 1 0 4 0V5.5a2 2 0 0 0-2-2Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
-        <line x1="12" y1="7" x2="12" y2="14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+          <circle cx="9" cy="8.5" r="3.2"/>
+          <line x1="9" y1="2.4" x2="9" y2="4"/><line x1="3.6" y1="8.5" x2="2" y2="8.5"/>
+          <line x1="4.8" y1="4.3" x2="3.7" y2="3.2"/><line x1="13.2" y1="4.3" x2="14.3" y2="3.2"/>
+          <path d="M10 19a3.6 3.6 0 0 1-.5-7.16A4.5 4.5 0 0 1 18 11.9 3.6 3.6 0 0 1 19 19H10Z"/>
+        </g>
       </svg>
       <canvas class="miniGlass" width="82" height="140"></canvas>
     </button>
@@ -177,6 +183,27 @@
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M7 12a4 4 0 0 1-.6-7.96A5 5 0 0 1 16 3.2 4.5 4.5 0 0 1 17.5 12H7Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
         <polyline points="12.5,14 9.5,18.5 12,18.5 10.5,22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <canvas class="miniGlass" width="82" height="140"></canvas>
+    </button>
+    <button class="keyItem" type="button" data-cond="windy" aria-label="windy">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+          <path d="M3 8.5h9.5a2.6 2.6 0 1 0-2.6-2.6"/>
+          <path d="M3 12.5h13a2.8 2.8 0 1 1-2.8 2.8"/>
+          <path d="M3 16.5h6"/>
+        </g>
+      </svg>
+      <canvas class="miniGlass" width="82" height="140"></canvas>
+    </button>
+    <button class="keyItem" type="button" data-cond="frost" aria-label="frost">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+          <line x1="3.5" y1="20" x2="20.5" y2="20"/>
+          <path d="M7 20v-5M7 17.5l-2-2M7 17.5l2-2"/>
+          <path d="M12 20v-8M12 15.5l-2.4-2.4M12 15.5l2.4-2.4"/>
+          <path d="M17 20v-5M17 17.5l-2-2M17 17.5l2-2"/>
+        </g>
       </svg>
       <canvas class="miniGlass" width="82" height="140"></canvas>
     </button>
@@ -205,7 +232,7 @@
   // cohesive flake), small crystal (many fine ones), vertical wisps, and
   // bubbles (dense or sparse) — matching what the real folklore chart itself
   // distinguishes: dashes are wisps, circles are bubbles, clumps are crystal ----------
-  const ORDER = ['settled','sunny','unsettled','rain','storm','snow'];
+  const ORDER = ['settled','sunny','unsettled','rain','storm','windy','frost','snow'];
   const RECIPES = {
     // snow: one dense, filled clump — not a couple of isolated flakes —
     // so it layers two offset samples of the same large-crystal photo
@@ -226,6 +253,15 @@
     // in the bulb and some very quiet filaments under the surface. Still
     // unmistakably the clearest of the five, and unmistakably deliberate.
     settled: { spreadAmt:0.8, spreadBubble:'sparse', spreadBubbleOnly:true, spreadTaper:true, spreadTaperStart:0.6, streakAmt:0.3, streakReach:0.5 },
+    // windy: the chart's "threads near the top". Long fine filaments hanging the
+    // depth of the water and nothing settled at the bottom — the one reading in
+    // the set that the barometer cannot give you, since a gale under a steady
+    // high and a calm under the same high read identically on a dial.
+    windy:   { streakAmt:1.0, streakReach:0.86, streakSpread:0.78 },
+    // frost: the chart's "crystals at the bottom". Fine crystal growing up off the
+    // floor of the bulb, no large flake, nothing hanging above it. Distinct from
+    // snow, which is falling; this is a hard clear freezing night.
+    frost:   { spreadAmt:0.95, spreadBubble:'sparse', spreadTaper:true, spreadTaperStart:0.5 },
     // rain: no crystal at all — a couple of streaks top-centre, a few loose
     // clumps of larger bubbles, and one small knot of finer bubbles at the
     // bottom centre, matching the real reading chart's own icon exactly
@@ -295,7 +331,19 @@
   // What the glass shows, read off the barometer the way a barometer is read:
   // the trend leads, the level decides when the trend is quiet. A rapid fall is
   // the classic storm warning whatever the needle currently sits at.
-  function conditionFrom(hpa, trend, temp, precip){
+  // Beaufort 6, 'strong breeze', begins at 39 km/h sustained — the point on the
+  // scale where wind stops being background and becomes the thing you notice.
+  // Beaufort 8 is a gale at 62 km/h, which is the gust figure used here: gusting to
+  // gale while the sustained wind sits lower is a genuinely windy day. Both are
+  // named points on a real scale rather than a feel for it, and the request is
+  // km/h explicitly so the reading cannot change under us if a default does.
+  const BEAUFORT_6 = 39, GALE = 62;
+  // An AIR FROST is defined as air temperature at or below 0.0 C. That is the
+  // definition, not a rounding of 'cold'. Ground frost is a different measurement
+  // and this is not it.
+  const AIR_FROST = 0;
+
+  function conditionFrom(hpa, trend, temp, precip, wind, gust){
     if(precip > 0.1 && temp <= 1) return 'snow';
     // Level and trend TOGETHER. An earlier version answered on the trend first and
     // only fell through to the level when the trend was quiet, which made it read
@@ -331,10 +379,23 @@
     // nudging upward. The extra rung at the bottom takes that apart. The top end
     // is still merged, deliberately: 'storm' is already the densest arrangement in
     // the set and a step beyond it would need new photography, not a new recipe.
-    return ['settled','sunny','unsettled','rain','storm'][Math.max(0, Math.min(4, sev + 1))];
-    // sev now runs -3 to +5; the ends stay merged, which is honest — a barometer
-    // pinned at 1045 and one at 1050 are the same weather, and so are two ways of
-    // being in a tempest.
+    // sev runs -3 to +5; the ends stay merged, which is honest — a barometer pinned
+    // at 1045 and one at 1050 are the same weather, and so are two ways of being in
+    // a tempest.
+    const baro = ['settled','sunny','unsettled','rain','storm'][Math.max(0, Math.min(4, sev + 1))];
+
+    // Wind and frost are the two readings a barometer genuinely cannot give you: a
+    // gale under a steady high and a flat calm under the same high put the needle
+    // in exactly the same place. They come from their own measurements.
+    //
+    // Order matters and is physical. Rain and storm already describe unsettled
+    // windy weather, so wind only becomes the notable feature when the pressure is
+    // not telling a stronger story. And frost forms in still air, so a windy night
+    // is not a frosty one — which the ordering gives for free.
+    if(baro === 'rain' || baro === 'storm') return baro;
+    if((wind != null && wind >= BEAUFORT_6) || (gust != null && gust >= GALE)) return 'windy';
+    if(temp <= AIR_FROST && precip <= 0.1) return 'frost';
+    return baro;
   }
 
   let baroHpaNow = null, baroTrend = null;
@@ -440,7 +501,7 @@
 
   async function fetchWeather(){
     try{
-      const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=pressure_msl,precipitation,temperature_2m&hourly=pressure_msl&past_days=1&forecast_days=1&timezone=auto`;
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=pressure_msl,precipitation,temperature_2m,wind_speed_10m,wind_gusts_10m&hourly=pressure_msl&past_days=1&forecast_days=1&wind_speed_unit=kmh&timezone=auto`;
       const res=await fetch(url);
       const data=await res.json();
       const c=data && data.current;
@@ -466,7 +527,9 @@
         // day of the year. Every printed barometer scale in the world is
         // calibrated to sea level, which is what makes 1013 mean anything.
         baroHpaNow = typeof c.pressure_msl==='number' ? c.pressure_msl : null;
-        if(baroHpaNow != null) liveCondition = conditionFrom(baroHpaNow, baroTrend, temp, precip);
+        const wind=typeof c.wind_speed_10m==='number' ? c.wind_speed_10m : null;
+        const gust=typeof c.wind_gusts_10m==='number' ? c.wind_gusts_10m : null;
+        if(baroHpaNow != null) liveCondition = conditionFrom(baroHpaNow, baroTrend, temp, precip, wind, gust);
         drawBarometer();
       }
     }catch(e){ /* keep last known value silently */ }
