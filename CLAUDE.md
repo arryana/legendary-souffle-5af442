@@ -60,7 +60,7 @@ of anything, so a number would be inventing a ranking she doesn't mean. The test
 apply to every piece is the one further down this file: *does it behave like the real
 thing?* That is a yes or a no.
 
-**9 of the 19 are done.**
+**10 of the 19 are done.**
 
 | File | On landing page? | Done? | What it is |
 |------|:---:|:---:|------------|
@@ -72,7 +72,7 @@ thing?* That is a yes or a no.
 | `rain/index.html` | ✅ |  | Rain on glass |
 | `ant/index.html` | ✅ |  | Ants |
 | `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights. |
-| `galileo/index.html` | ✅ |  | A **Galileo thermometer** whose floats rise and sink with the visitor's **real local temperature** (open-meteo API); has a °C/°F toggle |
+| `galileo/index.html` | ✅ | ✅ | A **Galileo thermometer** whose floats rise and sink with the visitor's **real local temperature** (open-meteo API); has a °C/°F toggle. Three instruments of different ranges, together reading 12–116°F<br>**Done** — "it needs no design changes, it covers a hell of a range, and i can't think of anything it needs to do that it doesn't." |
 | `conometer/index.html` | ✅ | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle<br>**Done**. |
 | `gyre/index.html` | ✅ | ✅ | Meshable **gears** you place and connect on a board, plus a signal-lamp piece whose lights are driven by the gear train. See `gears.md` for how the gear math/rendering works<br>**Done**. |
 | `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
