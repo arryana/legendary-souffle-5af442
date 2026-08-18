@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>storm — sagne</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-<meta name="description" content="A storm glass whose crystals form and clear with the changing weather.">
+<meta name="description" content="A barometer reading the real pressure where you are, and a storm glass answering to it.">
 <meta name="theme-color" content="#0e1c30">
 <link rel="canonical" href="https://sagne.co.uk/storm/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="sagne">
 <meta property="og:title" content="storm — sagne">
-<meta property="og:description" content="A storm glass whose crystals form and clear with the changing weather.">
+<meta property="og:description" content="A barometer reading the real pressure where you are, and a storm glass answering to it.">
 <meta property="og:url" content="https://sagne.co.uk/storm/">
 <meta property="og:image" content="https://sagne.co.uk/og/storm.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="storm — sagne">
-<meta name="twitter:description" content="A storm glass whose crystals form and clear with the changing weather.">
+<meta name="twitter:description" content="A barometer reading the real pressure where you are, and a storm glass answering to it.">
 <meta name="twitter:image" content="https://sagne.co.uk/og/storm.png">
 <style>
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -40,6 +40,33 @@
     border:solid #050505; border-width:0 2px 2px 0; transform:rotate(40deg); }
   .cloud-icon{ color:#dfe6ea; flex-shrink:0; transition:color .25s ease; }
   .toggle input:not(:checked) ~ .cloud-icon{ color:#7a8388; }
+  /* the barometer */
+  #barometer{ width:min(94vw, 560px); display:flex; flex-direction:column; align-items:center; gap:2px;
+    transition:opacity .4s ease; }
+  #barometer.idle{ opacity:.34; }          /* not driving the glass while it is on manual */
+  #baro-svg{ width:100%; height:auto; display:block; overflow:visible; }
+  #baro-svg .band{ fill:rgba(223,230,234,.045); }
+  #baro-svg .band.alt{ fill:rgba(223,230,234,.085); }
+  #baro-svg text{ font-family:Georgia, serif; }
+  #baro-svg .bandword{ fill:#7f8a90; font-size:11px; letter-spacing:.16em; text-anchor:middle; }
+  #baro-svg .num{ fill:#6d777c; font-size:10px; text-anchor:middle; }
+  #baro-svg .tick{ stroke:rgba(223,230,234,.34); stroke-width:1; }
+  #baro-svg .tick.major{ stroke:rgba(223,230,234,.6); stroke-width:1.4; }
+  #baro-svg .rule{ stroke:rgba(223,230,234,.28); stroke-width:1; }
+  #baro-needle{ stroke:#e9f1f5; stroke-width:2.2; stroke-linecap:round; }
+  #baro-hub{ fill:#e9f1f5; }
+  #baro-needle-g{ transition:transform .9s cubic-bezier(.34,.1,.2,1); }
+  #baro-set{ fill:#b8903f; stroke:#6b5220; stroke-width:.7; cursor:grab; }
+  #baro-set-g{ cursor:grab; }
+  #baro-set-g.dragging{ cursor:grabbing; }
+  #baro-read{ display:flex; align-items:center; justify-content:center; gap:10px;
+    font-size:12.5px; letter-spacing:.04em; color:#9aa4a9; min-height:1.5em; }
+  #baro-hpa{ color:#dfe6ea; }
+  #baro-tend{ color:#9aa4a9; }
+  #baro-set-btn{ appearance:none; border:0; background:none; padding:2px 4px; font-size:12px;
+    line-height:1; cursor:pointer; opacity:.4; transition:opacity .3s ease; }
+  #baro-set-btn:hover{ opacity:.85; }
+
   #key{ display:flex; align-items:flex-end; justify-content:center; gap:2px; flex-wrap:wrap; padding:0 8px; }
   .keyItem{ display:flex; align-items:center; gap:7px; background:none; border:none; cursor:pointer;
     padding:7px 9px; border-radius:7px; opacity:.5; transition:opacity .25s ease, background-color .25s ease; }
@@ -79,6 +106,23 @@
   <div id="scene-wrap">
     <canvas id="frame-a"></canvas>
     <canvas id="frame-b" style="opacity:0;"></canvas>
+  </div>
+  <!-- The barometer, horizontal, under the glass — because the glass is now a
+       picture OF this. The needle is the real sea-level pressure where the visitor
+       is; the brass hand is theirs to move, which is how a real barometer is
+       actually used: set it against the needle, come back later, read the gap. -->
+  <div id="barometer">
+    <svg id="baro-svg" viewBox="0 0 600 104" aria-hidden="true">
+      <g id="baro-bands"></g>
+      <g id="baro-scale"></g>
+      <g id="baro-set-g"><polygon id="baro-set" points="0,0 0,0 0,0"/></g>
+      <g id="baro-needle-g"><line id="baro-needle" x1="0" y1="0" x2="0" y2="0"/><circle id="baro-hub" r="3.4"/></g>
+    </svg>
+    <div id="baro-read">
+      <span id="baro-hpa">—</span>
+      <span id="baro-tend"></span>
+      <button type="button" id="baro-set-btn" title="set the hand to the reading now" aria-label="set the hand to the reading now">👆</button>
+    </div>
   </div>
   <div id="dock">
     <label class="toggle">
@@ -189,38 +233,190 @@
     if(chkLive.checked) return liveCondition!=null ? liveCondition : ORDER[manualIndex];
     return ORDER[manualIndex];
   }
+  // ---------- the barometer ----------
+  // A barometer tells you two things and the SECOND one is what forecasts. The
+  // needle gives the pressure now; the CHANGE over the last three hours is the
+  // figure that actually says what is coming, and it is what every synoptic
+  // observation on earth reports. So this reads the hourly series, not one instant.
+  const INHG = 33.8639;                                  // hPa in an inch of mercury
+  // The scale runs 950 to 1050. The traditional English dial runs 28 to 31 inches,
+  // which converts to 948.2 and 1049.8 — so the ends were falling just short of
+  // round numbers and the 1050 engraving had nowhere to sit. The ENDS are round
+  // because the engraving is metric; the WORD boundaries below stay exactly where
+  // the inch scale puts them, because that is what they are.
+  const BARO_LO = 950, BARO_HI = 1050;
+  // The words printed on a real aneroid dial, at the inches they are printed at.
+  // Not invented ranges — this is the standard English barometer scale.
+  const BANDS = [
+    { lo:BARO_LO,   hi:28.5*INHG, word:'STORMY'   },
+    { lo:28.5*INHG, hi:29.4*INHG, word:'RAIN'     },
+    { lo:29.4*INHG, hi:29.9*INHG, word:'CHANGE'   },
+    { lo:29.9*INHG, hi:30.5*INHG, word:'FAIR'     },
+    { lo:30.5*INHG, hi:BARO_HI,   word:'VERY DRY' },
+  ];
+  const X0 = 40, X1 = 560, YAXIS = 62;
+  const baroX = hpa => X0 + (Math.max(BARO_LO, Math.min(BARO_HI, hpa)) - BARO_LO)/(BARO_HI - BARO_LO)*(X1 - X0);
+  const baroHpa = x => BARO_LO + (Math.max(X0, Math.min(X1, x)) - X0)/(X1 - X0)*(BARO_HI - BARO_LO);
+
+  // The WMO descriptors for three-hourly pressure tendency. These thresholds are
+  // the standard ones, not a feel for it.
+  function tendencyWords(d){
+    const a = Math.abs(d);
+    if(a < 0.1) return 'steady';
+    const dir = d > 0 ? 'rising' : 'falling';
+    if(a < 1.6) return dir + ' slowly';
+    if(a < 3.6) return dir;
+    if(a < 6.0) return dir + ' rapidly';
+    return dir + ' very rapidly';
+  }
+
+  // What the glass shows, read off the barometer the way a barometer is read:
+  // the trend leads, the level decides when the trend is quiet. A rapid fall is
+  // the classic storm warning whatever the needle currently sits at.
+  function conditionFrom(hpa, trend, temp, precip){
+    if(precip > 0.1 && temp <= 1) return 'snow';
+    if(trend !== null){
+      if(trend <= -3.6) return 'storm';
+      if(trend <= -1.6) return 'rain';
+      if(trend >=  1.6) return 'sunny';
+    }
+    if(hpa < 28.5*INHG) return 'storm';        // in STORMY whatever it is doing
+    if(hpa < 29.4*INHG) return 'rain';         // in RAIN
+    if(hpa >= 29.9*INHG) return 'sunny';       // FAIR or better, and not falling
+    return 'warming';                          // CHANGE: unsettled, the middle state
+  }
+
+  let baroHpaNow = null, baroTrend = null;
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const elBands = document.getElementById('baro-bands');
+  const elScale = document.getElementById('baro-scale');
+  const elNeedleG = document.getElementById('baro-needle-g');
+  const elNeedle = document.getElementById('baro-needle');
+  const elHub = document.getElementById('baro-hub');
+  const elSetG = document.getElementById('baro-set-g');
+  const elSet = document.getElementById('baro-set');
+  const elHpa = document.getElementById('baro-hpa');
+  const elTend = document.getElementById('baro-tend');
+  const elBaro = document.getElementById('barometer');
+
+  (function drawScale(){
+    BANDS.forEach((b, i) => {
+      const x = baroX(b.lo), w = baroX(b.hi) - x;
+      const r = document.createElementNS(svgNS,'rect');
+      r.setAttribute('x', x); r.setAttribute('y', YAXIS-14);
+      r.setAttribute('width', w); r.setAttribute('height', 28);
+      r.setAttribute('class', 'band' + (i%2 ? ' alt' : ''));
+      elBands.appendChild(r);
+      const t = document.createElementNS(svgNS,'text');
+      t.setAttribute('x', x + w/2); t.setAttribute('y', YAXIS-22);
+      t.setAttribute('class','bandword'); t.textContent = b.word;
+      elBands.appendChild(t);
+    });
+    const rule = document.createElementNS(svgNS,'line');
+    rule.setAttribute('x1', X0); rule.setAttribute('x2', X1);
+    rule.setAttribute('y1', YAXIS+14); rule.setAttribute('y2', YAXIS+14);
+    rule.setAttribute('class','rule'); elScale.appendChild(rule);
+    // The engraving is metric, so it is engraved at round metric values: a tick
+    // every 5 hPa, numbered every 25. Ticking at tenths of an inch instead put the
+    // numbers at 948, 965, 982 — inches converted to hPa, which is the worst of
+    // both and reads as nothing at all. The WORDS stay where the traditional
+    // English scale puts them, because those boundaries are what they are.
+    for(let hpa = 950; hpa <= BARO_HI; hpa += 5){
+      if(hpa < BARO_LO) continue;
+      const major = hpa % 25 === 0;
+      const x = baroX(hpa);
+      const ln = document.createElementNS(svgNS,'line');
+      ln.setAttribute('x1', x); ln.setAttribute('x2', x);
+      ln.setAttribute('y1', YAXIS+14); ln.setAttribute('y2', YAXIS + (major ? 24 : 19));
+      ln.setAttribute('class', 'tick' + (major ? ' major' : ''));
+      elScale.appendChild(ln);
+      if(major){
+        const t = document.createElementNS(svgNS,'text');
+        t.setAttribute('x', x); t.setAttribute('y', YAXIS+36);
+        t.setAttribute('class','num'); t.textContent = hpa;
+        elScale.appendChild(t);
+      }
+    }
+    elNeedle.setAttribute('x1', 0); elNeedle.setAttribute('x2', 0);
+    elNeedle.setAttribute('y1', YAXIS-17); elNeedle.setAttribute('y2', YAXIS+17);
+    elHub.setAttribute('cx', 0); elHub.setAttribute('cy', YAXIS+17);
+    elSet.setAttribute('points', '-6,' + (YAXIS-20) + ' 6,' + (YAXIS-20) + ' 0,' + (YAXIS-9));
+  })();
+
+  // The brass hand. On a real barometer you set it against the needle and come
+  // back later to read the gap, so it has to stay where it was put — including
+  // between visits.
+  let setHpa = parseFloat(localStorage.getItem('sagne-storm-sethand'));
+  if(!isFinite(setHpa)) setHpa = 29.9*INHG;
+  function drawSet(){ elSetG.setAttribute('transform', 'translate(' + baroX(setHpa).toFixed(1) + ',0)'); }
+  function placeSet(hpa){
+    setHpa = Math.max(BARO_LO, Math.min(BARO_HI, hpa));
+    try{ localStorage.setItem('sagne-storm-sethand', String(setHpa)); }catch(e){}
+    drawSet();
+  }
+  drawSet();
+  (function dragSet(){
+    const svg = document.getElementById('baro-svg');
+    let dragging = false;
+    const xAt = ev => {
+      const r = svg.getBoundingClientRect();
+      return X0 + ((ev.clientX - r.left)/r.width*600 - X0);
+    };
+    elSetG.addEventListener('pointerdown', ev => {
+      dragging = true; elSetG.classList.add('dragging');
+      elSetG.setPointerCapture(ev.pointerId); ev.preventDefault();
+    });
+    elSetG.addEventListener('pointermove', ev => {
+      if(!dragging) return;
+      const r = svg.getBoundingClientRect();
+      placeSet(baroHpa((ev.clientX - r.left)/r.width*600));
+    });
+    const stop = ev => { dragging = false; elSetG.classList.remove('dragging'); };
+    elSetG.addEventListener('pointerup', stop);
+    elSetG.addEventListener('pointercancel', stop);
+  })();
+  document.getElementById('baro-set-btn').addEventListener('click', () => {
+    if(baroHpaNow != null) placeSet(baroHpaNow);
+  });
+
+  function drawBarometer(){
+    if(baroHpaNow == null){ elHpa.textContent = '—'; elTend.textContent = ''; return; }
+    elNeedleG.setAttribute('transform', 'translate(' + baroX(baroHpaNow).toFixed(1) + ',0)');
+    elHpa.textContent = Math.round(baroHpaNow) + ' hPa';
+    elTend.textContent = baroTrend == null ? ''
+      : tendencyWords(baroTrend) + ' · ' + (baroTrend >= 0 ? '+' : '') + baroTrend.toFixed(1) + ' in 3h';
+  }
+
   async function fetchWeather(){
     try{
-      const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=cloud_cover,pressure_msl,precipitation,temperature_2m`;
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=pressure_msl,precipitation,temperature_2m&hourly=pressure_msl&past_days=1&forecast_days=1&timezone=auto`;
       const res=await fetch(url);
       const data=await res.json();
       const c=data && data.current;
+      // the three-hour change, taken from the hourly series against the hour the
+      // current reading belongs to — null rather than a guess if it is not there
+      baroTrend = (function(){
+        const h = data && data.hourly;
+        if(!h || !Array.isArray(h.time) || !Array.isArray(h.pressure_msl)) return null;
+        const now = c && c.time;
+        let i = -1;
+        for(let k=0;k<h.time.length;k++){ if(!now || h.time[k] <= now) i = k; else break; }
+        if(i < 3) return null;
+        const a = h.pressure_msl[i-3], b = h.pressure_msl[i];
+        return (typeof a === 'number' && typeof b === 'number') ? b - a : null;
+      })();
       if(c){
-        const cloud=typeof c.cloud_cover==='number' ? c.cloud_cover : 50;
         const precip=typeof c.precipitation==='number' ? c.precipitation : 0;
         const temp=typeof c.temperature_2m==='number' ? c.temperature_2m : 12;
-        // Pressure has to be the SEA-LEVEL figure, not the pressure where the
-        // visitor is standing. The 1013 below is the sea-level standard, but
-        // surface pressure falls about 12 hPa per 100 m of altitude, so scoring
-        // surface pressure against 1013 measured altitude rather than weather —
-        // 952 hPa in Munich and 834 in Denver on the calmest day of the year,
-        // which pinned this score at its maximum from about 204 m upward.
-        //
-        // What that actually cost, precisely: the score is only consulted inside
-        // the storm test below, which already requires more than 0.5 mm of rain.
-        // So it never invented a storm out of a dry day. What it did was upgrade
-        // ordinary rain to a storm for everybody uphill — steady moderate rain
-        // under a 60% sky reads 'rain' at sea level and read 'storm' in Munich,
-        // Madrid, Denver and Mexico City. pressure_msl is the same reading
-        // corrected to sea level, which is what every barometer scale is
-        // calibrated against and what makes 1013 mean anything.
-        const pressure=typeof c.pressure_msl==='number' ? c.pressure_msl : 1013;
-        const pressureScore=Math.max(0, Math.min(1,(1013-pressure)/40));
-        if(precip>0.1 && temp<=1) liveCondition='snow';
-        else if(precip>0.5 && (cloud>85 || pressureScore>0.6)) liveCondition='storm';
-        else if(precip>0) liveCondition='rain';
-        else if(cloud<30) liveCondition='sunny';
-        else liveCondition='warming';
+        // Sea-level pressure, not the pressure where the visitor is standing.
+        // Surface pressure falls about 12 hPa per 100 m of altitude, so a scale
+        // calibrated at sea level reads altitude rather than weather if you feed
+        // it the local figure — 952 hPa in Munich, 834 in Denver, on the calmest
+        // day of the year. Every printed barometer scale in the world is
+        // calibrated to sea level, which is what makes 1013 mean anything.
+        baroHpaNow = typeof c.pressure_msl==='number' ? c.pressure_msl : null;
+        if(baroHpaNow != null) liveCondition = conditionFrom(baroHpaNow, baroTrend, temp, precip);
+        drawBarometer();
       }
     }catch(e){ /* keep last known value silently */ }
   }
@@ -267,7 +463,12 @@
     });
   })();
 
-  function setLive(v){ chkLive.checked=v; }
+  // While the visitor is picking a condition by hand the barometer is not driving
+  // anything, and it would be a small lie to leave it looking as though it were.
+  function setLive(v){
+    chkLive.checked=v;
+    elBaro.classList.toggle('idle', !v);
+  }
   chkLive.addEventListener('change', ()=>{ setLive(chkLive.checked); applyCondition(); });
   keyItems.forEach(btn=>{
     btn.addEventListener('click', ()=>{
