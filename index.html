@@ -48,21 +48,40 @@
     transition:transform .6s cubic-bezier(.22,.66,.24,1); }
   #case > img.wood{ width:100%; height:100%; display:block; }
 
+  /* The brass oval is photographed with a hard specular highlight across it, and
+     the shine is baked into the picture -- so it is taken down here instead, with
+     a veil that dims and desaturates what shows through it. The radial mask fades
+     the veil out before the rim, or the ellipse's own edge draws a seam across the
+     brass. Purely cosmetic: where backdrop-filter is not supported nothing shows
+     and the crown simply stays as bright as the photograph. */
+  #sheen{ position:absolute; border-radius:50%; pointer-events:none; z-index:1;
+    -webkit-backdrop-filter:brightness(.86) saturate(.82) contrast(.96);
+    backdrop-filter:brightness(.86) saturate(.82) contrast(.96);
+    -webkit-mask-image:radial-gradient(closest-side, #000 58%, transparent 100%);
+    mask-image:radial-gradient(closest-side, #000 58%, transparent 100%); }
+
   /* sagne, engraved into the brass oval at the crown */
   #oval{ position:absolute; display:flex; align-items:center; justify-content:center;
-    font-weight:700; letter-spacing:.16em;
+    font-weight:700; letter-spacing:.16em; z-index:2;
+    appearance:none; border:0; background:none; padding:0; font-family:inherit;
+    cursor:pointer;
     /* engraved: cut dark into the brass, with a bright lip on the lower edge where
        the light catches the cut */
-    color:#33230a; text-shadow:0 1px 0 rgba(255,238,196,.5), 0 -1px 1px rgba(0,0,0,.35);
-    pointer-events:none; }
-  #oval i{ font-style:normal; }
+    color:#33230a; text-shadow:0 1px 0 rgba(255,238,196,.5), 0 -1px 1px rgba(0,0,0,.35); }
+  /* line-height:1 puts the em box on the word instead of the line box, and the
+     nudge is optical: only the g drops below the baseline, so a word centred by
+     its box reads as sitting low on the brass. The trailing letter-space after
+     the final e is taken back the same way the plate names take theirs. */
+  #oval i{ font-style:normal; line-height:1; display:block;
+    transform:translateY(-0.055em); margin-right:-.16em; }
+  #oval:focus-visible{ outline:1px solid rgba(242,233,216,.45); outline-offset:3px; }
 
   /* the name of the type, engraved on the plate of the shelf it labels */
   .plate{ position:absolute; display:flex; align-items:center; justify-content:center;
     font-weight:600; letter-spacing:.02em;
     color:#3b2807; text-shadow:0 1px 0 rgba(255,238,196,.42), 0 -1px 1px rgba(0,0,0,.3);
     white-space:nowrap; cursor:pointer; }
-  .plate i{ font-style:normal; }
+  .plate i{ font-style:normal; line-height:1; }
 
   /* the pieces, standing face front on their shelf */
   .piece{ position:absolute; display:block; text-decoration:none;
@@ -78,16 +97,33 @@
   #case.on-card .piece.picked{ z-index:6; }
   #case.on-card .piece.on:not(.picked){ opacity:.35; }
 
-  #back{ position:absolute; left:50%; bottom:3%; transform:translateX(-50%);
-    background:rgba(9,17,28,.72); border:0; border-radius:999px; cursor:pointer;
-    padding:.45em 1.3em; font:inherit; color:#d8c9a4;
-    font-size:13px; letter-spacing:.2em; opacity:0; pointer-events:none;
-    transition:opacity .4s ease; z-index:20;
-    box-shadow:0 2px 10px rgba(0,0,0,.5); }
-  #frame.zoomed #back{ opacity:.75; pointer-events:auto; }
-  #back:hover{ opacity:1; }
+  /* Asked for, never announced. A saying has to lie over the furniture -- the case
+     fills the frame and there is no dark left to put it on -- so the case steps back
+     while one is open. That reads as the words being held up in front of the shelf,
+     rather than a panel sitting on top of a shelf it is hiding. */
+  #frame.asked #case{ opacity:.3; transition:opacity .5s ease; }
+  .saying{ position:absolute; left:50%; transform:translateX(-50%) translateY(-6px);
+    width:min(560px, 86%); margin:0; text-align:center; z-index:30;
+    background:rgba(9,17,28,.9); border-radius:10px; padding:1em 1.2em;
+    box-shadow:0 6px 24px rgba(0,0,0,.55);
+    font-size:clamp(13px, 1.7vh, 16px); line-height:1.65; color:#9fb2c6;
+    opacity:0; pointer-events:none; transition:opacity .6s ease, transform .6s ease; }
+  .saying.open{ opacity:1; transform:translateX(-50%); pointer-events:auto; }
+  #say-sagne{ top:16%; }
+  #say-about{ bottom:9%; }
+
+  /* the quiet ? at the foot of the page */
+  #ask{ position:absolute; left:50%; bottom:1.2%; transform:translateX(-50%);
+    appearance:none; border:0; background:none; cursor:pointer; z-index:31;
+    font-family:inherit; font-size:clamp(18px, 2.4vh, 23px); line-height:1;
+    color:#f2e9d8; opacity:.34; padding:4px 10px; border-radius:8px;
+    transition:opacity .45s ease; }
+  #ask:hover, #ask:focus-visible, #ask[aria-expanded="true"]{ opacity:.9; }
+  #ask:focus-visible{ outline:1px solid rgba(242,233,216,.4); outline-offset:4px; }
+
   @media (prefers-reduced-motion: reduce){
     #case, .piece{ transition:none; }
+    .saying{ transition:opacity .2s linear; transform:translateX(-50%); }
   }
 </style>
 </head>
@@ -95,9 +131,26 @@
   <div id="frame">
     <div id="case">
       <img class="wood" src="shelves.jpg" alt="An apothecary shelf of five open shelves">
-      <span id="oval">sagne</span>
+      <div id="sheen"></div>
+      <button type="button" id="oval" aria-expanded="false" aria-controls="say-sagne"
+              aria-label="what is this?">sagne</button>
     </div>
-    <button type="button" id="back">back</button>
+
+    <!-- The two sayings the flat landing page carried, kept word for word: the one
+         under the name, and the one behind the ? at the foot. Nothing of either is
+         on screen until it is asked for. -->
+    <p class="saying" id="say-sagne">tools and toys for twiddling. no scores, no goals, no
+      timers (except the tools which are timers), no links (except for location accuracy), no
+      likes, no ads, no in-game purchases. nothing exciting, but hopefully something
+      enjoyable.</p>
+    <button type="button" id="ask" aria-expanded="false" aria-controls="say-about"
+            aria-label="about sagne">?</button>
+    <p class="saying" id="say-about">sagne has been designed by one person, programming by
+      claude and images by gemini. it is a single individual's attempt to bring to digital
+      life some of life's interesting modes and models. the lack of text and explanations
+      throughout is an intentional choice for universal (if simplistic) communication. the
+      author trusts curiosity and ever-present search engines to suffice where clarity is
+      needed.</p>
   </div>
 <script>
 (function(){
@@ -111,7 +164,11 @@
   var GEO = {
     W:990, H:1088,
     interior:{ left:148, right:845 },     // the opening between the two stiles
-    oval:{ x:419, y:70, w:168, h:66 },    // the brass oval on the crown
+    // Measured off the photograph by hue, not by eye: the brass rides olive where
+    // the walnut around it runs red, which puts the ellipse at x 421..579,
+    // y 74..123. The old figures had this box 3px right and 5px low and a good
+    // deal taller than the brass, so the name sat low and off to one side of it.
+    oval:{ x:421, y:74, w:158, h:49 },    // the brass oval on the crown
     plate:{ x:424, w:147, h:22 },         // the engraved area of a brass plate
     card:{ w:76, h:100 },
     // ceil = underside of the shelf above; surf = the surface this shelf's cards
@@ -161,6 +218,11 @@
   ovalEl.style.left=pc(GEO.oval.x,W); ovalEl.style.top=pc(GEO.oval.y,H);
   ovalEl.style.width=pc(GEO.oval.w,W); ovalEl.style.height=pc(GEO.oval.h,H);
   ovalEl.style.fontSize='calc(var(--h) * 0.0404)';
+  // The veil takes the same box as the oval, a shade proud of it so the mask has
+  // somewhere to fade out over the brass rather than at its rim.
+  var sheen=document.getElementById('sheen');
+  sheen.style.left=pc(GEO.oval.x-8,W);  sheen.style.top=pc(GEO.oval.y-6,H);
+  sheen.style.width=pc(GEO.oval.w+16,W); sheen.style.height=pc(GEO.oval.h+12,H);
 
   GEO.shelves.forEach(function(sh,si){
     sh.pieces.forEach(function(p,i){
@@ -190,16 +252,56 @@
   // earlier go at this drove every name down to the floor and still called them too
   // wide. Wrapping the words in an <i> lets them be measured directly. This also
   // survives the webfont arriving late, which a guessed character width would not.
+  //
+  // A name is CUT INTO the plate, so it should take up the plate. The starting size
+  // is a fraction of the case, which left a short name like "natura" sitting tiny in
+  // the middle of its brass -- so scale to whichever of the two edges the name meets
+  // first, growing as readily as shrinking. line-height:1 on the <i> is what makes
+  // the height half of that honest: without it the measured box is the line box,
+  // about 1.2em of mostly air, and every name gets driven back down.
+  function fillPlate(el, wFrac, hFrac){
+    var inner=el.firstElementChild;
+    if(!inner) return;
+    var boxW=el.clientWidth*wFrac, boxH=el.clientHeight*hFrac;
+    if(!boxW || !boxH) return;
+    el.style.fontSize=el.dataset.base || (el.dataset.base=getComputedStyle(el).fontSize);
+    var size=parseFloat(getComputedStyle(el).fontSize);
+    for(var k=0; k<8; k++){
+      var w=inner.offsetWidth, h=inner.offsetHeight;
+      if(!w || !h) return;
+      var r=Math.min(boxW/w, boxH/h);
+      if(r>0.995 && r<1.005) break;         // close enough, and letter-spacing
+      size=Math.max(4, size*r);             // keeps it from ever settling exactly
+      el.style.fontSize=size+'px';
+    }
+    // A short name is now as tall as the brass allows and still only reaches half
+    // way across it. An engraver's answer, not a typesetter's: track the letters
+    // apart until they span the plate. Capped, or "natura" comes apart into six
+    // separate letters. The negative margin takes back the trailing space that
+    // letter-spacing adds after the last letter, which would push the word left.
+    inner.style.letterSpacing=''; inner.style.marginRight='';
+    var slack=boxW-inner.offsetWidth, n=inner.textContent.length;
+    if(slack>0 && n>1){
+      var ls=Math.min(slack/(n-1), size*0.42);
+      inner.style.letterSpacing=ls+'px';
+      inner.style.marginRight=(-ls)+'px';
+    }
+  }
   function fit(){
-    [].forEach.call(document.querySelectorAll('.plate, #oval'), function(el){
-      var inner=el.firstElementChild, box=el.clientWidth*0.90;
-      if(!inner || !box) return;
-      el.style.fontSize=el.dataset.base || (el.dataset.base=getComputedStyle(el).fontSize);
-      var size=parseFloat(getComputedStyle(el).fontSize), guard=0;
-      while(inner.offsetWidth>box && size>4 && guard++<80){
-        size-=0.3; el.style.fontSize=size+'px';
-      }
+    // None of the five names has a descender, so the letters can run the full
+    // height of the engraved area without dropping below it.
+    [].forEach.call(document.querySelectorAll('.plate'), function(el){
+      fillPlate(el, 0.92, 0.95);
     });
+    // sagne keeps the size it was drawn at -- it sits in a much taller oval, and
+    // filling that would make it shout. Shrink only, if it ever needs it.
+    var box=ovalEl.clientWidth*0.90, inner=ovalEl.firstElementChild;
+    if(!inner || !box) return;
+    ovalEl.style.fontSize=ovalEl.dataset.base || (ovalEl.dataset.base=getComputedStyle(ovalEl).fontSize);
+    var size=parseFloat(getComputedStyle(ovalEl).fontSize), guard=0;
+    while(inner.offsetWidth>box && size>4 && guard++<80){
+      size-=0.3; ovalEl.style.fontSize=size+'px';
+    }
   }
   if(!ovalEl.firstElementChild) ovalEl.innerHTML='<i>'+ovalEl.textContent+'</i>';
 
@@ -272,8 +374,49 @@
       if(level===1 && shelfIx===i) outOne(); else toShelf(i);
     });
   });
-  document.getElementById('back').addEventListener('click', outOne);
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape') outOne(); });
+  // Nothing on screen says how to come back out, because nothing needs to: the
+  // plate of the shelf you are in steps you back, and so does the dark around the
+  // case -- tapping off the furniture is the gesture everyone already makes. It
+  // listens on the document, not the frame: zoomed in, the case fills the frame
+  // and the dark a visitor actually aims at is the page outside it. Only a tap
+  // landing on no piece and no plate counts, so the cards still open.
+  document.addEventListener('click', function(ev){
+    if(level===0) return;
+    if(ev.target.closest('.piece, .plate, .saying, #oval, #ask')) return;
+    outOne();
+  });
+  // --- the two sayings ----------------------------------------------------------
+  // sagne carries the one it always carried; the ? at the foot carries the other.
+  // Opening one closes the other, so there is never more than a single block of
+  // words on screen at a time.
+  var SAYINGS=[[ovalEl, document.getElementById('say-sagne')],
+               [document.getElementById('ask'), document.getElementById('say-about')]];
+  function shut(){
+    frame.classList.remove('asked');
+    SAYINGS.forEach(function(pair){
+      pair[1].classList.remove('open');
+      pair[0].setAttribute('aria-expanded','false');
+    });
+  }
+  SAYINGS.forEach(function(pair){
+    pair[0].addEventListener('click', function(ev){
+      ev.stopPropagation();
+      var open=pair[1].classList.contains('open');
+      shut();
+      if(!open){
+        pair[1].classList.add('open'); pair[0].setAttribute('aria-expanded','true');
+        frame.classList.add('asked');
+      }
+    });
+  });
+
+  document.addEventListener('click', function(ev){
+    if(!ev.target.closest('.saying, #oval, #ask')) shut();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Escape') return;
+    shut(); outOne();
+  });
 
   fit();
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);

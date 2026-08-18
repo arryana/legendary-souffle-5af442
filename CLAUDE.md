@@ -115,6 +115,22 @@ which had no vertical front edge at all, only a floor, had the fourth rail clone
 the floor line so its plate had something to sit on. The scripts that did all this are gone
 with their scratchpad, so treat `shelves.jpg` as the source of truth.
 
+**No words on it that aren't cut into it.** The only lettering on the shelf is engraved
+into the photograph: *sagne* on the crown oval and the five group names on the brass
+plates. The card names that used to float over a piece on hover were removed Aug 2026 —
+this site doesn't caption its objects — and so was the text **back** button; the way out
+of a zoom is the plate of the shelf you're in, a tap on the dark around the case, or
+Escape. The plate names size themselves to fill the brass (height first, then tracked out
+across the width, which is what an engraver does with a short word), and the oval's
+position comes from the brass measured out of the photograph by hue, not by eye. Don't add
+a visible label to this page.
+
+**The two sayings** the old flat landing page carried are still here, word for word, and
+still only on request: *sagne* on the crown opens the "tools and toys for twiddling" one,
+and the quiet **?** at the foot opens the "designed by one person" one. The case dims
+behind whichever is open. They're the one exception to the rule above, because she asked
+for them.
+
 **Interaction.** On a touch screen it is three taps — shelf, then card, then open — because
 a phone cannot show a card big enough to read; her idea, and the right one. With a fine
 pointer a card opens on the first click instead, and the shelf zoom stays reachable from the
