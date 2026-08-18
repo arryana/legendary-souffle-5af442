@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="description" content="A chest of small interactive pieces.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&display=swap');
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; background:#0b0806; color:#e2d6bb;
+    font-family:'Cormorant Garamond', Georgia, serif; }
+  body{ display:flex; flex-direction:column; align-items:center; padding:3vh 3vw 6vh; gap:2.4vh; }
+  h1{ font-size:clamp(19px,2.6vh,26px); font-weight:500; letter-spacing:.26em; margin:0; opacity:.82; }
+  .pronounce{ font-size:11px; opacity:.32; letter-spacing:.06em; margin:1px 0 0; }
+
+  /* The chest stands open — every drawer ajar, nothing hidden. It is the emblem
+     and the key: each shelf below belongs to one of these drawers. */
+  #chest{ position:relative; width:min(64vw, 30vh, 250px); aspect-ratio:670/715; flex:none; }
+  #chest > img.body{ width:100%; height:100%; display:block; }
+  #chest::after{ content:''; position:absolute; inset:0; pointer-events:none; z-index:9;
+    background:radial-gradient(ellipse 76% 70% at 50% 46%, transparent 56%, #0b0806 100%); }
+  .hole{ position:absolute; z-index:1;
+    background:linear-gradient(#0d0904 0%, #1d1409 60%, #33200d 100%);
+    box-shadow:inset 0 5px 10px rgba(0,0,0,.9); }
+  .drawer{ position:absolute; overflow:hidden; z-index:2; background:#0a0704;
+    box-shadow:0 8px 16px rgba(0,0,0,.6); transition:transform .45s cubic-bezier(.2,.7,.3,1); }
+  .drawer img{ position:absolute; max-width:none; display:block; }
+
+  #instrumenta-hole,
+  #instrumenta{ left:35.075%; top:7.273%; width:28.358%; height:27.413%; }
+  #instrumenta img{ width:352.632%; height:364.796%; left:-123.684%; top:-26.531%; }
+  #instrumenta{ transform:translate(0,3.5%) scale(1.055); }
+  #tactilia-hole,
+  #tactilia{ left:3.731%; top:36.643%; width:29.104%; height:25.594%; }
+  #tactilia img{ width:343.590%; height:390.710%; left:-12.821%; top:-143.169%; }
+  #tactilia{ transform:translate(-2%,3%) scale(1.05); }
+  #systema-hole,
+  #systema{ left:35.373%; top:36.643%; width:28.060%; height:26.573%; }
+  #systema img{ width:356.383%; height:376.316%; left:-126.064%; top:-137.895%; }
+  #systema{ transform:translate(0,3.5%) scale(1.06); }
+  #natura-hole,
+  #natura{ left:69.104%; top:36.643%; width:27.463%; height:25.175%; }
+  #natura img{ width:364.130%; height:397.222%; left:-251.630%; top:-145.556%; }
+  #natura{ transform:translate(2%,3%) scale(1.05); }
+  #phenomena-hole,
+  #phenomena{ left:35.373%; top:65.455%; width:28.060%; height:25.734%; }
+  #phenomena img{ width:356.383%; height:388.587%; left:-126.064%; top:-254.348%; }
+  #phenomena{ transform:translate(0,4%) scale(1.055); }
+
+  /* one shelf per drawer, all of them on the page at once */
+  #shelves{ width:min(96vw, 1080px); display:flex; flex-direction:column; gap:2.2vh; }
+  .shelf{ display:grid; grid-template-columns:minmax(96px, 116px) 1fr; align-items:center;
+    gap:clamp(10px,2vw,22px); }
+  .shelf h2{ margin:0; font-size:clamp(13px,1.5vw,16px); font-weight:500; letter-spacing:.17em;
+    color:#6c614c; text-align:right; transition:color .3s ease; }
+  .shelf .cards{ display:flex; flex-wrap:wrap; gap:clamp(6px,1.3vw,14px); }
+  .shelf:hover h2{ color:#e8dcbd; }
+  .card{ display:block; text-decoration:none; color:#c6b997;
+    width:clamp(70px, 9.2vw, 104px); transition:transform .22s ease, color .22s ease; }
+  .card img{ width:100%; aspect-ratio:3/4; object-fit:cover; display:block; border-radius:3px;
+    box-shadow:0 4px 11px rgba(0,0,0,.6); }
+  .card span{ display:block; text-align:center; padding-top:4px; font-size:11.5px; letter-spacing:.09em; }
+  .card:hover{ transform:translateY(-4px); color:#f2e8cd; }
+
+  @media (max-width:620px){
+    .shelf{ grid-template-columns:1fr; gap:6px; }
+    .shelf h2{ text-align:left; }
+  }
+</style>
+</head>
+<body>
+  <h1>sagne</h1>
+  <p class="pronounce">/se&#618;n/</p>
+  <div id="chest">
+    <img class="body" src="chest.jpg" alt="A small apothecary chest, every drawer open">
+    <div class="hole" id="instrumenta-hole"></div>
+    <div class="hole" id="tactilia-hole"></div>
+    <div class="hole" id="systema-hole"></div>
+    <div class="hole" id="natura-hole"></div>
+    <div class="hole" id="phenomena-hole"></div>
+    <div class="drawer" id="instrumenta"><img src="chest.jpg" alt=""></div>
+    <div class="drawer" id="tactilia"><img src="chest.jpg" alt=""></div>
+    <div class="drawer" id="systema"><img src="chest.jpg" alt=""></div>
+    <div class="drawer" id="natura"><img src="chest.jpg" alt=""></div>
+    <div class="drawer" id="phenomena"><img src="chest.jpg" alt=""></div>
+  </div>
+  <div id="shelves">
+    <section class="shelf" data-drawer="instrumenta">
+      <h2>instrumenta</h2>
+      <div class="cards">
+        <a class="card" href="candler/index.html"><img src="candler/candle-card.png" alt=""><span>candler</span></a>
+        <a class="card" href="conometer/index.html"><img src="conometer/conometer-card.png" alt=""><span>conometer</span></a>
+        <a class="card" href="galileo/index.html"><img src="galileo/galileo-card.png" alt=""><span>galileo</span></a>
+        <a class="card" href="windower/index.html"><img src="windower/windower-card.png" alt=""><span>windower</span></a>
+        <a class="card" href="storm/index.html"><img src="storm/storm-card.png" alt=""><span>storm</span></a>
+      </div>
+    </section>
+    <section class="shelf" data-drawer="tactilia">
+      <h2>tactilia</h2>
+      <div class="cards">
+        <a class="card" href="warmler/index.html"><img src="warmler/warmler-card.png" alt=""><span>warmler</span></a>
+        <a class="card" href="roller/index.html"><img src="roller/roller-card.png" alt=""><span>roller</span></a>
+        <a class="card" href="kaleidoscope/index.html"><img src="kaleidoscope/kaleidoscope-card.png" alt=""><span>kaleidoscope</span></a>
+      </div>
+    </section>
+    <section class="shelf" data-drawer="systema">
+      <h2>systema</h2>
+      <div class="cards">
+        <a class="card" href="musebox/index.html"><img src="musebox/musebox-card.png" alt=""><span>musebox</span></a>
+        <a class="card" href="gyre/index.html"><img src="gyre/gyre-card.png" alt=""><span>gyre</span></a>
+        <a class="card" href="chimes/index.html"><img src="chimes/chimes-card.png" alt=""><span>chimes</span></a>
+      </div>
+    </section>
+    <section class="shelf" data-drawer="natura">
+      <h2>natura</h2>
+      <div class="cards">
+        <a class="card" href="birds/index.html"><img src="birds/birds-card.png" alt=""><span>birds</span></a>
+        <a class="card" href="fireflies/index.html"><img src="fireflies/fireflies-card.png" alt=""><span>fireflies</span></a>
+        <a class="card" href="ant/index.html"><img src="ant/ant-card.png" alt=""><span>ant</span></a>
+      </div>
+    </section>
+    <section class="shelf" data-drawer="phenomena">
+      <h2>phenomena</h2>
+      <div class="cards">
+        <a class="card" href="lamp/index.html"><img src="lamp/lamp-card.png" alt=""><span>lamp</span></a>
+        <a class="card" href="rain/index.html"><img src="rain/rain-card.png" alt=""><span>rain</span></a>
+        <a class="card" href="bowl/index.html"><img src="bowl/bowl-card.png" alt=""><span>bowl</span></a>
+        <a class="card" href="pendulum/index.html"><img src="pendulum/pendulum-card.png" alt=""><span>pendulum</span></a>
+        <a class="card" href="chladni/index.html"><img src="chladni/chladni-card.png" alt=""><span>chladni</span></a>
+      </div>
+    </section>
+  </div>
+<script>
+(function(){
+  // hovering a shelf pulls its own drawer a little further out, so the tie between
+  // the row and the drawer is shown rather than asserted
+  var extra = { instrumenta:'translate(0,7%) scale(1.1)', tactilia:'translate(-4%,6%) scale(1.09)', systema:'translate(0,7%) scale(1.11)', natura:'translate(4%,6%) scale(1.09)', phenomena:'translate(0,8%) scale(1.1)' };
+  Array.prototype.forEach.call(document.querySelectorAll('.shelf'), function(sh){
+    var key = sh.dataset.drawer, d = document.getElementById(key), home = d.style.transform;
+    sh.addEventListener('mouseenter', function(){ d.style.transform = extra[key]; });
+    sh.addEventListener('mouseleave', function(){ d.style.transform = home; });
+  });
+})();
+</script>
+</body>
+</html>
