@@ -70,19 +70,12 @@
     transform-origin:50% 100%; }
   .piece img{ width:100%; height:100%; object-fit:cover; display:block;
     border-radius:2px; box-shadow:0 3px 7px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.5); }
-  .piece b{ position:absolute; left:50%; bottom:100%; transform:translateX(-50%);
-    margin-bottom:calc(var(--h) * 0.0064); font-size:calc(var(--h) * 0.0156); font-weight:600;
-    letter-spacing:.08em; color:#e8dcbd; opacity:0; white-space:nowrap;
-    transition:opacity .25s ease; text-shadow:0 1px 4px #000, 0 0 10px #000;
-    pointer-events:none; }
   .piece:hover{ transform:scale(1.14) translateY(calc(var(--h) * -0.0037)); z-index:5; }
-  .piece:hover b{ opacity:1; }
   .piece:focus-visible{ outline:2px solid #b8903f; outline-offset:2px; }
 
-  /* zoomed in: the shelf in focus keeps its names showing, the rest steps back */
+  /* zoomed in: the shelf in focus stands forward, the rest steps back */
   #case.zoomed .piece:not(.on){ opacity:.2; pointer-events:none; }
   #case.on-card .piece.picked{ z-index:6; }
-  #case.on-card .piece.picked b{ opacity:1; }
   #case.on-card .piece.on:not(.picked){ opacity:.35; }
 
   #back{ position:absolute; left:50%; bottom:3%; transform:translateX(-50%);
@@ -177,7 +170,7 @@
       a.className='piece'; a.href=p[1]; a.setAttribute('aria-label',p[0]);
       a.style.left=pc(x,W); a.style.top=pc(y,H);
       a.style.width=pc(GEO.card.w,W); a.style.height=pc(GEO.card.h,H);
-      a.innerHTML='<img src="'+p[2]+'" alt=""><b>'+p[0]+'</b>';
+      a.innerHTML='<img src="'+p[2]+'" alt="">';
       caseEl.appendChild(a);
       BY_SLUG[p[0]]={ el:a, shelf:si };
       RECT[p[0]]={ cx:cx, cy:y+GEO.card.h/2 };
