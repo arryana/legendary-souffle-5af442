@@ -98,6 +98,14 @@
   #loc-search-status{
     font-size:11px; letter-spacing:.02em; color:#7a8388; text-align:center; min-height:1.2em;
   }
+  /* Said out loud when the weather cannot be reached. The glass is a reading of the
+     real sky; left alone it would go on showing the last one it had as though that
+     were still now, which is the one thing this site promises never to do. */
+  #loc-note{
+    display:none; font-size:11px; letter-spacing:.02em; color:#7a8388;
+    text-align:center; font-family:'Cormorant Garamond', serif; padding:0 12px;
+  }
+  #loc-note.visible{ display:block; }
 </style>
 <style>
   /* The way back is the brass disc off the shelf's plinth, with an arrow cut into
@@ -150,6 +158,7 @@
     <input type="text" id="loc-search-input" placeholder="postcode or city" aria-label="postcode or city">
   </form>
   <div id="loc-search-status"></div>
+  <div id="loc-note"><span id="loc-note-text"></span></div>
   <div id="key" role="group" aria-label="weather key">
     <button class="keyItem" type="button" data-cond="settled" aria-label="settled">
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -512,6 +521,21 @@
       : tendencyWords(baroTrend) + ' · ' + (baroTrend >= 0 ? '+' : '') + baroTrend.toFixed(1) + ' in 3h';
   }
 
+  // One missed refresh is not worth interrupting anyone over -- open-meteo refreshes
+  // every ten minutes and a single blip is normal. Past that, staying quiet would
+  // mean showing an old sky as if it were the one outside, so it is said plainly.
+  // Counted and worded exactly as galileo, conometer and windower do it.
+  var weatherFetchFailures = 0;
+  function showWeatherNote(msg){
+    var note=document.getElementById('loc-note'), text=document.getElementById('loc-note-text');
+    if(text) text.textContent=msg;
+    if(note) note.classList.add('visible');
+  }
+  function hideWeatherNote(){
+    var note=document.getElementById('loc-note');
+    if(note) note.classList.remove('visible');
+  }
+
   async function fetchWeather(){
     try{
       const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=pressure_msl,precipitation,temperature_2m,wind_speed_10m,wind_gusts_10m&hourly=pressure_msl&past_days=1&forecast_days=1&wind_speed_unit=kmh&timezone=auto`;
@@ -544,8 +568,19 @@
         const gust=typeof c.wind_gusts_10m==='number' ? c.wind_gusts_10m : null;
         if(baroHpaNow != null) liveCondition = conditionFrom(baroHpaNow, baroTrend, temp, precip, wind, gust);
         drawBarometer();
+        if(weatherFetchFailures > 0){ weatherFetchFailures = 0; hideWeatherNote(); }
+      } else {
+        // a reply that arrived but carried no reading is a failure like any other,
+        // and used to fall through here without a word
+        throw new Error('unexpected response shape');
       }
-    }catch(e){ /* keep last known value silently */ }
+    }catch(e){
+      if(!chkLive.checked) return;      // reading a hand-set glass: nothing to miss
+      weatherFetchFailures++;
+      if(weatherFetchFailures >= 2){
+        showWeatherNote("couldn't reach the weather just now — showing the last real reading, still trying quietly");
+      }
+    }
   }
   fetchWeather();
   setInterval(()=>{ if(chkLive.checked) fetchWeather(); }, 10*60*1000);

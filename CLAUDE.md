@@ -171,9 +171,20 @@ pointer a card opens on the first click instead, and the shelf zoom stays reacha
 name plates. If you change the picture, the zoom transforms recompute themselves from the
 measurement table; nothing there is hand-typed.
 
-**Live-data pieces** — `galileo`, `conometer`, `windower` — read the visitor's **geolocation**
-and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that working; don't
-break the geolocation or the fetch. (These are also why a *faithful* Preview matters — a plain
+**Live-data pieces** — `galileo`, `conometer`, `windower`, `storm` — read the visitor's
+**geolocation** and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that
+working; don't break the geolocation or the fetch. **All four must fail out loud.** They count
+consecutive failures, ignore a single blip — open-meteo refreshes every ten minutes and one
+miss is normal — and from the second say, in the same words: *"couldn't reach the weather just
+now — showing the last real reading, still trying quietly"*. A reply that arrives carrying no
+reading counts as a failure too. Going quiet instead would mean showing an old sky as though
+it were the one outside, which is the exact promise this site makes not to break. Storm was
+the one that didn't, until Aug 2026.
+
+**Don't add a second weather provider as a failover.** It was considered and rejected: the
+alternatives need an API key, and a key in a static page is readable by anyone and gets
+rate-limited or revoked, which is a worse failure than the outage it insures against. Failing
+honestly is the answer here, not a second source that can quietly disagree with the first. (These are also why a *faithful* Preview matters — a plain
 screenshot can't show live weather.)
 
 ### Asset naming conventions (follow these for any new asset)
