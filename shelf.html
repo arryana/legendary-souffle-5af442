@@ -12,14 +12,27 @@
   html,body{ height:100%; margin:0; background:#0a0910; color:#e2d6bb;
     font-family:'Cormorant Garamond', Georgia, serif; }
   body{ display:flex; align-items:center; justify-content:center; padding:2vh 2vw; }
+  /* the frame clips, so a zoomed-in shelf fills it instead of overflowing the page */
+  #frame{ position:relative; overflow:hidden; flex:none; border-radius:3px;
+    --h: min(95vh, calc(96vw * 1.0726), 1064px);
+    height:var(--h); width:calc(var(--h) / 1.0726); }
 
   /* the case, and everything on it placed as a percentage of it */
   /* The case must fit the viewport in BOTH directions. Sized by height alone it
      ran off the sides of a phone and the shelves were cut in half. 1064/992 is the
      case's own proportion, so this is the tallest it can be and still fit across. */
-  #case{ position:relative; flex:none; aspect-ratio:992/1064;
+  #case{ position:absolute; inset:0; aspect-ratio:992/1064;
     --h: min(95vh, calc(96vw * 1.0726), 1064px);
-    height:var(--h); --u: calc(var(--h) / 1064); }
+    height:var(--h); --u: calc(var(--h) / 1064);
+    transform-origin:50% 50%;
+    transition:transform .6s cubic-bezier(.22,.66,.24,1); }
+  /* zoomed to one shelf: 992/695 is exactly the factor that brings the interior
+     width out to the frame edges, so a shelf fills it and nothing is cropped */
+  #case.z1{ transform:translate(-3.8%, 41.6%) scale(1.427); }
+  #case.z2{ transform:translate(-3.8%, 20.9%) scale(1.427); }
+  #case.z3{ transform:translate(-3.8%,  0.1%) scale(1.427); }
+  #case.z4{ transform:translate(-3.8%,-20.8%) scale(1.427); }
+  #case.z5{ transform:translate(-3.8%,-41.9%) scale(1.427); }
   #case > img.wood{ width:100%; height:100%; display:block; }
 
   /* sagne, engraved into the brass oval at the crown */
@@ -99,10 +112,19 @@
     transition:opacity .25s ease; text-shadow:0 1px 4px #000; pointer-events:none; }
   .piece:hover{ transform:scale(1.14) translateY(calc(var(--u) * -4px)); z-index:5; }
   .piece:hover b{ opacity:1; }
+  #case.zoomed .piece.on b{ opacity:1; }
+  #case.zoomed .piece:not(.on){ opacity:.25; }
+  #back{ position:absolute; left:50%; bottom:2.5%; transform:translateX(-50%);
+    background:none; border:0; cursor:pointer; font:inherit; color:#cbbb92;
+    font-size:13px; letter-spacing:.2em; opacity:0; pointer-events:none;
+    transition:opacity .4s ease; text-shadow:0 1px 6px #000; z-index:20; }
+  #frame.zoomed #back{ opacity:.75; pointer-events:auto; }
+  #back:hover{ opacity:1; }
   .piece:focus-visible{ outline:2px solid #b8903f; outline-offset:2px; }
 </style>
 </head>
 <body>
+  <div id="frame">
   <div id="case">
     <img class="wood" src="shelves.jpg" alt="An apothecary shelf of five shelves">
     <span id="oval">sagne</span>
@@ -150,6 +172,8 @@
       <img src="chladni/chladni-card.png" alt=""><b>chladni</b></a>
     <span class="plate" id="p-phenomena">phenomena</span>
   </div>
+  <button type="button" id="back">back</button>
+  </div>
 <script>
 (function(){
   // Fit each engraved name to its own plate by MEASURING it rather than guessing a
@@ -176,6 +200,50 @@
     });
   }
   fit();
+
+  // Zoom to one shelf. On a phone the whole case has to shrink to fit across, which
+  // leaves the cards at about 30px -- her idea, and the right one: bring a shelf out
+  // to the frame edges instead of shrinking the furniture.
+  //
+  // The first tap on a card zooms its shelf; the second opens the piece. That way one
+  // gesture does both jobs and nothing on a small screen is out of reach.
+  var frame=document.getElementById('frame'), caseEl=document.getElementById('case');
+  var SHELF={};
+  ['instrumenta','tactilia','systema','natura','phenomena'].forEach(function(n,i){ SHELF[n]=i+1; });
+  var PIECES={ instrumenta:['candler','conometer','galileo','windower','storm'],
+               tactilia:['warmler','roller','kaleidoscope'],
+               systema:['musebox','gyre','chimes'],
+               natura:['birds','fireflies','ant'],
+               phenomena:['lamp','rain','bowl','pendulum','chladni'] };
+  var open=null;
+  function zoom(name){
+    if(open===name){ shut(); return; }
+    shut();
+    open=name;
+    caseEl.classList.add('zoomed','z'+SHELF[name]);
+    frame.classList.add('zoomed');
+    PIECES[name].forEach(function(s){ document.getElementById('c-'+s).classList.add('on'); });
+  }
+  function shut(){
+    if(!open) return;
+    caseEl.classList.remove('zoomed','z'+SHELF[open]);
+    frame.classList.remove('zoomed');
+    PIECES[open].forEach(function(s){ document.getElementById('c-'+s).classList.remove('on'); });
+    open=null;
+  }
+  Object.keys(PIECES).forEach(function(name){
+    PIECES[name].forEach(function(slug){
+      var a=document.getElementById('c-'+slug);
+      a.addEventListener('click', function(ev){
+        if(open!==name){ ev.preventDefault(); zoom(name); }
+      });
+    });
+    var pl=document.getElementById('p-'+name);
+    pl.style.pointerEvents='auto'; pl.style.cursor='pointer';
+    pl.addEventListener('click', function(){ zoom(name); });
+  });
+  document.getElementById('back').addEventListener('click', shut);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') shut(); });
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
   addEventListener('resize', fit);
 })();
