@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="description" content="A chest of small interactive pieces. Open a drawer.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&display=swap');
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; margin:0; background:#0b0806; color:#e2d6bb;
+    font-family:'Cormorant Garamond', Georgia, serif; }
+  body{ display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:1.4vh; padding:2vh 3vw; overflow:hidden; }
+
+  h1{ font-size:clamp(18px,2.4vh,25px); font-weight:500; letter-spacing:.26em; margin:0; opacity:.82; }
+  .pronounce{ font-size:11px; opacity:.32; letter-spacing:.06em; margin:1px 0 0; }
+
+  /* The chest. Every position below is a percentage of this box, so the whole thing
+     scales with the photograph and there are no fixed sizes to go stale. */
+  #chest{ position:relative; width:min(78vw, 46vh, 340px); aspect-ratio:670/715; flex:none;
+    --plate: calc(min(78vw, 46vh, 340px) * 0.0235); }
+  #chest > img.body{ width:100%; height:100%; display:block; }
+  /* fade the photograph's edges into the page so it is a chest in the dark rather
+     than a rectangle of photo pasted onto a website */
+  #chest::after{ content:''; position:absolute; inset:0; pointer-events:none; z-index:9;
+    background:radial-gradient(ellipse 76% 70% at 50% 46%, transparent 58%, #0b0806 100%); }
+
+  /* Each drawer is a window onto the same photograph, shifted so only its own front
+     shows through it. Sliding the window slides the drawer. */
+  /* the opening the drawer came out of: dark, deeper at the top where the carcass
+     shades it, and always there — when the drawer is shut it covers this exactly */
+  .hole{ position:absolute; z-index:1; background:
+    linear-gradient(#050302 0%, #140d07 55%, #241708 100%);
+    box-shadow:inset 0 6px 12px rgba(0,0,0,.9); }
+  .drawer{ position:absolute; padding:0; border:0; background:#0a0704; cursor:pointer;
+    overflow:hidden; z-index:2;
+    transition:transform .5s cubic-bezier(.2,.7,.3,1), filter .3s ease, box-shadow .5s ease; }
+  .drawer img{ position:absolute; max-width:none; display:block; }
+  /* The brass plates stay blank, as they are in the photograph. The names will not
+     fit on them: the cream area is 28px across on screen and 'instrumenta' would
+     need a 5px face to sit inside it. So the names live below, where they can be
+     read — and they double as a second way in. */
+  .drawer:hover{ filter:brightness(1.09); }
+  .drawer:focus-visible{ outline:2px solid #b8903f; outline-offset:1px; }
+  .drawer.open{ transform:translate(0, 16%) scale(1.1); z-index:5;
+    box-shadow:0 18px 30px rgba(0,0,0,.78); }
+
+  #instrumenta-hole,
+  #instrumenta{ left:35.075%; top:7.273%; width:28.358%; height:27.413%; }
+  #instrumenta img{ width:352.632%; height:364.796%; left:-123.684%; top:-26.531%; }
+  #instrumenta .plate{ left:35.789%; top:10.204%; width:28.947%; height:13.265%; }
+  #tactilia-hole,
+  #tactilia{ left:3.731%; top:36.643%; width:29.104%; height:25.594%; }
+  #tactilia img{ width:343.590%; height:390.710%; left:-12.821%; top:-143.169%; }
+  #tactilia .plate{ left:32.308%; top:8.197%; width:31.282%; height:14.208%; }
+  #systema-hole,
+  #systema{ left:35.373%; top:36.643%; width:28.060%; height:26.573%; }
+  #systema img{ width:356.383%; height:376.316%; left:-126.064%; top:-137.895%; }
+  #systema .plate{ left:35.106%; top:7.895%; width:29.255%; height:13.684%; }
+  #natura-hole,
+  #natura{ left:69.104%; top:36.643%; width:27.463%; height:25.175%; }
+  #natura img{ width:364.130%; height:397.222%; left:-251.630%; top:-145.556%; }
+  #natura .plate{ left:19.022%; top:8.333%; width:32.609%; height:14.444%; }
+  #phenomena-hole,
+  #phenomena{ left:35.373%; top:65.455%; width:28.060%; height:25.734%; }
+  #phenomena img{ width:356.383%; height:388.587%; left:-126.064%; top:-254.348%; }
+  #phenomena .plate{ left:35.106%; top:7.609%; width:29.255%; height:14.130%; }
+
+  #trays{ width:min(96vw, 940px); }
+  .tray{ display:none; flex-wrap:wrap; align-items:flex-start; justify-content:center;
+    gap:clamp(6px,1.6vw,16px); }
+  .tray.open{ display:flex; animation:rise .45s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes rise{ from{ opacity:0; transform:translateY(-10px);} to{ opacity:1; transform:none;} }
+  .card{ display:block; text-decoration:none; color:#c6b997;
+    width:clamp(74px, 11vw, 116px); transition:transform .22s ease, color .22s ease; }
+  .card img{ width:100%; height:auto; display:block; border-radius:3px;
+    box-shadow:0 5px 13px rgba(0,0,0,.6); }
+  .card span{ display:block; text-align:center; padding-top:5px;
+    font-size:12px; letter-spacing:.1em; }
+  .card:hover{ transform:translateY(-4px); color:#f2e8cd; }
+
+  #names{ display:flex; flex-wrap:wrap; justify-content:center; gap:clamp(10px,2.4vw,26px);
+    margin:0; padding:0; list-style:none; }
+  #names button{ background:none; border:0; padding:2px 0; cursor:pointer;
+    font:inherit; font-size:clamp(12px,1.5vw,15px); letter-spacing:.16em; color:#6c614c;
+    transition:color .3s ease; position:relative; }
+  #names button:hover{ color:#b39a68; }
+  #names button.on{ color:#e8dcbd; }
+  #names button.on::after{ content:''; position:absolute; left:0; right:0; bottom:-3px;
+    height:1px; background:#b8903f; opacity:.8; }
+
+  /* every card the same shape, so the names beneath them line up in a row rather
+     than stepping about with each picture's own proportions */
+  .card img{ aspect-ratio:3/4; object-fit:cover; }
+</style>
+</head>
+<body>
+  <h1>sagne</h1>
+  <p class="pronounce">/se&#618;n/</p>
+  <div id="chest">
+    <img class="body" src="chest.jpg" alt="A small apothecary chest of five drawers">
+    <div class="hole" id="instrumenta-hole"></div>
+    <div class="hole" id="tactilia-hole"></div>
+    <div class="hole" id="systema-hole"></div>
+    <div class="hole" id="natura-hole"></div>
+    <div class="hole" id="phenomena-hole"></div>
+    <button class="drawer" id="instrumenta" type="button" aria-expanded="false" aria-controls="instrumenta-tray">
+      <img src="chest.jpg" alt=""><span class="plate" hidden>instrumenta</span>
+    </button>
+    <button class="drawer" id="tactilia" type="button" aria-expanded="false" aria-controls="tactilia-tray">
+      <img src="chest.jpg" alt=""><span class="plate" hidden>tactilia</span>
+    </button>
+    <button class="drawer" id="systema" type="button" aria-expanded="false" aria-controls="systema-tray">
+      <img src="chest.jpg" alt=""><span class="plate" hidden>systema</span>
+    </button>
+    <button class="drawer" id="natura" type="button" aria-expanded="false" aria-controls="natura-tray">
+      <img src="chest.jpg" alt=""><span class="plate" hidden>natura</span>
+    </button>
+    <button class="drawer" id="phenomena" type="button" aria-expanded="false" aria-controls="phenomena-tray">
+      <img src="chest.jpg" alt=""><span class="plate" hidden>phenomena</span>
+    </button>
+  </div>
+  <div id="trays">
+    <div class="tray" id="instrumenta-tray" role="group" aria-label="instrumenta">
+      <a class="card" href="candler/index.html"><img src="candler/candle-card.png" alt=""><span>candler</span></a>
+      <a class="card" href="conometer/index.html"><img src="conometer/conometer-card.png" alt=""><span>conometer</span></a>
+      <a class="card" href="galileo/index.html"><img src="galileo/galileo-card.png" alt=""><span>galileo</span></a>
+      <a class="card" href="windower/index.html"><img src="windower/windower-card.png" alt=""><span>windower</span></a>
+      <a class="card" href="storm/index.html"><img src="storm/storm-card.png" alt=""><span>storm</span></a>
+    </div>
+    <div class="tray" id="tactilia-tray" role="group" aria-label="tactilia">
+      <a class="card" href="warmler/index.html"><img src="warmler/warmler-card.png" alt=""><span>warmler</span></a>
+      <a class="card" href="roller/index.html"><img src="roller/roller-card.png" alt=""><span>roller</span></a>
+      <a class="card" href="kaleidoscope/index.html"><img src="kaleidoscope/kaleidoscope-card.png" alt=""><span>kaleidoscope</span></a>
+    </div>
+    <div class="tray" id="systema-tray" role="group" aria-label="systema">
+      <a class="card" href="musebox/index.html"><img src="musebox/musebox-card.png" alt=""><span>musebox</span></a>
+      <a class="card" href="gyre/index.html"><img src="gyre/gyre-card.png" alt=""><span>gyre</span></a>
+      <a class="card" href="chimes/index.html"><img src="chimes/chimes-card.png" alt=""><span>chimes</span></a>
+    </div>
+    <div class="tray" id="natura-tray" role="group" aria-label="natura">
+      <a class="card" href="birds/index.html"><img src="birds/birds-card.png" alt=""><span>birds</span></a>
+      <a class="card" href="fireflies/index.html"><img src="fireflies/fireflies-card.png" alt=""><span>fireflies</span></a>
+      <a class="card" href="ant/index.html"><img src="ant/ant-card.png" alt=""><span>ant</span></a>
+    </div>
+    <div class="tray" id="phenomena-tray" role="group" aria-label="phenomena">
+      <a class="card" href="lamp/index.html"><img src="lamp/lamp-card.png" alt=""><span>lamp</span></a>
+      <a class="card" href="rain/index.html"><img src="rain/rain-card.png" alt=""><span>rain</span></a>
+      <a class="card" href="bowl/index.html"><img src="bowl/bowl-card.png" alt=""><span>bowl</span></a>
+      <a class="card" href="pendulum/index.html"><img src="pendulum/pendulum-card.png" alt=""><span>pendulum</span></a>
+      <a class="card" href="chladni/index.html"><img src="chladni/chladni-card.png" alt=""><span>chladni</span></a>
+    </div>
+  </div>
+  <ul id="names">
+    <li><button type="button" data-for="instrumenta">instrumenta</button></li>
+    <li><button type="button" data-for="tactilia">tactilia</button></li>
+    <li><button type="button" data-for="systema">systema</button></li>
+    <li><button type="button" data-for="natura">natura</button></li>
+    <li><button type="button" data-for="phenomena">phenomena</button></li>
+  </ul>
+<script>
+(function(){
+  var names=Array.prototype.slice.call(document.querySelectorAll('#names button'));
+  var current=null;
+  function light(){
+    names.forEach(function(n){ n.classList.toggle('on', n.dataset.for===current); });
+  }
+  function shut(){
+    if(!current) return;
+    document.getElementById(current).classList.remove('open');
+    document.getElementById(current).setAttribute('aria-expanded','false');
+    document.getElementById(current+'-tray').classList.remove('open');
+    current=null; light();
+  }
+  function open(key){
+    // one at a time — any more and the cross fills with trays and you lose track
+    // of which drawer you are actually looking into
+    if(current===key){ shut(); return; }
+    shut(); current=key;
+    document.getElementById(key).classList.add('open');
+    document.getElementById(key).setAttribute('aria-expanded','true');
+    document.getElementById(key+'-tray').classList.add('open');
+    light();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.drawer'), function(d){
+    d.addEventListener('click', function(){ open(d.id); });
+  });
+  names.forEach(function(n){ n.addEventListener('click', function(){ open(n.dataset.for); }); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') shut(); });
+})();
+</script>
+</body>
+</html>
