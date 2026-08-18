@@ -332,6 +332,24 @@ load-bearing. Move that piece's geometry without knowing it and the fault comes 
 back. "Invisibly broken" there means *conditionally* invisible, which is a parked problem,
 not a solved one.
 
+## Exploring is the point — don't ever "help"
+
+Her words, and they settle it: *"I want people to have to explore. I don't want things
+explained. The point is to reward curiosity, not be led by the nose."* This is a design
+decision, not an oversight, and it is the same one the **?** saying makes on the site
+itself — *the author trusts curiosity and ever-present search engines to suffice where
+clarity is needed.*
+
+So: **never propose a hint, a tooltip, a first-run tip, an arrow pointing at the thing, a
+"tap to begin", or any nudge whose job is to tell a visitor what to do.** That a gesture is
+undiscoverable is not a bug to be reported here. A session that "notices" the shelf doesn't
+announce that it zooms has noticed the point of it.
+
+The line that *is* allowed: an object behaving like an object. A card that lifts as the
+pointer crosses it, a thing that answers when touched — that's the piece being alive, and
+the shelf already does it. That is not an explanation. The test is whether it *tells* or
+merely *responds*.
+
 ## Guardrails
 
 - Keep each change **small and self-contained** — one idea at a time.
