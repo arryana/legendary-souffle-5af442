@@ -173,11 +173,14 @@ measurement table; nothing there is hand-typed.
 
 **Live-data pieces** — `galileo`, `conometer`, `windower`, `storm` — read the visitor's
 **geolocation** and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that
-working; don't break the geolocation or the fetch. **All four must fail out loud.** They count
+working; don't break the geolocation or the fetch. **All four must fail out loud, and wordlessly.** They count
 consecutive failures, ignore a single blip — open-meteo refreshes every ten minutes and one
-miss is normal — and from the second say, in the same words: *"couldn't reach the weather just
-now — showing the last real reading, still trying quietly"*. A reply that arrives carrying no
-reading counts as a failure too. Going quiet instead would mean showing an old sky as though
+miss is normal — and from the second show two marks at the top of the piece: an exclamation
+inside a circle struck through with a bar (can't), and a turning circle beside it (going back
+for it by itself). No sentence — that was the first version and she replaced it, rightly: the
+old wording claimed it was "still trying quietly" while showing nothing that was trying. The
+marks are generated — run `python3 tools/fetch-trouble.py`, don't hand-edit between the
+`fetch-trouble` markers. A reply that arrives carrying no reading counts as a failure too. Going quiet instead would mean showing an old sky as though
 it were the one outside, which is the exact promise this site makes not to break. Storm was
 the one that didn't, until Aug 2026.
 
