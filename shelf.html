@@ -243,8 +243,14 @@
     paint();
   }
 
+  // The three-step tap exists because a phone cannot show a card big enough to read.
+  // A mouse on a big screen has neither problem, and three clicks to reach a piece
+  // would just be in the way -- so with a real pointer a card opens on the first
+  // click, and the shelf zoom stays available from the name plates.
+  var FINE = matchMedia('(hover: hover) and (pointer: fine)');
   Object.keys(BY_SLUG).forEach(function(slug){
     BY_SLUG[slug].el.addEventListener('click', function(ev){
+      if(FINE.matches) return;                      // mouse: straight in
       if(level===2 && cardSlug===slug) return;      // third tap: let the link open it
       ev.preventDefault();
       if(level===0) toShelf(BY_SLUG[slug].shelf);
