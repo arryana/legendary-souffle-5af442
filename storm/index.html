@@ -191,15 +191,30 @@
   }
   async function fetchWeather(){
     try{
-      const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=cloud_cover,surface_pressure,precipitation,temperature_2m`;
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=cloud_cover,pressure_msl,precipitation,temperature_2m`;
       const res=await fetch(url);
       const data=await res.json();
       const c=data && data.current;
       if(c){
         const cloud=typeof c.cloud_cover==='number' ? c.cloud_cover : 50;
-        const pressure=typeof c.surface_pressure==='number' ? c.surface_pressure : 1013;
         const precip=typeof c.precipitation==='number' ? c.precipitation : 0;
         const temp=typeof c.temperature_2m==='number' ? c.temperature_2m : 12;
+        // Pressure has to be the SEA-LEVEL figure, not the pressure where the
+        // visitor is standing. The 1013 below is the sea-level standard, but
+        // surface pressure falls about 12 hPa per 100 m of altitude, so scoring
+        // surface pressure against 1013 measured altitude rather than weather —
+        // 952 hPa in Munich and 834 in Denver on the calmest day of the year,
+        // which pinned this score at its maximum from about 204 m upward.
+        //
+        // What that actually cost, precisely: the score is only consulted inside
+        // the storm test below, which already requires more than 0.5 mm of rain.
+        // So it never invented a storm out of a dry day. What it did was upgrade
+        // ordinary rain to a storm for everybody uphill — steady moderate rain
+        // under a 60% sky reads 'rain' at sea level and read 'storm' in Munich,
+        // Madrid, Denver and Mexico City. pressure_msl is the same reading
+        // corrected to sea level, which is what every barometer scale is
+        // calibrated against and what makes 1013 mean anything.
+        const pressure=typeof c.pressure_msl==='number' ? c.pressure_msl : 1013;
         const pressureScore=Math.max(0, Math.min(1,(1013-pressure)/40));
         if(precip>0.1 && temp<=1) liveCondition='snow';
         else if(precip>0.5 && (cloud>85 || pressureScore>0.6)) liveCondition='storm';
