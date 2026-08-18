@@ -171,9 +171,23 @@ pointer a card opens on the first click instead, and the shelf zoom stays reacha
 name plates. If you change the picture, the zoom transforms recompute themselves from the
 measurement table; nothing there is hand-typed.
 
-**Live-data pieces** — `galileo`, `conometer`, `windower` — read the visitor's **geolocation**
-and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that working; don't
-break the geolocation or the fetch. (These are also why a *faithful* Preview matters — a plain
+**Live-data pieces** — `galileo`, `conometer`, `windower`, `storm` — read the visitor's
+**geolocation** and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that
+working; don't break the geolocation or the fetch. **All four must fail out loud, and wordlessly.** They count
+consecutive failures, ignore a single blip — open-meteo refreshes every ten minutes and one
+miss is normal — and from the second show two marks at the top of the piece: an exclamation
+inside a circle struck through with a bar (can't), and a turning circle beside it (going back
+for it by itself). No sentence — that was the first version and she replaced it, rightly: the
+old wording claimed it was "still trying quietly" while showing nothing that was trying. The
+marks are generated — run `python3 tools/fetch-trouble.py`, don't hand-edit between the
+`fetch-trouble` markers. A reply that arrives carrying no reading counts as a failure too. Going quiet instead would mean showing an old sky as though
+it were the one outside, which is the exact promise this site makes not to break. Storm was
+the one that didn't, until Aug 2026.
+
+**Don't add a second weather provider as a failover.** It was considered and rejected: the
+alternatives need an API key, and a key in a static page is readable by anyone and gets
+rate-limited or revoked, which is a worse failure than the outage it insures against. Failing
+honestly is the answer here, not a second source that can quietly disagree with the first. (These are also why a *faithful* Preview matters — a plain
 screenshot can't show live weather.)
 
 ### Asset naming conventions (follow these for any new asset)
