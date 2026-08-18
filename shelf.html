@@ -9,241 +9,257 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap');
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body{ height:100%; margin:0; background:#0a0910; color:#e2d6bb;
+  /* the exact navy the case was photographed against, so the frame's edge
+     disappears and the case simply stands on a wall */
+  html,body{ height:100%; margin:0; background:#122336; color:#e2d6bb;
     font-family:'Cormorant Garamond', Georgia, serif; }
   body{ display:flex; align-items:center; justify-content:center; padding:2vh 2vw; }
-  /* the frame clips, so a zoomed-in shelf fills it instead of overflowing the page */
-  #frame{ position:relative; overflow:hidden; flex:none; border-radius:3px;
-    --h: min(95vh, calc(96vw * 1.0726), 1064px);
-    height:var(--h); width:calc(var(--h) / 1.0726); }
 
-  /* the case, and everything on it placed as a percentage of it */
-  /* The case must fit the viewport in BOTH directions. Sized by height alone it
-     ran off the sides of a phone and the shelves were cut in half. 1064/992 is the
-     case's own proportion, so this is the tallest it can be and still fit across. */
-  #case{ position:absolute; inset:0; aspect-ratio:992/1064;
-    --h: min(95vh, calc(96vw * 1.0726), 1064px);
-    height:var(--h); --u: calc(var(--h) / 1064);
+  /* The frame clips, so a zoomed-in shelf fills it instead of overflowing the page.
+     The case must fit the viewport in BOTH directions -- sized by height alone it ran
+     off the sides of a phone and the shelves were cut in half. 1088/990 is the case's
+     own proportion, so this is the tallest it can be and still fit across. */
+  #frame{ position:relative; overflow:hidden; flex:none;
+    --h: min(95vh, calc(96vw * 1.09899), 1088px);
+    height:var(--h); width:calc(var(--h) / 1.09899); }
+  /* Sizes here are fractions of the case's own height, so the lettering keeps its
+     proportion to the furniture at every screen size. They cannot be written as
+     "unit x px" -- --h is a length, and a length times a length is not a size, so
+     that silently fell back to the browser's 16px default and the names collided. */
+  #case{ position:absolute; inset:0;
     transform-origin:50% 50%;
     transition:transform .6s cubic-bezier(.22,.66,.24,1); }
-  /* zoomed to one shelf: 992/695 is exactly the factor that brings the interior
-     width out to the frame edges, so a shelf fills it and nothing is cropped */
-  #case.z1{ transform:translate(-3.8%, 41.6%) scale(1.427); }
-  #case.z2{ transform:translate(-3.8%, 20.9%) scale(1.427); }
-  #case.z3{ transform:translate(-3.8%,  0.1%) scale(1.427); }
-  #case.z4{ transform:translate(-3.8%,-20.8%) scale(1.427); }
-  #case.z5{ transform:translate(-3.8%,-41.9%) scale(1.427); }
   #case > img.wood{ width:100%; height:100%; display:block; }
 
   /* sagne, engraved into the brass oval at the crown */
-  #oval{ left:43.548%; top:9.023%;
-    width:14.718%; height:4.887%; }
-  #c-candler{ left:25.386%; top:16.541%;
-    width:7.863%; height:9.774%; }
-  #c-conometer{ left:37.063%; top:16.541%;
-    width:7.863%; height:9.774%; }
-  #c-galileo{ left:48.740%; top:16.541%;
-    width:7.863%; height:9.774%; }
-  #c-windower{ left:60.417%; top:16.541%;
-    width:7.863%; height:9.774%; }
-  #c-storm{ left:72.093%; top:16.541%;
-    width:7.863%; height:9.774%; }
-  #p-instrumenta{ left:26.210%; top:26.692%;
-    width:10.887%; height:2.350%; }
-  #c-warmler{ left:31.225%; top:31.203%;
-    width:7.863%; height:9.774%; }
-  #c-roller{ left:48.740%; top:31.203%;
-    width:7.863%; height:9.774%; }
-  #c-kaleidoscope{ left:66.255%; top:31.203%;
-    width:7.863%; height:9.774%; }
-  #p-tactilia{ left:26.210%; top:41.353%;
-    width:10.887%; height:2.350%; }
-  #c-musebox{ left:31.225%; top:45.771%;
-    width:7.863%; height:9.774%; }
-  #c-gyre{ left:48.740%; top:45.771%;
-    width:7.863%; height:9.774%; }
-  #c-chimes{ left:66.255%; top:45.771%;
-    width:7.863%; height:9.774%; }
-  #p-systema{ left:26.210%; top:56.203%;
-    width:10.887%; height:2.350%; }
-  #c-birds{ left:31.225%; top:60.432%;
-    width:7.863%; height:9.774%; }
-  #c-fireflies{ left:48.740%; top:60.432%;
-    width:7.863%; height:9.774%; }
-  #c-ant{ left:66.255%; top:60.432%;
-    width:7.863%; height:9.774%; }
-  #p-natura{ left:26.210%; top:70.959%;
-    width:10.887%; height:2.444%; }
-  #c-lamp{ left:25.386%; top:75.282%;
-    width:7.863%; height:9.774%; }
-  #c-rain{ left:37.063%; top:75.282%;
-    width:7.863%; height:9.774%; }
-  #c-bowl{ left:48.740%; top:75.282%;
-    width:7.863%; height:9.774%; }
-  #c-pendulum{ left:60.417%; top:75.282%;
-    width:7.863%; height:9.774%; }
-  #c-chladni{ left:72.093%; top:75.282%;
-    width:7.863%; height:9.774%; }
-  #p-phenomena{ left:26.310%; top:85.338%;
-    width:10.887%; height:2.350%; }
   #oval{ position:absolute; display:flex; align-items:center; justify-content:center;
-    font-size:calc(var(--u) * 40px); font-weight:700; letter-spacing:.16em;
+    font-weight:700; letter-spacing:.16em;
     /* engraved: cut dark into the brass, with a bright lip on the lower edge where
        the light catches the cut */
     color:#33230a; text-shadow:0 1px 0 rgba(255,238,196,.5), 0 -1px 1px rgba(0,0,0,.35);
     pointer-events:none; }
+  #oval i{ font-style:normal; }
 
   /* the name of the type, engraved on the plate of the shelf it labels */
   .plate{ position:absolute; display:flex; align-items:center; justify-content:center;
-    font-size:calc(var(--u) * 15px); font-weight:600; letter-spacing:.02em;
+    font-weight:600; letter-spacing:.02em;
     color:#3b2807; text-shadow:0 1px 0 rgba(255,238,196,.42), 0 -1px 1px rgba(0,0,0,.3);
-    white-space:nowrap; pointer-events:none; }
+    white-space:nowrap; cursor:pointer; }
   .plate i{ font-style:normal; }
 
   /* the pieces, standing face front on their shelf */
   .piece{ position:absolute; display:block; text-decoration:none;
-    transition:transform .25s cubic-bezier(.2,.7,.3,1), filter .25s ease;
+    transition:transform .25s cubic-bezier(.2,.7,.3,1), opacity .35s ease;
     transform-origin:50% 100%; }
   .piece img{ width:100%; height:100%; object-fit:cover; display:block;
     border-radius:2px; box-shadow:0 3px 7px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.5); }
   .piece b{ position:absolute; left:50%; bottom:100%; transform:translateX(-50%);
-    margin-bottom:calc(var(--u) * 7px); font-size:calc(var(--u) * 17px); font-weight:600;
+    margin-bottom:calc(var(--h) * 0.0064); font-size:calc(var(--h) * 0.0156); font-weight:600;
     letter-spacing:.08em; color:#e8dcbd; opacity:0; white-space:nowrap;
-    transition:opacity .25s ease; text-shadow:0 1px 4px #000; pointer-events:none; }
-  .piece:hover{ transform:scale(1.14) translateY(calc(var(--u) * -4px)); z-index:5; }
+    transition:opacity .25s ease; text-shadow:0 1px 4px #000, 0 0 10px #000;
+    pointer-events:none; }
+  .piece:hover{ transform:scale(1.14) translateY(calc(var(--h) * -0.0037)); z-index:5; }
   .piece:hover b{ opacity:1; }
-  #case.zoomed .piece.on b{ opacity:1; }
-  #case.zoomed .piece:not(.on){ opacity:.25; }
-  #back{ position:absolute; left:50%; bottom:2.5%; transform:translateX(-50%);
-    background:none; border:0; cursor:pointer; font:inherit; color:#cbbb92;
+  .piece:focus-visible{ outline:2px solid #b8903f; outline-offset:2px; }
+
+  /* zoomed in: the shelf in focus keeps its names showing, the rest steps back */
+  #case.zoomed .piece:not(.on){ opacity:.2; pointer-events:none; }
+  #case.on-card .piece.picked{ z-index:6; }
+  #case.on-card .piece.picked b{ opacity:1; }
+  #case.on-card .piece.on:not(.picked){ opacity:.35; }
+
+  #back{ position:absolute; left:50%; bottom:3%; transform:translateX(-50%);
+    background:rgba(9,17,28,.72); border:0; border-radius:999px; cursor:pointer;
+    padding:.45em 1.3em; font:inherit; color:#d8c9a4;
     font-size:13px; letter-spacing:.2em; opacity:0; pointer-events:none;
-    transition:opacity .4s ease; text-shadow:0 1px 6px #000; z-index:20; }
+    transition:opacity .4s ease; z-index:20;
+    box-shadow:0 2px 10px rgba(0,0,0,.5); }
   #frame.zoomed #back{ opacity:.75; pointer-events:auto; }
   #back:hover{ opacity:1; }
-  .piece:focus-visible{ outline:2px solid #b8903f; outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce){
+    #case, .piece{ transition:none; }
+  }
 </style>
 </head>
 <body>
   <div id="frame">
-  <div id="case">
-    <img class="wood" src="shelves.jpg" alt="An apothecary shelf of five shelves">
-    <span id="oval">sagne</span>
-    <a class="piece" id="c-candler" href="candler/index.html" aria-label="candler">
-      <img src="candler/candle-card.png" alt=""><b>candler</b></a>
-    <a class="piece" id="c-conometer" href="conometer/index.html" aria-label="conometer">
-      <img src="conometer/conometer-card.png" alt=""><b>conometer</b></a>
-    <a class="piece" id="c-galileo" href="galileo/index.html" aria-label="galileo">
-      <img src="galileo/galileo-card.png" alt=""><b>galileo</b></a>
-    <a class="piece" id="c-windower" href="windower/index.html" aria-label="windower">
-      <img src="windower/windower-card.png" alt=""><b>windower</b></a>
-    <a class="piece" id="c-storm" href="storm/index.html" aria-label="storm">
-      <img src="storm/storm-card.png" alt=""><b>storm</b></a>
-    <span class="plate" id="p-instrumenta">instrumenta</span>
-    <a class="piece" id="c-warmler" href="warmler/index.html" aria-label="warmler">
-      <img src="warmler/warmler-card.png" alt=""><b>warmler</b></a>
-    <a class="piece" id="c-roller" href="roller/index.html" aria-label="roller">
-      <img src="roller/roller-card.png" alt=""><b>roller</b></a>
-    <a class="piece" id="c-kaleidoscope" href="kaleidoscope/index.html" aria-label="kaleidoscope">
-      <img src="kaleidoscope/kaleidoscope-card.png" alt=""><b>kaleidoscope</b></a>
-    <span class="plate" id="p-tactilia">tactilia</span>
-    <a class="piece" id="c-musebox" href="musebox/index.html" aria-label="musebox">
-      <img src="musebox/musebox-card.png" alt=""><b>musebox</b></a>
-    <a class="piece" id="c-gyre" href="gyre/index.html" aria-label="gyre">
-      <img src="gyre/gyre-card.png" alt=""><b>gyre</b></a>
-    <a class="piece" id="c-chimes" href="chimes/index.html" aria-label="chimes">
-      <img src="chimes/chimes-card.png" alt=""><b>chimes</b></a>
-    <span class="plate" id="p-systema">systema</span>
-    <a class="piece" id="c-birds" href="birds/index.html" aria-label="birds">
-      <img src="birds/birds-card.png" alt=""><b>birds</b></a>
-    <a class="piece" id="c-fireflies" href="fireflies/index.html" aria-label="fireflies">
-      <img src="fireflies/fireflies-card.png" alt=""><b>fireflies</b></a>
-    <a class="piece" id="c-ant" href="ant/index.html" aria-label="ant">
-      <img src="ant/ant-card.png" alt=""><b>ant</b></a>
-    <span class="plate" id="p-natura">natura</span>
-    <a class="piece" id="c-lamp" href="lamp/index.html" aria-label="lamp">
-      <img src="lamp/lamp-card.png" alt=""><b>lamp</b></a>
-    <a class="piece" id="c-rain" href="rain/index.html" aria-label="rain">
-      <img src="rain/rain-card.png" alt=""><b>rain</b></a>
-    <a class="piece" id="c-bowl" href="bowl/index.html" aria-label="bowl">
-      <img src="bowl/bowl-card.png" alt=""><b>bowl</b></a>
-    <a class="piece" id="c-pendulum" href="pendulum/index.html" aria-label="pendulum">
-      <img src="pendulum/pendulum-card.png" alt=""><b>pendulum</b></a>
-    <a class="piece" id="c-chladni" href="chladni/index.html" aria-label="chladni">
-      <img src="chladni/chladni-card.png" alt=""><b>chladni</b></a>
-    <span class="plate" id="p-phenomena">phenomena</span>
-  </div>
-  <button type="button" id="back">back</button>
+    <div id="case">
+      <img class="wood" src="shelves.jpg" alt="An apothecary shelf of five open shelves">
+      <span id="oval">sagne</span>
+    </div>
+    <button type="button" id="back">back</button>
   </div>
 <script>
 (function(){
-  // Fit each engraved name to its own plate by MEASURING it rather than guessing a
-  // character width. Two goes at estimating it by hand both overran the brass onto
-  // the wood -- the face is wider than it looks and the letter-spacing compounds it.
-  // This also survives the webfont arriving late, which an estimate would not.
-  // Measure the TEXT, not the box. The plate is a centred flex container, so its
-  // scrollWidth just reports the container however far the words overflow it — the
-  // first attempt at this drove every name down to the 4px floor and still called
-  // them too wide. Wrapping the words lets them be measured directly.
-  document.querySelectorAll('.plate').forEach(function(el){
-    if(!el.firstElementChild) el.innerHTML = '<i>' + el.textContent + '</i>';
+  // ---------------------------------------------------------------------------
+  // One table of measurements, taken off the photograph itself (990 x 1088), and
+  // everything else -- where each card stands, where each name is engraved, and
+  // where the case has to move to bring a shelf or a card into the middle of the
+  // frame -- is worked out from it. The previous version carried forty hand-typed
+  // percentages, which had to be retyped by hand every time the picture changed.
+  // ---------------------------------------------------------------------------
+  var GEO = {
+    W:990, H:1088,
+    interior:{ left:148, right:845 },     // the opening between the two stiles
+    oval:{ x:419, y:70, w:168, h:66 },    // the brass oval on the crown
+    plate:{ x:424, w:147, h:22 },         // the engraved area of a brass plate
+    card:{ w:76, h:100 },
+    // ceil = underside of the shelf above; surf = the surface this shelf's cards
+    // stand on; plateY = top of the brass plate on this shelf's front rail
+    shelves:[
+      { name:'instrumenta', ceil:144, surf:293, plateY:300,
+        pieces:[['candler','candler/index.html','candler/candle-card.png'],
+                ['conometer','conometer/index.html','conometer/conometer-card.png'],
+                ['galileo','galileo/index.html','galileo/galileo-card.png'],
+                ['windower','windower/index.html','windower/windower-card.png'],
+                ['storm','storm/index.html','storm/storm-card.png']] },
+      { name:'tactilia', ceil:330, surf:448, plateY:455,
+        pieces:[['warmler','warmler/index.html','warmler/warmler-card.png'],
+                ['roller','roller/index.html','roller/roller-card.png'],
+                ['kaleidoscope','kaleidoscope/index.html','kaleidoscope/kaleidoscope-card.png']] },
+      { name:'systema', ceil:487, surf:602, plateY:609,
+        pieces:[['musebox','musebox/index.html','musebox/musebox-card.png'],
+                ['gyre','gyre/index.html','gyre/gyre-card.png'],
+                ['chimes','chimes/index.html','chimes/chimes-card.png']] },
+      { name:'natura', ceil:641, surf:753, plateY:760,
+        pieces:[['birds','birds/index.html','birds/birds-card.png'],
+                ['fireflies','fireflies/index.html','fireflies/fireflies-card.png'],
+                ['ant','ant/index.html','ant/ant-card.png']] },
+      { name:'phenomena', ceil:791, surf:903, plateY:910,
+        pieces:[['lamp','lamp/index.html','lamp/lamp-card.png'],
+                ['rain','rain/index.html','rain/rain-card.png'],
+                ['bowl','bowl/index.html','bowl/bowl-card.png'],
+                ['pendulum','pendulum/index.html','pendulum/pendulum-card.png'],
+                ['chladni','chladni/index.html','chladni/chladni-card.png']] }
+    ]
+  };
+
+  var W=GEO.W, H=GEO.H;
+  var IL=GEO.interior.left, IR=GEO.interior.right, IW=IR-IL, IMID=(IL+IR)/2;
+  var pc = function(v,total){ return (v/total*100).toFixed(4)+'%'; };
+
+  // Every shelf uses the same pitch, so a shelf of three sits in the middle three
+  // columns of a shelf of five and the cards line up all the way down the case.
+  var PITCH = IW/5;
+  function slotX(n,i){ return IMID + PITCH*(i-(n-1)/2); }
+
+  var caseEl=document.getElementById('case'), frame=document.getElementById('frame');
+  var ovalEl=document.getElementById('oval');
+  var BY_SLUG={}, RECT={};
+
+  // --- lay the oval, the plates and the cards onto the photograph ---------------
+  ovalEl.style.left=pc(GEO.oval.x,W); ovalEl.style.top=pc(GEO.oval.y,H);
+  ovalEl.style.width=pc(GEO.oval.w,W); ovalEl.style.height=pc(GEO.oval.h,H);
+  ovalEl.style.fontSize='calc(var(--h) * 0.0404)';
+
+  GEO.shelves.forEach(function(sh,si){
+    sh.pieces.forEach(function(p,i){
+      var cx=slotX(sh.pieces.length,i);
+      var x=cx-GEO.card.w/2, y=sh.surf-GEO.card.h;
+      var a=document.createElement('a');
+      a.className='piece'; a.href=p[1]; a.setAttribute('aria-label',p[0]);
+      a.style.left=pc(x,W); a.style.top=pc(y,H);
+      a.style.width=pc(GEO.card.w,W); a.style.height=pc(GEO.card.h,H);
+      a.innerHTML='<img src="'+p[2]+'" alt=""><b>'+p[0]+'</b>';
+      caseEl.appendChild(a);
+      BY_SLUG[p[0]]={ el:a, shelf:si };
+      RECT[p[0]]={ cx:cx, cy:y+GEO.card.h/2 };
+    });
+    var pl=document.createElement('span');
+    pl.className='plate'; pl.id='p-'+sh.name; pl.innerHTML='<i>'+sh.name+'</i>';
+    pl.style.left=pc(GEO.plate.x,W); pl.style.top=pc(sh.plateY,H);
+    pl.style.width=pc(GEO.plate.w,W); pl.style.height=pc(GEO.plate.h,H);
+    pl.style.fontSize='calc(var(--h) * 0.0138)';
+    caseEl.appendChild(pl);
+    sh.plateEl=pl;
   });
+
+  // --- fit the engraved names to the brass they are cut into --------------------
+  // Measure the TEXT, not the box. The plate is a centred flex container, so its
+  // scrollWidth just reports the container however far the words overflow it -- an
+  // earlier go at this drove every name down to the floor and still called them too
+  // wide. Wrapping the words in an <i> lets them be measured directly. This also
+  // survives the webfont arriving late, which a guessed character width would not.
   function fit(){
-    document.querySelectorAll('.plate').forEach(function(el){
-      var inner = el.firstElementChild, box = el.clientWidth * 0.92;
+    [].forEach.call(document.querySelectorAll('.plate, #oval'), function(el){
+      var inner=el.firstElementChild, box=el.clientWidth*0.90;
       if(!inner || !box) return;
-      el.style.fontSize = '';
-      var size = parseFloat(getComputedStyle(el).fontSize), guard = 0;
-      while(inner.offsetWidth > box && size > 4 && guard++ < 60){
-        size -= 0.3;
-        el.style.fontSize = size + 'px';
+      el.style.fontSize=el.dataset.base || (el.dataset.base=getComputedStyle(el).fontSize);
+      var size=parseFloat(getComputedStyle(el).fontSize), guard=0;
+      while(inner.offsetWidth>box && size>4 && guard++<80){
+        size-=0.3; el.style.fontSize=size+'px';
       }
     });
   }
-  fit();
+  if(!ovalEl.firstElementChild) ovalEl.innerHTML='<i>'+ovalEl.textContent+'</i>';
 
-  // Zoom to one shelf. On a phone the whole case has to shrink to fit across, which
-  // leaves the cards at about 30px -- her idea, and the right one: bring a shelf out
-  // to the frame edges instead of shrinking the furniture.
-  //
-  // The first tap on a card zooms its shelf; the second opens the piece. That way one
-  // gesture does both jobs and nothing on a small screen is out of reach.
-  var frame=document.getElementById('frame'), caseEl=document.getElementById('case');
-  var SHELF={};
-  ['instrumenta','tactilia','systema','natura','phenomena'].forEach(function(n,i){ SHELF[n]=i+1; });
-  var PIECES={ instrumenta:['candler','conometer','galileo','windower','storm'],
-               tactilia:['warmler','roller','kaleidoscope'],
-               systema:['musebox','gyre','chimes'],
-               natura:['birds','fireflies','ant'],
-               phenomena:['lamp','rain','bowl','pendulum','chladni'] };
-  var open=null;
-  function zoom(name){
-    if(open===name){ shut(); return; }
-    shut();
-    open=name;
-    caseEl.classList.add('zoomed','z'+SHELF[name]);
-    frame.classList.add('zoomed');
-    PIECES[name].forEach(function(s){ document.getElementById('c-'+s).classList.add('on'); });
+  // --- the zoom ----------------------------------------------------------------
+  // On a phone the whole case has to shrink to fit across, which leaves the cards
+  // at about thirty pixels. Her idea, and the right one: bring a shelf out to the
+  // frame edges rather than shrinking the furniture. First tap zooms the shelf,
+  // second zooms the card, third opens it.
+  var SHELF_SCALE = W/IW;   // exactly wide enough to bring the opening to both edges
+  var CARD_SCALE  = 3.6;
+
+  // Centre a point of the photograph in the frame, but never so far that the case
+  // pulls away from an edge and leaves bare background showing beside it.
+  function transform(px,py,s){
+    var lim=(s-1)/2;
+    var tx=-s*(px-W/2)/W, ty=-s*(py-H/2)/H;
+    tx=Math.max(-lim,Math.min(lim,tx)); ty=Math.max(-lim,Math.min(lim,ty));
+    return 'translate('+(tx*100).toFixed(3)+'%,'+(ty*100).toFixed(3)+'%) scale('+s.toFixed(4)+')';
   }
-  function shut(){
-    if(!open) return;
-    caseEl.classList.remove('zoomed','z'+SHELF[open]);
-    frame.classList.remove('zoomed');
-    PIECES[open].forEach(function(s){ document.getElementById('c-'+s).classList.remove('on'); });
-    open=null;
-  }
-  Object.keys(PIECES).forEach(function(name){
-    PIECES[name].forEach(function(slug){
-      var a=document.getElementById('c-'+slug);
-      a.addEventListener('click', function(ev){
-        if(open!==name){ ev.preventDefault(); zoom(name); }
-      });
+
+  var level=0, shelfIx=null, cardSlug=null;
+
+  function paint(){
+    caseEl.classList.toggle('zoomed', level>0);
+    caseEl.classList.toggle('on-card', level>1);
+    frame.classList.toggle('zoomed', level>0);
+    [].forEach.call(caseEl.querySelectorAll('.piece'), function(el){
+      el.classList.remove('on','picked');
     });
-    var pl=document.getElementById('p-'+name);
-    pl.style.pointerEvents='auto'; pl.style.cursor='pointer';
-    pl.addEventListener('click', function(){ zoom(name); });
+    if(level>0){
+      GEO.shelves[shelfIx].pieces.forEach(function(p){
+        BY_SLUG[p[0]].el.classList.add('on');
+      });
+    }
+    if(level>1) BY_SLUG[cardSlug].el.classList.add('picked');
+    if(level===0){ caseEl.style.transform=''; }
+    else if(level===1){
+      var sh=GEO.shelves[shelfIx];
+      caseEl.style.transform=transform(IMID,(sh.ceil+sh.surf)/2,SHELF_SCALE);
+    } else {
+      var r=RECT[cardSlug];
+      caseEl.style.transform=transform(r.cx,r.cy,CARD_SCALE);
+    }
+  }
+
+  function toShelf(i){ level=1; shelfIx=i; cardSlug=null; paint(); }
+  function toCard(slug){ level=2; shelfIx=BY_SLUG[slug].shelf; cardSlug=slug; paint(); }
+  function outOne(){
+    if(level===2){ level=1; cardSlug=null; }
+    else if(level===1){ level=0; shelfIx=null; }
+    paint();
+  }
+
+  Object.keys(BY_SLUG).forEach(function(slug){
+    BY_SLUG[slug].el.addEventListener('click', function(ev){
+      if(level===2 && cardSlug===slug) return;      // third tap: let the link open it
+      ev.preventDefault();
+      if(level===0) toShelf(BY_SLUG[slug].shelf);
+      else toCard(slug);
+    });
   });
-  document.getElementById('back').addEventListener('click', shut);
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape') shut(); });
+  GEO.shelves.forEach(function(sh,i){
+    sh.plateEl.addEventListener('click', function(){
+      if(level===1 && shelfIx===i) outOne(); else toShelf(i);
+    });
+  });
+  document.getElementById('back').addEventListener('click', outOne);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') outOne(); });
+
+  fit();
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
   addEventListener('resize', fit);
 })();
