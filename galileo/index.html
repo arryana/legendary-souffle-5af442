@@ -233,8 +233,8 @@
   // base confuses the trace where it meets the foot.)
   const INSTRUMENTS = [
     { key:'capsule', file:'vessel-capsule.png', vw:202, vh:612, scale:0.66,
-      cx:101.4, top:75, bot:557, from:12, count:7,
-      halfWidth:[37.2,52,58.8,61.2,65.2,69.6,69.6,70,72.8,72.8,70,67.2,66,66.8,66.8,69.6,69.2,72.4,72.4,72.8,72.4,72.4,72,72,72,72,72,71.2] },
+      cx:101.9, top:75, bot:557, from:12, count:7,
+      halfWidth:[43.2,61.4,70.2,72.1,75.8,80.9,80.9,81.8,84.6,81.4,78.1,78.1,77.7,77.7,80.9,80.4,84.2,84.2,84.6,84.2,83.7,83.7,84.2,83.7,83.7,83.7,75.8,44.2] },
     { key:'tube', file:'vessel-dark.png', vw:220, vh:725, scale:1.00,
       cx:109, top:143, bot:645, from:36, count:12,
       // straight-sided, so one figure serves the whole column. Traced by hand
@@ -249,33 +249,33 @@
     // no real one has. The sprites are transparent throughout and depict no fill
     // line, so it cannot be read off the image and has to be stated.
     //
-    // 285, and scale 0.76 up from 0.66. Together these are what make the instrument
-    // READ. What you read on a galileo is the gap: a cluster up, a cluster down, and
-    // the lowest float still up is the temperature. At 0.66 with the neck emptied
-    // this vessel had 3.75 bulb heights of liquid, the floats used nearly all of it
-    // and the two clusters closed against each other — gap 0.03. No float count
-    // fixed that; even down to six the gap stayed under one bulb height.
+    // 255. The floats raft across the surface here because the glass is wide enough
+    // to hold them side by side — five or six abreast at this height.
     //
-    // Two levers, and I reached for the wrong one first. Size: all three vessels
-    // stand the same height on screen, so one drawn at 66% needs floats 1/0.66 as
-    // large in its own coordinates to look the same size — 61.7 units inside an
-    // interior only 385 tall. Drawing it larger shrinks its floats in its own units
-    // without changing how big they look. I took that to 0.80, which works but is
-    // more than is needed, and she was right to say so.
+    // That was not true until the interiors were retraced, and the story of why is
+    // worth keeping. The profiles were built by scanning each row of the vessel
+    // photograph for the widest run of SEE-THROUGH pixels between the walls. But
+    // these are photographs of translucent glass: the whole body is softly shaded,
+    // not transparent. So the scan found only the small genuinely-clear patch in the
+    // middle of each row and called that the interior — under-reporting this vessel
+    // by nearly three times. It claimed 73 units of clear glass where the vessel is
+    // really 199 across, which is less than one float wide. The floats were not
+    // being stacked in a column by choice; a column was the only thing that fitted.
     //
-    // The better lever is the fill line, because RAISING it adds liquid instead of
-    // spending it, and lifts the clusters out of the middle of the glass at the same
-    // time. The two trade against each other: more liquid also means more room to
-    // queue up the taper. Swept together, 0.76 with the line at 285 gives 5.29 bulb
-    // heights, a worst gap of 1.98 and a longest stack of 2, everything clean —
-    // where 0.80 with the line at 315 needed a bigger vessel for a gap barely wider.
-    // Below about 0.74 the two clusters start closing again whatever the fill line.
+    // Everything I built on top of that measurement was compensation for it. The
+    // vessel was drawn larger (0.76, and 0.80 before that) purely to shrink the
+    // floats relative to a vessel I had measured as too narrow. With the interior
+    // traced from the SILHOUETTE instead, less a wall, it is back at its own 0.66
+    // and rafts six across with a reading gap of 2.38 and no stacking at all.
+    //
+    // The lesson, since it cost most of a day: she could see the glass was three
+    // floats wide by looking at it. Trust that over a number when the two disagree.
     //
     // The tube's own reference photograph is filled near its top, and there is no
     // reference for the capsule, so neither of those is given a fill line.
-    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.76,
-      cx:140, top:151, bot:536, from:80, count:8, fill:285,
-      halfWidth:[18,20,21,21.5,23,26,29,32,33.5,36.5,39,41,44,47.5,50,51.5,53.5,55.5,58.5,57.5,69.5,73,74,74.5,71.5,68,57.5,49] },
+    { key:'teardrop', file:'vessel-teardrop.png', vw:283, vh:615, scale:0.66,
+      cx:140.1, top:151, bot:536, from:80, count:8, fill:255,
+      halfWidth:[38.6,42.3,47.9,53,59.1,65.1,76.3,81.8,87.4,92.5,98.1,102.8,106.5,110.7,114.4,117.2,119,120.9,122.3,122.3,122.3,120.4,117.6,113.5,107.9,100.4,89.7,75.3] },
   ];
 
   const FLOAT_IMAGES = ['blue','aqua','green','yellow','gold','orange','red','pink','palepink','purple','lavender','silver'];
