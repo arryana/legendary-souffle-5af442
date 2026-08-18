@@ -145,7 +145,12 @@ a visible label to this page.
 
 **The two sayings** the old flat landing page carried are still here, word for word, and
 still only on request: *sagne* on the crown opens the "tools and toys for twiddling" one,
-and the quiet **?** at the foot opens the "designed by one person" one. The case dims
+and the **?** on the plinth opens the "designed by one person" one. Aug 2026 she moved the
+two sentences about the lack of text out of the **?** and onto the end of the *sagne* one:
+they are a statement of what the site doesn't have, which is what that saying already is,
+and the **?** is left as a plain colophon. Her answer to the worry that announcing "no
+explanations" is itself an explanation: *"I don't think it's too ironic, considering it's
+the only place there's an explanation for anything at all."* The case dims
 behind whichever is open. They're the one exception to the rule above, because she asked
 for them.
 
