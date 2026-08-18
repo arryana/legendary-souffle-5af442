@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="description" content="A shelf of small interactive pieces.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap');
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; margin:0; background:#0a0910; color:#e2d6bb;
+    font-family:'Cormorant Garamond', Georgia, serif; }
+  body{ display:flex; align-items:center; justify-content:center; padding:2vh 2vw; }
+
+  /* the case, and everything on it placed as a percentage of it */
+  /* The case must fit the viewport in BOTH directions. Sized by height alone it
+     ran off the sides of a phone and the shelves were cut in half. 1064/992 is the
+     case's own proportion, so this is the tallest it can be and still fit across. */
+  #case{ position:relative; flex:none; aspect-ratio:992/1064;
+    --h: min(95vh, calc(96vw * 1.0726), 1064px);
+    height:var(--h); --u: calc(var(--h) / 1064); }
+  #case > img.wood{ width:100%; height:100%; display:block; }
+
+  /* sagne, engraved into the brass oval at the crown */
+  #oval{ left:43.548%; top:9.023%;
+    width:14.718%; height:4.887%; }
+  #c-candler{ left:25.386%; top:16.541%;
+    width:7.863%; height:9.774%; }
+  #c-conometer{ left:37.063%; top:16.541%;
+    width:7.863%; height:9.774%; }
+  #c-galileo{ left:48.740%; top:16.541%;
+    width:7.863%; height:9.774%; }
+  #c-windower{ left:60.417%; top:16.541%;
+    width:7.863%; height:9.774%; }
+  #c-storm{ left:72.093%; top:16.541%;
+    width:7.863%; height:9.774%; }
+  #p-instrumenta{ left:26.210%; top:26.692%;
+    width:10.887%; height:2.350%; }
+  #c-warmler{ left:31.225%; top:31.203%;
+    width:7.863%; height:9.774%; }
+  #c-roller{ left:48.740%; top:31.203%;
+    width:7.863%; height:9.774%; }
+  #c-kaleidoscope{ left:66.255%; top:31.203%;
+    width:7.863%; height:9.774%; }
+  #p-tactilia{ left:26.210%; top:41.353%;
+    width:10.887%; height:2.350%; }
+  #c-musebox{ left:31.225%; top:45.771%;
+    width:7.863%; height:9.774%; }
+  #c-gyre{ left:48.740%; top:45.771%;
+    width:7.863%; height:9.774%; }
+  #c-chimes{ left:66.255%; top:45.771%;
+    width:7.863%; height:9.774%; }
+  #p-systema{ left:26.210%; top:56.203%;
+    width:10.887%; height:2.350%; }
+  #c-birds{ left:31.225%; top:60.432%;
+    width:7.863%; height:9.774%; }
+  #c-fireflies{ left:48.740%; top:60.432%;
+    width:7.863%; height:9.774%; }
+  #c-ant{ left:66.255%; top:60.432%;
+    width:7.863%; height:9.774%; }
+  #p-natura{ left:26.210%; top:70.959%;
+    width:10.887%; height:2.444%; }
+  #c-lamp{ left:25.386%; top:75.282%;
+    width:7.863%; height:9.774%; }
+  #c-rain{ left:37.063%; top:75.282%;
+    width:7.863%; height:9.774%; }
+  #c-bowl{ left:48.740%; top:75.282%;
+    width:7.863%; height:9.774%; }
+  #c-pendulum{ left:60.417%; top:75.282%;
+    width:7.863%; height:9.774%; }
+  #c-chladni{ left:72.093%; top:75.282%;
+    width:7.863%; height:9.774%; }
+  #p-phenomena{ left:26.310%; top:85.338%;
+    width:10.887%; height:2.350%; }
+  #oval{ position:absolute; display:flex; align-items:center; justify-content:center;
+    font-size:calc(var(--u) * 40px); font-weight:700; letter-spacing:.16em;
+    /* engraved: cut dark into the brass, with a bright lip on the lower edge where
+       the light catches the cut */
+    color:#33230a; text-shadow:0 1px 0 rgba(255,238,196,.5), 0 -1px 1px rgba(0,0,0,.35);
+    pointer-events:none; }
+
+  /* the name of the type, engraved on the plate of the shelf it labels */
+  .plate{ position:absolute; display:flex; align-items:center; justify-content:center;
+    font-size:calc(var(--u) * 15px); font-weight:600; letter-spacing:.02em;
+    color:#3b2807; text-shadow:0 1px 0 rgba(255,238,196,.42), 0 -1px 1px rgba(0,0,0,.3);
+    white-space:nowrap; pointer-events:none; }
+  .plate i{ font-style:normal; }
+
+  /* the pieces, standing face front on their shelf */
+  .piece{ position:absolute; display:block; text-decoration:none;
+    transition:transform .25s cubic-bezier(.2,.7,.3,1), filter .25s ease;
+    transform-origin:50% 100%; }
+  .piece img{ width:100%; height:100%; object-fit:cover; display:block;
+    border-radius:2px; box-shadow:0 3px 7px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.5); }
+  .piece b{ position:absolute; left:50%; bottom:100%; transform:translateX(-50%);
+    margin-bottom:calc(var(--u) * 7px); font-size:calc(var(--u) * 17px); font-weight:600;
+    letter-spacing:.08em; color:#e8dcbd; opacity:0; white-space:nowrap;
+    transition:opacity .25s ease; text-shadow:0 1px 4px #000; pointer-events:none; }
+  .piece:hover{ transform:scale(1.14) translateY(calc(var(--u) * -4px)); z-index:5; }
+  .piece:hover b{ opacity:1; }
+  .piece:focus-visible{ outline:2px solid #b8903f; outline-offset:2px; }
+</style>
+</head>
+<body>
+  <div id="case">
+    <img class="wood" src="shelves.jpg" alt="An apothecary shelf of five shelves">
+    <span id="oval">sagne</span>
+    <a class="piece" id="c-candler" href="candler/index.html" aria-label="candler">
+      <img src="candler/candle-card.png" alt=""><b>candler</b></a>
+    <a class="piece" id="c-conometer" href="conometer/index.html" aria-label="conometer">
+      <img src="conometer/conometer-card.png" alt=""><b>conometer</b></a>
+    <a class="piece" id="c-galileo" href="galileo/index.html" aria-label="galileo">
+      <img src="galileo/galileo-card.png" alt=""><b>galileo</b></a>
+    <a class="piece" id="c-windower" href="windower/index.html" aria-label="windower">
+      <img src="windower/windower-card.png" alt=""><b>windower</b></a>
+    <a class="piece" id="c-storm" href="storm/index.html" aria-label="storm">
+      <img src="storm/storm-card.png" alt=""><b>storm</b></a>
+    <span class="plate" id="p-instrumenta">instrumenta</span>
+    <a class="piece" id="c-warmler" href="warmler/index.html" aria-label="warmler">
+      <img src="warmler/warmler-card.png" alt=""><b>warmler</b></a>
+    <a class="piece" id="c-roller" href="roller/index.html" aria-label="roller">
+      <img src="roller/roller-card.png" alt=""><b>roller</b></a>
+    <a class="piece" id="c-kaleidoscope" href="kaleidoscope/index.html" aria-label="kaleidoscope">
+      <img src="kaleidoscope/kaleidoscope-card.png" alt=""><b>kaleidoscope</b></a>
+    <span class="plate" id="p-tactilia">tactilia</span>
+    <a class="piece" id="c-musebox" href="musebox/index.html" aria-label="musebox">
+      <img src="musebox/musebox-card.png" alt=""><b>musebox</b></a>
+    <a class="piece" id="c-gyre" href="gyre/index.html" aria-label="gyre">
+      <img src="gyre/gyre-card.png" alt=""><b>gyre</b></a>
+    <a class="piece" id="c-chimes" href="chimes/index.html" aria-label="chimes">
+      <img src="chimes/chimes-card.png" alt=""><b>chimes</b></a>
+    <span class="plate" id="p-systema">systema</span>
+    <a class="piece" id="c-birds" href="birds/index.html" aria-label="birds">
+      <img src="birds/birds-card.png" alt=""><b>birds</b></a>
+    <a class="piece" id="c-fireflies" href="fireflies/index.html" aria-label="fireflies">
+      <img src="fireflies/fireflies-card.png" alt=""><b>fireflies</b></a>
+    <a class="piece" id="c-ant" href="ant/index.html" aria-label="ant">
+      <img src="ant/ant-card.png" alt=""><b>ant</b></a>
+    <span class="plate" id="p-natura">natura</span>
+    <a class="piece" id="c-lamp" href="lamp/index.html" aria-label="lamp">
+      <img src="lamp/lamp-card.png" alt=""><b>lamp</b></a>
+    <a class="piece" id="c-rain" href="rain/index.html" aria-label="rain">
+      <img src="rain/rain-card.png" alt=""><b>rain</b></a>
+    <a class="piece" id="c-bowl" href="bowl/index.html" aria-label="bowl">
+      <img src="bowl/bowl-card.png" alt=""><b>bowl</b></a>
+    <a class="piece" id="c-pendulum" href="pendulum/index.html" aria-label="pendulum">
+      <img src="pendulum/pendulum-card.png" alt=""><b>pendulum</b></a>
+    <a class="piece" id="c-chladni" href="chladni/index.html" aria-label="chladni">
+      <img src="chladni/chladni-card.png" alt=""><b>chladni</b></a>
+    <span class="plate" id="p-phenomena">phenomena</span>
+  </div>
+<script>
+(function(){
+  // Fit each engraved name to its own plate by MEASURING it rather than guessing a
+  // character width. Two goes at estimating it by hand both overran the brass onto
+  // the wood -- the face is wider than it looks and the letter-spacing compounds it.
+  // This also survives the webfont arriving late, which an estimate would not.
+  // Measure the TEXT, not the box. The plate is a centred flex container, so its
+  // scrollWidth just reports the container however far the words overflow it — the
+  // first attempt at this drove every name down to the 4px floor and still called
+  // them too wide. Wrapping the words lets them be measured directly.
+  document.querySelectorAll('.plate').forEach(function(el){
+    if(!el.firstElementChild) el.innerHTML = '<i>' + el.textContent + '</i>';
+  });
+  function fit(){
+    document.querySelectorAll('.plate').forEach(function(el){
+      var inner = el.firstElementChild, box = el.clientWidth * 0.92;
+      if(!inner || !box) return;
+      el.style.fontSize = '';
+      var size = parseFloat(getComputedStyle(el).fontSize), guard = 0;
+      while(inner.offsetWidth > box && size > 4 && guard++ < 60){
+        size -= 0.3;
+        el.style.fontSize = size + 'px';
+      }
+    });
+  }
+  fit();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  addEventListener('resize', fit);
+})();
+</script>
+</body>
+</html>
