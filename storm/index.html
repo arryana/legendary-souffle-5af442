@@ -275,15 +275,28 @@
   // the classic storm warning whatever the needle currently sits at.
   function conditionFrom(hpa, trend, temp, precip){
     if(precip > 0.1 && temp <= 1) return 'snow';
+    // Level and trend TOGETHER. An earlier version answered on the trend first and
+    // only fell through to the level when the trend was quiet, which made it read
+    // backwards at the bottom of the scale: a glass at 955 falling 3 hPa showed
+    // rain, while the same glass falling only 1 showed storm, because the faster
+    // fall was caught by the trend rule and never reached the level rule at all.
+    // It also called 955 'sunny' the moment it ticked upward, which is a severe
+    // low merely recovering, not a fine day.
+    //
+    // So: the band the needle sits in sets the severity, and the trend moves it —
+    // a fall worsens it, a rise eases it, and a rapid move counts double. That is
+    // how the instrument is actually read, and it cannot invert.
+    let sev = hpa < 28.5*INHG ? 3               // STORMY
+            : hpa < 29.4*INHG ? 2               // RAIN
+            : hpa < 29.9*INHG ? 1               // CHANGE
+            : 0;                                // FAIR or VERY DRY
     if(trend !== null){
-      if(trend <= -3.6) return 'storm';
-      if(trend <= -1.6) return 'rain';
-      if(trend >=  1.6) return 'sunny';
+      if(trend <= -3.6) sev += 2;
+      else if(trend <= -1.6) sev += 1;
+      else if(trend >= 3.6) sev -= 2;
+      else if(trend >= 1.6) sev -= 1;
     }
-    if(hpa < 28.5*INHG) return 'storm';        // in STORMY whatever it is doing
-    if(hpa < 29.4*INHG) return 'rain';         // in RAIN
-    if(hpa >= 29.9*INHG) return 'sunny';       // FAIR or better, and not falling
-    return 'warming';                          // CHANGE: unsettled, the middle state
+    return ['sunny','warming','rain','storm'][Math.max(0, Math.min(3, sev))];
   }
 
   let baroHpaNow = null, baroTrend = null;
