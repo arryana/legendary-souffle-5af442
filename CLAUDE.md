@@ -33,8 +33,12 @@ plain HTML + CSS + JavaScript. Editing = changing those files directly.
 branch**. That's the key fact behind everything below: **a change is only live once it's on
 `main`.** Until then it's a private draft.
 
-**Landing page:** `index.html` (titled *sagne*) — a dark, elegant grid of cards, each linking
-to one piece.
+**Landing page:** `index.html` (titled *sagne*) — the **apothecary shelf**: a photograph of a
+five-shelf case, the pieces standing face-front on the shelves, and the name of each type
+engraved on the brass plate beneath it. It replaced the flat card grid in Aug 2026. Every
+position on it derives from one table of measurements taken off the photograph itself
+(`shelves.jpg`, 990x1088) — the interior opening, each shelf's surface and the plate on its
+front rail. Change the picture and you change that table; don't retype percentages by hand.
 
 ### The pages
 
@@ -64,7 +68,7 @@ thing?* That is a yes or a no.
 
 | File | On landing page? | Done? | What it is |
 |------|:---:|:---:|------------|
-| `index.html` | — | — | Landing page: the card grid ("sagne") |
+| `index.html` | — | — | Landing page: the apothecary shelf ("sagne"), five shelves, all 19 pieces |
 | `candler/index.html` | ✅ | ✅ | *Sagne Candle* — an interactive candle. `candler_5.html` is an alternate version (not linked)<br>**Done** — "as perfect as I can make it without overhauling the actual candle itself." |
 | `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does." |
 | `lamp/index.html` | ✅ | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. A fuel level you find by *tapping* the base is designed but not built; the note in the file records which way the pitch must go<br>**Done** as it stands — the tap-for-fuel idea is recorded as a future build, not a gap in it. |
@@ -85,18 +89,37 @@ thing?* That is a yes or a no.
 | `pendulum/index.html` | ✅ | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search<br>**Done** — precession, swing and pin ring all verified by measurement against the real physics. |
 | `storm/index.html` | ✅ |  | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo) |
 | `crystal.html` | — | — | A crystal (not linked from the landing page) |
+| `chest.html`, `chest-open.html` | — | — | Dead apothecary-chest drafts she turned down; kept as a record, not linked |
 
-### Coming: the apothecary chest (not built yet)
+### The shelf, and how it got there
 
-The owner is splitting all the pieces into the drawers of an **apothecary chest** — that is
-the plan for the landing page, replacing the flat card grid. One of those drawers is called
-**instrumenta**. That is her word and it is the one to use: not "tools", which is what the
-page currently says in its copy.
+The pieces are split into five groups: **instrumenta, tactilia, systema, natura,
+phenomena**. Those are her words, off her own handwritten notes — *instrumenta*, not
+"tools". Which piece belongs in which group is hers, and so is the list; don't reshuffle it.
 
-Nothing here is built. What is recorded is the name and the shape of the idea, so that a
-later session does not invent a different word for the same thing or quietly re-flatten the
-grid. The other drawers, and which piece belongs in which, are hers to decide — don't guess
-them, and don't start building the chest off the back of this note.
+It began as an apothecary **chest** of drawers. Three chest variants were built and she
+turned all three down — *"none of it feels right"*. The shelf was her idea instead: *"what
+if we put 'sagne' in the oval, the cards lined up face front on each shelf, and the name of
+the type on the plate?"* — and it worked first time. `chest.html` and `chest-open.html` are
+those dead drafts; they are not linked from anywhere and are kept only as a record. Don't
+build on them, and don't re-propose a chest.
+
+The photograph is hers too. She generated the plain shelf, and the ornate one it borrows
+from. Three things were done to it in Aug 2026, all of them recorded here because they are
+invisible in the file: the shelf spacings were evened (100/185/175/170/131 -> roughly 152
+each) by a piecewise vertical remap that moves only the back panel and leaves the boards
+rigid; the sagne oval and the crown and plinth scrollwork were lifted off the ornate photo
+and applied **as relief** — the carving's light and shade transferred onto this shelf's own
+walnut, rather than the other photo's darker wood pasted over it; and the bottom shelf,
+which had no vertical front edge at all, only a floor, had the fourth rail cloned down to
+the floor line so its plate had something to sit on. The scripts that did all this are gone
+with their scratchpad, so treat `shelves.jpg` as the source of truth.
+
+**Interaction.** On a touch screen it is three taps — shelf, then card, then open — because
+a phone cannot show a card big enough to read; her idea, and the right one. With a fine
+pointer a card opens on the first click instead, and the shelf zoom stays reachable from the
+name plates. If you change the picture, the zoom transforms recompute themselves from the
+measurement table; nothing there is hand-typed.
 
 **Live-data pieces** — `galileo`, `conometer`, `windower` — read the visitor's **geolocation**
 and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that working; don't
