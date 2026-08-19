@@ -342,63 +342,95 @@
     const S = Math.round(cssSize*DPR), c = S/2;
     [ringBase, ringMill].forEach(cv => { cv.width = S; cv.height = S; });
 
-    // --- base: beveled brass, then a fixed top-left light -------------------
+    // ===================== brass-bound wood ==================================
+    // A turned-wood ring, bound with brass at both edges, and bold brass grip lugs
+    // around it. The wood and the binding stay put and lit from the top-left; the
+    // grip lugs turn with the ring, so the edge both looks like something and plainly
+    // asks to be taken hold of and turned.
     const g = ringBase.getContext('2d');
     g.clearRect(0,0,S,S); g.save(); annulus(g, S);
-    // the bevel across the band: a deep bronze in the shadowed troughs at each edge,
-    // rising to a near-white crest just outside centre where a rounded metal lip
-    // catches the most light
-    const bev = g.createRadialGradient(c,c, RI*S, c,c, RO*S);
-    bev.addColorStop(0.00, '#2a1c08');
-    bev.addColorStop(0.10, '#5b3f16');
-    bev.addColorStop(0.34, '#a87b2e');
-    bev.addColorStop(0.56, '#f4d288');
-    bev.addColorStop(0.64, '#fff3cf');   // the lit crest
-    bev.addColorStop(0.74, '#d3a145');
-    bev.addColorStop(0.88, '#8a6224');
-    bev.addColorStop(0.97, '#c99a44');
-    bev.addColorStop(1.00, '#f6e6bd');   // thin bright outer rim
-    g.fillStyle = bev; g.fillRect(0,0,S,S);
-    // the light, cast from the top-left. A multiply pass darkens the far side into
-    // real shadow; a screen pass lays a bright sheen on the near side. Together they
-    // turn a flat gold band into a lit metal ring.
+
+    // --- the wood field ------------------------------------------------------
+    const wood = g.createRadialGradient(c,c, RI*S, c,c, RO*S);
+    wood.addColorStop(0.00, '#3a2410');
+    wood.addColorStop(0.30, '#6b431d');
+    wood.addColorStop(0.55, '#8a5626');
+    wood.addColorStop(0.78, '#6f451e');
+    wood.addColorStop(1.00, '#4a2d13');
+    g.fillStyle = wood; g.fillRect(0,0,S,S);
+    // concentric turning grain: fine darker rings, as left by a lathe
+    g.lineWidth = Math.max(0.6, S*0.0016);
+    for(let k=0;k<26;k++){
+      const r = (RI + (RO-RI)*(k+0.5)/26)*S;
+      g.strokeStyle = k%2 ? 'rgba(40,24,10,0.28)' : 'rgba(150,100,55,0.14)';
+      g.beginPath(); g.arc(c,c, r, 0, Math.PI*2); g.stroke();
+    }
+    g.restore();
+
+    // --- the two brass binding bands, at the outer and inner edges ----------
+    function band(radius, width){
+      g.save(); g.beginPath();
+      g.arc(c,c, radius+width/2, 0, Math.PI*2);
+      g.arc(c,c, radius-width/2, 0, Math.PI*2, true); g.clip();
+      const br = g.createRadialGradient(c,c, radius-width/2, c,c, radius+width/2);
+      br.addColorStop(0.0, '#7a5a24');
+      br.addColorStop(0.5, '#f3d896');   // brass crest
+      br.addColorStop(1.0, '#8a6528');
+      g.fillStyle = br; g.fillRect(0,0,S,S);
+      g.restore();
+    }
+    const bw = (RO-RI)*S*0.24;                 // binding width
+    band(RO*S - bw*0.55, bw);                  // outer band
+    band(RI*S + bw*0.55, bw);                  // inner band
+
+    // --- the light, cast from the top-left, over the whole frame ------------
+    g.save(); annulus(g, S);
     const shade = g.createConicGradient(-Math.PI*0.75, c, c);
     shade.addColorStop(0.00, 'rgba(255,255,255,1)');
-    shade.addColorStop(0.30, 'rgba(150,120,70,1)');
-    shade.addColorStop(0.50, 'rgba(70,48,20,1)');       // deepest shadow, bottom-right
-    shade.addColorStop(0.70, 'rgba(150,120,70,1)');
+    shade.addColorStop(0.30, 'rgba(150,120,80,1)');
+    shade.addColorStop(0.50, 'rgba(70,50,26,1)');
+    shade.addColorStop(0.70, 'rgba(150,120,80,1)');
     shade.addColorStop(1.00, 'rgba(255,255,255,1)');
     g.globalCompositeOperation = 'multiply';
     g.fillStyle = shade; g.fillRect(0,0,S,S);
     const sheen = g.createConicGradient(-Math.PI*0.75, c, c);
-    sheen.addColorStop(0.00, 'rgba(255,246,220,0.75)');  // glint, top-left
-    sheen.addColorStop(0.14, 'rgba(255,246,220,0)');
-    sheen.addColorStop(0.86, 'rgba(255,246,220,0)');
-    sheen.addColorStop(1.00, 'rgba(255,246,220,0.75)');
+    sheen.addColorStop(0.00, 'rgba(255,244,214,0.5)');
+    sheen.addColorStop(0.16, 'rgba(255,244,214,0)');
+    sheen.addColorStop(0.84, 'rgba(255,244,214,0)');
+    sheen.addColorStop(1.00, 'rgba(255,244,214,0.5)');
     g.globalCompositeOperation = 'screen';
     g.fillStyle = sheen; g.fillRect(0,0,S,S);
     g.globalCompositeOperation = 'source-over';
-    // crisp shadow where the bezel drops to the black scope, and a hair rim outside
+    // crisp shadow where the frame drops to the black scope
     g.lineWidth = Math.max(1, S*0.006);
     g.strokeStyle = 'rgba(15,9,2,0.9)';
     g.beginPath(); g.arc(c,c, RI*S + g.lineWidth*0.5, 0, Math.PI*2); g.stroke();
     g.restore();
 
-    // --- milling: fine radial lines that turn with the ring ----------------
+    // --- the grip lugs: bold brass knobs that turn with the ring ------------
     const m = ringMill.getContext('2d');
-    m.clearRect(0,0,S,S); m.save(); annulus(m, S);
-    const TEETH = 300;
-    for(let i=0;i<TEETH;i++){
-      const a = (i/TEETH)*Math.PI*2;
-      const dark = i % 2 === 0;
-      m.strokeStyle = dark ? 'rgba(35,22,6,0.22)' : 'rgba(255,242,208,0.14)';
-      m.lineWidth = Math.max(0.5, S*0.0022);
-      m.beginPath();
-      m.moveTo(c + Math.cos(a)*(RI*S+S*0.004), c + Math.sin(a)*(RI*S+S*0.004));
-      m.lineTo(c + Math.cos(a)*(RO*S-S*0.004), c + Math.sin(a)*(RO*S-S*0.004));
-      m.stroke();
+    m.clearRect(0,0,S,S);
+    const N = 16, mid = (RI+RO)/2*S, span = Math.PI*2/N;
+    const lugLen = (RO-RI)*S*0.62, lugW = S*0.026;
+    m.lineCap = 'round';
+    for(let i=0;i<N;i++){
+      const a = i*span;
+      const dx = Math.cos(a), dy = Math.sin(a);
+      const x0 = c + dx*(mid - lugLen/2), y0 = c + dy*(mid - lugLen/2);
+      const x1 = c + dx*(mid + lugLen/2), y1 = c + dy*(mid + lugLen/2);
+      // a soft seat shadow under the lug
+      m.strokeStyle = 'rgba(20,12,3,0.5)'; m.lineWidth = lugW*1.5;
+      m.beginPath(); m.moveTo(x0,y0); m.lineTo(x1,y1); m.stroke();
+      // the brass lug body, brightest along its spine
+      const lg = m.createLinearGradient(x0 - dy*lugW, y0 + dx*lugW, x0 + dy*lugW, y0 - dx*lugW);
+      lg.addColorStop(0.0, '#6e4f20'); lg.addColorStop(0.5, '#f6e2a6'); lg.addColorStop(1.0, '#7a5824');
+      m.strokeStyle = lg; m.lineWidth = lugW;
+      m.beginPath(); m.moveTo(x0,y0); m.lineTo(x1,y1); m.stroke();
+      // a bright catch at the outer end
+      m.strokeStyle = 'rgba(255,246,220,0.85)'; m.lineWidth = lugW*0.32;
+      m.beginPath(); m.moveTo(c+dx*(mid+lugLen*0.18), c+dy*(mid+lugLen*0.18));
+      m.lineTo(x1,y1); m.stroke();
     }
-    m.restore();
   }
 
   function resize(){
