@@ -32,6 +32,8 @@
      disappears and the case simply stands in the dark rather than being pasted
      onto a blue card. */
   html,body{ height:100%; margin:0; background:#101521; color:#e2d6bb;
+    overflow-x:hidden;  /* the ground shadow spreads wider than the case; it fades
+                           to nothing at its ends, so clipping it is invisible */
     font-family:'Cormorant Garamond', Georgia, serif; }
   /* The case stands on the floor of the page rather than floating in the middle of
      it: on a phone its width is what limits it, so centring left as much empty dark
@@ -117,7 +119,15 @@
 
   /* zoomed in: the shelf in focus stands forward, the rest steps back */
   #case.zoomed .piece:not(.on){ opacity:.2; pointer-events:none; }
-  #case.on-card .piece.picked{ z-index:6; }
+  /* Everything but the card in hand falls away. Not an effect for its own sake:
+     with the furniture dark the card can be lifted well clear of it without the
+     softening of the blown-up photograph behind it being the thing you notice. */
+  #veil{ position:absolute; inset:0; z-index:4; pointer-events:none;
+    background:#05080e; opacity:0; transition:opacity .5s ease; }
+  #case.on-card #veil{ opacity:.9; }
+  #case.on-card .piece.picked{ z-index:7; transform-origin:50% 50%;
+    transition:transform .78s cubic-bezier(.42,.02,.16,1); }
+  #case.on-card .piece.picked:hover{ transform:none; }
   #case.on-card .piece.on:not(.picked){ opacity:.35; }
 
   /* Asked for, never announced. A saying has to lie over the furniture -- the case
@@ -161,6 +171,7 @@
     <div id="case">
       <img class="wood" src="shelves.jpg" alt="An apothecary shelf of five open shelves">
       <div id="sheen"></div>
+      <div id="veil"></div>
       <button type="button" id="oval" aria-expanded="false" aria-controls="say-sagne"
               aria-label="what is this?">sagne</button>
       <button type="button" id="ask" aria-expanded="false" aria-controls="say-about"
@@ -365,7 +376,24 @@
     var span = PITCH*(n-1) + GEO.card.w;   // outer edge to outer edge of its cards
     return W*FILL/span;
   }
-  var CARD_SCALE  = 3.6;
+  // Tap two is not "the shelf, only nearer". It is the card itself, brought up to
+  // fill the frame. The case comes forward only far enough to carry the card into
+  // the middle; the card is then lifted on its own, on top of that. So the
+  // photograph is never blown up to the point of going soft, and how large the
+  // card can be is limited by its own artwork rather than by the wood behind it.
+  var CARD_CASE = 2.1;    // how far the furniture comes
+  var CARD_MAX  = 0.74;   // never more than this much of the frame's height
+  // How large the card can honestly be. A picture cannot be enlarged past its own
+  // artwork without inventing detail that was never photographed, so the card is
+  // brought up as far as its own pixels reach and no further -- which on a dense
+  // screen is less far than on a coarse one, and on neither is it ever soft.
+  function cardLift(slug){
+    var el=BY_SLUG[slug].el, art=el.querySelector('img').naturalHeight || 640;
+    var frameH=document.getElementById('frame').clientHeight || 1;
+    var honest=(art/(window.devicePixelRatio||1))/frameH;   // as a share of the frame
+    var fill=Math.min(CARD_MAX, honest);
+    return (fill*H/GEO.card.h)/CARD_CASE;
+  }
 
   // Put a point of the photograph dead centre in the frame. This used to be
   // clamped so the case could never pull away from an edge, because doing so
@@ -386,6 +414,7 @@
     frame.classList.toggle('zoomed', level>0);
     [].forEach.call(caseEl.querySelectorAll('.piece'), function(el){
       el.classList.remove('on','picked');
+      el.style.transform='';
     });
     if(level>0){
       GEO.shelves[shelfIx].pieces.forEach(function(p){
@@ -402,7 +431,8 @@
       caseEl.style.transform=transform(IMID, mid, shelfScale(sh.pieces.length));
     } else {
       var r=RECT[cardSlug];
-      caseEl.style.transform=transform(r.cx,r.cy,CARD_SCALE);
+      caseEl.style.transform=transform(r.cx,r.cy,CARD_CASE);
+      BY_SLUG[cardSlug].el.style.transform='scale('+cardLift(cardSlug).toFixed(4)+')';
     }
   }
 
