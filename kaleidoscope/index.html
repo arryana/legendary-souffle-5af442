@@ -38,9 +38,15 @@
 
   #scopeWrap{ width:min(50vh,400px); aspect-ratio:1/1; cursor:grab; touch-action:none; }
   #scopeWrap:active{ cursor:grabbing; }
-  #scopeRing{ position:absolute; inset:0; border-radius:50%; pointer-events:none;
-    background: repeating-conic-gradient(from 0deg, #7c5c2c 0deg 3deg, #e3bd7c 3deg 5deg, #a9793c 5deg 6deg);
-    box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 6px 22px rgba(0,0,0,.55), inset 0 0 10px rgba(0,0,0,.55); }
+  /* the turning ring is drawn, not a flat gradient: a lit brass bevel that stays
+     put (ringBase) and the fine milling that turns over it (ringMill inside
+     scopeRing). Gemini was never going to make this well -- a knurled bezel is
+     geometry, and geometry is drawn, not painted. */
+  #ringBase{ position:absolute; inset:0; border-radius:50%; pointer-events:none;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 6px 22px rgba(0,0,0,.55); }
+  #scopeRing{ position:absolute; inset:0; border-radius:50%; pointer-events:none; }
+  #scopeRing canvas{ position:absolute; inset:0; width:100%; height:100%; }
+  #ringBase{ width:100%; height:100%; }
   #scopeInner{ position:absolute; inset:6.5%; border-radius:50%; overflow:hidden; background:#050608;
     box-shadow: inset 0 0 26px rgba(0,0,0,.85), 0 0 0 1px rgba(0,0,0,.5); }
   #scopeInner canvas{ position:absolute; inset:0; width:100%; height:100%; }
@@ -162,7 +168,8 @@
 </script>
 <div id="wrap">
   <div class="disc" id="scopeWrap">
-    <div id="scopeRing"></div>
+    <canvas id="ringBase"></canvas>
+    <div id="scopeRing"><canvas id="ringMill"></canvas></div>
     <div id="scopeInner"><canvas id="scope"></canvas></div>
   </div>
   <div class="disc" id="trayWrap"><canvas id="tray"></canvas></div>
@@ -318,6 +325,82 @@
     return p;
   }
 
+  // ---- the brass bezel, drawn ------------------------------------------------
+  // Two layers. The base is a lit, beveled brass annulus that never moves, so the
+  // highlight sits where the light is. The milling is fine radial lines that ride
+  // on top and turn with the ring, and their travel under the fixed light is what
+  // reads as the ring being turned. The scope's black centre covers the inner hole.
+  const ringBase = document.getElementById('ringBase');
+  const ringMill = document.getElementById('ringMill');
+  const RI = 0.435, RO = 0.499;          // inner / outer radius as a fraction of size
+  function annulus(g, S){
+    const c = S/2;
+    g.beginPath(); g.arc(c, c, RO*S, 0, Math.PI*2);
+    g.arc(c, c, RI*S, 0, Math.PI*2, true); g.clip();
+  }
+  function drawRing(cssSize){
+    const S = Math.round(cssSize*DPR), c = S/2;
+    [ringBase, ringMill].forEach(cv => { cv.width = S; cv.height = S; });
+
+    // --- base: beveled brass, then a fixed top-left light -------------------
+    const g = ringBase.getContext('2d');
+    g.clearRect(0,0,S,S); g.save(); annulus(g, S);
+    // the bevel across the band: a deep bronze in the shadowed troughs at each edge,
+    // rising to a near-white crest just outside centre where a rounded metal lip
+    // catches the most light
+    const bev = g.createRadialGradient(c,c, RI*S, c,c, RO*S);
+    bev.addColorStop(0.00, '#2a1c08');
+    bev.addColorStop(0.10, '#5b3f16');
+    bev.addColorStop(0.34, '#a87b2e');
+    bev.addColorStop(0.56, '#f4d288');
+    bev.addColorStop(0.64, '#fff3cf');   // the lit crest
+    bev.addColorStop(0.74, '#d3a145');
+    bev.addColorStop(0.88, '#8a6224');
+    bev.addColorStop(0.97, '#c99a44');
+    bev.addColorStop(1.00, '#f6e6bd');   // thin bright outer rim
+    g.fillStyle = bev; g.fillRect(0,0,S,S);
+    // the light, cast from the top-left. A multiply pass darkens the far side into
+    // real shadow; a screen pass lays a bright sheen on the near side. Together they
+    // turn a flat gold band into a lit metal ring.
+    const shade = g.createConicGradient(-Math.PI*0.75, c, c);
+    shade.addColorStop(0.00, 'rgba(255,255,255,1)');
+    shade.addColorStop(0.30, 'rgba(150,120,70,1)');
+    shade.addColorStop(0.50, 'rgba(70,48,20,1)');       // deepest shadow, bottom-right
+    shade.addColorStop(0.70, 'rgba(150,120,70,1)');
+    shade.addColorStop(1.00, 'rgba(255,255,255,1)');
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = shade; g.fillRect(0,0,S,S);
+    const sheen = g.createConicGradient(-Math.PI*0.75, c, c);
+    sheen.addColorStop(0.00, 'rgba(255,246,220,0.75)');  // glint, top-left
+    sheen.addColorStop(0.14, 'rgba(255,246,220,0)');
+    sheen.addColorStop(0.86, 'rgba(255,246,220,0)');
+    sheen.addColorStop(1.00, 'rgba(255,246,220,0.75)');
+    g.globalCompositeOperation = 'screen';
+    g.fillStyle = sheen; g.fillRect(0,0,S,S);
+    g.globalCompositeOperation = 'source-over';
+    // crisp shadow where the bezel drops to the black scope, and a hair rim outside
+    g.lineWidth = Math.max(1, S*0.006);
+    g.strokeStyle = 'rgba(15,9,2,0.9)';
+    g.beginPath(); g.arc(c,c, RI*S + g.lineWidth*0.5, 0, Math.PI*2); g.stroke();
+    g.restore();
+
+    // --- milling: fine radial lines that turn with the ring ----------------
+    const m = ringMill.getContext('2d');
+    m.clearRect(0,0,S,S); m.save(); annulus(m, S);
+    const TEETH = 300;
+    for(let i=0;i<TEETH;i++){
+      const a = (i/TEETH)*Math.PI*2;
+      const dark = i % 2 === 0;
+      m.strokeStyle = dark ? 'rgba(35,22,6,0.22)' : 'rgba(255,242,208,0.14)';
+      m.lineWidth = Math.max(0.5, S*0.0022);
+      m.beginPath();
+      m.moveTo(c + Math.cos(a)*(RI*S+S*0.004), c + Math.sin(a)*(RI*S+S*0.004));
+      m.lineTo(c + Math.cos(a)*(RO*S-S*0.004), c + Math.sin(a)*(RO*S-S*0.004));
+      m.stroke();
+    }
+    m.restore();
+  }
+
   function resize(){
     DPR=Math.min(2,window.devicePixelRatio||1);
     const tr=trayWrap.getBoundingClientRect();
@@ -326,6 +409,7 @@
     const sr=scopeInner.getBoundingClientRect();
     scopeSize=Math.round(sr.width*DPR);
     scopeCanvas.width=scopeSize; scopeCanvas.height=scopeSize;
+    drawRing(scopeWrap.getBoundingClientRect().width);
     drawAll();
   }
   window.addEventListener('resize', resize);
