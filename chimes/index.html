@@ -161,19 +161,10 @@
   const HANGER_W = 172;
 
   // ---- assets ----
+  // The rod, cord and hanger are drawn (see drawRod/drawCord/drawHanger), so the
+  // old sprite PNGs -- which carried a baked light halo and blurred when scaled --
+  // are no longer loaded. The small swatch images in the material pickers stay.
   function loadImg(src){ const i=new Image(); i.src=src; return i; }
-  const rodImgs = {
-    glass:  loadImg('chime-rod-glass.png'),
-    silver: loadImg('chime-rod-silver.png'),
-    brass:  loadImg('chime-rod-brass.png'),
-    wood:   loadImg('chime-rod-wood.png'),
-  };
-  const cordImgs = {
-    rope:   loadImg('chime-cord-rope.png'),
-    chain:  loadImg('chime-cord-chain.png'),
-    string: loadImg('chime-cord-string.png'),
-  };
-  const hangerImg = loadImg('chime-hanger.png');
 
   // ---- state ----
   const state = {
@@ -200,6 +191,12 @@
         angle: (Math.random()-0.5)*0.2,
         angVel: 0,
         touching: false,
+        // a wind signature of its own: three eddy frequencies and phases, so the
+        // same breeze pushes each rod differently and neighbours drift apart
+        w1: 0.7+Math.random()*0.9,  p1: Math.random()*6.28,
+        w2: 1.7+Math.random()*1.6,  p2: Math.random()*6.28,
+        w3: 3.1+Math.random()*2.4,  p3: Math.random()*6.28,
+        gustResp: 0.75+Math.random()*0.5,   // how much this rod catches the air
       });
     }
     state.rods = rods;
@@ -210,8 +207,8 @@
   let hangerX=0, hangerTopY=60, hangerDrawH=0, pivotY=0, ringSpan=0;
   function layout(){
     hangerX = W/2;
-    hangerDrawH = HANGER_W * (hangerImg.height / hangerImg.width || 164/145);
-    pivotY = hangerTopY + hangerDrawH*0.965;
+    hangerDrawH = HANGER_W * 1.02;
+    pivotY = hangerTopY + hangerDrawH*0.92;
     ringSpan = HANGER_W*0.85;
   }
   function pivotX(i, n){
@@ -278,6 +275,7 @@
   };
 
   function strike(freq, velocity, material){
+    window.__strikes=(window.__strikes||0)+1;
     if(!audioCtx || voices >= MAX_VOICES) return;
     const M = MATERIAL[material] || MATERIAL.brass;
     // a few ms ahead, so nothing is ever scheduled into a moment already gone
@@ -351,56 +349,61 @@
     const n = state.rods.length;
     const windAmp = state.wind * WIND_MAX;
 
+    // A shared breeze that swells and drops, plus turbulence unique to each rod.
+    // The old wind was a single global gust that every rod obeyed together, so they
+    // swung as one sheet and rarely met; giving each its own eddies is what makes
+    // neighbours drift, cross, and knock into each other the way a real set does.
+    const breeze = Math.sin(elapsed*0.42)*0.55 + Math.sin(elapsed*0.97+1.3)*0.45;
     for(let i=0;i<n;i++){
       const r = state.rods[i];
-      const eff = state.cordLength + r.rodLength*0.5;
-      const gust = windAmp * (Math.sin(elapsed*0.55)*0.65 + Math.sin(elapsed*2.1 + i*0.7)*0.35);
-      const damping = 0.42;
-      // a horizontal wind force at the bob has lever arm eff*cos(theta) about the pivot,
-      // same derivation as gravity's -(G/eff)*sin(theta) restoring term
-      const angAcc = -(G/eff)*Math.sin(r.angle) - damping*r.angVel + (gust/eff)*Math.cos(r.angle);
-      r.angVel += angAcc*dt;
-      r.angle += r.angVel*dt;
+      const turb = Math.sin(elapsed*r.w1+r.p1)*0.5 + Math.sin(elapsed*r.w2+r.p2)*0.32
+                 + Math.sin(elapsed*r.w3+r.p3)*0.18;
+      r.gust = windAmp * r.gustResp * (0.45*breeze + 0.75*turb);
     }
-    // Collisions between neighbours. A pair either is or is not in contact, and
-    // the note belongs to the moment they meet — one impact, one note. This used
-    // to re-fire on a 140ms timer for as long as two rods happened to be inside
-    // touching distance, and since a rod only has to swing about 10px to reach
-    // its neighbour, at the default wind they are inside it most of the time.
-    // Measured, that was 9.8 note-starts a second on the settings the page opens
-    // with and 34.8 at nine rods in a full wind. Worse than the count: 41% of all
-    // the gaps between notes landed in one narrow bin at 144ms, i.e. the timer
-    // itself, audible as a steady 7Hz pulse running under everything. Weather is
-    // not periodic, and a chime that ticks is not reporting weather. On impacts
-    // only, the same settings give 2 a second with the gaps spread from 200ms to
-    // over a second, and no bin holding more than 45%.
-    for(let i=0;i<n-1;i++){
-      const a = state.rods[i], b = state.rods[i+1];
-      const ax = bobX(a,i,n), bx = bobX(b,i+1,n);
-      const gap = Math.abs(ax-bx);
-      // they must clear the contact band by a little before they can strike
-      // again, or a rod resting right on the boundary chatters against it
-      if(gap >= COLLIDE_DIST + SEPARATE){ a.touching = false; continue; }
-      if(gap >= COLLIDE_DIST || a.touching) continue;
-      a.touching = true;
 
-      const effA = state.cordLength+a.rodLength*0.5, effB = state.cordLength+b.rodLength*0.5;
-      const dir = Math.sign(bx - ax) || 1;
-      const closing = (a.angVel*effA - b.angVel*effB) * dir;   // >0 = coming together
-      if(closing <= 0) continue;                                // drifted apart, no impact
+    // Sub-step the swing and the contacts together. A rod in a full wind can cross
+    // the fourteen-pixel contact band in a single frame and, tested once a frame,
+    // sail straight through its neighbour without ever registering; four sub-steps
+    // shrink that skip below the band so the strike is always caught.
+    const STEPS = 4, h = dt/STEPS;
+    for(let s2=0;s2<STEPS;s2++){
+      for(let i=0;i<n;i++){
+        const r = state.rods[i];
+        const eff = state.cordLength + r.rodLength*0.5;
+        const damping = 0.40 + r.rodLength*0.0004;   // longer rods lose a touch more
+        const angAcc = -(G/eff)*Math.sin(r.angle) - damping*r.angVel + (r.gust/eff)*Math.cos(r.angle);
+        r.angVel += angAcc*h;
+        r.angle  += r.angVel*h;
+      }
+      // contacts between neighbours, resolved this sub-step
+      for(let i=0;i<n-1;i++){
+        const a = state.rods[i], b = state.rods[i+1];
+        const effA = state.cordLength+a.rodLength*0.5, effB = state.cordLength+b.rodLength*0.5;
+        const ax = bobX(a,i,n), bx = bobX(b,i+1,n);
+        const gap = Math.abs(ax-bx);
+        if(gap >= COLLIDE_DIST + SEPARATE){ a.touching = false; continue; }
+        if(gap >= COLLIDE_DIST){ continue; }
+        const dir = Math.sign(bx - ax) || 1;
 
-      // A proper impulse between two masses, not a fixed shove. Same stock, so
-      // mass goes with length. The old code applied its push on the timer whether
-      // or not the rods were even moving toward each other, which fed energy into
-      // the set and kept it rattling on its own.
-      const j = (1 + RESTITUTION) * closing / (1/a.rodLength + 1/b.rodLength);
-      a.angVel -= (j/a.rodLength) * dir / effA;
-      b.angVel += (j/b.rodLength) * dir / effB;
+        // separate them so the two solid rods never occupy the same space -- the old
+        // code only nudged velocities and let the bodies overlap and pass through
+        const overlap = COLLIDE_DIST - gap;
+        a.angle -= (overlap*0.5/effA)*dir;
+        b.angle += (overlap*0.5/effB)*dir;
 
-      if(closing > MIN_STRIKE_SPEED){
-        ensureAudio();
-        strike(pitchFor(a.rodLength, state.rodMaterial), closing, state.rodMaterial);
-        strike(pitchFor(b.rodLength, state.rodMaterial), closing, state.rodMaterial);
+        const closing = (a.angVel*effA - b.angVel*effB) * dir;   // >0 = coming together
+        if(closing <= 0){ continue; }
+
+        const j = (1 + RESTITUTION) * closing / (1/a.rodLength + 1/b.rodLength);
+        a.angVel -= (j/a.rodLength) * dir / effA;
+        b.angVel += (j/b.rodLength) * dir / effB;
+
+        if(!a.touching && closing > MIN_STRIKE_SPEED){
+          ensureAudio();
+          strike(pitchFor(a.rodLength, state.rodMaterial), closing, state.rodMaterial);
+          strike(pitchFor(b.rodLength, state.rodMaterial), closing, state.rodMaterial);
+        }
+        a.touching = true;
       }
     }
 
@@ -409,30 +412,208 @@
     requestAnimationFrame(tick);
   }
 
-  function drawRodsAndCords(rodImg, cordImg, cordThick, n){
+  function drawRodsAndCords(rodMat, cordMat, cordThick, n){
     for(let i=0;i<n;i++){
       const r = state.rods[i];
       const px = pivotX(i,n);
       ctx.save();
       ctx.translate(px, pivotY);
       ctx.rotate(r.angle);
-
-      if(cordImg && cordImg.complete && cordImg.naturalWidth){
-        ctx.drawImage(cordImg, 0, 0, cordImg.naturalWidth, cordImg.naturalHeight, -cordThick/2, 0, cordThick, state.cordLength);
-      }
-      if(rodImg && rodImg.complete && rodImg.naturalWidth){
-        ctx.drawImage(rodImg, -ROD_THICK/2, state.cordLength, ROD_THICK, r.rodLength);
-      }
+      drawCord(state.cordLength, cordMat);
+      drawRod(state.cordLength, r.rodLength, rodMat);
       ctx.restore();
     }
   }
   function draw(){
     ctx.clearRect(0,0,W,H);
     const n = state.rods.length;
-    if(hangerImg.complete && hangerImg.naturalWidth){
-      ctx.drawImage(hangerImg, hangerX-HANGER_W/2, hangerTopY, HANGER_W, hangerDrawH);
+    drawRodsAndCords(state.rodMaterial, state.cordMaterial, CORD_THICK[state.cordMaterial], n);
+    drawHanger(n);   // over the cord tops, so the cords disappear into the bar
+  }
+
+  // ---- the parts, drawn ------------------------------------------------------
+  // Every piece here is drawn rather than a stretched photo. The sprites carried a
+  // soft light halo baked into them and went blurry when scaled; drawing the wood,
+  // the cord and the metal keeps every edge crisp and every material under control.
+
+  // Each material has its own shape, not only its own colour: the aged brass a
+  // mottled cylinder, the silver a plain one, the wood a flat wide slat with
+  // rounded edges and a big drilled hole, the glass a thin, long, triangular rod.
+  const ROD_MATS = {
+    brass:  { edge:'#4a3413', body:'#a37f34', spec:'#f4e1a2', lip:'#6a4e1e', alpha:1,
+              shape:'round', width:12, mottle:true },
+    silver: { edge:'#565c61', body:'#a7afb5', spec:'#ffffff', lip:'#6a7075', alpha:1,
+              shape:'round', width:12 },
+    wood:   { edge:'#3a2410', body:'#8a5a2c', spec:'#c79a5c', lip:'#4a2f16', alpha:1,
+              shape:'flat',  width:17, grain:true, hole:3.0 },
+    glass:  { edge:'#4f9f96', body:'#cdeee7', spec:'#ffffff', lip:'#8fc9c0', alpha:0.58,
+              shape:'prism', width:8,  lenMul:1.16 },
+  };
+
+  function drawRod(topY, len0, matKey){
+    const M = ROD_MATS[matKey];
+    const W = M.width, half = W/2, len = len0*(M.lenMul||1);
+    const y0 = topY, y1 = topY+len;
+    ctx.save();
+    ctx.globalAlpha = M.alpha;
+
+    if(M.shape === 'prism'){
+      // GLASS -- a thin triangular rod that comes to points top and bottom, with a
+      // bright edge running down its spine where the two faces meet
+      ctx.beginPath();
+      ctx.moveTo(0, y0);                 // top point
+      ctx.lineTo(half, y0+W);
+      ctx.lineTo(half, y1-W);
+      ctx.lineTo(0, y1);                 // bottom point
+      ctx.lineTo(-half, y1-W);
+      ctx.lineTo(-half, y0+W);
+      ctx.closePath(); ctx.save(); ctx.clip();
+      const gx = ctx.createLinearGradient(-half,0,half,0);
+      gx.addColorStop(0.0, M.edge); gx.addColorStop(0.42, M.body);
+      gx.addColorStop(0.5, M.spec); gx.addColorStop(0.58, M.body); gx.addColorStop(1.0, M.edge);
+      ctx.fillStyle = gx; ctx.fillRect(-half-1, y0-1, W+2, len+2);
+      ctx.restore();
+      // the lit spine
+      ctx.globalAlpha = M.alpha*0.9;
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, y0+2); ctx.lineTo(0, y1-2); ctx.stroke();
+      ctx.restore();
+      // a small hanging hole near the top point
+      ctx.save(); ctx.globalAlpha = M.alpha; ctx.fillStyle='rgba(20,40,38,0.6)';
+      ctx.beginPath(); ctx.ellipse(0, y0+W*0.7, 1.3, 1.0, 0, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+      return;
     }
-    drawRodsAndCords(rodImgs[state.rodMaterial], cordImgs[state.cordMaterial], CORD_THICK[state.cordMaterial], n);
+
+    const r = (M.shape === 'flat') ? Math.min(half*0.55, 5) : half;   // corner round
+    // the body outline: a rounded slat (flat) or a capsule (round)
+    ctx.beginPath();
+    ctx.moveTo(-half, y0+r); ctx.quadraticCurveTo(-half, y0, -half+r, y0);
+    ctx.lineTo(half-r, y0); ctx.quadraticCurveTo(half, y0, half, y0+r);
+    ctx.lineTo(half, y1-r); ctx.quadraticCurveTo(half, y1, half-r, y1);
+    ctx.lineTo(-half+r, y1); ctx.quadraticCurveTo(-half, y1, -half, y1-r);
+    ctx.closePath(); ctx.save(); ctx.clip();
+    const gx = ctx.createLinearGradient(-half,0,half,0);
+    if(M.shape === 'flat'){
+      // wood reads flatter and more matte, with a rounded lip catching light at each edge
+      gx.addColorStop(0.0, M.edge); gx.addColorStop(0.10, M.spec);
+      gx.addColorStop(0.5, M.body); gx.addColorStop(0.90, M.spec); gx.addColorStop(1.0, M.edge);
+    } else {
+      gx.addColorStop(0.0, M.edge); gx.addColorStop(0.28, M.spec);
+      gx.addColorStop(0.5, M.body); gx.addColorStop(1.0, M.edge);
+    }
+    ctx.fillStyle = gx; ctx.fillRect(-half-1, y0-1, W+2, len+2);
+    // length shade
+    const gy = ctx.createLinearGradient(0,y0,0,y1);
+    gy.addColorStop(0,'rgba(255,255,255,0.10)'); gy.addColorStop(0.15,'rgba(255,255,255,0)');
+    gy.addColorStop(0.9,'rgba(0,0,0,0)'); gy.addColorStop(1,'rgba(0,0,0,0.28)');
+    ctx.fillStyle = gy; ctx.fillRect(-half-1, y0-1, W+2, len+2);
+    if(M.grain){
+      ctx.strokeStyle = 'rgba(50,30,12,0.42)'; ctx.lineWidth = 0.8;
+      for(let k=0;k<4;k++){ const gxp = -half+W*(0.22+k*0.19);
+        ctx.beginPath(); ctx.moveTo(gxp, y0+2);
+        ctx.bezierCurveTo(gxp+1.5, y0+len*0.4, gxp-1.5, y0+len*0.7, gxp+(k-1.5), y1-2);
+        ctx.stroke(); }
+    }
+    if(M.mottle){
+      // aged brass: soft darker and lighter patches, placed by a fixed pattern so
+      // they sit still rather than shimmer frame to frame
+      for(let k=0;k<7;k++){
+        const yy = y0 + len*((k*0.618)%1);
+        const xx = Math.sin(k*2.3)*half*0.5;
+        const rr = 2 + (k%3);
+        ctx.fillStyle = (k%2) ? 'rgba(60,42,16,0.30)' : 'rgba(245,225,170,0.18)';
+        ctx.beginPath(); ctx.ellipse(xx, yy, rr, rr*1.4, 0, 0, Math.PI*2); ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    // top lip + cord hole (a bigger, clearly drilled hole for wood)
+    ctx.save(); ctx.globalAlpha = M.alpha;
+    ctx.strokeStyle = M.lip; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, y0+r, Math.max(1,r-0.5), Math.PI*1.05, Math.PI*1.95); ctx.stroke();
+    const hr = M.hole || 1.6;
+    ctx.fillStyle = 'rgba(18,12,5,0.72)';
+    ctx.beginPath(); ctx.ellipse(0, y0 + hr + 2, hr, hr*0.8, 0, 0, Math.PI*2); ctx.fill();
+    if(M.hole){ // a lit rim on the big drilled hole
+      ctx.strokeStyle='rgba(210,170,110,0.5)'; ctx.lineWidth=0.8;
+      ctx.beginPath(); ctx.ellipse(0, y0+hr+2, hr, hr*0.8, 0, Math.PI*0.9, Math.PI*2.1); ctx.stroke();
+    }
+    ctx.restore();   // the lip/hole layer
+    ctx.restore();   // the outer save opened at the top of drawRod
+  }
+
+  function drawCord(len, matKey){
+    if(matKey==='chain'){
+      const link = 6; ctx.strokeStyle = '#c9cdd2'; ctx.lineWidth = 1.4;
+      for(let y=0;y<len-2;y+=link){
+        const vert = ((y/link)|0)%2===0;
+        ctx.beginPath();
+        if(vert) ctx.ellipse(0, y+link/2, 1.7, link*0.46, 0, 0, Math.PI*2);
+        else     ctx.ellipse(0, y+link/2, 3.0, link*0.34, 0, 0, Math.PI*2);
+        ctx.stroke();
+      }
+    } else if(matKey==='rope'){
+      // two strands twisting round each other
+      const amp = 2.2, twist = 0.5;
+      for(const off of [0, Math.PI]){
+        ctx.beginPath();
+        for(let y=0;y<=len;y+=2){ const x = Math.sin(y*twist+off)*amp;
+          if(y===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+        ctx.strokeStyle = off===0 ? '#b79a68' : '#8f7444'; ctx.lineWidth = 2.6; ctx.stroke();
+      }
+    } else { // string: a thin taut, faintly fibrous line
+      ctx.strokeStyle = 'rgba(226,220,200,0.9)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,len); ctx.stroke();
+      ctx.strokeStyle = 'rgba(120,110,90,0.5)'; ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.moveTo(0.6,0); ctx.lineTo(0.6,len); ctx.stroke();
+    }
+  }
+
+  function drawHanger(n){
+    const cx = hangerX, top = hangerTopY;
+    const barH = hangerDrawH*0.15, barBottom = pivotY, barTop = barBottom - barH;
+    const barCY = (barTop+barBottom)/2, halfW = HANGER_W/2;
+    const ringCY = top + hangerDrawH*0.05, ringR = hangerDrawH*0.045;
+
+    // suspension: two cords from the ring down to the bar ends
+    ctx.save(); ctx.lineCap='round';
+    for(const sgn of [-1,1]){
+      ctx.strokeStyle = 'rgba(60,44,22,0.9)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(cx, ringCY+ringR); ctx.lineTo(cx+sgn*halfW*0.9, barTop+1); ctx.stroke();
+      ctx.strokeStyle = 'rgba(150,120,74,0.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx-1, ringCY+ringR); ctx.lineTo(cx+sgn*halfW*0.9-1, barTop+1); ctx.stroke();
+    }
+    ctx.restore();
+
+    // the brass hanging ring, up top
+    ctx.save();
+    const rg = ctx.createRadialGradient(cx-ringR*0.3, ringCY-ringR*0.3, 1, cx, ringCY, ringR);
+    rg.addColorStop(0,'#f2dca0'); rg.addColorStop(0.6,'#b8933f'); rg.addColorStop(1,'#6a4e1e');
+    ctx.strokeStyle = rg; ctx.lineWidth = ringR*0.5;
+    ctx.beginPath(); ctx.arc(cx, ringCY, ringR, 0, Math.PI*2); ctx.stroke();
+    ctx.restore();
+
+    // the wooden bar: a rounded lozenge, lit from the top
+    ctx.save();
+    const br = barH/2;
+    ctx.beginPath();
+    ctx.moveTo(cx-halfW+br, barTop); ctx.lineTo(cx+halfW-br, barTop);
+    ctx.arc(cx+halfW-br, barCY, br, -Math.PI/2, Math.PI/2);
+    ctx.lineTo(cx-halfW+br, barBottom); ctx.arc(cx-halfW+br, barCY, br, Math.PI/2, Math.PI*1.5);
+    ctx.closePath(); ctx.clip();
+    const wg = ctx.createLinearGradient(0, barTop, 0, barBottom);
+    wg.addColorStop(0.0, '#7a4f28'); wg.addColorStop(0.35, '#5a3819');
+    wg.addColorStop(0.7, '#3f2712'); wg.addColorStop(1.0, '#241407');
+    ctx.fillStyle = wg; ctx.fillRect(cx-halfW-2, barTop-2, HANGER_W+4, barH+4);
+    // a couple of grain streaks along it
+    ctx.strokeStyle='rgba(30,18,8,0.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(cx-halfW, barCY+2); ctx.lineTo(cx+halfW, barCY+1); ctx.stroke();
+    ctx.restore();
+    // the bar's own contact shadow beneath, so it sits over the cords
+    ctx.save(); ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(cx-halfW+br, barBottom); ctx.lineTo(cx+halfW-br, barBottom); ctx.stroke();
+    ctx.restore();
   }
 
   // world position of the point midway down a rod's body -- used to anchor its length popup
@@ -629,6 +810,7 @@
 
   resize();
   rebuildRods(false);
+  window.__chime = { get rods(){return state.rods;}, get count(){return state.rods.length;} };
   requestAnimationFrame(tick);
 })();
 </script>

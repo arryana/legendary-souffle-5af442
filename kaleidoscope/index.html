@@ -38,9 +38,17 @@
 
   #scopeWrap{ width:min(50vh,400px); aspect-ratio:1/1; cursor:grab; touch-action:none; }
   #scopeWrap:active{ cursor:grabbing; }
-  #scopeRing{ position:absolute; inset:0; border-radius:50%; pointer-events:none;
-    background: repeating-conic-gradient(from 0deg, #7c5c2c 0deg 3deg, #e3bd7c 3deg 5deg, #a9793c 5deg 6deg);
-    box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 6px 22px rgba(0,0,0,.55), inset 0 0 10px rgba(0,0,0,.55); }
+  /* the turning ring is drawn, not a flat gradient: a lit brass bevel that stays
+     put (ringBase) and the fine milling that turns over it (ringMill inside
+     scopeRing). Gemini was never going to make this well -- a knurled bezel is
+     geometry, and geometry is drawn, not painted. */
+  #ringBase{ position:absolute; inset:0; border-radius:50%; pointer-events:none;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 6px 22px rgba(0,0,0,.55); }
+  /* the grip layer reaches beyond the wood ring so the grab knob can stand
+     proud of the edge; it rotates about the same centre as the frame */
+  #scopeRing{ position:absolute; inset:-13%; border-radius:50%; pointer-events:none; }
+  #scopeRing canvas{ position:absolute; inset:0; width:100%; height:100%; }
+  #ringBase{ width:100%; height:100%; }
   #scopeInner{ position:absolute; inset:6.5%; border-radius:50%; overflow:hidden; background:#050608;
     box-shadow: inset 0 0 26px rgba(0,0,0,.85), 0 0 0 1px rgba(0,0,0,.5); }
   #scopeInner canvas{ position:absolute; inset:0; width:100%; height:100%; }
@@ -162,7 +170,8 @@
 </script>
 <div id="wrap">
   <div class="disc" id="scopeWrap">
-    <div id="scopeRing"></div>
+    <canvas id="ringBase"></canvas>
+    <div id="scopeRing"><canvas id="ringMill"></canvas></div>
     <div id="scopeInner"><canvas id="scope"></canvas></div>
   </div>
   <div class="disc" id="trayWrap"><canvas id="tray"></canvas></div>
@@ -318,6 +327,153 @@
     return p;
   }
 
+  // ---- the brass bezel, drawn ------------------------------------------------
+  // Two layers. The base is a lit, beveled brass annulus that never moves, so the
+  // highlight sits where the light is. The milling is fine radial lines that ride
+  // on top and turn with the ring, and their travel under the fixed light is what
+  // reads as the ring being turned. The scope's black centre covers the inner hole.
+  const ringBase = document.getElementById('ringBase');
+  const ringMill = document.getElementById('ringMill');
+  const RI = 0.435, RO = 0.499;          // inner / outer radius as a fraction of size
+  function annulus(g, S){
+    const c = S/2;
+    g.beginPath(); g.arc(c, c, RO*S, 0, Math.PI*2);
+    g.arc(c, c, RI*S, 0, Math.PI*2, true); g.clip();
+  }
+  function drawRing(cssSize){
+    const S = Math.round(cssSize*DPR), c = S/2;
+    ringBase.width = ringBase.height = S;
+    // the grip layer's element is inset:-13%, i.e. 1.26x the frame, so its backing
+    // store must match or everything drawn on it is scaled up and flung outward
+    const Slarge = Math.round(S*1.26);
+    ringMill.width = ringMill.height = Slarge;
+
+    // ===================== brass-bound wood ==================================
+    // A turned-wood ring, bound with brass at both edges, and bold brass grip lugs
+    // around it. The wood and the binding stay put and lit from the top-left; the
+    // grip lugs turn with the ring, so the edge both looks like something and plainly
+    // asks to be taken hold of and turned.
+    const g = ringBase.getContext('2d');
+    g.clearRect(0,0,S,S); g.save(); annulus(g, S);
+
+    // --- the wood field ------------------------------------------------------
+    const wood = g.createRadialGradient(c,c, RI*S, c,c, RO*S);
+    wood.addColorStop(0.00, '#3a2410');
+    wood.addColorStop(0.30, '#6b431d');
+    wood.addColorStop(0.55, '#8a5626');
+    wood.addColorStop(0.78, '#6f451e');
+    wood.addColorStop(1.00, '#4a2d13');
+    g.fillStyle = wood; g.fillRect(0,0,S,S);
+    // concentric turning grain: fine darker rings, as left by a lathe
+    g.lineWidth = Math.max(0.6, S*0.0016);
+    for(let k=0;k<26;k++){
+      const r = (RI + (RO-RI)*(k+0.5)/26)*S;
+      g.strokeStyle = k%2 ? 'rgba(40,24,10,0.28)' : 'rgba(150,100,55,0.14)';
+      g.beginPath(); g.arc(c,c, r, 0, Math.PI*2); g.stroke();
+    }
+    g.restore();
+
+    // --- the two brass binding bands, at the outer and inner edges ----------
+    function band(radius, width){
+      g.save(); g.beginPath();
+      g.arc(c,c, radius+width/2, 0, Math.PI*2);
+      g.arc(c,c, radius-width/2, 0, Math.PI*2, true); g.clip();
+      const br = g.createRadialGradient(c,c, radius-width/2, c,c, radius+width/2);
+      br.addColorStop(0.0, '#6a4d1f');
+      br.addColorStop(0.5, '#c4a562');   // brass crest, softened so it doesn't glare
+      br.addColorStop(1.0, '#775622');
+      g.fillStyle = br; g.fillRect(0,0,S,S);
+      g.restore();
+    }
+    const bw = (RO-RI)*S*0.24;                 // binding width
+    band(RO*S - bw*0.55, bw);                  // outer band
+    band(RI*S + bw*0.55, bw);                  // inner band
+
+    // --- the light, cast from the top-left, over the whole frame ------------
+    g.save(); annulus(g, S);
+    const shade = g.createConicGradient(-Math.PI*0.75, c, c);
+    shade.addColorStop(0.00, 'rgba(255,255,255,1)');
+    shade.addColorStop(0.30, 'rgba(150,120,80,1)');
+    shade.addColorStop(0.50, 'rgba(70,50,26,1)');
+    shade.addColorStop(0.70, 'rgba(150,120,80,1)');
+    shade.addColorStop(1.00, 'rgba(255,255,255,1)');
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = shade; g.fillRect(0,0,S,S);
+    const sheen = g.createConicGradient(-Math.PI*0.75, c, c);
+    sheen.addColorStop(0.00, 'rgba(255,244,214,0.26)');
+    sheen.addColorStop(0.16, 'rgba(255,244,214,0)');
+    sheen.addColorStop(0.84, 'rgba(255,244,214,0)');
+    sheen.addColorStop(1.00, 'rgba(255,244,214,0.26)');
+    g.globalCompositeOperation = 'screen';
+    g.fillStyle = sheen; g.fillRect(0,0,S,S);
+    g.globalCompositeOperation = 'source-over';
+    // crisp shadow where the frame drops to the black scope
+    g.lineWidth = Math.max(1, S*0.006);
+    g.strokeStyle = 'rgba(15,9,2,0.9)';
+    g.beginPath(); g.arc(c,c, RI*S + g.lineWidth*0.5, 0, Math.PI*2); g.stroke();
+    g.restore();
+
+    // --- the grip: quiet lugs all round, and one grab knob standing proud ---
+    // The mill canvas is larger than the frame (CSS inset:-13%), so its centre is
+    // offset; everything here is measured from that centre, cm, in the same pixel
+    // radii as the frame. The lugs are dimmed right down so the eye stays on the
+    // scope; the one thing that speaks up is the knob, a wooden grab handle with a
+    // brass collar that stands out past the wood edge and carries round as you turn.
+    const m = ringMill.getContext('2d');
+    const Sm = ringMill.width, cm = Sm/2;
+    m.clearRect(0,0,Sm,Sm);
+    const N = 16, mid = (RI+RO)/2*S, span = Math.PI*2/N;
+    const lugLen = (RO-RI)*S*0.58, lugW = S*0.022;
+    m.lineCap = 'round';
+    for(let i=0;i<N;i++){
+      const a = i*span;
+      const dx = Math.cos(a), dy = Math.sin(a);
+      const x0 = cm + dx*(mid - lugLen/2), y0 = cm + dy*(mid - lugLen/2);
+      const x1 = cm + dx*(mid + lugLen/2), y1 = cm + dy*(mid + lugLen/2);
+      m.strokeStyle = 'rgba(18,11,3,0.35)'; m.lineWidth = lugW*1.4;
+      m.beginPath(); m.moveTo(x0,y0); m.lineTo(x1,y1); m.stroke();
+      const lg = m.createLinearGradient(x0 - dy*lugW, y0 + dx*lugW, x0 + dy*lugW, y0 - dx*lugW);
+      lg.addColorStop(0.0, '#4a3618'); lg.addColorStop(0.5, '#8a7343'); lg.addColorStop(1.0, '#54401d');
+      m.strokeStyle = lg; m.lineWidth = lugW;
+      m.beginPath(); m.moveTo(x0,y0); m.lineTo(x1,y1); m.stroke();
+    }
+
+    // --- the grab knob (drawn at the top of the ring, carries round on turn) --
+    const ka = -Math.PI/2;                       // seated at 12 o'clock at rest
+    const kx = cm + Math.cos(ka)*(RO*S + S*0.028);
+    const ky = cm + Math.sin(ka)*(RO*S + S*0.028);
+    const kr = S*0.052;
+    // a stem from the wood edge out to the knob
+    m.lineCap = 'round';
+    m.strokeStyle = 'rgba(18,11,3,0.55)'; m.lineWidth = kr*0.92;
+    m.beginPath();
+    m.moveTo(cm + Math.cos(ka)*(RO*S - S*0.01), cm + Math.sin(ka)*(RO*S - S*0.01));
+    m.lineTo(kx, ky); m.stroke();
+    const stem = m.createLinearGradient(kx-kr,ky,kx+kr,ky);
+    stem.addColorStop(0,'#4f3a18'); stem.addColorStop(0.5,'#9c7c40'); stem.addColorStop(1,'#5a4420');
+    m.strokeStyle = stem; m.lineWidth = kr*0.62;
+    m.beginPath();
+    m.moveTo(cm + Math.cos(ka)*(RO*S - S*0.006), cm + Math.sin(ka)*(RO*S - S*0.006));
+    m.lineTo(kx, ky); m.stroke();
+    // seat shadow, then the wooden knob, then a brass collar and a soft catch
+    m.fillStyle = 'rgba(12,7,2,0.5)';
+    m.beginPath(); m.arc(kx, ky+kr*0.12, kr*1.06, 0, Math.PI*2); m.fill();
+    const dome = m.createRadialGradient(kx-kr*0.35, ky-kr*0.4, kr*0.1, kx, ky, kr);
+    dome.addColorStop(0.0, '#5c3c1a');   // darker walnut, closer to the shaded wood
+    dome.addColorStop(0.5, '#3c2712');
+    dome.addColorStop(1.0, '#241407');
+    m.fillStyle = dome;
+    m.beginPath(); m.arc(kx, ky, kr, 0, Math.PI*2); m.fill();
+    // a brass collar around the knob's base
+    m.strokeStyle = 'rgba(190,160,96,0.8)'; m.lineWidth = kr*0.16;
+    m.beginPath(); m.arc(kx, ky, kr*0.9, 0, Math.PI*2); m.stroke();
+    // a small, soft top-left catch (not a hard glint)
+    const kh = m.createRadialGradient(kx-kr*0.34, ky-kr*0.4, 0, kx-kr*0.34, ky-kr*0.4, kr*0.7);
+    kh.addColorStop(0,'rgba(255,238,200,0.34)'); kh.addColorStop(1,'rgba(255,238,200,0)');
+    m.fillStyle = kh;
+    m.beginPath(); m.arc(kx, ky, kr, 0, Math.PI*2); m.fill();
+  }
+
   function resize(){
     DPR=Math.min(2,window.devicePixelRatio||1);
     const tr=trayWrap.getBoundingClientRect();
@@ -326,6 +482,7 @@
     const sr=scopeInner.getBoundingClientRect();
     scopeSize=Math.round(sr.width*DPR);
     scopeCanvas.width=scopeSize; scopeCanvas.height=scopeSize;
+    drawRing(scopeWrap.getBoundingClientRect().width);
     drawAll();
   }
   window.addEventListener('resize', resize);
