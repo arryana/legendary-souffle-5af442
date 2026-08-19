@@ -68,7 +68,7 @@
      that silently fell back to the browser's 16px default and the names collided. */
   #case{ position:absolute; inset:0;
     transform-origin:50% 50%;
-    transition:transform .6s cubic-bezier(.22,.66,.24,1); }
+    transition:transform .78s cubic-bezier(.42,.02,.16,1); }
   #case > img.wood{ width:100%; height:100%; display:block; }
 
   /* The brass oval is photographed with a hard specular highlight across it, and
@@ -200,7 +200,10 @@
     oval:{ x:421, y:74, w:158, h:49 },    // the brass oval on the crown
     plate:{ x:424, w:147, h:22 },         // the engraved area of a brass plate
     disc:{ cx:495, cy:1160, d:42 },       // the brass disc, centred on the plinth shell
-    card:{ w:76, h:100 },
+    // The card art is 11:16 almost to a file -- 14 of the 19 are exactly 440x640.
+    // The slot used to be 76x100, which is wider, so object-fit:cover was quietly
+    // shaving a tenth off the top and bottom of every picture. Matched to the art.
+    card:{ w:68.75, h:100 },
     // A card stands ON the board, not at the lip of it -- its foot goes back from
     // the front edge by this much, so a sliver of the lit top surface shows in
     // front of it. Standing them on the lip made them read as propped in front of
@@ -350,15 +353,28 @@
   // at about thirty pixels. Her idea, and the right one: bring a shelf out to the
   // frame edges rather than shrinking the furniture. First tap zooms the shelf,
   // second zooms the card, third opens it.
-  var SHELF_SCALE = W/IW;   // exactly wide enough to bring the opening to both edges
+  // Zoom to what is ON the shelf, not to the shelf's empty width. Every shelf uses
+  // the same pitch so the cards line up in columns when the whole case is in view --
+  // which means a shelf of three occupies only half the opening. Scaling all five by
+  // the same amount therefore left a shelf of three filling half the frame, with the
+  // cards no bigger than they needed to be. Each shelf now zooms until ITS cards span
+  // the frame, so a shelf of three comes closer than a shelf of five and the touch
+  // targets are as large as that shelf allows.
+  var FILL = 0.92;                         // leave a little air at each end
+  function shelfScale(n){
+    var span = PITCH*(n-1) + GEO.card.w;   // outer edge to outer edge of its cards
+    return W*FILL/span;
+  }
   var CARD_SCALE  = 3.6;
 
-  // Centre a point of the photograph in the frame, but never so far that the case
-  // pulls away from an edge and leaves bare background showing beside it.
+  // Put a point of the photograph dead centre in the frame. This used to be
+  // clamped so the case could never pull away from an edge, because doing so
+  // exposed a bare strip beside it -- but the wall behind the case and the wall
+  // of the page are now one colour, so there is nothing to expose. The top and
+  // bottom shelves can finally sit in the middle like the other three, and the
+  // shelves above and below slide out of the frame instead of hanging in it.
   function transform(px,py,s){
-    var lim=(s-1)/2;
     var tx=-s*(px-W/2)/W, ty=-s*(py-H/2)/H;
-    tx=Math.max(-lim,Math.min(lim,tx)); ty=Math.max(-lim,Math.min(lim,ty));
     return 'translate('+(tx*100).toFixed(3)+'%,'+(ty*100).toFixed(3)+'%) scale('+s.toFixed(4)+')';
   }
 
@@ -380,7 +396,10 @@
     if(level===0){ caseEl.style.transform=''; }
     else if(level===1){
       var sh=GEO.shelves[shelfIx];
-      caseEl.style.transform=transform(IMID,(sh.ceil+sh.surf)/2,SHELF_SCALE);
+      // the engraved name belongs to the shelf, so centre on the group that
+      // includes it rather than on the empty compartment alone
+      var mid=(sh.ceil + sh.plateY + GEO.plate.h)/2;
+      caseEl.style.transform=transform(IMID, mid, shelfScale(sh.pieces.length));
     } else {
       var r=RECT[cardSlug];
       caseEl.style.transform=transform(r.cx,r.cy,CARD_SCALE);
