@@ -174,31 +174,62 @@ function seedStars(){
 // Distances are in bulb-heights, so the simulation is the same on any screen.
 const moths=[];
 function makeMoth(i){
-  const a=Math.random()*Math.PI*2, e=(Math.random()-0.5)*1.1;
+  // Somewhere on a sphere around the bulb, evenly -- not on a ring around its
+  // waist. The old version put every moth within a narrow band of the horizontal
+  // and launched it sideways, and since the correction only ever turns a moth
+  // within the plane holding its heading and the light, whatever plane it started
+  // in it kept for good. Every path came out flat and they all looked alike.
+  const u=Math.random()*2-1, th=Math.random()*Math.PI*2, sr=Math.sqrt(1-u*u);
   const r=1.35+Math.random()*1.15;
+  // No moth here is given a behaviour. Each is given a set of numbers, drawn wide
+  // enough apart that the behaviours she asked for come out on their own: the one
+  // that smacks the glass and reels away offscreen in a long loop, the one that
+  // rebounds and comes straight back at it, the one that takes an age to work its
+  // way in and leaves again quickly, and the one that sails past without ever
+  // being caught at all. Which moth is which is not decided anywhere -- it falls
+  // out of how susceptible it happens to be and how hard a knock leaves it.
+  //
+  // zeal: how much the light gets to it. Raised to a power so that most moths are
+  // middling and only a few are truly taken with it, which is what a real night
+  // under a bulb looks like.
+  const zeal=Math.pow(Math.random(),1.5);
+  const size=0.70+Math.random()*0.66;
   const m={
-    x:Math.cos(a)*Math.cos(e)*r, y:Math.sin(e)*r*0.55, z:Math.sin(a)*Math.cos(e)*r,
-    // heading, as a unit vector
+    x:sr*Math.cos(th)*r, y:u*r, z:sr*Math.sin(th)*r,
     hx:0, hy:0, hz:0,
-    speed:0.62+Math.random()*0.30,
-    // The angle it tries to hold the light at. Dead on a quarter turn would be a
-    // closed orbit that never arrives; the path is a spiral because the angle it
-    // holds is a little UNDER a quarter turn, and a course held at a constant
-    // angle to a nearby point is a logarithmic spiral into it. How far under sets
-    // how many turns the moth takes to arrive: at 0.20 radians short, about one
-    // and two thirds.
-    pref:Math.PI/2 - (0.18+Math.random()*0.17),
-    gain:0.75+Math.random()*0.55,     // how hard this one corrects
-    beat:5.5+Math.random()*3.0,       // wingbeats a second
+    // A slow heavy one and a quick light one are different animals, not the same
+    // animal at two speeds, so speed and wingbeat and size move together as well
+    // as apart: bigger wings beat slower.
+    speed:0.40+Math.random()*0.85,
+    // How far under a quarter turn it holds the light. Nearly a quarter turn is a
+    // moth that circles for a long time and closes on the bulb barely at all; well
+    // under is one that winds in within a turn or two.
+    pref:Math.PI/2 - (0.05+zeal*0.40),
+    // How hard it corrects. At the bottom of this range the correction is too
+    // feeble to bend the course much, and that moth simply passes through.
+    gain:0.16+zeal*2.35,
+    // How long a knock on the glass leaves it flying without a reference. A short
+    // fuse rebounds and tries again; a long one is carried right out of the light.
+    dazed:0.45+Math.random()*2.3,
+    beat:(8.2-2.4*(size-0.70)/0.66)+Math.random()*1.7,
     phase:Math.random()*FRAMES,
-    size:0.85+Math.random()*0.3,
-    stun:0, bump:0
+    size:size,
+    stun:0, bump:0, blind:0
   };
+  // Broadside to the bulb -- the bearing it was already holding when the bulb
+  // interfered -- but broadside in a direction picked freely from the whole circle
+  // of directions perpendicular to the light. That circle is what sets the plane
+  // the moth will loop in, so choosing from all of it is what gives one moth an
+  // orbit over the top of the bulb and another one under it.
   const d=Math.hypot(m.x,m.y,m.z)||1;
-  // launched broadside to the bulb, which is the bearing it was already holding
-  let ux=-m.z/d, uy=0, uz=m.x/d;
-  const un=Math.hypot(ux,uy,uz)||1;
-  m.hx=ux/un; m.hy=(Math.random()-0.5)*0.25; m.hz=uz/un;
+  const rx=m.x/d, ry=m.y/d, rz=m.z/d;
+  let ax=0, ay=1, az=0;
+  if(Math.abs(ry)>0.9){ ax=1; ay=0; }              // any vector not along the radius
+  let e1x=ay*rz-az*ry, e1y=az*rx-ax*rz, e1z=ax*ry-ay*rx;
+  const e1n=Math.hypot(e1x,e1y,e1z)||1; e1x/=e1n; e1y/=e1n; e1z/=e1n;
+  const e2x=ry*e1z-rz*e1y, e2y=rz*e1x-rx*e1z, e2z=rx*e1y-ry*e1x;
+  const roll=Math.random()*Math.PI*2, cs=Math.cos(roll), sn=Math.sin(roll);
+  m.hx=e1x*cs+e2x*sn; m.hy=e1y*cs+e2y*sn; m.hz=e1z*cs+e2z*sn;
   norm(m);
   return m;
 }
@@ -222,6 +253,19 @@ function step(dt, contrast, reach){
       m.stun-=dt;
       m.x+=m.hx*m.speed*dt*0.35; m.y+=m.hy*m.speed*dt*0.35+dt*0.22; m.z+=m.hz*m.speed*dt*0.35;
       m.phase+=dt*m.beat*FRAMES*0.35;
+      continue;
+    }
+    // A moth that has just hit the glass has lost the very thing it was steering
+    // by. It cannot hold an angle to a reference it is no longer reading, so for a
+    // while it simply flies -- which is what lets it climb back out of the
+    // gradient. Without this the bulb is an absorbing state: measured over
+    // thirty-five seconds at full dark, all five moths reached it and not one ever
+    // left again, which is not a spiral, it is a trap.
+    if(m.blind>0){
+      m.blind-=dt;
+      const esc=1.15+m.dazed*0.30;
+      m.x+=m.hx*m.speed*esc*dt; m.y+=m.hy*m.speed*esc*dt; m.z+=m.hz*m.speed*esc*dt;
+      m.phase+=dt*m.beat*FRAMES;
       continue;
     }
     const d=Math.hypot(m.x,m.y,m.z)||1e-6;
@@ -266,7 +310,8 @@ function step(dt, contrast, reach){
     const nd=Math.hypot(m.x,m.y,m.z);
     if(nd<GLASS){
       // it has found the glass. Not a scripted event -- the spiral simply closed.
-      m.stun=0.45+Math.random()*0.5; m.bump=1;
+      m.stun=0.35+Math.random()*0.4; m.bump=1;
+      m.blind=(1.05+Math.random()*0.85)*m.dazed;   // its own fuse, not a shared one
       const s=GLASS/nd; m.x*=s; m.y*=s; m.z*=s;
       // knocked off it, heading outward: it has to climb back out of the gradient
       // before the same correction can wind it in again
@@ -370,9 +415,13 @@ function drawMoth(m, flick){
   // Colour is nothing but position: 0 when it is between us and the bulb and we
   // see only its shadow, 1 when the bulb is between us and it, lighting the face
   // turned our way, and half way between at the sides.
-  let shade=(1 + m.z/d)/2;
-  // close to the glass the light is fierce enough to wash the near side too
-  shade=Math.min(1, shade + Math.max(0,(0.9-d))*0.35*flick);
+  // Nothing but position. There used to be a term here lifting the shade of any
+  // moth close to the bulb, meant as light wrapping round its edges -- but it
+  // lifted moths IN FRONT of the glass too, which is exactly backwards: a moth
+  // between us and the bulb is more thoroughly backlit the closer it gets, not
+  // less. It showed up as grey moths in front of the lower third of the bulb,
+  // where the filament sits and the term bit hardest.
+  const shade=(1 + m.z/d)/2;
   const frame=((Math.floor(m.phase)%FRAMES)+FRAMES)%FRAMES;
   const img=tinted(frame, shade);
   const w=bulbH*0.115*m.size*p, h=w*img.height/img.width;
