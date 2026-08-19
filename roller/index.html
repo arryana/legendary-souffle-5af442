@@ -86,6 +86,15 @@
     opacity:.55; transition:all .25s ease;
   }
   .objBtn.active{ opacity:1; border-color:var(--brass); background:rgba(201,151,78,0.14); }
+
+  #colorRow{ display:flex; align-items:center; justify-content:center; gap:11px; }
+  .colBtn{ width:26px; height:26px; border-radius:50%; cursor:pointer; padding:0;
+    border:1px solid rgba(242,233,216,.35); opacity:.6; transition:all .25s ease;
+    box-shadow:inset 0 1px 2px rgba(255,255,255,.35), inset 0 -2px 3px rgba(0,0,0,.4); }
+  .colBtn:hover{ opacity:.95; }
+  .colBtn.active{ opacity:1; transform:scale(1.14);
+    border-color:var(--brass); box-shadow:0 0 0 2px rgba(201,151,78,0.4),
+      inset 0 1px 2px rgba(255,255,255,.4), inset 0 -2px 3px rgba(0,0,0,.4); }
   .objBtn:hover{ opacity:1; }
 
   #speedRow{
@@ -195,6 +204,7 @@
     <button class="objBtn" data-obj="disc" title="disc" aria-label="disc">⬤</button>
     <button class="objBtn" data-obj="jellybean" title="jellybean stone" aria-label="jellybean stone">⬬</button>
   </div>
+  <div id="colorRow" aria-label="glass colour"></div>
   <div id="volumeRow">
     <button id="muteBtn" type="button" aria-label="mute sound" aria-pressed="false">🔊</button>
     <input type="range" id="volumeSlider" min="0" max="100" value="70" aria-label="volume">
@@ -211,6 +221,7 @@
   const skipDesktop = document.getElementById('skipDesktop');
   const hint = document.getElementById('hint');
   const objBtns = document.querySelectorAll('.objBtn');
+  const colorRow = document.getElementById('colorRow');
   const muteBtn = document.getElementById('muteBtn');
 
   // no-sound preference is site-wide — stored under one shared key so
@@ -429,6 +440,57 @@
     jellybean: { friction: 0.982, radius: 32, wobble: 1, catchInterval: 1e9, curlRate: 0.018, slewOnImpact: 1 },
   };
 
+  // ---------- glass colour ----------
+  // Her call: the pieces keep their materials -- the pebble is sea glass, the disc a
+  // stone, the bean a stone -- but the COLOUR carries across all three. Old bottles
+  // come in clear, coke-bottle green, amber, cobalt and the near-black of smoke
+  // glass, and the same five dress every shape. The glass wears the colour at full
+  // strength; the stone and the bean take it muted, the way a real stone is a
+  // washed-out cousin of the glass beside it rather than a copy of it.
+  //
+  // Each colour is a single tint. The glass body is three saturated stops of it; the
+  // stone and bean keep their own light-to-dark shading and are only pulled toward
+  // the tint -- the stone the harder of the two, the bean softer and warmer -- so
+  // their form still reads as stone, just stone of that colour.
+  // `tint` dresses the bean (she has the bean right, so it stays as it was).
+  // `stoneTint`, where present, dresses the stone instead -- the glass tint reads
+  // too vivid on an opaque stone, so a few of them get a greyer, more mineral
+  // cousin of the same colour. Absent, the stone just uses `tint`.
+  const GLASS = {
+    white:  { glass:['#f2f6f4','#c9d5d0','#94a49e'], edge:'rgba(120,140,134,0.5)', tint:[233,238,236], stone:0.42, bean:0.30 },
+    // coke-bottle green as glass; a greyer sage as stone
+    teal:   { glass:['#d9f5ea','#4fae93','#1c5f52'], edge:'rgba(20,60,50,0.55)',   tint:[ 79,174,147], stoneTint:[118,146,126], stone:0.46, bean:0.32 },
+    // amber glass; a redder, rustier stone
+    amber:  { glass:['#eec482','#bd7826','#5f330d'], edge:'rgba(66,34,8,0.55)',     tint:[200,137, 47], stoneTint:[176, 92, 44], stone:0.42, bean:0.34 },
+    // a deeper cobalt glass than before; the stone a dark, grey blue slate
+    cobalt: { glass:['#9fbde8','#22409a','#0a1642'], edge:'rgba(8,14,50,0.62)',     tint:[ 59,100,192], stoneTint:[ 78, 94,112], stone:0.55, bean:0.34 },
+    black:  { glass:['#9aa2a8','#3c4248','#14181c'], edge:'rgba(8,10,12,0.6)',     tint:[ 34, 40, 46], stone:0.52, bean:0.44 },
+  };
+  const GLASS_ORDER = ['white','teal','amber','cobalt','black'];
+  let glassColor = localStorage.getItem('sagne-roller-glass');
+  if (!GLASS[glassColor]) glassColor = 'teal';
+
+  const hexToRgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+  const mix = (a, b, t) => 'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')+')';
+  // the glass body, at full saturation
+  function glassBody(grad){
+    const g = GLASS[glassColor].glass;
+    grad.addColorStop(0, g[0]); grad.addColorStop(0.55, g[1]); grad.addColorStop(1, g[2]);
+    return grad;
+  }
+  const glassEdge = () => GLASS[glassColor].edge;
+  // an opaque material (stone or bean) keeps its own three stops but is pulled
+  // toward the current tint by `amt`, so it colours without turning to glass
+  function tintStops(grad, stops, amt, tintRgb){
+    const t = tintRgb || GLASS[glassColor].tint;
+    grad.addColorStop(0,    mix(hexToRgb(stops[0]), t, amt));
+    grad.addColorStop(0.6,  mix(hexToRgb(stops[1]), t, amt));
+    grad.addColorStop(1,    mix(hexToRgb(stops[2]), t, amt));
+    return grad;
+  }
+  // the stone prefers its own mineral tint; the bean keeps the plain one
+  const stoneTintRgb = () => GLASS[glassColor].stoneTint || GLASS[glassColor].tint;
+
   let activeType = 'pebble';
   let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, jellySpin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0 };
 
@@ -449,6 +511,23 @@
     obj.discSpin = Math.random() * Math.PI * 2;
     obj.discAngVel = 0;
   }
+
+  // the colour swatches, each painted with that glass's own three stops so the
+  // button looks like a bead of the thing it selects
+  GLASS_ORDER.forEach((name) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'colBtn' + (name === glassColor ? ' active' : '');
+    b.dataset.color = name; b.setAttribute('aria-label', name + ' glass');
+    b.title = name;
+    const g = GLASS[name].glass;
+    b.style.background = 'radial-gradient(circle at 34% 30%, ' + g[0] + ', ' + g[1] + ' 55%, ' + g[2] + ')';
+    b.addEventListener('click', () => {
+      glassColor = name;
+      localStorage.setItem('sagne-roller-glass', name);
+      colorRow.querySelectorAll('.colBtn').forEach((x) => x.classList.toggle('active', x.dataset.color === name));
+    });
+    colorRow.appendChild(b);
+  });
 
   objBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -776,10 +855,7 @@
     ctx.clip();
 
     ctx.globalAlpha = 0.6;
-    const g = ctx.createRadialGradient(-r*0.25, -r*0.3, r*0.05, r*0.05, r*0.05, r*1.05);
-    g.addColorStop(0, '#d9f5ea');
-    g.addColorStop(0.5, '#4fae93');
-    g.addColorStop(1, '#1c5f52');
+    const g = glassBody(ctx.createRadialGradient(-r*0.25, -r*0.3, r*0.05, r*0.05, r*0.05, r*1.05));
     ctx.beginPath();
     ctx.ellipse(0, 0, r, r*0.82, 0, 0, Math.PI*2);
     ctx.fillStyle = g;
@@ -822,7 +898,7 @@
 
     ctx.beginPath();
     ctx.ellipse(0, 0, r, r*0.82, 0, 0, Math.PI*2);
-    ctx.strokeStyle = 'rgba(20,60,50,0.55)';
+    ctx.strokeStyle = glassEdge();
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.restore();
@@ -841,10 +917,8 @@
     // flat stone disc, seen from directly above — nearly circular, with
     // a slightly uneven edge like a real water-worn stone rather than a
     // machined coin
-    const body = ctx.createRadialGradient(-r*0.25, -r*0.3, r*0.1, 0, 0, r);
-    body.addColorStop(0, '#a8b0ae');
-    body.addColorStop(0.6, '#767f7c');
-    body.addColorStop(1, '#4c5250');
+    const body = tintStops(ctx.createRadialGradient(-r*0.25, -r*0.3, r*0.1, 0, 0, r),
+                           ['#a8b0ae','#767f7c','#4c5250'], GLASS[glassColor].stone, stoneTintRgb());
     ctx.beginPath();
     ctx.ellipse(0, 0, r, r*0.94, 0, 0, Math.PI*2);
     ctx.fillStyle = body;
@@ -918,10 +992,8 @@
     ctx.rotate(obj.jellySpin);
     ctx.scale(1, squash);
 
-    const body = ctx.createRadialGradient(-r*0.2, -r*0.35, r*0.1, 0, r*0.05, r*1.1);
-    body.addColorStop(0, '#e8dcc4');
-    body.addColorStop(0.55, '#c1a97e');
-    body.addColorStop(1, '#8a7250');
+    const body = tintStops(ctx.createRadialGradient(-r*0.2, -r*0.35, r*0.1, 0, r*0.05, r*1.1),
+                           ['#e8dcc4','#c1a97e','#8a7250'], GLASS[glassColor].bean);
     pathFromPoints(ctx, JELLYBEAN_BODY, 0, 0, r, r);
     ctx.fillStyle = body;
     ctx.fill();
