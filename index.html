@@ -61,6 +61,41 @@
      nothing, so it goes when the case is zoomed */
   #stage:has(#frame.zoomed)::after{ opacity:0; }
 
+  /* ------------------------------------------------------------------ tray --
+     Her design, and it answers the thing the zoom could not: on a small phone the
+     engraved name stayed too small to read however far the photograph came
+     forward, because the name is only 22px tall in a 990px picture. So on a touch
+     screen the shelf does not come forward at all -- the things come off it. The
+     cards lift out and lay themselves out by how many there are (three side by
+     side, four two by two, five like the face of a die) and the plate comes with
+     them, cut from its own place on the case and drawn large enough to read.
+     ------------------------------------------------------------------------- */
+  #tray{ position:fixed; inset:0; z-index:40; display:none;
+    opacity:0; transition:opacity .5s ease; }
+  body.tray #tray{ display:block; }
+  body.tray-in #tray{ opacity:1; }
+  #tray .slot{ position:absolute; display:block; text-decoration:none;
+    border-radius:2px; overflow:hidden;
+    box-shadow:0 6px 18px rgba(0,0,0,.85), 0 0 0 1px rgba(0,0,0,.6);
+    transform-origin:50% 50%;
+    transition:transform .78s cubic-bezier(.42,.02,.16,1), opacity .45s ease; }
+  #tray .slot img{ width:100%; height:100%; object-fit:cover; display:block; }
+  /* one card taken up out of the tray; the rest step back */
+  #tray.holding .slot{ opacity:.18; }
+  #tray.holding .slot.held{ opacity:1; z-index:3; }
+  /* the plate, cut from the photograph exactly as the pieces' own tags cut it */
+  #trayplate{ position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+    display:flex; align-items:center; justify-content:center;
+    border:0; padding:0; cursor:pointer; background-repeat:no-repeat;
+    font-family:'Cormorant Garamond', Georgia, serif; font-weight:600;
+    letter-spacing:.02em; color:#3b2807;
+    text-shadow:0 1px 0 rgba(255,238,196,.42), 0 -1px 1px rgba(0,0,0,.3);
+    filter:drop-shadow(0 3px 7px rgba(0,0,0,.7)); }
+  #trayplate i{ font-style:italic; line-height:1; }
+  /* the case is still there behind, just well out of the way */
+  body.tray #frame{ filter:brightness(.16) saturate(.7); transition:filter .5s ease; }
+  body.tray #back{ display:none; }   /* the plate at the foot of the tray is the way back */
+
   #frame{ position:relative; overflow:hidden; flex:none;
     --h: min(95vh, calc(96vw * 1.24444), 1232px);
     height:var(--h); width:calc(var(--h) / 1.24444); }
@@ -87,7 +122,7 @@
 
   /* sagne, engraved into the brass oval at the crown */
   #oval{ position:absolute; display:flex; align-items:center; justify-content:center;
-    font-weight:700; letter-spacing:.16em; z-index:2;
+    font-weight:700; letter-spacing:.10em; z-index:2;
     appearance:none; border:0; background:none; padding:0; font-family:inherit;
     cursor:pointer;
     /* engraved: cut dark into the brass, with a bright lip on the lower edge where
@@ -98,7 +133,7 @@
      its box reads as sitting low on the brass. The trailing letter-space after
      the final e is taken back the same way the plate names take theirs. */
   #oval i{ font-style:normal; line-height:1; display:block;
-    transform:translateY(-0.055em); margin-right:-.16em; }
+    transform:translateY(-0.055em); margin-right:-.10em; }
   #oval:focus-visible{ outline:1px solid rgba(242,233,216,.45); outline-offset:3px; }
 
   /* the name of the type, engraved on the plate of the shelf it labels */
@@ -192,6 +227,7 @@
       life some of life's interesting modes and models.</p>
   </div>
   </div>
+  <div id="tray" aria-hidden="true"><button type="button" id="trayplate"></button></div>
 <script>
 (function(){
   // ---------------------------------------------------------------------------
@@ -208,7 +244,9 @@
     // the walnut around it runs red, which puts the ellipse at x 421..579,
     // y 74..123. The old figures had this box 3px right and 5px low and a good
     // deal taller than the brass, so the name sat low and off to one side of it.
-    oval:{ x:421, y:74, w:158, h:49 },    // the brass oval on the crown
+    // her own brass plate, screwed to the crown: 146x64 centred at (500,107),
+    // which clears the carving above (it comes down to y=70) and the frieze below
+    oval:{ x:427, y:75, w:146, h:64 },
     plate:{ x:424, w:147, h:22 },         // the engraved area of a brass plate
     disc:{ cx:495, cy:1160, d:42 },       // the brass disc, centred on the plinth shell
     // The card art is 11:16 almost to a file -- 14 of the 19 are exactly 440x640.
@@ -273,7 +311,7 @@
   // --- lay the oval, the plates and the cards onto the photograph ---------------
   ovalEl.style.left=pc(GEO.oval.x,W); ovalEl.style.top=pc(GEO.oval.y,H);
   ovalEl.style.width=pc(GEO.oval.w,W); ovalEl.style.height=pc(GEO.oval.h,H);
-  ovalEl.style.fontSize='calc(var(--h) * 0.0404)';
+  ovalEl.style.fontSize='calc(var(--h) * 0.0355)';
   // The veil takes the same box as the oval, a shade proud of it so the mask has
   // somewhere to fade out over the brass rather than at its rim.
   var askEl=document.getElementById('ask');
@@ -349,7 +387,9 @@
     });
     // sagne keeps the size it was drawn at -- it sits in a much taller oval, and
     // filling that would make it shout. Shrink only, if it ever needs it.
-    var box=ovalEl.clientWidth*0.90, inner=ovalEl.firstElementChild;
+    // 0.72, not 0.90: the plate is screwed down at each end and the word has to
+    // clear both screws, so the writable brass is narrower than the plate.
+    var box=ovalEl.clientWidth*0.72, inner=ovalEl.firstElementChild;
     if(!inner || !box) return;
     ovalEl.style.fontSize=ovalEl.dataset.base || (ovalEl.dataset.base=getComputedStyle(ovalEl).fontSize);
     var size=parseFloat(getComputedStyle(ovalEl).fontSize), guard=0;
@@ -408,7 +448,134 @@
 
   var level=0, shelfIx=null, cardSlug=null;
 
+
+  // ----------------------------------------------------------------- the tray
+  // On a touch screen the shelf does not come forward -- the things come off it.
+  // Bringing the photograph nearer could never make the engraved name legible on a
+  // small phone: the name is 22px tall in a 990px picture, so at any zoom that
+  // still showed a whole shelf it stayed about five pixels. Taking the cards and
+  // the plate off the case instead frees them from the photograph's proportions
+  // entirely, and the plate can be drawn at a size a person can read.
+  var trayEl=document.getElementById('tray'), trayPlate=document.getElementById('trayplate');
+  // where each plate sits in the photograph, and how wide it is there
+  var PLATE_SRC={ x:419, w:157, photo:990 };
+  // How the cards lay themselves out, by how many there are: three side by side,
+  // four two by two, five like the face of a die. Positions are the centre of each
+  // card, as a fraction of the area they share.
+  var LAYOUT={
+    1:{cols:1,tiers:1,at:[[.5,.5]]},
+    2:{cols:2,tiers:1,at:[[.25,.5],[.75,.5]]},
+    3:{cols:3,tiers:1,at:[[1/6,.5],[.5,.5],[5/6,.5]]},
+    4:{cols:2,tiers:2,at:[[.25,.25],[.75,.25],[.25,.75],[.75,.75]]},
+    5:{cols:2,tiers:3,at:[[.25,1/6],[.75,1/6],[.5,.5],[.25,5/6],[.75,5/6]]},
+    6:{cols:2,tiers:3,at:[[.25,1/6],[.75,1/6],[.25,.5],[.75,.5],[.25,5/6],[.75,5/6]]}
+  };
+  var trayHeld=null;
+
+  function layTray(i){
+    var sh=GEO.shelves[i], n=sh.pieces.length, L=LAYOUT[n]||LAYOUT[5];
+    var vw=innerWidth, vh=innerHeight;
+
+    // the plate first: it is the thing that has to be readable, so it is sized
+    // from the screen and the cards take what is left
+    var pw=Math.min(268, Math.round(vw*0.78));
+    var scale=pw/PLATE_SRC.w, ph=Math.round(22*scale);
+    trayPlate.style.width=pw+'px';
+    trayPlate.style.height=ph+'px';
+    trayPlate.style.backgroundImage='url(shelves.jpg)';
+    trayPlate.style.backgroundPosition=
+      (-PLATE_SRC.x*scale).toFixed(1)+'px '+(-sh.plateY*scale).toFixed(1)+'px';
+    trayPlate.style.backgroundSize=(PLATE_SRC.photo*scale).toFixed(1)+'px auto';
+    trayPlate.style.fontSize=Math.round(ph*0.62)+'px';
+    trayPlate.innerHTML='<i>'+sh.name+'</i>';
+    trayPlate.setAttribute('aria-label','back to the case');
+
+    // the area the cards share, above the plate
+    var pad=Math.max(10, Math.round(vw*0.045));
+    var areaTop=pad, areaBot=vh-(ph+28)-pad;
+    var areaW=vw-pad*2, areaH=areaBot-areaTop;
+    var cellW=areaW/L.cols, cellH=areaH/L.tiers;
+    var ratio=GEO.card.w/GEO.card.h;
+    var cardH=Math.min(cellH*0.88, cellW*0.88/ratio), cardW=cardH*ratio;
+
+    [].forEach.call(trayEl.querySelectorAll('.slot'), function(e){ e.remove(); });
+    sh.pieces.forEach(function(pc,k){
+      var at=L.at[k];
+      var a=document.createElement('a');
+      a.className='slot'; a.href=pc[1]; a.dataset.slug=pc[0];
+      a.setAttribute('aria-label',pc[0]);
+      a.style.width=cardW.toFixed(1)+'px';
+      a.style.height=cardH.toFixed(1)+'px';
+      a.style.left=(pad+at[0]*areaW-cardW/2).toFixed(1)+'px';
+      a.style.top=(areaTop+at[1]*areaH-cardH/2).toFixed(1)+'px';
+      a.innerHTML='<img src="'+pc[2]+'" alt="">';
+      a.addEventListener('click', function(ev){
+        if(trayHeld===pc[0]) return;          // second tap: let the link open it
+        ev.preventDefault(); hold(pc[0]);
+      });
+      trayEl.insertBefore(a, trayPlate);
+    });
+    trayHeld=null; trayEl.classList.remove('holding');
+  }
+
+  // one card taken up out of the tray, as large as its own artwork allows
+  function hold(slug){
+    var a=trayEl.querySelector('.slot[data-slug="'+slug+'"]');
+    if(!a) return;
+    [].forEach.call(trayEl.querySelectorAll('.slot'), function(e){ e.style.transform=''; });
+    var vw=innerWidth, vh=innerHeight;
+    var box=a.getBoundingClientRect();
+    var art=a.querySelector('img').naturalHeight || 640;
+    var honest=art/(window.devicePixelRatio||1);          // as far as its pixels reach
+    var want=Math.min(honest, vh*0.72, vw*0.92/(GEO.card.w/GEO.card.h));
+    // On a large dense screen the tray already lays the cards out at the limit of
+    // their own artwork, so there is no honest room left to grow into -- and the
+    // plain ratio would then SHRINK the card being picked up. Never shrink: lift it
+    // a little whatever happens, so the hand gets an answer, and let the others
+    // stepping back be what does the rest of the work.
+    var k=Math.max(1.06, want/box.height);
+    var dx=(vw/2)-(box.left+box.width/2), dy=(vh*0.44)-(box.top+box.height/2);
+    a.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px) scale('+k.toFixed(3)+')';
+    [].forEach.call(trayEl.querySelectorAll('.slot'), function(e){ e.classList.remove('held'); });
+    a.classList.add('held');
+    trayEl.classList.add('holding');
+    trayHeld=slug;
+  }
+
+  function openTray(i){
+    layTray(i);
+    document.body.classList.add('tray');
+    // the case is behind the tray now: it should not answer to a finger, and a
+    // screen reader should not find two of every card
+    frame.setAttribute('aria-hidden','true'); frame.inert=true;
+    trayEl.setAttribute('aria-hidden','false');
+    requestAnimationFrame(function(){ document.body.classList.add('tray-in'); });
+  }
+  function shutTray(){
+    document.body.classList.remove('tray','tray-in');
+    frame.removeAttribute('aria-hidden'); frame.inert=false;
+    trayEl.setAttribute('aria-hidden','true');
+    trayEl.classList.remove('holding'); trayHeld=null;
+  }
+  function release(){
+    [].forEach.call(trayEl.querySelectorAll('.slot'), function(e){
+      e.style.transform=''; e.classList.remove('held');
+    });
+    trayEl.classList.remove('holding'); trayHeld=null;
+  }
+  trayPlate.addEventListener('click', function(){ outOne(); });
+  addEventListener('resize', function(){ if(document.body.classList.contains('tray')) layTray(shelfIx); });
+
   function paint(){
+    // A pointer gets the case brought forward; a thumb gets the tray.
+    var tray = !FINE.matches;
+    if(tray){
+      if(level>0) openTray(shelfIx); else shutTray();
+      caseEl.style.transform=''; caseEl.classList.remove('zoomed','on-card');
+      frame.classList.toggle('zoomed', level>0);
+      return;
+    }
+    shutTray();
     caseEl.classList.toggle('zoomed', level>0);
     caseEl.classList.toggle('on-card', level>1);
     frame.classList.toggle('zoomed', level>0);
@@ -439,6 +606,7 @@
   function toShelf(i){ level=1; shelfIx=i; cardSlug=null; paint(); }
   function toCard(slug){ level=2; shelfIx=BY_SLUG[slug].shelf; cardSlug=slug; paint(); }
   function outOne(){
+    if(trayHeld){ release(); return; }   // put the card down before leaving the tray
     if(level===2){ level=1; cardSlug=null; }
     else if(level===1){ level=0; shelfIx=null; }
     paint();
@@ -452,10 +620,8 @@
   Object.keys(BY_SLUG).forEach(function(slug){
     BY_SLUG[slug].el.addEventListener('click', function(ev){
       if(FINE.matches) return;                      // mouse: straight in
-      if(level===2 && cardSlug===slug) return;      // third tap: let the link open it
       ev.preventDefault();
-      if(level===0) toShelf(BY_SLUG[slug].shelf);
-      else toCard(slug);
+      toShelf(BY_SLUG[slug].shelf);                 // a thumb: its shelf comes off the case
     });
   });
   GEO.shelves.forEach(function(sh,i){
@@ -471,7 +637,7 @@
   // landing on no piece and no plate counts, so the cards still open.
   document.addEventListener('click', function(ev){
     if(level===0) return;
-    if(ev.target.closest('.piece, .plate, .saying, #oval, #ask')) return;
+    if(ev.target.closest('.piece, .plate, .saying, #oval, #ask, .slot, #trayplate')) return;
     outOne();
   });
   // --- the two sayings ----------------------------------------------------------

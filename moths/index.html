@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>moths — sagne</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<meta name="description" content="A bulb in darkening air, and the moths that lose their bearings on it.">
+<meta name="theme-color" content="#0b1018">
+<link rel="canonical" href="https://sagne.co.uk/moths/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="sagne">
+<meta property="og:title" content="moths — sagne">
+<meta property="og:description" content="A bulb in darkening air, and the moths that lose their bearings on it.">
+<style>
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; margin:0; background:#05070c; overflow:hidden;
+    font-family:'Cormorant Garamond', Georgia, serif; color:#f2e9d8; }
+  #sky{ position:fixed; inset:0; display:block; }
+  #backlink{ position:fixed; top:18px; left:22px; z-index:60; width:38px; height:38px;
+    text-decoration:none;
+    display:grid; place-items:center; opacity:.5; transition:opacity .3s ease;
+    filter:drop-shadow(0 1px 3px rgba(0,0,0,.65)); }
+  #backlink:hover{ opacity:.95; }
+  #backlink img{ grid-area:1/1; width:100%; height:100%; display:block; }
+  #backlink i{ grid-area:1/1; font-style:normal; font-weight:700; font-size:18px;
+    line-height:1; color:#33230a; text-shadow:0 1px 0 rgba(255,238,196,.5); }
+
+  /* three sliders, no words on any of them */
+  #dock{ position:fixed; right:18px; bottom:18px; z-index:55;
+    display:flex; flex-direction:column; gap:11px; align-items:flex-end; }
+  .ctrl{ display:flex; align-items:center; gap:8px; opacity:.42;
+    transition:opacity .3s ease; }
+  .ctrl:hover, .ctrl:focus-within{ opacity:1; }
+  .ctrl .ico{ width:19px; height:19px; display:grid; place-items:center;
+    font-size:15px; line-height:1; filter:saturate(.7) brightness(1.1); }
+  .ctrl .ico img{ width:19px; height:auto; display:block; opacity:.85; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; width:104px; height:16px;
+    background:none; cursor:pointer; }
+  input[type=range]::-webkit-slider-runnable-track{ height:2px; border-radius:2px;
+    background:rgba(242,233,216,.35); }
+  input[type=range]::-moz-range-track{ height:2px; border-radius:2px;
+    background:rgba(242,233,216,.35); }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none;
+    width:11px; height:11px; border-radius:50%; background:#e8dcbd; margin-top:-4.5px;
+    box-shadow:0 1px 3px rgba(0,0,0,.7); }
+  input[type=range]::-moz-range-thumb{ width:11px; height:11px; border:0; border-radius:50%;
+    background:#e8dcbd; box-shadow:0 1px 3px rgba(0,0,0,.7); }
+  @media (max-width:420px){
+    input[type=range]{ width:78px; }
+    #dock{ right:12px; bottom:12px; gap:9px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<a id="backlink" href="../index.html" aria-label="sagne"><img src="../shelfdisk.png" alt=""><i>&#8592;</i></a>
+
+<div id="dock">
+  <label class="ctrl" title="dusk to full dark">
+    <span class="ico">&#9789;</span>
+    <input type="range" id="dark" min="0" max="100" value="62" aria-label="dusk to full dark">
+  </label>
+  <label class="ctrl" title="the bulb">
+    <span class="ico">&#9788;</span>
+    <input type="range" id="bright" min="0" max="100" value="66" aria-label="bulb brightness">
+  </label>
+  <label class="ctrl" title="how many moths">
+    <span class="ico"><img src="moth-01.png" alt=""></span>
+    <input type="range" id="count" min="1" max="5" value="3" aria-label="how many moths">
+  </label>
+</div>
+
+<!-- bring-your-own-music: plays a file the visitor picks from their own device; nothing is uploaded -->
+<style>
+  #music{ position:fixed; left:18px; bottom:16px; z-index:60; display:flex; align-items:center; gap:9px; }
+  #musicBtn{ width:34px; height:34px; border-radius:50%; border:1px solid rgba(242,233,216,.25); background:rgba(20,24,34,.55); color:#f2e9d8; font-size:15px; line-height:1; cursor:pointer; opacity:.55; transition:opacity .3s, color .3s, border-color .3s; -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
+  #musicBtn:hover{ opacity:1; }
+  #musicBtn.playing{ color:#f0d69a; border-color:rgba(201,151,78,.6); opacity:.9; }
+  #musicName{ max-width:40vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:#f2e9d8; opacity:0; transition:opacity .3s; letter-spacing:.02em; cursor:pointer; }
+  #music:hover #musicName{ opacity:.55; }
+</style>
+<div id="music" title="play your own music">
+  <button id="musicBtn" aria-label="play your own music">&#127911;</button>
+  <span id="musicName"></span>
+</div>
+<input type="file" id="musicPick" accept="audio/*" multiple hidden>
+<audio id="musicEl"></audio>
+<script>
+(function(){
+  const pick=document.getElementById('musicPick'), el=document.getElementById('musicEl'),
+        btn=document.getElementById('musicBtn'), name=document.getElementById('musicName');
+  let list=[], idx=0;
+  const label=f=> f ? f.name.replace(/\.[^.]+$/,'') : '';
+  function load(i){ if(el.src) URL.revokeObjectURL(el.src); el.src=URL.createObjectURL(list[i]); name.textContent=label(list[i]); }
+  function sync(){ btn.textContent = !el.src ? '🎧' : (el.paused ? '▶' : '❚❚'); btn.classList.toggle('playing', !!el.src && !el.paused); }
+  btn.addEventListener('click', ()=>{ if(!list.length){ pick.click(); return; } el.paused ? el.play() : el.pause(); });
+  name.addEventListener('click', ()=> pick.click());
+  pick.addEventListener('change', ()=>{ if(!pick.files.length) return; list=[...pick.files]; idx=0; el.loop=(list.length===1); load(0); el.play(); });
+  el.addEventListener('ended', ()=>{ if(list.length>1){ idx=(idx+1)%list.length; load(idx); el.play(); } });
+  el.addEventListener('play', sync); el.addEventListener('pause', sync); el.addEventListener('loadeddata', sync);
+  sync();
+})();
+</script>
+
+<script>
+(function(){
+// =============================================================================
+// A bulb, and moths losing their bearings on it.
+//
+// The mechanic is navigational disruption, not attraction. A moth holds a
+// straight course by keeping a distant light at a fixed angle off its heading --
+// the moon is far enough away that the angle never changes as it flies. A bulb a
+// few feet away is not, so holding that same angle wraps the path around the
+// light instead of holding it straight. Nothing here steers a moth TOWARD the
+// bulb. Every spiral, loop and collision below is that one correction applied
+// moment to moment, exactly as the ants' turning rate comes out of the pheromone
+// gradient rather than out of a plotted route.
+//
+// The scene is three-dimensional, because a moth's colour is a readout of where
+// it is: dark when it passes in front of the bulb and we see its shadowed side,
+// pale when it is behind and the bulb lights the face turned toward us, grey at
+// the sides between. One cut of each wing frame serves all of it -- the frames
+// are silhouettes with clean alpha, so the colour is painted through the mask at
+// the moment of drawing.
+// =============================================================================
+
+const cv=document.getElementById('sky'), ctx=cv.getContext('2d');
+const dark=document.getElementById('dark'), bright=document.getElementById('bright'),
+      count=document.getElementById('count');
+
+// ---- assets -----------------------------------------------------------------
+const FRAMES=12, wing=[];
+let wingReady=0;
+for(let i=1;i<=FRAMES;i++){
+  const im=new Image();
+  im.onload=()=>{ wingReady++; };
+  im.src='moth-'+String(i).padStart(2,'0')+'.png';
+  wing.push(im);
+}
+const bulbImg=new Image(); let bulbReady=false;
+bulbImg.onload=()=>{ bulbReady=true; }; bulbImg.src='bulb.png';
+// where the filament sits inside bulb.png, as a fraction of the sprite
+const FIL_X=70/160, FIL_Y=460/580;
+
+// ---- the scene --------------------------------------------------------------
+let W=0,H=0,DPR=1, cx=0, cy=0, scale=1, bulbH=0;
+function resize(){
+  DPR=Math.min(2, window.devicePixelRatio||1);
+  W=innerWidth; H=innerHeight;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  // the bulb is the dominant anchor, large in frame, hanging from the top
+  bulbH=Math.min(H*0.52, W*1.15);
+  const bulbW=bulbH*160/580;
+  scale=bulbW/160;
+  cx=W/2; cy=bulbH*FIL_Y;             // the filament is the light, not the glass
+  stars.length=0; seedStars();
+}
+addEventListener('resize', resize);
+
+// ---- stars: fixed, emerging as the sky goes out -----------------------------
+const stars=[];
+function seedStars(){
+  // a fixed field, seeded from position so it does not swim about on resize
+  let s=20260819;
+  const rnd=()=>{ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; };
+  const n=Math.round((W*H)/9000);
+  for(let i=0;i<n;i++) stars.push({x:rnd()*W, y:rnd()*H*0.92, m:rnd(), tw:rnd()*6.28});
+}
+
+// ---- the moths --------------------------------------------------------------
+// Distances are in bulb-heights, so the simulation is the same on any screen.
+const moths=[];
+function makeMoth(i){
+  const a=Math.random()*Math.PI*2, e=(Math.random()-0.5)*1.1;
+  const r=1.35+Math.random()*1.15;
+  const m={
+    x:Math.cos(a)*Math.cos(e)*r, y:Math.sin(e)*r*0.55, z:Math.sin(a)*Math.cos(e)*r,
+    // heading, as a unit vector
+    hx:0, hy:0, hz:0,
+    speed:0.62+Math.random()*0.30,
+    // The angle it tries to hold the light at. Dead on a quarter turn would be a
+    // closed orbit that never arrives; the path is a spiral because the angle it
+    // holds is a little UNDER a quarter turn, and a course held at a constant
+    // angle to a nearby point is a logarithmic spiral into it. How far under sets
+    // how many turns the moth takes to arrive: at 0.20 radians short, about one
+    // and two thirds.
+    pref:Math.PI/2 - (0.18+Math.random()*0.17),
+    gain:0.75+Math.random()*0.55,     // how hard this one corrects
+    beat:5.5+Math.random()*3.0,       // wingbeats a second
+    phase:Math.random()*FRAMES,
+    size:0.85+Math.random()*0.3,
+    stun:0, bump:0
+  };
+  const d=Math.hypot(m.x,m.y,m.z)||1;
+  // launched broadside to the bulb, which is the bearing it was already holding
+  let ux=-m.z/d, uy=0, uz=m.x/d;
+  const un=Math.hypot(ux,uy,uz)||1;
+  m.hx=ux/un; m.hy=(Math.random()-0.5)*0.25; m.hz=uz/un;
+  norm(m);
+  return m;
+}
+function norm(m){ const n=Math.hypot(m.hx,m.hy,m.hz)||1; m.hx/=n; m.hy/=n; m.hz/=n; }
+
+function setCount(n){
+  while(moths.length<n) moths.push(makeMoth(moths.length));
+  while(moths.length>n) moths.pop();
+}
+
+// The glass, measured off the sprite: the envelope is 52 of 160 wide in a frame
+// 580 tall, so its half-width is 0.09 of the bulb's height on screen -- which in
+// world units, with U below, is 0.20.
+const GLASS=0.20;
+const FAR=4.2;         // beyond this a moth has left, and another arrives
+
+function step(dt, contrast, reach){
+  for(const m of moths){
+    if(m.stun>0){
+      // knocked silly against the glass: tumbling, then it gathers itself
+      m.stun-=dt;
+      m.x+=m.hx*m.speed*dt*0.35; m.y+=m.hy*m.speed*dt*0.35+dt*0.22; m.z+=m.hz*m.speed*dt*0.35;
+      m.phase+=dt*m.beat*FRAMES*0.35;
+      continue;
+    }
+    const d=Math.hypot(m.x,m.y,m.z)||1e-6;
+    // unit vector from the moth toward the light
+    const lx=-m.x/d, ly=-m.y/d, lz=-m.z/d;
+
+    // How strongly the bulb dominates what this moth can see. Falls off with the
+    // square of distance, and is judged AGAINST the ambient sky -- which is why
+    // the dusk slider matters more than the bulb's own brightness. At dusk the sky
+    // still competes and the correction is weak; at full dark nothing competes.
+    const lit=reach/(d*d);
+    const g=lit/(lit+contrast.ambient+1e-6);
+
+    // the angle the light currently sits at, off the heading
+    const dot=Math.max(-1,Math.min(1, m.hx*lx+m.hy*ly+m.hz*lz));
+    const ang=Math.acos(dot);
+    const err=m.pref-ang;
+
+    // turn within the plane containing the heading and the light: the component of
+    // the light direction perpendicular to the heading is the only way to turn
+    let px=lx-dot*m.hx, py=ly-dot*m.hy, pz=lz-dot*m.hz;
+    const pn=Math.hypot(px,py,pz);
+    if(pn>1e-6){
+      px/=pn; py/=pn; pz/=pn;
+      // How hard it can correct. This is not a free knob: holding a constant angle
+      // at radius d needs a turn of about speed/d, which grows without limit as the
+      // spiral closes. Set too low and every moth settles into a standoff orbit it
+      // can never leave -- measured at a stubborn 0.31 of a bulb-height, never once
+      // reaching the glass. A real moth's authority is finite too, but it is enough
+      // to carry the spiral in.
+      // Squared, not linear. The authority has to be high enough that the spiral
+      // can close at all, and at that level a linear response left the moth
+      // correcting hard even at dusk, when the sky should still be winning. The
+      // square keeps the top end and takes the bottom end away.
+      const w=-err*m.gain*g*g*19.0*dt;
+      m.hx+=px*w; m.hy+=py*w; m.hz+=pz*w;
+      norm(m);
+    }
+    m.x+=m.hx*m.speed*dt; m.y+=m.hy*m.speed*dt; m.z+=m.hz*m.speed*dt;
+    m.phase+=dt*m.beat*FRAMES;
+
+    const nd=Math.hypot(m.x,m.y,m.z);
+    if(nd<GLASS){
+      // it has found the glass. Not a scripted event -- the spiral simply closed.
+      m.stun=0.45+Math.random()*0.5; m.bump=1;
+      const s=GLASS/nd; m.x*=s; m.y*=s; m.z*=s;
+      // knocked off it, heading outward: it has to climb back out of the gradient
+      // before the same correction can wind it in again
+      m.hx=-m.x/GLASS*0.75+(Math.random()-0.5)*0.8;
+      m.hy=-m.y/GLASS*0.75+(Math.random()-0.5)*0.8;
+      m.hz=-m.z/GLASS*0.75+(Math.random()-0.5)*0.8;
+      norm(m);
+    } else if(nd>FAR){
+      // gone off into the dark; another comes in from somewhere else
+      Object.assign(m, makeMoth(0));
+    }
+  }
+}
+
+// ---- drawing ----------------------------------------------------------------
+const FOCAL=5.2;
+// One world unit is a little under half the bulb's height on screen. The whole
+// orbit has to happen inside the frame or the spiral -- the only thing there is
+// to watch -- takes place off the edge of it.
+function U(){ return bulbH*0.45; }
+function project(m){
+  const p=FOCAL/(FOCAL+m.z);
+  return {sx:cx+m.x*U()*p, sy:cy+m.y*U()*p, p};
+}
+
+// the tinted wing frame, cached: the frames are alpha masks, so colour is
+// painted through them rather than baked into twelve more files
+const tintCache=new Map();
+function tinted(frame, shade){
+  const q=Math.round(shade*10);              // eleven steps is under the eye's threshold
+  const key=frame+':'+q;
+  let c=tintCache.get(key);
+  if(c) return c;
+  const im=wing[frame];
+  c=document.createElement('canvas'); c.width=im.width; c.height=im.height;
+  const g=c.getContext('2d');
+  g.drawImage(im,0,0);
+  g.globalCompositeOperation='source-in';
+  const v=Math.round(255*(q/10));
+  g.fillStyle='rgb('+v+','+Math.round(v*0.99)+','+Math.round(v*0.94)+')';
+  g.fillRect(0,0,c.width,c.height);
+  tintCache.set(key,c);
+  return c;
+}
+
+function draw(sky, glow, flick){
+  // --- the air -------------------------------------------------------------
+  const gsky=ctx.createLinearGradient(0,0,0,H);
+  gsky.addColorStop(0, sky.top); gsky.addColorStop(0.55, sky.mid); gsky.addColorStop(1, sky.low);
+  ctx.fillStyle=gsky; ctx.fillRect(0,0,W,H);
+
+  // --- stars ---------------------------------------------------------------
+  if(sky.stars>0.01){
+    const t=performance.now()/1000;
+    for(const s of stars){
+      const a=sky.stars*(0.25+0.75*s.m)*(0.75+0.25*Math.sin(t*0.7+s.tw));
+      if(a<=0.01) continue;
+      ctx.fillStyle='rgba(226,232,245,'+a.toFixed(3)+')';
+      ctx.fillRect(s.x, s.y, s.m>0.85?1.6:1, s.m>0.85?1.6:1);
+    }
+  }
+
+  // --- the bulb's spill, before anything solid -----------------------------
+  const R=bulbH*(0.85+glow*1.5);
+  const gg=ctx.createRadialGradient(cx,cy,0,cx,cy,R);
+  const A=glow*flick;
+  gg.addColorStop(0,   'rgba(255,205,130,'+(0.40*A).toFixed(3)+')');
+  gg.addColorStop(0.16,'rgba(255,176,92,' +(0.20*A).toFixed(3)+')');
+  gg.addColorStop(0.45,'rgba(232,146,64,' +(0.07*A).toFixed(3)+')');
+  gg.addColorStop(1,   'rgba(232,146,64,0)');
+  ctx.globalCompositeOperation='lighter';
+  ctx.fillStyle=gg; ctx.fillRect(0,0,W,H);
+  ctx.globalCompositeOperation='source-over';
+
+  // --- moths behind the bulb, the bulb, then moths in front ----------------
+  const order=moths.slice().sort((a,b)=>b.z-a.z);
+  const behind=order.filter(m=>m.z>0), infront=order.filter(m=>m.z<=0);
+
+  for(const m of behind) drawMoth(m, flick);
+
+  if(bulbReady){
+    const bw=bulbH*160/580;
+    ctx.save();
+    ctx.globalAlpha=1;
+    ctx.drawImage(bulbImg, cx-bw*FIL_X, cy-bulbH*FIL_Y, bw, bulbH);
+    // the filament's own output rides the flicker
+    ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha=Math.max(0, Math.min(1, glow*flick));
+    ctx.drawImage(bulbImg, cx-bw*FIL_X, cy-bulbH*FIL_Y, bw, bulbH);
+    ctx.restore();
+  }
+
+  for(const m of infront) drawMoth(m, flick);
+}
+
+function drawMoth(m, flick){
+  if(wingReady<FRAMES) return;
+  const {sx,sy,p}=project(m);
+  if(p<=0.05) return;
+  const d=Math.hypot(m.x,m.y,m.z)||1e-6;
+  // Colour is nothing but position: 0 when it is between us and the bulb and we
+  // see only its shadow, 1 when the bulb is between us and it, lighting the face
+  // turned our way, and half way between at the sides.
+  let shade=(1 + m.z/d)/2;
+  // close to the glass the light is fierce enough to wash the near side too
+  shade=Math.min(1, shade + Math.max(0,(0.9-d))*0.35*flick);
+  const frame=((Math.floor(m.phase)%FRAMES)+FRAMES)%FRAMES;
+  const img=tinted(frame, shade);
+  const w=bulbH*0.115*m.size*p, h=w*img.height/img.width;
+  // pointed the way it is going
+  const nx=cx+(m.x+m.hx*0.05)*U()*(FOCAL/(FOCAL+m.z+m.hz*0.05));
+  const ny=cy+(m.y+m.hy*0.05)*U()*(FOCAL/(FOCAL+m.z+m.hz*0.05));
+  const rot=Math.atan2(ny-sy, nx-sx)+Math.PI/2;
+  ctx.save();
+  ctx.translate(sx,sy); ctx.rotate(rot);
+  ctx.globalAlpha=Math.max(0,Math.min(1, 0.35+0.65*Math.min(1,p)));
+  ctx.drawImage(img, -w/2, -h/2, w, h);
+  ctx.restore();
+}
+
+// ---- the two sliders that shape the air -------------------------------------
+function readSky(){
+  const k=+dark.value/100;                       // 0 early dusk, 1 full dark
+  // contrast between bulb and sky climbs non-linearly as the sky goes out
+  // The sky is a competing light, and at dusk it is a strong one -- strong
+  // enough that the bulb is just another glow in a bright field and the moth's
+  // bearing survives. The weight here is what decides whether early dusk reads as
+  // undisturbed drifting or as moths already at the glass.
+  const ambient=1.9*Math.pow(1-k, 1.9)+0.004;
+  const mix=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));
+  const rgb=c=>'rgb('+c[0]+','+c[1]+','+c[2]+')';
+  const top=mix([46,64,102],[6,8,14],Math.pow(k,0.85));
+  const mid=mix([32,44,76], [4,6,11], Math.pow(k,0.85));
+  const low=mix([58,54,72], [3,4,8],  Math.pow(k,0.7));
+  return {ambient, stars:Math.max(0,(k-0.28)/0.72),
+          top:rgb(top), mid:rgb(mid), low:rgb(low)};
+}
+
+// The filament sits nearer its threshold when it is turned down, so the flicker
+// belongs to the low end of the brightness slider rather than to a control of its
+// own -- one phenomenon, not two.
+let flickPhase=0, flickSlow=0;
+function flicker(dt, b){
+  flickPhase+=dt*100; flickSlow+=dt*(0.6+2.2*(1-b));
+  const amp=0.020+0.085*Math.pow(1-b,2.1);
+  const mains=Math.sin(flickPhase)*0.35+Math.sin(flickPhase*1.7+1.1)*0.2;
+  const wander=Math.sin(flickSlow*2.3)*0.5+Math.sin(flickSlow*0.9+2.0)*0.5;
+  return 1+amp*(mains*0.45+wander*0.9);
+}
+
+// ---- the loop ---------------------------------------------------------------
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  const sky=readSky();
+  const b=+bright.value/100;
+  const flick=flicker(dt, b);
+  // the bulb's brightness widens the reach of the gradient as well as raising it
+  const reach=(0.10+1.30*b)*flick;
+  setCount(+count.value);
+  step(dt, sky, reach);
+  draw(sky, Math.max(0.05, b)*0.9+0.10, flick);
+  requestAnimationFrame(frame);
+}
+resize(); setCount(+count.value);
+requestAnimationFrame(frame);
+
+// expose the state for measurement, so the flight can be checked against the
+// physics rather than eyeballed
+window.__moths={moths, readSky, project:()=>moths.map(project)};
+})();
+</script>
+
+</body>
+</html>
