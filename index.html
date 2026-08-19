@@ -122,7 +122,7 @@
 
   /* sagne, engraved into the brass oval at the crown */
   #oval{ position:absolute; display:flex; align-items:center; justify-content:center;
-    font-weight:700; letter-spacing:.16em; z-index:2;
+    font-weight:700; letter-spacing:.10em; z-index:2;
     appearance:none; border:0; background:none; padding:0; font-family:inherit;
     cursor:pointer;
     /* engraved: cut dark into the brass, with a bright lip on the lower edge where
@@ -133,7 +133,7 @@
      its box reads as sitting low on the brass. The trailing letter-space after
      the final e is taken back the same way the plate names take theirs. */
   #oval i{ font-style:normal; line-height:1; display:block;
-    transform:translateY(-0.055em); margin-right:-.16em; }
+    transform:translateY(-0.055em); margin-right:-.10em; }
   #oval:focus-visible{ outline:1px solid rgba(242,233,216,.45); outline-offset:3px; }
 
   /* the name of the type, engraved on the plate of the shelf it labels */
@@ -244,7 +244,9 @@
     // the walnut around it runs red, which puts the ellipse at x 421..579,
     // y 74..123. The old figures had this box 3px right and 5px low and a good
     // deal taller than the brass, so the name sat low and off to one side of it.
-    oval:{ x:421, y:74, w:158, h:49 },    // the brass oval on the crown
+    // her own brass plate, screwed to the crown: 146x64 centred at (500,107),
+    // which clears the carving above (it comes down to y=70) and the frieze below
+    oval:{ x:427, y:75, w:146, h:64 },
     plate:{ x:424, w:147, h:22 },         // the engraved area of a brass plate
     disc:{ cx:495, cy:1160, d:42 },       // the brass disc, centred on the plinth shell
     // The card art is 11:16 almost to a file -- 14 of the 19 are exactly 440x640.
@@ -309,7 +311,7 @@
   // --- lay the oval, the plates and the cards onto the photograph ---------------
   ovalEl.style.left=pc(GEO.oval.x,W); ovalEl.style.top=pc(GEO.oval.y,H);
   ovalEl.style.width=pc(GEO.oval.w,W); ovalEl.style.height=pc(GEO.oval.h,H);
-  ovalEl.style.fontSize='calc(var(--h) * 0.0404)';
+  ovalEl.style.fontSize='calc(var(--h) * 0.0355)';
   // The veil takes the same box as the oval, a shade proud of it so the mask has
   // somewhere to fade out over the brass rather than at its rim.
   var askEl=document.getElementById('ask');
@@ -385,7 +387,9 @@
     });
     // sagne keeps the size it was drawn at -- it sits in a much taller oval, and
     // filling that would make it shout. Shrink only, if it ever needs it.
-    var box=ovalEl.clientWidth*0.90, inner=ovalEl.firstElementChild;
+    // 0.72, not 0.90: the plate is screwed down at each end and the word has to
+    // clear both screws, so the writable brass is narrower than the plate.
+    var box=ovalEl.clientWidth*0.72, inner=ovalEl.firstElementChild;
     if(!inner || !box) return;
     ovalEl.style.fontSize=ovalEl.dataset.base || (ovalEl.dataset.base=getComputedStyle(ovalEl).fontSize);
     var size=parseFloat(getComputedStyle(ovalEl).fontSize), guard=0;
