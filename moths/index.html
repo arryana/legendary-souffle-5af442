@@ -214,6 +214,14 @@ function makeMoth(i){
     beat:(8.2-2.4*(size-0.70)/0.66)+Math.random()*1.7,
     phase:Math.random()*FRAMES,
     size:size,
+    // Flapping flight is not a smooth curve. A moth is thrown about by its own
+    // wings on every beat, and how much varies from one to the next. This is not
+    // the scripted randomness the brief rules out -- that rule is about the
+    // looping, which still comes only from the light. This is the animal's own
+    // imprecision, and without it they fly like filings on a magnet.
+    flut:0.55+Math.random()*1.5,
+    wob:Math.random()*6.28, wob2:Math.random()*6.28, t:Math.random()*40,
+    bank:0,
     stun:0, bump:0, blind:0
   };
   // Broadside to the bulb -- the bearing it was already holding when the bulb
@@ -304,6 +312,27 @@ function step(dt, contrast, reach){
       m.hx+=px*w; m.hy+=py*w; m.hz+=pz*w;
       norm(m);
     }
+    // --- flutter: thrown about by its own wingbeats -------------------------
+    m.t+=dt;
+    // two perpendiculars to the heading, to push about within
+    let qx=0,qy=1,qz=0;
+    if(Math.abs(m.hy)>0.9){ qx=1; qy=0; }
+    let u1x=qy*m.hz-qz*m.hy, u1y=qz*m.hx-qx*m.hz, u1z=qx*m.hy-qy*m.hx;
+    const u1n=Math.hypot(u1x,u1y,u1z)||1; u1x/=u1n; u1y/=u1n; u1z/=u1n;
+    const u2x=m.hy*u1z-m.hz*u1y, u2y=m.hz*u1x-m.hx*u1z, u2z=m.hx*u1y-m.hy*u1x;
+    // At the wingbeat, not below it. The first attempt at this ran at two or three
+    // cycles a second, which only bent the curve into a smoother curve -- plotted
+    // out, six seconds of flight was a clean swoop. A moth is thrown by every
+    // stroke of its wings, so the fast term runs at this moth's own beat, with a
+    // slower drift under it for the wandering.
+    const bw=m.beat*Math.PI*2;
+    const wa=Math.sin(m.t*bw+m.wob)*0.85 + Math.sin(m.t*bw*0.31+m.wob2)*0.75;
+    const wb=Math.sin(m.t*bw*1.13+m.wob2)*0.75 + Math.sin(m.t*bw*0.19+m.wob)*0.85;
+    const fs=m.flut*4.6*dt;
+    m.hx+=(u1x*wa+u2x*wb)*fs; m.hy+=(u1y*wa+u2y*wb)*fs; m.hz+=(u1z*wa+u2z*wb)*fs;
+    norm(m);
+    // how hard it is leaning into the turn, smoothed, for the roll of the body
+    m.bank += (wa - m.bank)*Math.min(1, dt*5);
     m.x+=m.hx*m.speed*dt; m.y+=m.hy*m.speed*dt; m.z+=m.hz*m.speed*dt;
     m.phase+=dt*m.beat*FRAMES;
 
@@ -429,10 +458,17 @@ function drawMoth(m, flick){
   const nx=cx+(m.x+m.hx*0.05)*U()*(FOCAL/(FOCAL+m.z+m.hz*0.05));
   const ny=cy+(m.y+m.hy*0.05)*U()*(FOCAL/(FOCAL+m.z+m.hz*0.05));
   const rot=Math.atan2(ny-sy, nx-sx)+Math.PI/2;
+  // It banks into its turns, and the more it is turned the more of it we see
+  // edge-on rather than flat -- so the body narrows as it leans, the way a real
+  // one does when it rolls out of the plane of the frame.
+  const lean=Math.max(-1.2,Math.min(1.2, m.bank*1.35));
+  const narrow=0.34+0.66*Math.abs(Math.cos(lean));
+  // and it rises and falls on the beat, because flapping flight does
+  const bob=Math.sin(m.phase*Math.PI*2/FRAMES)*h*0.055;
   ctx.save();
-  ctx.translate(sx,sy); ctx.rotate(rot);
+  ctx.translate(sx,sy+bob); ctx.rotate(rot+lean*0.42);
   ctx.globalAlpha=Math.max(0,Math.min(1, 0.35+0.65*Math.min(1,p)));
-  ctx.drawImage(img, -w/2, -h/2, w, h);
+  ctx.drawImage(img, -w*narrow/2, -h/2, w*narrow, h);
   ctx.restore();
 }
 
