@@ -311,12 +311,22 @@
   window.addEventListener('resize', resize);
   portraitMQ.addEventListener('change', resize);
 
-  // the current finish's oval, in actual on-screen canvas pixels
+  // How far the warmed area reaches beyond the hole you can see. The simulation
+  // runs on a disc and is forced to zero outside it, so wherever that boundary
+  // falls, warmth diffusing outward is deleted there and the glow dies before it
+  // arrives. With the boundary sitting exactly on the rim of the hole, the warmth
+  // never reached the edge and a touch near the rim deposited less, because the
+  // brush was clipped too. Pushing the whole simulated area out past the hole puts
+  // that hard edge underneath the plate, where the metal covers it -- her idea,
+  // and it costs nothing, because everything outside the hole is cropped anyway.
+  const REACH = 1.18;
+  // the current finish's oval, in actual on-screen canvas pixels, reach included
   function getOvalRect(){
     const g = FINISH_GEOMETRY[currentFinish];
-    const ow = W * g.rx * 2, oh = H * g.ry * 2;
+    const ow = W * g.rx * 2 * REACH, oh = H * g.ry * 2 * REACH;
     const ox = W * g.cx - ow/2, oy = H * g.cy - oh/2;
-    return {x: ox, y: oy, w: ow, h: oh, cx: W*g.cx, cy: H*g.cy, rx: W*g.rx, ry: H*g.ry};
+    return {x: ox, y: oy, w: ow, h: oh, cx: W*g.cx, cy: H*g.cy,
+            rx: W*g.rx*REACH, ry: H*g.ry*REACH};
   }
 
   function updateSheenClip(){
