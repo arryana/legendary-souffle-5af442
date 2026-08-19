@@ -200,6 +200,12 @@
         angle: (Math.random()-0.5)*0.2,
         angVel: 0,
         touching: false,
+        // a wind signature of its own: three eddy frequencies and phases, so the
+        // same breeze pushes each rod differently and neighbours drift apart
+        w1: 0.7+Math.random()*0.9,  p1: Math.random()*6.28,
+        w2: 1.7+Math.random()*1.6,  p2: Math.random()*6.28,
+        w3: 3.1+Math.random()*2.4,  p3: Math.random()*6.28,
+        gustResp: 0.75+Math.random()*0.5,   // how much this rod catches the air
       });
     }
     state.rods = rods;
@@ -278,6 +284,7 @@
   };
 
   function strike(freq, velocity, material){
+    window.__strikes=(window.__strikes||0)+1;
     if(!audioCtx || voices >= MAX_VOICES) return;
     const M = MATERIAL[material] || MATERIAL.brass;
     // a few ms ahead, so nothing is ever scheduled into a moment already gone
@@ -351,56 +358,61 @@
     const n = state.rods.length;
     const windAmp = state.wind * WIND_MAX;
 
+    // A shared breeze that swells and drops, plus turbulence unique to each rod.
+    // The old wind was a single global gust that every rod obeyed together, so they
+    // swung as one sheet and rarely met; giving each its own eddies is what makes
+    // neighbours drift, cross, and knock into each other the way a real set does.
+    const breeze = Math.sin(elapsed*0.42)*0.55 + Math.sin(elapsed*0.97+1.3)*0.45;
     for(let i=0;i<n;i++){
       const r = state.rods[i];
-      const eff = state.cordLength + r.rodLength*0.5;
-      const gust = windAmp * (Math.sin(elapsed*0.55)*0.65 + Math.sin(elapsed*2.1 + i*0.7)*0.35);
-      const damping = 0.42;
-      // a horizontal wind force at the bob has lever arm eff*cos(theta) about the pivot,
-      // same derivation as gravity's -(G/eff)*sin(theta) restoring term
-      const angAcc = -(G/eff)*Math.sin(r.angle) - damping*r.angVel + (gust/eff)*Math.cos(r.angle);
-      r.angVel += angAcc*dt;
-      r.angle += r.angVel*dt;
+      const turb = Math.sin(elapsed*r.w1+r.p1)*0.5 + Math.sin(elapsed*r.w2+r.p2)*0.32
+                 + Math.sin(elapsed*r.w3+r.p3)*0.18;
+      r.gust = windAmp * r.gustResp * (0.45*breeze + 0.75*turb);
     }
-    // Collisions between neighbours. A pair either is or is not in contact, and
-    // the note belongs to the moment they meet — one impact, one note. This used
-    // to re-fire on a 140ms timer for as long as two rods happened to be inside
-    // touching distance, and since a rod only has to swing about 10px to reach
-    // its neighbour, at the default wind they are inside it most of the time.
-    // Measured, that was 9.8 note-starts a second on the settings the page opens
-    // with and 34.8 at nine rods in a full wind. Worse than the count: 41% of all
-    // the gaps between notes landed in one narrow bin at 144ms, i.e. the timer
-    // itself, audible as a steady 7Hz pulse running under everything. Weather is
-    // not periodic, and a chime that ticks is not reporting weather. On impacts
-    // only, the same settings give 2 a second with the gaps spread from 200ms to
-    // over a second, and no bin holding more than 45%.
-    for(let i=0;i<n-1;i++){
-      const a = state.rods[i], b = state.rods[i+1];
-      const ax = bobX(a,i,n), bx = bobX(b,i+1,n);
-      const gap = Math.abs(ax-bx);
-      // they must clear the contact band by a little before they can strike
-      // again, or a rod resting right on the boundary chatters against it
-      if(gap >= COLLIDE_DIST + SEPARATE){ a.touching = false; continue; }
-      if(gap >= COLLIDE_DIST || a.touching) continue;
-      a.touching = true;
 
-      const effA = state.cordLength+a.rodLength*0.5, effB = state.cordLength+b.rodLength*0.5;
-      const dir = Math.sign(bx - ax) || 1;
-      const closing = (a.angVel*effA - b.angVel*effB) * dir;   // >0 = coming together
-      if(closing <= 0) continue;                                // drifted apart, no impact
+    // Sub-step the swing and the contacts together. A rod in a full wind can cross
+    // the fourteen-pixel contact band in a single frame and, tested once a frame,
+    // sail straight through its neighbour without ever registering; four sub-steps
+    // shrink that skip below the band so the strike is always caught.
+    const STEPS = 4, h = dt/STEPS;
+    for(let s2=0;s2<STEPS;s2++){
+      for(let i=0;i<n;i++){
+        const r = state.rods[i];
+        const eff = state.cordLength + r.rodLength*0.5;
+        const damping = 0.40 + r.rodLength*0.0004;   // longer rods lose a touch more
+        const angAcc = -(G/eff)*Math.sin(r.angle) - damping*r.angVel + (r.gust/eff)*Math.cos(r.angle);
+        r.angVel += angAcc*h;
+        r.angle  += r.angVel*h;
+      }
+      // contacts between neighbours, resolved this sub-step
+      for(let i=0;i<n-1;i++){
+        const a = state.rods[i], b = state.rods[i+1];
+        const effA = state.cordLength+a.rodLength*0.5, effB = state.cordLength+b.rodLength*0.5;
+        const ax = bobX(a,i,n), bx = bobX(b,i+1,n);
+        const gap = Math.abs(ax-bx);
+        if(gap >= COLLIDE_DIST + SEPARATE){ a.touching = false; continue; }
+        if(gap >= COLLIDE_DIST){ continue; }
+        const dir = Math.sign(bx - ax) || 1;
 
-      // A proper impulse between two masses, not a fixed shove. Same stock, so
-      // mass goes with length. The old code applied its push on the timer whether
-      // or not the rods were even moving toward each other, which fed energy into
-      // the set and kept it rattling on its own.
-      const j = (1 + RESTITUTION) * closing / (1/a.rodLength + 1/b.rodLength);
-      a.angVel -= (j/a.rodLength) * dir / effA;
-      b.angVel += (j/b.rodLength) * dir / effB;
+        // separate them so the two solid rods never occupy the same space -- the old
+        // code only nudged velocities and let the bodies overlap and pass through
+        const overlap = COLLIDE_DIST - gap;
+        a.angle -= (overlap*0.5/effA)*dir;
+        b.angle += (overlap*0.5/effB)*dir;
 
-      if(closing > MIN_STRIKE_SPEED){
-        ensureAudio();
-        strike(pitchFor(a.rodLength, state.rodMaterial), closing, state.rodMaterial);
-        strike(pitchFor(b.rodLength, state.rodMaterial), closing, state.rodMaterial);
+        const closing = (a.angVel*effA - b.angVel*effB) * dir;   // >0 = coming together
+        if(closing <= 0){ continue; }
+
+        const j = (1 + RESTITUTION) * closing / (1/a.rodLength + 1/b.rodLength);
+        a.angVel -= (j/a.rodLength) * dir / effA;
+        b.angVel += (j/b.rodLength) * dir / effB;
+
+        if(!a.touching && closing > MIN_STRIKE_SPEED){
+          ensureAudio();
+          strike(pitchFor(a.rodLength, state.rodMaterial), closing, state.rodMaterial);
+          strike(pitchFor(b.rodLength, state.rodMaterial), closing, state.rodMaterial);
+        }
+        a.touching = true;
       }
     }
 
@@ -629,6 +641,7 @@
 
   resize();
   rebuildRods(false);
+  window.__chime = { get rods(){return state.rods;}, get count(){return state.rods.length;} };
   requestAnimationFrame(tick);
 })();
 </script>
