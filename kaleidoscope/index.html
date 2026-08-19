@@ -44,7 +44,9 @@
      geometry, and geometry is drawn, not painted. */
   #ringBase{ position:absolute; inset:0; border-radius:50%; pointer-events:none;
     box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 6px 22px rgba(0,0,0,.55); }
-  #scopeRing{ position:absolute; inset:0; border-radius:50%; pointer-events:none; }
+  /* the grip layer reaches beyond the wood ring so the grab knob can stand
+     proud of the edge; it rotates about the same centre as the frame */
+  #scopeRing{ position:absolute; inset:-13%; border-radius:50%; pointer-events:none; }
   #scopeRing canvas{ position:absolute; inset:0; width:100%; height:100%; }
   #ringBase{ width:100%; height:100%; }
   #scopeInner{ position:absolute; inset:6.5%; border-radius:50%; overflow:hidden; background:#050608;
@@ -340,7 +342,11 @@
   }
   function drawRing(cssSize){
     const S = Math.round(cssSize*DPR), c = S/2;
-    [ringBase, ringMill].forEach(cv => { cv.width = S; cv.height = S; });
+    ringBase.width = ringBase.height = S;
+    // the grip layer's element is inset:-13%, i.e. 1.26x the frame, so its backing
+    // store must match or everything drawn on it is scaled up and flung outward
+    const Slarge = Math.round(S*1.26);
+    ringMill.width = ringMill.height = Slarge;
 
     // ===================== brass-bound wood ==================================
     // A turned-wood ring, bound with brass at both edges, and bold brass grip lugs
@@ -373,9 +379,9 @@
       g.arc(c,c, radius+width/2, 0, Math.PI*2);
       g.arc(c,c, radius-width/2, 0, Math.PI*2, true); g.clip();
       const br = g.createRadialGradient(c,c, radius-width/2, c,c, radius+width/2);
-      br.addColorStop(0.0, '#7a5a24');
-      br.addColorStop(0.5, '#f3d896');   // brass crest
-      br.addColorStop(1.0, '#8a6528');
+      br.addColorStop(0.0, '#6a4d1f');
+      br.addColorStop(0.5, '#c4a562');   // brass crest, softened so it doesn't glare
+      br.addColorStop(1.0, '#775622');
       g.fillStyle = br; g.fillRect(0,0,S,S);
       g.restore();
     }
@@ -394,10 +400,10 @@
     g.globalCompositeOperation = 'multiply';
     g.fillStyle = shade; g.fillRect(0,0,S,S);
     const sheen = g.createConicGradient(-Math.PI*0.75, c, c);
-    sheen.addColorStop(0.00, 'rgba(255,244,214,0.5)');
+    sheen.addColorStop(0.00, 'rgba(255,244,214,0.26)');
     sheen.addColorStop(0.16, 'rgba(255,244,214,0)');
     sheen.addColorStop(0.84, 'rgba(255,244,214,0)');
-    sheen.addColorStop(1.00, 'rgba(255,244,214,0.5)');
+    sheen.addColorStop(1.00, 'rgba(255,244,214,0.26)');
     g.globalCompositeOperation = 'screen';
     g.fillStyle = sheen; g.fillRect(0,0,S,S);
     g.globalCompositeOperation = 'source-over';
@@ -407,30 +413,65 @@
     g.beginPath(); g.arc(c,c, RI*S + g.lineWidth*0.5, 0, Math.PI*2); g.stroke();
     g.restore();
 
-    // --- the grip lugs: bold brass knobs that turn with the ring ------------
+    // --- the grip: quiet lugs all round, and one grab knob standing proud ---
+    // The mill canvas is larger than the frame (CSS inset:-13%), so its centre is
+    // offset; everything here is measured from that centre, cm, in the same pixel
+    // radii as the frame. The lugs are dimmed right down so the eye stays on the
+    // scope; the one thing that speaks up is the knob, a wooden grab handle with a
+    // brass collar that stands out past the wood edge and carries round as you turn.
     const m = ringMill.getContext('2d');
-    m.clearRect(0,0,S,S);
+    const Sm = ringMill.width, cm = Sm/2;
+    m.clearRect(0,0,Sm,Sm);
     const N = 16, mid = (RI+RO)/2*S, span = Math.PI*2/N;
-    const lugLen = (RO-RI)*S*0.62, lugW = S*0.026;
+    const lugLen = (RO-RI)*S*0.58, lugW = S*0.022;
     m.lineCap = 'round';
     for(let i=0;i<N;i++){
       const a = i*span;
       const dx = Math.cos(a), dy = Math.sin(a);
-      const x0 = c + dx*(mid - lugLen/2), y0 = c + dy*(mid - lugLen/2);
-      const x1 = c + dx*(mid + lugLen/2), y1 = c + dy*(mid + lugLen/2);
-      // a soft seat shadow under the lug
-      m.strokeStyle = 'rgba(20,12,3,0.5)'; m.lineWidth = lugW*1.5;
+      const x0 = cm + dx*(mid - lugLen/2), y0 = cm + dy*(mid - lugLen/2);
+      const x1 = cm + dx*(mid + lugLen/2), y1 = cm + dy*(mid + lugLen/2);
+      m.strokeStyle = 'rgba(18,11,3,0.35)'; m.lineWidth = lugW*1.4;
       m.beginPath(); m.moveTo(x0,y0); m.lineTo(x1,y1); m.stroke();
-      // the brass lug body, brightest along its spine
       const lg = m.createLinearGradient(x0 - dy*lugW, y0 + dx*lugW, x0 + dy*lugW, y0 - dx*lugW);
-      lg.addColorStop(0.0, '#6e4f20'); lg.addColorStop(0.5, '#f6e2a6'); lg.addColorStop(1.0, '#7a5824');
+      lg.addColorStop(0.0, '#4a3618'); lg.addColorStop(0.5, '#8a7343'); lg.addColorStop(1.0, '#54401d');
       m.strokeStyle = lg; m.lineWidth = lugW;
       m.beginPath(); m.moveTo(x0,y0); m.lineTo(x1,y1); m.stroke();
-      // a bright catch at the outer end
-      m.strokeStyle = 'rgba(255,246,220,0.85)'; m.lineWidth = lugW*0.32;
-      m.beginPath(); m.moveTo(c+dx*(mid+lugLen*0.18), c+dy*(mid+lugLen*0.18));
-      m.lineTo(x1,y1); m.stroke();
     }
+
+    // --- the grab knob (drawn at the top of the ring, carries round on turn) --
+    const ka = -Math.PI/2;                       // seated at 12 o'clock at rest
+    const kx = cm + Math.cos(ka)*(RO*S + S*0.028);
+    const ky = cm + Math.sin(ka)*(RO*S + S*0.028);
+    const kr = S*0.052;
+    // a stem from the wood edge out to the knob
+    m.lineCap = 'round';
+    m.strokeStyle = 'rgba(18,11,3,0.55)'; m.lineWidth = kr*0.92;
+    m.beginPath();
+    m.moveTo(cm + Math.cos(ka)*(RO*S - S*0.01), cm + Math.sin(ka)*(RO*S - S*0.01));
+    m.lineTo(kx, ky); m.stroke();
+    const stem = m.createLinearGradient(kx-kr,ky,kx+kr,ky);
+    stem.addColorStop(0,'#4f3a18'); stem.addColorStop(0.5,'#9c7c40'); stem.addColorStop(1,'#5a4420');
+    m.strokeStyle = stem; m.lineWidth = kr*0.62;
+    m.beginPath();
+    m.moveTo(cm + Math.cos(ka)*(RO*S - S*0.006), cm + Math.sin(ka)*(RO*S - S*0.006));
+    m.lineTo(kx, ky); m.stroke();
+    // seat shadow, then the wooden knob, then a brass collar and a soft catch
+    m.fillStyle = 'rgba(12,7,2,0.5)';
+    m.beginPath(); m.arc(kx, ky+kr*0.12, kr*1.06, 0, Math.PI*2); m.fill();
+    const dome = m.createRadialGradient(kx-kr*0.35, ky-kr*0.4, kr*0.1, kx, ky, kr);
+    dome.addColorStop(0.0, '#a9793c');
+    dome.addColorStop(0.5, '#7c531f');
+    dome.addColorStop(1.0, '#3f2a11');
+    m.fillStyle = dome;
+    m.beginPath(); m.arc(kx, ky, kr, 0, Math.PI*2); m.fill();
+    // a brass collar around the knob's base
+    m.strokeStyle = 'rgba(190,160,96,0.8)'; m.lineWidth = kr*0.16;
+    m.beginPath(); m.arc(kx, ky, kr*0.9, 0, Math.PI*2); m.stroke();
+    // a small, soft top-left catch (not a hard glint)
+    const kh = m.createRadialGradient(kx-kr*0.34, ky-kr*0.4, 0, kx-kr*0.34, ky-kr*0.4, kr*0.7);
+    kh.addColorStop(0,'rgba(255,240,205,0.5)'); kh.addColorStop(1,'rgba(255,240,205,0)');
+    m.fillStyle = kh;
+    m.beginPath(); m.arc(kx, ky, kr, 0, Math.PI*2); m.fill();
   }
 
   function resize(){
