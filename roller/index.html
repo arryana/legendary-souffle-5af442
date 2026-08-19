@@ -452,11 +452,18 @@
   // stone and bean keep their own light-to-dark shading and are only pulled toward
   // the tint -- the stone the harder of the two, the bean softer and warmer -- so
   // their form still reads as stone, just stone of that colour.
+  // `tint` dresses the bean (she has the bean right, so it stays as it was).
+  // `stoneTint`, where present, dresses the stone instead -- the glass tint reads
+  // too vivid on an opaque stone, so a few of them get a greyer, more mineral
+  // cousin of the same colour. Absent, the stone just uses `tint`.
   const GLASS = {
     white:  { glass:['#f2f6f4','#c9d5d0','#94a49e'], edge:'rgba(120,140,134,0.5)', tint:[233,238,236], stone:0.42, bean:0.30 },
-    teal:   { glass:['#d9f5ea','#4fae93','#1c5f52'], edge:'rgba(20,60,50,0.55)',   tint:[ 79,174,147], stone:0.42, bean:0.32 },
-    amber:  { glass:['#f7e6bd','#c8892f','#6d3c11'], edge:'rgba(70,38,10,0.5)',    tint:[200,137, 47], stone:0.40, bean:0.34 },
-    cobalt: { glass:['#d2e2f6','#3b64c0','#152c66'], edge:'rgba(15,28,66,0.55)',   tint:[ 59,100,192], stone:0.44, bean:0.34 },
+    // coke-bottle green as glass; a greyer sage as stone
+    teal:   { glass:['#d9f5ea','#4fae93','#1c5f52'], edge:'rgba(20,60,50,0.55)',   tint:[ 79,174,147], stoneTint:[118,146,126], stone:0.46, bean:0.32 },
+    // amber glass; a redder, rustier stone
+    amber:  { glass:['#f7e6bd','#c8892f','#6d3c11'], edge:'rgba(70,38,10,0.5)',    tint:[200,137, 47], stoneTint:[176, 92, 44], stone:0.42, bean:0.34 },
+    // a deeper cobalt glass than before; the stone a dark, grey blue slate
+    cobalt: { glass:['#c2d6f2','#2a4ea6','#0d1c4a'], edge:'rgba(12,22,58,0.6)',    tint:[ 59,100,192], stoneTint:[ 78, 94,112], stone:0.55, bean:0.34 },
     black:  { glass:['#9aa2a8','#3c4248','#14181c'], edge:'rgba(8,10,12,0.6)',     tint:[ 34, 40, 46], stone:0.52, bean:0.44 },
   };
   const GLASS_ORDER = ['white','teal','amber','cobalt','black'];
@@ -474,13 +481,15 @@
   const glassEdge = () => GLASS[glassColor].edge;
   // an opaque material (stone or bean) keeps its own three stops but is pulled
   // toward the current tint by `amt`, so it colours without turning to glass
-  function tintStops(grad, stops, amt){
-    const t = GLASS[glassColor].tint;
+  function tintStops(grad, stops, amt, tintRgb){
+    const t = tintRgb || GLASS[glassColor].tint;
     grad.addColorStop(0,    mix(hexToRgb(stops[0]), t, amt));
     grad.addColorStop(0.6,  mix(hexToRgb(stops[1]), t, amt));
     grad.addColorStop(1,    mix(hexToRgb(stops[2]), t, amt));
     return grad;
   }
+  // the stone prefers its own mineral tint; the bean keeps the plain one
+  const stoneTintRgb = () => GLASS[glassColor].stoneTint || GLASS[glassColor].tint;
 
   let activeType = 'pebble';
   let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, jellySpin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0 };
@@ -909,7 +918,7 @@
     // a slightly uneven edge like a real water-worn stone rather than a
     // machined coin
     const body = tintStops(ctx.createRadialGradient(-r*0.25, -r*0.3, r*0.1, 0, 0, r),
-                           ['#a8b0ae','#767f7c','#4c5250'], GLASS[glassColor].stone);
+                           ['#a8b0ae','#767f7c','#4c5250'], GLASS[glassColor].stone, stoneTintRgb());
     ctx.beginPath();
     ctx.ellipse(0, 0, r, r*0.94, 0, 0, Math.PI*2);
     ctx.fillStyle = body;
