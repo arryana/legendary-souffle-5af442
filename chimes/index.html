@@ -436,48 +436,111 @@
   // soft light halo baked into them and went blurry when scaled; drawing the wood,
   // the cord and the metal keeps every edge crisp and every material under control.
 
+  // Each material has its own shape, not only its own colour: the aged brass a
+  // mottled cylinder, the silver a plain one, the wood a flat wide slat with
+  // rounded edges and a big drilled hole, the glass a thin, long, triangular rod.
   const ROD_MATS = {
-    brass:  { edge:'#4a3413', body:'#a37f34', spec:'#f4e1a2', lip:'#6a4e1e', alpha:1 },
-    silver: { edge:'#565c61', body:'#a7afb5', spec:'#ffffff', lip:'#6a7075', alpha:1 },
-    wood:   { edge:'#3a2410', body:'#8a5a2c', spec:'#c79a5c', lip:'#4a2f16', alpha:1, grain:true },
-    glass:  { edge:'#3f7f78', body:'#bfe6df', spec:'#ffffff', lip:'#79b7ad', alpha:0.62 },
+    brass:  { edge:'#4a3413', body:'#a37f34', spec:'#f4e1a2', lip:'#6a4e1e', alpha:1,
+              shape:'round', width:12, mottle:true },
+    silver: { edge:'#565c61', body:'#a7afb5', spec:'#ffffff', lip:'#6a7075', alpha:1,
+              shape:'round', width:12 },
+    wood:   { edge:'#3a2410', body:'#8a5a2c', spec:'#c79a5c', lip:'#4a2f16', alpha:1,
+              shape:'flat',  width:17, grain:true, hole:3.0 },
+    glass:  { edge:'#4f9f96', body:'#cdeee7', spec:'#ffffff', lip:'#8fc9c0', alpha:0.58,
+              shape:'prism', width:8,  lenMul:1.16 },
   };
 
-  function drawRod(topY, len, matKey){
-    const M = ROD_MATS[matKey], half = ROD_THICK/2, r = half;
+  function drawRod(topY, len0, matKey){
+    const M = ROD_MATS[matKey];
+    const W = M.width, half = W/2, len = len0*(M.lenMul||1);
+    const y0 = topY, y1 = topY+len;
     ctx.save();
     ctx.globalAlpha = M.alpha;
-    // the rounded-capsule body
-    const x0 = -half, x1 = half, y0 = topY, y1 = topY+len;
+
+    if(M.shape === 'prism'){
+      // GLASS -- a thin triangular rod that comes to points top and bottom, with a
+      // bright edge running down its spine where the two faces meet
+      ctx.beginPath();
+      ctx.moveTo(0, y0);                 // top point
+      ctx.lineTo(half, y0+W);
+      ctx.lineTo(half, y1-W);
+      ctx.lineTo(0, y1);                 // bottom point
+      ctx.lineTo(-half, y1-W);
+      ctx.lineTo(-half, y0+W);
+      ctx.closePath(); ctx.save(); ctx.clip();
+      const gx = ctx.createLinearGradient(-half,0,half,0);
+      gx.addColorStop(0.0, M.edge); gx.addColorStop(0.42, M.body);
+      gx.addColorStop(0.5, M.spec); gx.addColorStop(0.58, M.body); gx.addColorStop(1.0, M.edge);
+      ctx.fillStyle = gx; ctx.fillRect(-half-1, y0-1, W+2, len+2);
+      ctx.restore();
+      // the lit spine
+      ctx.globalAlpha = M.alpha*0.9;
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, y0+2); ctx.lineTo(0, y1-2); ctx.stroke();
+      ctx.restore();
+      // a small hanging hole near the top point
+      ctx.save(); ctx.globalAlpha = M.alpha; ctx.fillStyle='rgba(20,40,38,0.6)';
+      ctx.beginPath(); ctx.ellipse(0, y0+W*0.7, 1.3, 1.0, 0, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    const r = (M.shape === 'flat') ? Math.min(half*0.55, 5) : half;   // corner round
+    // the body outline: a rounded slat (flat) or a capsule (round)
     ctx.beginPath();
-    ctx.moveTo(x0, y0+r); ctx.arc(0, y0+r, r, Math.PI, 0);
-    ctx.lineTo(x1, y1-r); ctx.arc(0, y1-r, r, 0, Math.PI);
-    ctx.closePath(); ctx.clip();
-    // a cross-tube gradient: dark rim, a bright specular offset to the lit side, dark rim
-    const gx = ctx.createLinearGradient(x0,0,x1,0);
-    gx.addColorStop(0.0, M.edge); gx.addColorStop(0.28, M.spec);
-    gx.addColorStop(0.5, M.body); gx.addColorStop(1.0, M.edge);
-    ctx.fillStyle = gx; ctx.fillRect(x0-1, y0-1, ROD_THICK+2, len+2);
-    // a gentle length shade: a little brighter up top where the light falls
+    ctx.moveTo(-half, y0+r); ctx.quadraticCurveTo(-half, y0, -half+r, y0);
+    ctx.lineTo(half-r, y0); ctx.quadraticCurveTo(half, y0, half, y0+r);
+    ctx.lineTo(half, y1-r); ctx.quadraticCurveTo(half, y1, half-r, y1);
+    ctx.lineTo(-half+r, y1); ctx.quadraticCurveTo(-half, y1, -half, y1-r);
+    ctx.closePath(); ctx.save(); ctx.clip();
+    const gx = ctx.createLinearGradient(-half,0,half,0);
+    if(M.shape === 'flat'){
+      // wood reads flatter and more matte, with a rounded lip catching light at each edge
+      gx.addColorStop(0.0, M.edge); gx.addColorStop(0.10, M.spec);
+      gx.addColorStop(0.5, M.body); gx.addColorStop(0.90, M.spec); gx.addColorStop(1.0, M.edge);
+    } else {
+      gx.addColorStop(0.0, M.edge); gx.addColorStop(0.28, M.spec);
+      gx.addColorStop(0.5, M.body); gx.addColorStop(1.0, M.edge);
+    }
+    ctx.fillStyle = gx; ctx.fillRect(-half-1, y0-1, W+2, len+2);
+    // length shade
     const gy = ctx.createLinearGradient(0,y0,0,y1);
     gy.addColorStop(0,'rgba(255,255,255,0.10)'); gy.addColorStop(0.15,'rgba(255,255,255,0)');
     gy.addColorStop(0.9,'rgba(0,0,0,0)'); gy.addColorStop(1,'rgba(0,0,0,0.28)');
-    ctx.fillStyle = gy; ctx.fillRect(x0-1, y0-1, ROD_THICK+2, len+2);
+    ctx.fillStyle = gy; ctx.fillRect(-half-1, y0-1, W+2, len+2);
     if(M.grain){
-      ctx.globalAlpha = M.alpha*0.5;
-      ctx.strokeStyle = 'rgba(50,30,12,0.5)'; ctx.lineWidth = 0.7;
-      for(let k=0;k<3;k++){ const gxp = x0+ROD_THICK*(0.3+k*0.22);
-        ctx.beginPath(); ctx.moveTo(gxp, y0+2); ctx.lineTo(gxp+ (k-1), y1-2); ctx.stroke(); }
-      ctx.globalAlpha = M.alpha;
+      ctx.strokeStyle = 'rgba(50,30,12,0.42)'; ctx.lineWidth = 0.8;
+      for(let k=0;k<4;k++){ const gxp = -half+W*(0.22+k*0.19);
+        ctx.beginPath(); ctx.moveTo(gxp, y0+2);
+        ctx.bezierCurveTo(gxp+1.5, y0+len*0.4, gxp-1.5, y0+len*0.7, gxp+(k-1.5), y1-2);
+        ctx.stroke(); }
+    }
+    if(M.mottle){
+      // aged brass: soft darker and lighter patches, placed by a fixed pattern so
+      // they sit still rather than shimmer frame to frame
+      for(let k=0;k<7;k++){
+        const yy = y0 + len*((k*0.618)%1);
+        const xx = Math.sin(k*2.3)*half*0.5;
+        const rr = 2 + (k%3);
+        ctx.fillStyle = (k%2) ? 'rgba(60,42,16,0.30)' : 'rgba(245,225,170,0.18)';
+        ctx.beginPath(); ctx.ellipse(xx, yy, rr, rr*1.4, 0, 0, Math.PI*2); ctx.fill();
+      }
     }
     ctx.restore();
-    // a lit lip on the top cap, and a drilled cord hole
+
+    // top lip + cord hole (a bigger, clearly drilled hole for wood)
     ctx.save(); ctx.globalAlpha = M.alpha;
     ctx.strokeStyle = M.lip; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(0, topY+r, r-0.5, Math.PI*1.05, Math.PI*1.95); ctx.stroke();
-    ctx.fillStyle = 'rgba(20,14,6,0.7)';
-    ctx.beginPath(); ctx.ellipse(0, topY+r*0.9, 1.6, 1.1, 0, 0, Math.PI*2); ctx.fill();
-    ctx.restore();
+    ctx.beginPath(); ctx.arc(0, y0+r, Math.max(1,r-0.5), Math.PI*1.05, Math.PI*1.95); ctx.stroke();
+    const hr = M.hole || 1.6;
+    ctx.fillStyle = 'rgba(18,12,5,0.72)';
+    ctx.beginPath(); ctx.ellipse(0, y0 + hr + 2, hr, hr*0.8, 0, 0, Math.PI*2); ctx.fill();
+    if(M.hole){ // a lit rim on the big drilled hole
+      ctx.strokeStyle='rgba(210,170,110,0.5)'; ctx.lineWidth=0.8;
+      ctx.beginPath(); ctx.ellipse(0, y0+hr+2, hr, hr*0.8, 0, Math.PI*0.9, Math.PI*2.1); ctx.stroke();
+    }
+    ctx.restore();   // the lip/hole layer
+    ctx.restore();   // the outer save opened at the top of drawRod
   }
 
   function drawCord(len, matKey){
