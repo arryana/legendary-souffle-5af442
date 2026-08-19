@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="description" content="A shelf of small interactive pieces.">
-<meta name="theme-color" content="#122336">
+<meta name="theme-color" content="#101521">
 <link rel="canonical" href="https://sagne.co.uk/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="sagne">
@@ -26,9 +26,12 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&display=swap');
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  /* the exact navy the case was photographed against, so the frame's edge
-     disappears and the case simply stands on a wall */
-  html,body{ height:100%; margin:0; background:#122336; color:#e2d6bb;
+  /* The wall. This is the field the cards themselves are drawn on -- gyre, chimes,
+     musebox, chladni, the candle all share it -- and the photograph's own
+     background has been recoloured to the same value, so the frame's edge
+     disappears and the case simply stands in the dark rather than being pasted
+     onto a blue card. */
+  html,body{ height:100%; margin:0; background:#101521; color:#e2d6bb;
     font-family:'Cormorant Garamond', Georgia, serif; }
   /* The case stands on the floor of the page rather than floating in the middle of
      it: on a phone its width is what limits it, so centring left as much empty dark
@@ -41,6 +44,21 @@
      The case must fit the viewport in BOTH directions -- sized by height alone it ran
      off the sides of a phone and the shelves were cut in half. 1232/990 is the case's
      own proportion, so this is the tallest it can be and still fit across. */
+  /* The case does not stand on a drawn floor -- there isn't one, and the plain
+     wall is the point. It stands on the evidence of one: the dark pools where its
+     two feet bear, and thins away between them, the way real weight does. */
+  #stage{ position:relative; flex:none; }
+  #stage::after{ content:''; position:absolute; left:-8%; right:-8%; top:100%;
+    height:10%; pointer-events:none; opacity:1;
+    transition:opacity .45s ease;
+    background:
+      radial-gradient(13% 70% at 17% 0%, rgba(0,0,0,.9), rgba(0,0,0,0) 100%),
+      radial-gradient(13% 70% at 84% 0%, rgba(0,0,0,.9), rgba(0,0,0,0) 100%),
+      radial-gradient(52% 55% at 50% 0%, rgba(0,0,0,.6), rgba(0,0,0,0) 100%); }
+  /* a shadow under a shelf that has come forward would be a shadow cast by
+     nothing, so it goes when the case is zoomed */
+  #stage:has(#frame.zoomed)::after{ opacity:0; }
+
   #frame{ position:relative; overflow:hidden; flex:none;
     --h: min(95vh, calc(96vw * 1.24444), 1232px);
     height:var(--h); width:calc(var(--h) / 1.24444); }
@@ -138,6 +156,7 @@
 </style>
 </head>
 <body>
+  <div id="stage">
   <div id="frame">
     <div id="case">
       <img class="wood" src="shelves.jpg" alt="An apothecary shelf of five open shelves">
@@ -160,6 +179,7 @@
     <p class="saying" id="say-about">sagne has been designed by one person, programming by
       claude and images by gemini. it is a single individual's attempt to bring to digital
       life some of life's interesting modes and models.</p>
+  </div>
   </div>
 <script>
 (function(){
