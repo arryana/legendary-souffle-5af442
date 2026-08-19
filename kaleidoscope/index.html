@@ -459,9 +459,9 @@
     m.fillStyle = 'rgba(12,7,2,0.5)';
     m.beginPath(); m.arc(kx, ky+kr*0.12, kr*1.06, 0, Math.PI*2); m.fill();
     const dome = m.createRadialGradient(kx-kr*0.35, ky-kr*0.4, kr*0.1, kx, ky, kr);
-    dome.addColorStop(0.0, '#a9793c');
-    dome.addColorStop(0.5, '#7c531f');
-    dome.addColorStop(1.0, '#3f2a11');
+    dome.addColorStop(0.0, '#5c3c1a');   // darker walnut, closer to the shaded wood
+    dome.addColorStop(0.5, '#3c2712');
+    dome.addColorStop(1.0, '#241407');
     m.fillStyle = dome;
     m.beginPath(); m.arc(kx, ky, kr, 0, Math.PI*2); m.fill();
     // a brass collar around the knob's base
@@ -469,7 +469,7 @@
     m.beginPath(); m.arc(kx, ky, kr*0.9, 0, Math.PI*2); m.stroke();
     // a small, soft top-left catch (not a hard glint)
     const kh = m.createRadialGradient(kx-kr*0.34, ky-kr*0.4, 0, kx-kr*0.34, ky-kr*0.4, kr*0.7);
-    kh.addColorStop(0,'rgba(255,240,205,0.5)'); kh.addColorStop(1,'rgba(255,240,205,0)');
+    kh.addColorStop(0,'rgba(255,238,200,0.34)'); kh.addColorStop(1,'rgba(255,238,200,0)');
     m.fillStyle = kh;
     m.beginPath(); m.arc(kx, ky, kr, 0, Math.PI*2); m.fill();
   }
