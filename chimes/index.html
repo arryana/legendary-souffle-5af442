@@ -161,19 +161,10 @@
   const HANGER_W = 172;
 
   // ---- assets ----
+  // The rod, cord and hanger are drawn (see drawRod/drawCord/drawHanger), so the
+  // old sprite PNGs -- which carried a baked light halo and blurred when scaled --
+  // are no longer loaded. The small swatch images in the material pickers stay.
   function loadImg(src){ const i=new Image(); i.src=src; return i; }
-  const rodImgs = {
-    glass:  loadImg('chime-rod-glass.png'),
-    silver: loadImg('chime-rod-silver.png'),
-    brass:  loadImg('chime-rod-brass.png'),
-    wood:   loadImg('chime-rod-wood.png'),
-  };
-  const cordImgs = {
-    rope:   loadImg('chime-cord-rope.png'),
-    chain:  loadImg('chime-cord-chain.png'),
-    string: loadImg('chime-cord-string.png'),
-  };
-  const hangerImg = loadImg('chime-hanger.png');
 
   // ---- state ----
   const state = {
@@ -216,8 +207,8 @@
   let hangerX=0, hangerTopY=60, hangerDrawH=0, pivotY=0, ringSpan=0;
   function layout(){
     hangerX = W/2;
-    hangerDrawH = HANGER_W * (hangerImg.height / hangerImg.width || 164/145);
-    pivotY = hangerTopY + hangerDrawH*0.965;
+    hangerDrawH = HANGER_W * 1.02;
+    pivotY = hangerTopY + hangerDrawH*0.92;
     ringSpan = HANGER_W*0.85;
   }
   function pivotX(i, n){
@@ -421,30 +412,145 @@
     requestAnimationFrame(tick);
   }
 
-  function drawRodsAndCords(rodImg, cordImg, cordThick, n){
+  function drawRodsAndCords(rodMat, cordMat, cordThick, n){
     for(let i=0;i<n;i++){
       const r = state.rods[i];
       const px = pivotX(i,n);
       ctx.save();
       ctx.translate(px, pivotY);
       ctx.rotate(r.angle);
-
-      if(cordImg && cordImg.complete && cordImg.naturalWidth){
-        ctx.drawImage(cordImg, 0, 0, cordImg.naturalWidth, cordImg.naturalHeight, -cordThick/2, 0, cordThick, state.cordLength);
-      }
-      if(rodImg && rodImg.complete && rodImg.naturalWidth){
-        ctx.drawImage(rodImg, -ROD_THICK/2, state.cordLength, ROD_THICK, r.rodLength);
-      }
+      drawCord(state.cordLength, cordMat);
+      drawRod(state.cordLength, r.rodLength, rodMat);
       ctx.restore();
     }
   }
   function draw(){
     ctx.clearRect(0,0,W,H);
     const n = state.rods.length;
-    if(hangerImg.complete && hangerImg.naturalWidth){
-      ctx.drawImage(hangerImg, hangerX-HANGER_W/2, hangerTopY, HANGER_W, hangerDrawH);
+    drawRodsAndCords(state.rodMaterial, state.cordMaterial, CORD_THICK[state.cordMaterial], n);
+    drawHanger(n);   // over the cord tops, so the cords disappear into the bar
+  }
+
+  // ---- the parts, drawn ------------------------------------------------------
+  // Every piece here is drawn rather than a stretched photo. The sprites carried a
+  // soft light halo baked into them and went blurry when scaled; drawing the wood,
+  // the cord and the metal keeps every edge crisp and every material under control.
+
+  const ROD_MATS = {
+    brass:  { edge:'#4a3413', body:'#a37f34', spec:'#f4e1a2', lip:'#6a4e1e', alpha:1 },
+    silver: { edge:'#565c61', body:'#a7afb5', spec:'#ffffff', lip:'#6a7075', alpha:1 },
+    wood:   { edge:'#3a2410', body:'#8a5a2c', spec:'#c79a5c', lip:'#4a2f16', alpha:1, grain:true },
+    glass:  { edge:'#3f7f78', body:'#bfe6df', spec:'#ffffff', lip:'#79b7ad', alpha:0.62 },
+  };
+
+  function drawRod(topY, len, matKey){
+    const M = ROD_MATS[matKey], half = ROD_THICK/2, r = half;
+    ctx.save();
+    ctx.globalAlpha = M.alpha;
+    // the rounded-capsule body
+    const x0 = -half, x1 = half, y0 = topY, y1 = topY+len;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0+r); ctx.arc(0, y0+r, r, Math.PI, 0);
+    ctx.lineTo(x1, y1-r); ctx.arc(0, y1-r, r, 0, Math.PI);
+    ctx.closePath(); ctx.clip();
+    // a cross-tube gradient: dark rim, a bright specular offset to the lit side, dark rim
+    const gx = ctx.createLinearGradient(x0,0,x1,0);
+    gx.addColorStop(0.0, M.edge); gx.addColorStop(0.28, M.spec);
+    gx.addColorStop(0.5, M.body); gx.addColorStop(1.0, M.edge);
+    ctx.fillStyle = gx; ctx.fillRect(x0-1, y0-1, ROD_THICK+2, len+2);
+    // a gentle length shade: a little brighter up top where the light falls
+    const gy = ctx.createLinearGradient(0,y0,0,y1);
+    gy.addColorStop(0,'rgba(255,255,255,0.10)'); gy.addColorStop(0.15,'rgba(255,255,255,0)');
+    gy.addColorStop(0.9,'rgba(0,0,0,0)'); gy.addColorStop(1,'rgba(0,0,0,0.28)');
+    ctx.fillStyle = gy; ctx.fillRect(x0-1, y0-1, ROD_THICK+2, len+2);
+    if(M.grain){
+      ctx.globalAlpha = M.alpha*0.5;
+      ctx.strokeStyle = 'rgba(50,30,12,0.5)'; ctx.lineWidth = 0.7;
+      for(let k=0;k<3;k++){ const gxp = x0+ROD_THICK*(0.3+k*0.22);
+        ctx.beginPath(); ctx.moveTo(gxp, y0+2); ctx.lineTo(gxp+ (k-1), y1-2); ctx.stroke(); }
+      ctx.globalAlpha = M.alpha;
     }
-    drawRodsAndCords(rodImgs[state.rodMaterial], cordImgs[state.cordMaterial], CORD_THICK[state.cordMaterial], n);
+    ctx.restore();
+    // a lit lip on the top cap, and a drilled cord hole
+    ctx.save(); ctx.globalAlpha = M.alpha;
+    ctx.strokeStyle = M.lip; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, topY+r, r-0.5, Math.PI*1.05, Math.PI*1.95); ctx.stroke();
+    ctx.fillStyle = 'rgba(20,14,6,0.7)';
+    ctx.beginPath(); ctx.ellipse(0, topY+r*0.9, 1.6, 1.1, 0, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawCord(len, matKey){
+    if(matKey==='chain'){
+      const link = 6; ctx.strokeStyle = '#c9cdd2'; ctx.lineWidth = 1.4;
+      for(let y=0;y<len-2;y+=link){
+        const vert = ((y/link)|0)%2===0;
+        ctx.beginPath();
+        if(vert) ctx.ellipse(0, y+link/2, 1.7, link*0.46, 0, 0, Math.PI*2);
+        else     ctx.ellipse(0, y+link/2, 3.0, link*0.34, 0, 0, Math.PI*2);
+        ctx.stroke();
+      }
+    } else if(matKey==='rope'){
+      // two strands twisting round each other
+      const amp = 2.2, twist = 0.5;
+      for(const off of [0, Math.PI]){
+        ctx.beginPath();
+        for(let y=0;y<=len;y+=2){ const x = Math.sin(y*twist+off)*amp;
+          if(y===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+        ctx.strokeStyle = off===0 ? '#b79a68' : '#8f7444'; ctx.lineWidth = 2.6; ctx.stroke();
+      }
+    } else { // string: a thin taut, faintly fibrous line
+      ctx.strokeStyle = 'rgba(226,220,200,0.9)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,len); ctx.stroke();
+      ctx.strokeStyle = 'rgba(120,110,90,0.5)'; ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.moveTo(0.6,0); ctx.lineTo(0.6,len); ctx.stroke();
+    }
+  }
+
+  function drawHanger(n){
+    const cx = hangerX, top = hangerTopY;
+    const barH = hangerDrawH*0.15, barBottom = pivotY, barTop = barBottom - barH;
+    const barCY = (barTop+barBottom)/2, halfW = HANGER_W/2;
+    const ringCY = top + hangerDrawH*0.05, ringR = hangerDrawH*0.045;
+
+    // suspension: two cords from the ring down to the bar ends
+    ctx.save(); ctx.lineCap='round';
+    for(const sgn of [-1,1]){
+      ctx.strokeStyle = 'rgba(60,44,22,0.9)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(cx, ringCY+ringR); ctx.lineTo(cx+sgn*halfW*0.9, barTop+1); ctx.stroke();
+      ctx.strokeStyle = 'rgba(150,120,74,0.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx-1, ringCY+ringR); ctx.lineTo(cx+sgn*halfW*0.9-1, barTop+1); ctx.stroke();
+    }
+    ctx.restore();
+
+    // the brass hanging ring, up top
+    ctx.save();
+    const rg = ctx.createRadialGradient(cx-ringR*0.3, ringCY-ringR*0.3, 1, cx, ringCY, ringR);
+    rg.addColorStop(0,'#f2dca0'); rg.addColorStop(0.6,'#b8933f'); rg.addColorStop(1,'#6a4e1e');
+    ctx.strokeStyle = rg; ctx.lineWidth = ringR*0.5;
+    ctx.beginPath(); ctx.arc(cx, ringCY, ringR, 0, Math.PI*2); ctx.stroke();
+    ctx.restore();
+
+    // the wooden bar: a rounded lozenge, lit from the top
+    ctx.save();
+    const br = barH/2;
+    ctx.beginPath();
+    ctx.moveTo(cx-halfW+br, barTop); ctx.lineTo(cx+halfW-br, barTop);
+    ctx.arc(cx+halfW-br, barCY, br, -Math.PI/2, Math.PI/2);
+    ctx.lineTo(cx-halfW+br, barBottom); ctx.arc(cx-halfW+br, barCY, br, Math.PI/2, Math.PI*1.5);
+    ctx.closePath(); ctx.clip();
+    const wg = ctx.createLinearGradient(0, barTop, 0, barBottom);
+    wg.addColorStop(0.0, '#7a4f28'); wg.addColorStop(0.35, '#5a3819');
+    wg.addColorStop(0.7, '#3f2712'); wg.addColorStop(1.0, '#241407');
+    ctx.fillStyle = wg; ctx.fillRect(cx-halfW-2, barTop-2, HANGER_W+4, barH+4);
+    // a couple of grain streaks along it
+    ctx.strokeStyle='rgba(30,18,8,0.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(cx-halfW, barCY+2); ctx.lineTo(cx+halfW, barCY+1); ctx.stroke();
+    ctx.restore();
+    // the bar's own contact shadow beneath, so it sits over the cords
+    ctx.save(); ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(cx-halfW+br, barBottom); ctx.lineTo(cx+halfW-br, barBottom); ctx.stroke();
+    ctx.restore();
   }
 
   // world position of the point midway down a rod's body -- used to anchor its length popup
