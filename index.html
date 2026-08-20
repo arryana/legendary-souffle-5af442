@@ -257,7 +257,10 @@
     // The brass is laid on rather than photographed in, so these are the boxes the
     // cut-out plates are drawn into. The oval is 135 wide -- her call, shrunk twice
     // from 238 until it sat round its own name instead of above it.
-    oval:{ x:444.5, y:64, w:135, h:51.6 },
+    // Edge to edge on the front face of the top rail -- her call. That face runs
+    // y 0..58 in the photograph, so the plate takes all 58 of it and its width
+    // follows from the brass's own proportion.
+    oval:{ x:436, y:0, w:152, h:58 },
     disc:{ cx:512, cy:1250, d:42 },       // on the band of dark below the counter
     // Each plate was cut to the length of its own word, so the width is per shelf.
     // 26 tall on every one; the names are engraved at 13px of the photograph's own
