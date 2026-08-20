@@ -41,10 +41,17 @@
   input[type=range]::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:#e9d9a8; cursor:pointer; }
   #globeWrap{ position:static; width:82px; height:82px; flex:0 0 auto; cursor:grab; touch-action:none; }
   #globeWrap:active{ cursor:grabbing; }
-  #eternityToggle{ font-size:22px; line-height:1; color:rgba(231,221,201,.32); cursor:pointer;
+  #eternityToggle, #realToggle{ font-size:22px; line-height:1; color:rgba(231,221,201,.32); cursor:pointer;
     user-select:none; transition:color .35s ease, text-shadow .35s ease; flex:0 0 auto; }
-  #eternityToggle.active{ color:#e9d9a8; text-shadow:0 0 9px rgba(233,217,168,.75); }
-  #eternityToggle:focus-visible{ outline:1px solid rgba(233,217,168,.6); outline-offset:4px; }
+  #eternityToggle.active, #realToggle.active{ color:#e9d9a8; text-shadow:0 0 9px rgba(233,217,168,.75); }
+  #eternityToggle:focus-visible, #realToggle:focus-visible{ outline:1px solid rgba(233,217,168,.6); outline-offset:4px; }
+  /* the clock face is a wide glyph next to the slim infinity sign — sized down
+     so the two sit at the same visual weight */
+  #realToggle{ font-size:16px; filter:saturate(.55); }
+  #realToggle.active{ filter:none; }
+  /* with the plane handed over to the real clock there is nothing left for the
+     speed slider to scale, so it stands down rather than sitting there dead */
+  input[type=range]:disabled{ opacity:.26; }
 
   /* a quiet flag, always available, for setting the latitude to somewhere other than
      wherever the visitor actually is — opens a small search bar, never on by default */
@@ -123,6 +130,7 @@
 <div id="dock">
   <canvas id="globeWrap" width="164" height="164" aria-label="latitude" role="slider" tabindex="0"></canvas>
   <input type="range" id="speedSlider" min="0" max="100" value="80" aria-label="time speed">
+  <div id="realToggle" role="checkbox" tabindex="0" aria-checked="false" aria-label="real-world time">🕰</div>
   <div id="eternityToggle" role="checkbox" tabindex="0" aria-checked="false" aria-label="ever-thickening trace">∞</div>
   <button type="button" id="loc-flag" title="check another location" aria-label="check another location" aria-expanded="false">🚩</button>
   <form id="loc-search" autocomplete="off">
@@ -153,10 +161,23 @@
     if(e.key===' '||e.key==='Enter'){ e.preventDefault(); setEternal(!sandEternal); }
   });
   let sandLayer=null, sandCtx=null;
+  // A groove stops deepening once it's cut. Sand is displaced, not deposited, so
+  // a line the bob has crossed two hundred times is no darker than one it crossed
+  // six times — and without that ceiling, real-world time (where the plane holds
+  // very nearly the same angle for hours) would burn one chord to solid white.
+  // A bin per 0.18 degrees of plane angle, each counting the passes it has taken,
+  // is all it needs. At any of the compressed speeds a bin sees well under one
+  // pass, so the cap never comes into it there.
+  const SAND_BINS=2048, SAND_CAP_PASSES=2.5;
+  const sandDeposit=new Float32Array(SAND_BINS);
+  function sandBin(a){
+    const x=((a%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+    return Math.min(SAND_BINS-1, Math.floor(x/(Math.PI*2)*SAND_BINS));
+  }
   // where the stylus was last frame; cleared with the sand so a wipe cannot leave
   // a stray line drawn from wherever the bob happened to be before it
   let sandPrev=null;
-  function clearSand(){ if(sandCtx) sandCtx.clearRect(0,0,sandLayer.width,sandLayer.height); sandPrev=null; }
+  function clearSand(){ if(sandCtx) sandCtx.clearRect(0,0,sandLayer.width,sandLayer.height); sandDeposit.fill(0); sandPrev=null; }
 
   // ---------- latitude: set by dragging a line across the small globe ----------
   // a line of latitude, viewed exactly edge-on (the standard way a globe is drawn
@@ -170,6 +191,7 @@
     const localY=clientY-(rect.top+rect.height/2);
     const s=Math.max(-1,Math.min(1,-localY/gR));
     lat=Math.asin(s);
+    reDerive();
   }
   let draggingGlobe=false;
   globeCanvas.addEventListener('pointerdown', e=>{ draggingGlobe=true; globeCanvas.setPointerCapture(e.pointerId); setLatFromDrag(e.clientY); });
@@ -179,7 +201,7 @@
 
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(
-      pos => { lat = pos.coords.latitude*Math.PI/180; },
+      pos => { lat = pos.coords.latitude*Math.PI/180; reDerive(); },
       () => {}, { timeout: 4000 }
     );
   }
@@ -214,6 +236,7 @@
         const results=await res.json();
         if(!results || !results.length){ status.textContent="couldn't find that"; return; }
         lat=parseFloat(results[0].lat)*Math.PI/180;
+        reDerive();
         status.textContent=results[0].display_name.split(',').slice(0,2).join(', ');
         input.value='';
       }catch(e){
@@ -396,6 +419,8 @@
     sandLayer=document.createElement('canvas'); sandLayer.width=W; sandLayer.height=H;
     sandCtx=sandLayer.getContext('2d');
     sandPrev=null;   // the old sand went with the old layer; don't draw across the gap
+    sandDeposit.fill(0);
+    reDerive();    // in real time the whole rosette is re-derived onto the new layer
   }
   window.addEventListener('resize',resize);
 
@@ -479,6 +504,111 @@
     }
   }
 
+  // ---------- real-world time ----------
+  // The checkbox hands the plane over to the actual clock. It then precesses at
+  // the true Foucault rate — one turn per day times sin(latitude), the latitude
+  // this piece already knows from the globe or the visitor's own position — and
+  // nothing scales it. The honest caveat is that at that rate the turn is very
+  // nearly imperceptible: the better part of a day for one rosette. The swing
+  // itself stays exactly as lively as ever; only the slow rotation goes
+  // real-slow. That's why it's a checkbox and not the new default.
+  //
+  // Nothing is remembered and no drawing is saved. The plane's angle is a pure
+  // function of the clock and the latitude, and so, therefore, is the whole
+  // rosette — so switching it on (or changing latitude, or resizing) recomputes
+  // the trace the plate would have drawn by now in one pass and lays it down.
+  const realToggle=document.getElementById('realToggle');
+  let realTime=false, pendingRebuild=false;
+  function reDerive(){ if(realTime) pendingRebuild=true; }
+
+  // local midnight is the anchor: as arbitrary as a real pendulum's starting
+  // bearing, but fixed — so the same latitude at the same moment always gives
+  // the same figure, with nothing stored anywhere to make it so.
+  function secondsSinceMidnight(){
+    const d=new Date();
+    return d.getHours()*3600+d.getMinutes()*60+d.getSeconds()+d.getMilliseconds()/1000;
+  }
+  function realPlaneAngle(){ return (Math.PI*2)*Math.sin(lat)*(secondsSinceMidnight()/DAY); }
+
+  // the ground the bob has been over between two plane angles. At the real rate
+  // successive passes land 0.007 degrees apart — far closer than a grain is
+  // wide — so there are no separate lines to draw here: the sand across that
+  // whole arc has simply been worked, and every part of it is at the groove's
+  // own ceiling. Drawing it as thousands of overlapping chords instead would
+  // pile the middle up to white, where all of them cross, and leave the rim
+  // faint — the exact inverse of the trace's real signature, which is darkest
+  // at the turning points because that's where the bob lingers.
+  function sweepSand(from, to){
+    if(!sandCtx || from===to) return;
+    const amp=floorR*0.72;
+    let lo=Math.min(from,to), hi=Math.max(from,to);
+    if(hi-lo>=Math.PI){ lo=0; hi=Math.PI; }   // half a turn already covers the whole floor
+    const g=sandCtx.createRadialGradient(cx,cy,0,cx,cy,amp);
+    g.addColorStop(0,'rgba(233,217,168,0.20)');
+    g.addColorStop(0.82,'rgba(233,217,168,0.25)');
+    g.addColorStop(0.97,'rgba(233,217,168,0.44)');
+    g.addColorStop(1,'rgba(233,217,168,0.38)');
+    sandCtx.fillStyle=g;
+    // a pass is a whole diameter, so each arc of plane angle scours two
+    // opposite sectors — the same symmetry that empties the pin ring in half
+    // a turn rather than a whole one
+    for(const off of [0, Math.PI]){
+      sandCtx.beginPath(); sandCtx.moveTo(cx,cy);
+      sandCtx.arc(cx,cy,amp,lo+off,hi+off); sandCtx.closePath(); sandCtx.fill();
+    }
+    const STEP=(Math.PI*2)/SAND_BINS;
+    for(let a=lo; a<=hi+STEP; a+=STEP){
+      sandDeposit[sandBin(a)]=SAND_CAP_PASSES;   // worked ground; the live stylus adds nothing to it
+      sandDeposit[sandBin(a+Math.PI)]=SAND_CAP_PASSES;
+    }
+    // except the one it's in now. Old sand slumps back under the shaking; the
+    // groove being cut this minute is the sharp one, and the stylus keeps
+    // drawing it — which is also what makes the leading edge findable at all
+    sandDeposit[sandBin(to)]=0; sandDeposit[sandBin(to+Math.PI)]=0;
+  }
+
+  // replay: step the plane through every angle it has held since midnight and
+  // knock the pins it would have knocked on the way — including the ring's own
+  // resets, which wipe the sand behind them exactly as they do live, so the
+  // trace that's left starts from the last of those and not from midnight. One
+  // step per sand bin, so 2048 of them at the very most, once.
+  function rebuildRealTrace(){
+    pendingRebuild=false;
+    if(!sandCtx) return;
+    const total=realPlaneAngle();
+    const dir=total<0?-1:1, STEP=(Math.PI*2)/SAND_BINS;
+    for(const p of pins){ p.knocked=false; p.knockedAt=-1; }
+    clearSand();
+    posSweepAngle=0; negSweepAngle=Math.PI;
+    let from=0;   // where the sand standing on the floor now began
+    const steps=Math.floor(Math.abs(total)/STEP);
+    for(let i=1;i<=steps;i++){
+      const a=dir*i*STEP;
+      // -1e6 as the knock time: long settled, so they render as fallen, not falling
+      sweepKnock(posSweepAngle, a, -1e6); posSweepAngle=a;
+      sweepKnock(negSweepAngle, a+Math.PI, -1e6); negSweepAngle=a+Math.PI;
+      if(pins.every(p=>p.knocked)){
+        for(const p of pins){ p.knocked=false; p.knockedAt=-1; }
+        if(!sandEternal) from=a;
+      }
+    }
+    planeAngle=total; posSweepAngle=total; negSweepAngle=total+Math.PI;
+    prevSwingFrac=1; prevRising=false; sandPrev=null;
+    sweepSand(from, total);
+  }
+
+  function setRealTime(v){
+    realTime=v;
+    realToggle.setAttribute('aria-checked', String(v));
+    realToggle.classList.toggle('active', v);
+    speedSlider.disabled=v;
+    if(v) rebuildRealTrace();
+  }
+  realToggle.addEventListener('click', ()=>setRealTime(!realTime));
+  realToggle.addEventListener('keydown', e=>{
+    if(e.key===' '||e.key==='Enter'){ e.preventDefault(); setRealTime(!realTime); }
+  });
+
   function tick(now){
     const t=now*0.001;
     const dtReal=Math.min((now-last)/1000,0.05); last=now;
@@ -491,8 +621,15 @@
     // the plane's precession is the only thing time-speed touches — real
     // Foucault physics: a full turn in 24h at the poles, none at the equator,
     // scaled by sin(latitude) everywhere between; opposite sign each hemisphere
-    const dtSim = dtReal*speedMultiplier();
-    planeAngle += (Math.PI*2) * (Math.sin(lat)/DAY) * dtSim;
+    if(realTime){
+      // no accumulation at all here: the angle is read straight off the clock,
+      // which is why nothing has to be remembered between visits
+      if(pendingRebuild && !draggingGlobe) rebuildRealTrace();
+      planeAngle = realPlaneAngle();
+    } else {
+      const dtSim = dtReal*speedMultiplier();
+      planeAngle += (Math.PI*2) * (Math.sin(lat)/DAY) * dtSim;
+    }
     updatePins(t, swingFrac);
 
     // the swing plane itself, faint, always visible even when the bob passes
@@ -512,7 +649,9 @@
     // points come out dark, while it races through the middle and leaves the
     // faintest line there. The layer never clears itself; only the pin-ring reset
     // (or never, in ∞ mode) wipes it, so it fans slowly into a rosette.
-    if(sandPrev){
+    const bin=sandBin(planeAngle);
+    if(sandPrev && sandDeposit[bin]<SAND_CAP_PASSES){
+      sandDeposit[bin] += dtReal/(SWING_PERIOD/2);   // one pass is half a period
       sandCtx.save();
       sandCtx.translate(cx,cy);
       sandCtx.strokeStyle='rgba(233,217,168,0.16)';
