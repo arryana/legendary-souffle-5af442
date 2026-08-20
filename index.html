@@ -25,6 +25,10 @@
 <meta name="twitter:image" content="https://sagne.co.uk/og/index.png">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&display=swap');
+  /* The brass is engraved in Libre Baskerville, not the site's Cormorant. Her
+     choice, and the sturdier one: engraving wants even stroke weight, and
+     Cormorant's fine hairlines simply vanish at the size a shelf plate allows. */
+  @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&display=swap');
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   /* The wall. This is the field the cards themselves are drawn on -- gyre, chimes,
      musebox, chladni, the candle all share it -- and the photograph's own
@@ -87,18 +91,19 @@
   #trayplate{ position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
     display:flex; align-items:center; justify-content:center;
     border:0; padding:0; cursor:pointer; background-repeat:no-repeat;
-    font-family:'Cormorant Garamond', Georgia, serif; font-weight:600;
-    letter-spacing:.02em; color:#3b2807;
-    text-shadow:0 1px 0 rgba(255,238,196,.42), 0 -1px 1px rgba(0,0,0,.3);
+    font:700 1em/1 'Libre Baskerville', Georgia, serif;
+    letter-spacing:.045em; color:#4a3208;
+    text-shadow:0 1px 0 rgba(255,240,200,.42), 0 -1px 1px rgba(0,0,0,.28);
+    background-size:100% 100%;
     filter:drop-shadow(0 3px 7px rgba(0,0,0,.7)); }
-  #trayplate i{ font-style:italic; line-height:1; }
+  #trayplate i{ font-style:normal; line-height:1; }
   /* the case is still there behind, just well out of the way */
   body.tray #frame{ filter:brightness(.16) saturate(.7); transition:filter .5s ease; }
   body.tray #back{ display:none; }   /* the plate at the foot of the tray is the way back */
 
   #frame{ position:relative; overflow:hidden; flex:none;
-    --h: min(95vh, calc(96vw * 1.24444), 1232px);
-    height:var(--h); width:calc(var(--h) / 1.24444); }
+    --h: min(95vh, calc(96vw * 1.257813), 1288px);
+    height:var(--h); width:calc(var(--h) / 1.257813); }
   /* Sizes here are fractions of the case's own height, so the lettering keeps its
      proportion to the furniture at every screen size. They cannot be written as
      "unit x px" -- --h is a length, and a length times a length is not a size, so
@@ -108,23 +113,17 @@
     transition:transform .78s cubic-bezier(.42,.02,.16,1); }
   #case > img.wood{ width:100%; height:100%; display:block; }
 
-  /* The brass oval is photographed with a hard specular highlight across it, and
-     the shine is baked into the picture -- so it is taken down here instead, with
-     a veil that dims and desaturates what shows through it. The radial mask fades
-     the veil out before the rim, or the ellipse's own edge draws a seam across the
-     brass. Purely cosmetic: where backdrop-filter is not supported nothing shows
-     and the crown simply stays as bright as the photograph. */
-  #sheen{ position:absolute; border-radius:50%; pointer-events:none; z-index:1;
-    -webkit-backdrop-filter:brightness(.86) saturate(.82) contrast(.96);
-    backdrop-filter:brightness(.86) saturate(.82) contrast(.96);
-    -webkit-mask-image:radial-gradient(closest-side, #000 58%, transparent 100%);
-    mask-image:radial-gradient(closest-side, #000 58%, transparent 100%); }
+  /* The walnut case had its brass in the photograph, with a hard specular
+     highlight baked in that had to be veiled back down. This case's brass is
+     separate: her own plates and oval, cut out and laid on, so there is no shine
+     to fight and no veil. It also means a plate is as long as its own word. */
 
   /* sagne, engraved into the brass oval at the crown */
   #oval{ position:absolute; display:flex; align-items:center; justify-content:center;
-    font-weight:700; letter-spacing:.10em; z-index:2;
-    appearance:none; border:0; background:none; padding:0; font-family:inherit;
-    cursor:pointer;
+    font:700 1em/1 'Libre Baskerville', Georgia, serif; letter-spacing:.12em; z-index:2;
+    appearance:none; border:0; padding:0; cursor:pointer;
+    background:url(shelfoval.png) no-repeat center/100% 100%;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.8));
     /* engraved: cut dark into the brass, with a bright lip on the lower edge where
        the light catches the cut */
     color:#33230a; text-shadow:0 1px 0 rgba(255,238,196,.5), 0 -1px 1px rgba(0,0,0,.35); }
@@ -138,16 +137,32 @@
 
   /* the name of the type, engraved on the plate of the shelf it labels */
   .plate{ position:absolute; display:flex; align-items:center; justify-content:center;
-    font-weight:600; letter-spacing:.02em;
-    color:#3b2807; text-shadow:0 1px 0 rgba(255,238,196,.42), 0 -1px 1px rgba(0,0,0,.3);
-    white-space:nowrap; cursor:pointer; }
-  .plate i{ font-style:italic; line-height:1; }
+    font:700 1em/1 'Libre Baskerville', Georgia, serif; letter-spacing:.045em;
+    color:#4a3208; text-shadow:0 1px 0 rgba(255,240,200,.42), 0 -1px 1px rgba(0,0,0,.28);
+    white-space:nowrap; cursor:pointer;
+    background-repeat:no-repeat; background-position:center; background-size:100% 100%;
+    filter:drop-shadow(0 1px 2px rgba(0,0,0,.75)); }
+  .plate i{ font-style:normal; line-height:1; }
+
+  /* Her idea, off a picture of a real display stand: the cards are held rather
+     than merely stood up. An upright runs behind the card, an arm crosses over
+     its top edge and another takes its weight underneath, all on a base that
+     bears on the board. It reads as a thing mounted for looking at, and it stops
+     the cards seeming to hover a hair above the shelf. Drawn, not photographed --
+     it is four rectangles and a highlight, and drawing it keeps it crisp at every
+     zoom the case does. */
+  .stand{ position:absolute; left:0; top:-8.16%; width:100%; height:117.96%;
+    background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 84.2 144.5' preserveAspectRatio='none'><g fill='%2315181d'><rect x='39.4' y='5' width='5.4' height='133' rx='1.2'/><rect x='29' y='5.4' width='26' height='5' rx='1.4'/><rect x='29' y='132.5' width='26' height='5' rx='1.4'/><rect x='24.6' y='137' width='35' height='7.5' rx='1.6'/></g><g fill='%2359636f' opacity='.55'><rect x='29' y='5.4' width='26' height='1' rx='.5'/><rect x='29' y='132.5' width='26' height='.9' rx='.45'/><rect x='24.6' y='137' width='35' height='1.1' rx='.55'/><rect x='39.4' y='5' width='1.5' height='133' rx='.7'/></g></svg>") no-repeat center/100% 100%;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.75)); pointer-events:none; z-index:0; }
 
   /* the pieces, standing face front on their shelf */
   .piece{ position:absolute; display:block; text-decoration:none;
     transition:transform .25s cubic-bezier(.2,.7,.3,1), opacity .35s ease;
     transform-origin:50% 100%; }
-  .piece img{ width:100%; height:100%; object-fit:cover; display:block;
+  /* the upright runs BEHIND the card -- an absolutely positioned stand would
+     otherwise paint over it, and every picture got a black bar down its middle */
+  .piece img{ position:relative; z-index:1;
+    width:100%; height:100%; object-fit:cover; display:block;
     border-radius:2px; box-shadow:0 2px 4px rgba(0,0,0,.8), 0 0 0 1px rgba(0,0,0,.5); }
   .piece:hover{ transform:scale(1.14) translateY(calc(var(--h) * -0.0037)); z-index:5; }
   .piece:focus-visible{ outline:2px solid #b8903f; outline-offset:2px; }
@@ -204,8 +219,7 @@
   <div id="stage">
   <div id="frame">
     <div id="case">
-      <img class="wood" src="shelves.jpg" alt="An apothecary shelf of five open shelves">
-      <div id="sheen"></div>
+      <img class="wood" src="shelves-navy.jpg" alt="A dark case of five open shelves">
       <div id="veil"></div>
       <button type="button" id="oval" aria-expanded="false" aria-controls="say-sagne"
               aria-label="what is this?">sagne</button>
@@ -238,56 +252,57 @@
   // percentages, which had to be retyped by hand every time the picture changed.
   // ---------------------------------------------------------------------------
   var GEO = {
-    W:990, H:1232,
-    interior:{ left:148, right:845 },     // the opening between the two stiles
-    // Measured off the photograph by hue, not by eye: the brass rides olive where
-    // the walnut around it runs red, which puts the ellipse at x 421..579,
-    // y 74..123. The old figures had this box 3px right and 5px low and a good
-    // deal taller than the brass, so the name sat low and off to one side of it.
-    // her own brass plate, screwed to the crown: 146x64 centred at (500,107),
-    // which clears the carving above (it comes down to y=70) and the frieze below
-    oval:{ x:427, y:75, w:146, h:64 },
-    plate:{ x:424, w:147, h:22 },         // the engraved area of a brass plate
-    disc:{ cx:495, cy:1160, d:42 },       // the brass disc, centred on the plinth shell
-    // The card art is 11:16 almost to a file -- 14 of the 19 are exactly 440x640.
-    // The slot used to be 76x100, which is wider, so object-fit:cover was quietly
-    // shaving a tenth off the top and bottom of every picture. Matched to the art.
-    card:{ w:68.75, h:100 },
+    W:1024, H:1288,
+    interior:{ left:85, right:939 },      // the opening between the two posts
+    // The brass is laid on rather than photographed in, so these are the boxes the
+    // cut-out plates are drawn into. The oval is 135 wide -- her call, shrunk twice
+    // from 238 until it sat round its own name instead of above it.
+    oval:{ x:444.5, y:64, w:135, h:51.6 },
+    disc:{ cx:512, cy:1250, d:42 },       // on the band of dark below the counter
+    // Each plate was cut to the length of its own word, so the width is per shelf.
+    // 26 tall on every one; the names are engraved at 13px of the photograph's own
+    // scale, which is what those lengths were cut for.
+    plateH:26, plateFS:13,
+    // The card art is 11:16 almost to a file. Sized to the same fraction of the
+    // shelf pitch the walnut case used, so the cards keep their proportion to the
+    // furniture now that the opening is wider.
+    card:{ w:84.2, h:122.5 },
+    // the stand lifts the card off the board by its base and its lower arm
+    stand:12,
     // A card stands ON the board, not at the lip of it -- its foot goes back from
     // the front edge by this much, so a sliver of the lit top surface shows in
-    // front of it. Standing them on the lip made them read as propped in front of
-    // the furniture; setting them too far back read as hovering above it. This is
-    // the width of board that says "resting on", and the cards' shadow is a short
-    // contact one for the same reason.
-    seatBack:8,
+    // front of it.
+    seatBack:10,
     // ceil = underside of the shelf above; surf = the FRONT LIP of the board this
-    // shelf's cards stand on; plateY = top of the brass plate on the front rail.
-    // Aug 2026: every shelf was given the same 132px of headroom between its
-    // ceiling and where a card's foot actually lands, by stretching the flat dark
-    // band of back panel inside each one -- the boards, rails, crown and plinth are
-    // all carried across rigid, so no joinery moved. That took the photograph from
-    // 1088 to 1232 tall, and these figures with it.
+    // shelf's cards stand on; railY = the centre of the board's front edge, which
+    // is where the plate is screwed on.
+    // Aug 2026: the top compartment came out of her generator 45px shallower than
+    // the other four, which would have left its cards with visibly less air. Its
+    // flat lit back panel was stretched to match -- the top frame above and the
+    // board below carried across rigid, so no joinery moved. That took the
+    // photograph from 1238 to 1288 tall, and these figures with it. All five
+    // openings now run 198 to 210.
     shelves:[
-      { name:'instrumenta', ceil:144, surf:294, plateY:301,
+      { name:'instrumenta', ceil:107, surf:310, railY:318.5, plateW:131.8,
         pieces:[['candler','candler/index.html','candler/candle-card.png'],
                 ['conometer','conometer/index.html','conometer/conometer-card.png'],
                 ['galileo','galileo/index.html','galileo/galileo-card.png'],
                 ['windower','windower/index.html','windower/windower-card.png'],
                 ['storm','storm/index.html','storm/storm-card.png']] },
-      { name:'tactilia', ceil:331, surf:481, plateY:488,
+      { name:'tactilia', ceil:327, surf:525, railY:533.5, plateW:104.0,
         pieces:[['warmler','warmler/index.html','warmler/warmler-card.png'],
                 ['roller','roller/index.html','roller/roller-card.png'],
                 ['kaleidoscope','kaleidoscope/index.html','kaleidoscope/kaleidoscope-card.png']] },
-      { name:'systema', ceil:520, surf:670, plateY:677,
+      { name:'systema', ceil:542, surf:743, railY:752, plateW:110.1,
         pieces:[['musebox','musebox/index.html','musebox/musebox-card.png'],
                 ['gyre','gyre/index.html','gyre/gyre-card.png'],
                 ['chimes','chimes/index.html','chimes/chimes-card.png']] },
-      { name:'natura', ceil:709, surf:859, plateY:866,
+      { name:'natura', ceil:761, surf:962, railY:969.5, plateW:99.9,
         pieces:[['birds','birds/index.html','birds/birds-card.png'],
                 ['fireflies','fireflies/index.html','fireflies/fireflies-card.png'],
                 ['moths','moths/index.html','moths/moths-card.png'],
                 ['ant','ant/index.html','ant/ant-card.png']] },
-      { name:'phenomena', ceil:897, surf:1047, plateY:1054,
+      { name:'phenomena', ceil:977, surf:1187, railY:1194.5, plateW:129.2,
         pieces:[['lamp','lamp/index.html','lamp/lamp-card.png'],
                 ['rain','rain/index.html','rain/rain-card.png'],
                 ['bowl','bowl/index.html','bowl/bowl-card.png'],
@@ -321,28 +336,26 @@
   askEl.style.width=pc(GEO.disc.d,W); askEl.style.height=pc(GEO.disc.d,H);
   askEl.firstElementChild.nextElementSibling.style.fontSize='calc(var(--h) * 0.0262)';
 
-  var sheen=document.getElementById('sheen');
-  sheen.style.left=pc(GEO.oval.x-8,W);  sheen.style.top=pc(GEO.oval.y-6,H);
-  sheen.style.width=pc(GEO.oval.w+16,W); sheen.style.height=pc(GEO.oval.h+12,H);
 
   GEO.shelves.forEach(function(sh,si){
     sh.pieces.forEach(function(p,i){
       var cx=slotX(sh.pieces.length,i);
-      var x=cx-GEO.card.w/2, y=sh.surf-GEO.seatBack-GEO.card.h;
+      var x=cx-GEO.card.w/2, y=sh.surf-GEO.seatBack-GEO.card.h-GEO.stand;
       var a=document.createElement('a');
       a.className='piece'; a.href=p[1]; a.setAttribute('aria-label',p[0]);
       a.style.left=pc(x,W); a.style.top=pc(y,H);
       a.style.width=pc(GEO.card.w,W); a.style.height=pc(GEO.card.h,H);
-      a.innerHTML='<img src="'+p[2]+'" alt="">';
+      a.innerHTML='<span class="stand"></span><img src="'+p[2]+'" alt="">';
       caseEl.appendChild(a);
       BY_SLUG[p[0]]={ el:a, shelf:si };
       RECT[p[0]]={ cx:cx, cy:y+GEO.card.h/2 };
     });
     var pl=document.createElement('span');
     pl.className='plate'; pl.id='p-'+sh.name; pl.innerHTML='<i>'+sh.name+'</i>';
-    pl.style.left=pc(GEO.plate.x,W); pl.style.top=pc(sh.plateY,H);
-    pl.style.width=pc(GEO.plate.w,W); pl.style.height=pc(GEO.plate.h,H);
-    pl.style.fontSize='calc(var(--h) * 0.0138)';
+    pl.style.backgroundImage='url(shelfplate-'+sh.name+'.png)';
+    pl.style.left=pc(IMID-sh.plateW/2,W); pl.style.top=pc(sh.railY-GEO.plateH/2,H);
+    pl.style.width=pc(sh.plateW,W); pl.style.height=pc(GEO.plateH,H);
+    pl.style.fontSize='calc(var(--h) * '+(GEO.plateFS/GEO.H).toFixed(6)+')';
     caseEl.appendChild(pl);
     sh.plateEl=pl;
   });
@@ -371,8 +384,8 @@
       var w=inner.offsetWidth, h=inner.offsetHeight;
       if(!w || !h) return;
       var r=Math.min(boxW/w, boxH/h);
-      if(r>0.995 && r<1.005) break;         // close enough, and letter-spacing
-      size=Math.max(4, size*r);             // keeps it from ever settling exactly
+      if(r>0.995) break;                    // already fits: leave it exactly as cut
+      size=Math.max(4, size*r);
       el.style.fontSize=size+'px';
     }
     // A short name is left centred at the size the height gives it. Tracking it out
@@ -383,8 +396,12 @@
   function fit(){
     // None of the five names has a descender, so the letters can run the full
     // height of the engraved area without dropping below it.
-    [].forEach.call(document.querySelectorAll('.plate'), function(el){
-      fillPlate(el, 0.92, 0.95);
+    // Shrink only, and never past the screws. Every plate was cut to hold its own
+    // name at this size, so the fitter has nothing to do unless the webfont fails
+    // to arrive and a wider fallback face is standing in for it.
+    GEO.shelves.forEach(function(sh){
+      var el=document.getElementById('p-'+sh.name);
+      if(el) fillPlate(el, (sh.plateW-58)/sh.plateW, 0.62);
     });
     // sagne keeps the size it was drawn at -- it sits in a much taller oval, and
     // filling that would make it shout. Shrink only, if it ever needs it.
@@ -458,8 +475,8 @@
   // the plate off the case instead frees them from the photograph's proportions
   // entirely, and the plate can be drawn at a size a person can read.
   var trayEl=document.getElementById('tray'), trayPlate=document.getElementById('trayplate');
-  // where each plate sits in the photograph, and how wide it is there
-  var PLATE_SRC={ x:419, w:157, photo:990 };
+  // Each plate is its own picture now, so the tray simply draws it at whatever
+  // size the screen allows and keeps its own proportion.
   // How the cards lay themselves out, by how many there are: three side by side,
   // four two by two, five like the face of a die. Positions are the centre of each
   // card, as a fraction of the area they share.
@@ -480,14 +497,11 @@
     // the plate first: it is the thing that has to be readable, so it is sized
     // from the screen and the cards take what is left
     var pw=Math.min(268, Math.round(vw*0.78));
-    var scale=pw/PLATE_SRC.w, ph=Math.round(22*scale);
+    var ph=Math.round(pw*GEO.plateH/sh.plateW);
     trayPlate.style.width=pw+'px';
     trayPlate.style.height=ph+'px';
-    trayPlate.style.backgroundImage='url(shelves.jpg)';
-    trayPlate.style.backgroundPosition=
-      (-PLATE_SRC.x*scale).toFixed(1)+'px '+(-sh.plateY*scale).toFixed(1)+'px';
-    trayPlate.style.backgroundSize=(PLATE_SRC.photo*scale).toFixed(1)+'px auto';
-    trayPlate.style.fontSize=Math.round(ph*0.62)+'px';
+    trayPlate.style.backgroundImage='url(shelfplate-'+sh.name+'.png)';
+    trayPlate.style.fontSize=Math.round(ph*(GEO.plateFS/GEO.plateH))+'px';
     trayPlate.innerHTML='<i>'+sh.name+'</i>';
     trayPlate.setAttribute('aria-label','back to the case');
 
@@ -595,7 +609,7 @@
       var sh=GEO.shelves[shelfIx];
       // the engraved name belongs to the shelf, so centre on the group that
       // includes it rather than on the empty compartment alone
-      var mid=(sh.ceil + sh.plateY + GEO.plate.h)/2;
+      var mid=(sh.ceil + sh.railY + GEO.plateH/2)/2;
       caseEl.style.transform=transform(IMID, mid, shelfScale(sh.pieces.length));
     } else {
       var r=RECT[cardSlug];
