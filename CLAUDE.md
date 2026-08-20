@@ -93,18 +93,21 @@ the figure flips**; finding that is the point. The notches themselves are the gr
 size, colour and shape (sand rounded, salt square because halite is cubic, the powders an even veil),
 the same move the chimes rods got. Emoji were considered for them and don't exist: 🧂 is the only one
 of the four, sand and flour have only metaphors (desert, hourglass, sheaf), and there is no spore at
-all — 🍄 is a fungus and lycopodium is a clubmoss.<br>**Pending, and blocked on plumbing:** she has
-made **photographs** for the four notches — a picture of each substance in a rounded tile — and they
-sit in her `daidle` Drive folder as `chladnifloursand.jpg`, `chlandisalt.jpg` and `chladnilyco.jpg`.
-They are hers, and they are the better answer: real photographed things are what this site does. Two
-notes on them from her: the lycopodium tile is deliberately the **clubmoss plant**, not the powder, so
-that a curious person can cut the picture and search it; and the sheet's lettering (FLOUR, SAND, SALT
-— and a PEBBLES tile Gemini added unasked) all comes off. Using them needs the notches at ~40px
-instead of 26px, which fits on a phone with room to spare. They could not be fetched in Aug 2026: the
-session's network is closed to Google, and the Drive tool hands a file back as text, which at 650KB+
-apiece is far too big to carry and re-write to disk. What is needed is the four tiles cropped square,
-about 120px, at `chladni/chladni-grain-{sand,salt,lycopodium,flour}.png`. Until then the drawn grains
-stand and the piece is complete without them. Two things in there are worth knowing before touching
+all — 🍄 is a fungus and lycopodium is a clubmoss.<br>The notches are **her photographs**, one of each
+substance, cut from a sheet she made (`chladnithumbnails.jpg` and the three full-size tiles in her
+`daidle` Drive folder). Two of her decisions about them: the lycopodium notch is deliberately the
+**clubmoss plant**, not the powder, so that a curious person can cut the picture and search it — and
+there is nothing to see in a photograph of spores anyway; and the sheet's lettering (FLOUR, SAND, SALT
+— plus a PEBBLES tile Gemini added unasked, which she didn't want) all came off. The three other
+notches are cropped into the **substance itself and not the tool that is in the shot with it**: at
+40px, the full tiles read as a wooden scoop and a sieve rather than as salt and flour. Photographs
+need the notches at 40px; at 26 they are four beige smudges.<br>**Getting a picture out of her Drive
+is possible — don't conclude otherwise.** This session first decided it wasn't: the network is closed
+to Google, and the Drive tool hands a file back as base64 text, which at 650KB looked far too big to
+carry. It isn't. When a tool result is too big it is **spilled to a file** under the session's
+`tool-results/` directory and the path is handed back instead — so `json.load` that file, `base64`
+-decode its `content`, and write the bytes to disk. Nothing has to be retyped, and the size stops
+mattering. Two things in there are worth knowing before touching
 it: the powders carry a **pile of their own volume** (a coarse count per patch of plate, pushing back
 only once a patch holds more than a few times an even spread) or every grain converges on one
 infinitesimal point and it reads as a bare plate with dots on it; and the powders are deliberately
