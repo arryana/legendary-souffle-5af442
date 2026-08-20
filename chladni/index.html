@@ -48,6 +48,20 @@
   .speaker-icon{ color:#dfe6ea; flex-shrink:0; transition:color .25s ease; }
   .toggle input:not(:checked) ~ .speaker-icon{ color:#7a8388; }
   #volumeSlider{ width:100px; flex:0 0 auto; }
+  /* what's on the plate. Warmler's swatch picker, in miniature: each disc is
+     that substance's own grain, coarse or fine, at its own colour — no words.
+     The gap after the second one is the whole taxonomy: two that fall to the
+     nodes, then two that are carried to the antinodes. */
+  #grainDock{ display:flex; align-items:center; justify-content:center; gap:9px; }
+  #grainDock button{ appearance:none; padding:0; width:26px; height:26px; border-radius:50%;
+    border:1px solid rgba(223,230,234,.22); cursor:pointer; opacity:.6;
+    background-color:#1b1f24;
+    background-image:radial-gradient(circle at 50% 50%, var(--g) 0 var(--r), transparent calc(var(--r) + 2%));
+    background-size:var(--t) var(--t);
+    transition:opacity .25s ease, box-shadow .25s ease; }
+  #grainDock button:hover{ opacity:.85; }
+  #grainDock button[aria-checked="true"]{ opacity:1; box-shadow:0 0 0 2px rgba(223,230,234,.5); }
+  #grainDock button:nth-child(2){ margin-right:13px; }
   #densityDock{ display:flex; align-items:center; justify-content:center; gap:12px; }
   .grain-icon{ color:#dfe6ea; opacity:.6; flex-shrink:0; }
   #densitySlider{ width:100px; flex:0 0 auto; }
@@ -167,6 +181,12 @@
     </label>
     <input type="range" id="volumeSlider" min="0" max="100" value="55" aria-label="volume">
   </div>
+  <div id="grainDock" role="radiogroup" aria-label="what's on the plate">
+    <button type="button" role="radio" aria-checked="true"  aria-label="sand"       style="--g:hsl(42,68%,76%); --t:6px;   --r:34%"></button>
+    <button type="button" role="radio" aria-checked="false" aria-label="salt"       style="--g:hsl(46,22%,90%); --t:8px;   --r:32%"></button>
+    <button type="button" role="radio" aria-checked="false" aria-label="lycopodium" style="--g:hsl(48,60%,74%); --t:3px;   --r:44%"></button>
+    <button type="button" role="radio" aria-checked="false" aria-label="fine flour" style="--g:hsl(40,18%,93%); --t:2.5px; --r:46%"></button>
+  </div>
   <div id="densityDock">
     <svg class="grain-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
       <circle cx="6" cy="9" r="1.3" fill="currentColor"/>
@@ -176,7 +196,7 @@
       <circle cx="15.5" cy="16" r="1.3" fill="currentColor"/>
       <circle cx="6" cy="17" r="0.9" fill="currentColor"/>
     </svg>
-    <input type="range" id="densitySlider" min="0" max="100" value="44" aria-label="sand density">
+    <input type="range" id="densitySlider" min="0" max="100" value="44" aria-label="how much">
   </div>
   <div id="hueDock">
     <svg class="palette-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -185,7 +205,7 @@
       <circle cx="11.3" cy="7.3" r="1" fill="currentColor" stroke="none"/>
       <circle cx="15.2" cy="8" r="1" fill="currentColor" stroke="none"/>
     </svg>
-    <input type="range" id="hueSlider" min="0" max="360" value="42" aria-label="sand colour">
+    <input type="range" id="hueSlider" min="0" max="360" value="42" aria-label="grain colour">
   </div>
 </div>
 <script>
@@ -469,21 +489,92 @@
   const px = new Float32Array(NMAX), py = new Float32Array(NMAX);
   const vx = new Float32Array(NMAX), vy = new Float32Array(NMAX);
   const gsize = new Float32Array(NMAX);
-  (function seed(){
+
+  // ---------- what's on the plate ----------
+  // Two families, and the difference between them is a real inversion of the
+  // figure, not a change of colour.
+  //
+  //   Heavy grains — sand, salt — are thrown into the air wherever the plate is
+  //   moving and land wherever it isn't, so they end up piled along the nodal
+  //   lines. That's the classic Chladni figure, and it's what this plate did
+  //   before there was anything to choose.
+  //
+  //   Very fine powder — lycopodium spores, fine flour — is too light to be
+  //   thrown. The shaking plate stirs the air just above it into small standing
+  //   vortices (acoustic streaming), and that flow sweeps the powder off the
+  //   nodes and heaps it at the antinodes instead: the same pattern, inside
+  //   out. Chladni saw both; Faraday worked out why, in 1831.
+  //
+  // seek: +1 gathers at the nodes, -1 at the antinodes. Everything else is that
+  // substance's own body — how coarse the grain is, how readily it moves, how
+  // much the air drags on it, and its own colour, which the colour slider is
+  // still free to override afterwards.
+  //
+  // One thing here is a drawing decision and not a physical one, and it looks
+  // backwards written down: the powders are drawn with the *bigger*, softer,
+  // fainter marks. There are only ten thousand or so particles to go round, and
+  // the heavy families spend them on thin lines where they read as grains,
+  // while a powder spreads its own over a third of the plate. So each powder
+  // mark stands for a clump of the stuff rather than one spore — otherwise a
+  // bed of lycopodium comes out as a sparse speckle of dots, which is exactly
+  // what it isn't.
+  const SUBSTANCES = [
+    { seek:+1, hue:42, sat:68, light:78, alpha:0.95, size:[0.55,1.45], drift:3.1, jitter:9.0, damp:0.86, blur:1.00, crowd:0   }, // sand
+    { seek:+1, hue:46, sat:22, light:90, alpha:0.95, size:[0.80,1.70], drift:3.4, jitter:8.0, damp:0.84, blur:0.85, crowd:0   }, // salt
+    { seek:-1, hue:48, sat:60, light:74, alpha:0.70, size:[1.80,3.60], drift:2.4, jitter:6.0, damp:0.80, blur:2.20, crowd:0.9, pack:3.0 }, // lycopodium
+    { seek:-1, hue:40, sat:18, light:93, alpha:0.66, size:[1.70,3.40], drift:2.1, jitter:5.5, damp:0.78, blur:2.50, crowd:1.1, pack:2.6 }, // fine flour
+  ];
+  let subIdx=0, sub=SUBSTANCES[0];
+
+  function pour(){
     for(let i=0;i<NMAX;i++){
       // start scattered across the whole plate, uniform in x/y (not polar,
       // so corners get grains too) — first excite sweeps it into shape
       px[i]=(Math.random()*2-1);
       py[i]=(Math.random()*2-1);
       vx[i]=0; vy[i]=0;
-      gsize[i]=0.55+Math.random()*0.9;
+      gsize[i]=sub.size[0]+Math.random()*(sub.size[1]-sub.size[0]);
     }
-  })();
+  }
+  pour();
+
+  const grainDock=document.getElementById('grainDock');
+  const swatches=[].slice.call(grainDock.querySelectorAll('button'));
+  swatches.forEach((b,i)=> b.addEventListener('click', ()=>{
+    subIdx=i; sub=SUBSTANCES[i];
+    swatches.forEach((o,j)=> o.setAttribute('aria-checked', String(j===i)));
+    // sweeping the plate clear and pouring the new one on is the whole gesture;
+    // it comes with its own colour, and its own strike so it settles at once
+    hue=sub.hue; hueSlider.value=String(sub.hue);
+    pour();
+    exciteAt=performance.now();
+    soundTone(freqForIdx(modeIdx), 0.09, 220, 0.6);
+  }));
+
   const densitySlider=document.getElementById('densitySlider');
   densitySlider.addEventListener('input', ()=>{
     const t=densitySlider.value/100;
     activeN=Math.round(N_MIN+(NMAX-N_MIN)*t);
   });
+
+  // ---------- crowding: a heap has volume ----------
+  // The heavy families gather along the nodal *lines*, and a line has room —
+  // jitter alone gives those their real width. The powders gather at antinode
+  // *points*, and nothing in the flow above stops a grain once it arrives, so
+  // without a pile every last one would end up at the same infinitesimal spot:
+  // bare metal with a scatter of dots on it, which is not what lycopodium does.
+  // So the powders carry the pile itself — a coarse count of how much is
+  // already in each patch of plate, and a shove down that count's own slope.
+  //
+  // Only once it's actually heaped, though: loose powder lying thin doesn't
+  // push on itself at all, so nothing acts until a patch holds more than
+  // `pack` times an even spread. That threshold is what keeps the nodal lines
+  // swept clean — grains crossing one are never crowded back onto it — and it
+  // sets how far a heap spreads: at pack 3 it broadens until it covers about a
+  // third of the plate, which is roughly the room the antinodes give it.
+  const CG=96, cellCount=new Int32Array(CG*CG);
+  const cellPile=new Float32Array(CG*CG);
+  function cellXY(v){ return Math.min(CG-1, Math.max(0, ((v+1)*0.5*CG)|0)); }
 
   const EPS=0.01;
   function grad(x,y){
@@ -502,6 +593,14 @@
     // so settled sand still has a faint live shimmer
     const agitation = 0.055 + 1.6*Math.exp(-age*1.6);
 
+    if(sub.crowd){
+      cellCount.fill(0);
+      for(let i=0;i<activeN;i++) cellCount[cellXY(py[i])*CG+cellXY(px[i])]++;
+      // how much each patch is holding over and above what it can lie flat in
+      const evenly=(CG*CG)/activeN;   // scales a count so that 1 means "an even spread"
+      for(let c=0;c<cellPile.length;c++) cellPile[c]=Math.max(0, cellCount[c]*evenly-sub.pack);
+    }
+
     for(let i=0;i<activeN;i++){
       let x=px[i], y=py[i];
       const [f,fx,fy]=grad(x,y);
@@ -515,20 +614,44 @@
       // the direction first so every pitch converges at the same real speed
       const gmag=Math.hypot(fx,fy)||1e-6;
       const ux=fx/gmag, uy=fy/gmag;
-      const dirSign = f>0 ? -1 : 1;
-      const closeness=Math.min(1,Math.abs(f)*1.1);
-      const speed=3.1*closeness;
+      const af=Math.abs(f);
+      let dirSign, speed, amp;
+      if(sub.seek>0){
+        // heavy: downhill to the nearest node, fastest where the plate is
+        // loudest, and dead still once it gets there
+        dirSign = f>0 ? -1 : 1;
+        speed = sub.drift*Math.min(1, af*1.1);
+        // jitter scaled by the plate's local amplitude — grains sitting on an
+        // antinode dance hard, ones already on a node barely move
+        amp = Math.min(1, af*1.4);
+      } else {
+        // light: uphill instead, away from the node and on to the nearest
+        // crest of the standing wave, which is where the stirred air is taking
+        // it. The push is hardest exactly on the nodal line (nothing settles
+        // there) and fades to nothing at the crest, so that's where it heaps.
+        // |f| runs to 2 at a crest, which is what normalises both of these.
+        dirSign = f>0 ? 1 : -1;
+        const toCrest=Math.max(0, 1-af/2);
+        speed = sub.drift*toCrest;
+        // and it's restless over the swept nodes, calm in the heaps
+        amp = 0.30 + 0.45*toCrest;
+      }
       vx[i] += dirSign*ux*speed*dt;
       vy[i] += dirSign*uy*speed*dt;
-      // random jitter scaled by both the plate's local amplitude and the
-      // current agitation — grains sitting on an antinode dance hard, ones
-      // already on a node barely move, exactly like real sand does
-      const amp=Math.min(1,Math.abs(f)*1.4);
       const jitter=agitation*amp;
-      vx[i] += (Math.random()*2-1)*jitter*dt*9;
-      vy[i] += (Math.random()*2-1)*jitter*dt*9;
-      // damping
-      vx[i]*=0.86; vy[i]*=0.86;
+      vx[i] += (Math.random()*2-1)*jitter*dt*sub.jitter;
+      vy[i] += (Math.random()*2-1)*jitter*dt*sub.jitter;
+      if(sub.crowd){
+        const ix=cellXY(x), iy=cellXY(y);
+        const l=cellPile[iy*CG+Math.max(0,ix-1)],  r=cellPile[iy*CG+Math.min(CG-1,ix+1)];
+        const u=cellPile[Math.max(0,iy-1)*CG+ix],  d=cellPile[Math.min(CG-1,iy+1)*CG+ix];
+        // clamped, so a freshly-poured clump can't fling anything off the plate
+        const gx=Math.max(-8,Math.min(8,r-l)), gy=Math.max(-8,Math.min(8,d-u));
+        vx[i] -= sub.crowd*gx*dt;
+        vy[i] -= sub.crowd*gy*dt;
+      }
+      // damping — the air drags harder on the fine stuff
+      vx[i]*=sub.damp; vy[i]*=sub.damp;
       // hard speed limit, independent of pitch — nothing can ever tunnel
       // across the plate in one step, regardless of how fine the pattern is
       const vmag=Math.hypot(vx[i],vy[i]), vmax=2.4;
@@ -616,7 +739,7 @@
     grainCtx.clearRect(0,0,W,H);
     // same soft, pale character at every hue — only the hue itself moves,
     // so it always still reads as fine sand, never a saturated paint colour
-    grainCtx.fillStyle=`hsla(${hue}, 68%, 78%, 0.95)`;
+    grainCtx.fillStyle=`hsla(${hue}, ${sub.sat}%, ${sub.light}%, ${sub.alpha})`;
     for(let i=0;i<activeN;i++){
       const [x,y]=toPx(px[i],py[i]);
       const s=gsize[i]*DPR*1.1;
@@ -625,7 +748,8 @@
     // more blur as density rises — a light dusting stays crisp, individual
     // grains; a heavy pour softens into a real, fuzzy-edged glow
     const densityT=Math.max(0,Math.min(1,(activeN-N_MIN)/(NMAX-N_MIN)));
-    const blur=(0.25+densityT*1.5)*DPR;
+    // powder is a dust, not a scatter of grains — it softens further
+    const blur=(0.25+densityT*1.5)*DPR*sub.blur;
     ctx.save();
     ctx.filter=`blur(${blur.toFixed(2)}px)`;
     ctx.drawImage(grainCanvas,0,0);
