@@ -48,20 +48,46 @@
   .speaker-icon{ color:#dfe6ea; flex-shrink:0; transition:color .25s ease; }
   .toggle input:not(:checked) ~ .speaker-icon{ color:#7a8388; }
   #volumeSlider{ width:100px; flex:0 0 auto; }
-  /* what's on the plate. Warmler's swatch picker, in miniature: each disc is
-     that substance's own grain, coarse or fine, at its own colour — no words.
-     The gap after the second one is the whole taxonomy: two that fall to the
-     nodes, then two that are carried to the antinodes. */
-  #grainDock{ display:flex; align-items:center; justify-content:center; gap:9px; }
-  #grainDock button{ appearance:none; padding:0; width:26px; height:26px; border-radius:50%;
-    border:1px solid rgba(223,230,234,.22); cursor:pointer; opacity:.6;
-    background-color:#1b1f24;
+  /* what's on the plate — a slider, because the four really are in an order:
+     coarsest and heaviest on the left, finest and lightest on the right. That
+     ordering is the physics, not a filing decision. Somewhere along it the
+     grain gets light enough that the air decides where it goes instead of the
+     plate, and the whole figure turns inside out — but the notches are evenly
+     spaced and nothing marks where that happens. Finding it is the point.
+
+     The notches are the substances themselves, each one its own grain at its
+     own size, colour and shape, the way the chimes rods got theirs: sand
+     rounded, because river and beach quartz is; salt square, because halite
+     crystallises in cubes you can see in a cellar with the naked eye; the two
+     powders an even fine veil, which is how a powder differs from a grain. No
+     words on any of it. The slider itself is a real range input, so dragging,
+     tapping a notch and the arrow keys all come free; its thumb is drawn as a
+     ring that closes around whichever grain it lands on. */
+  #grainDock{ position:relative; width:min(300px,74vw); height:34px; flex:0 0 auto; }
+  #grainDock::before{ content:''; position:absolute; left:17px; right:17px; top:50%;
+    height:3px; margin-top:-1.5px; border-radius:3px; background:rgba(223,230,234,.25); }
+  #grainDock .marks{ position:absolute; inset:0; pointer-events:none; }
+  #grainDock .marks i{ position:absolute; top:50%;
+    left:calc(17px + (100% - 34px) * var(--i) / 3);
+    transform:translate(-50%,-50%);
+    width:26px; height:26px; border-radius:50%; box-sizing:border-box;
+    border:1px solid rgba(223,230,234,.22); background-color:#1b1f24;
     background-image:radial-gradient(circle at 50% 50%, var(--g) 0 var(--r), transparent calc(var(--r) + 2%));
-    background-size:var(--t) var(--t);
-    transition:opacity .25s ease, box-shadow .25s ease; }
-  #grainDock button:hover{ opacity:.85; }
-  #grainDock button[aria-checked="true"]{ opacity:1; box-shadow:0 0 0 2px rgba(223,230,234,.5); }
-  #grainDock button:nth-child(2){ margin-right:13px; }
+    background-size:var(--t) var(--t); background-position:center;
+    /* dimmed by brightness rather than by opacity — a translucent disc would
+       let the slider's own track show straight through its face */
+    filter:brightness(.58); transition:filter .3s ease; }
+  /* halite is cubic — a quarter-turn of a conic gradient fills exactly one
+     square of each tile, which is the cheapest true square there is */
+  #grainDock .marks i.cubic{ background-image:conic-gradient(var(--g) 0 25%, transparent 0); }
+  #grainDock .marks i.on{ filter:none; }
+  #grainSlider{ position:absolute; inset:0; width:100%; height:100%; margin:0;
+    flex:none; background:none; cursor:pointer; }
+  #grainSlider::-webkit-slider-thumb{ -webkit-appearance:none; width:34px; height:34px;
+    border-radius:50%; background:transparent; border:1.5px solid rgba(223,230,234,.8);
+    box-shadow:0 0 9px rgba(223,230,234,.3); cursor:pointer; }
+  #grainSlider::-moz-range-thumb{ width:31px; height:31px; border-radius:50%;
+    background:transparent; border:1.5px solid rgba(223,230,234,.8); cursor:pointer; }
   #densityDock{ display:flex; align-items:center; justify-content:center; gap:12px; }
   .grain-icon{ color:#dfe6ea; opacity:.6; flex-shrink:0; }
   #densitySlider{ width:100px; flex:0 0 auto; }
@@ -181,11 +207,15 @@
     </label>
     <input type="range" id="volumeSlider" min="0" max="100" value="55" aria-label="volume">
   </div>
-  <div id="grainDock" role="radiogroup" aria-label="what's on the plate">
-    <button type="button" role="radio" aria-checked="true"  aria-label="sand"       style="--g:hsl(42,68%,76%); --t:6px;   --r:34%"></button>
-    <button type="button" role="radio" aria-checked="false" aria-label="salt"       style="--g:hsl(46,22%,90%); --t:8px;   --r:32%"></button>
-    <button type="button" role="radio" aria-checked="false" aria-label="lycopodium" style="--g:hsl(48,60%,74%); --t:3px;   --r:44%"></button>
-    <button type="button" role="radio" aria-checked="false" aria-label="fine flour" style="--g:hsl(40,18%,93%); --t:2.5px; --r:46%"></button>
+  <div id="grainDock">
+    <div class="marks" aria-hidden="true">
+      <i         style="--i:0; --g:hsl(42,68%,76%); --t:6px;   --r:34%"></i>
+      <i class="cubic" style="--i:1; --g:hsl(46,22%,90%); --t:4.5px"></i>
+      <i         style="--i:2; --g:hsl(48,60%,74%); --t:3px;   --r:44%"></i>
+      <i         style="--i:3; --g:hsl(40,18%,93%); --t:2.5px; --r:46%"></i>
+    </div>
+    <input type="range" id="grainSlider" min="0" max="3" step="1" value="0"
+           aria-label="what's on the plate" aria-valuetext="sand">
   </div>
   <div id="densityDock">
     <svg class="grain-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -520,7 +550,7 @@
   // what it isn't.
   const SUBSTANCES = [
     { seek:+1, hue:42, sat:68, light:78, alpha:0.95, size:[0.55,1.45], drift:3.1, jitter:9.0, damp:0.86, blur:1.00, crowd:0   }, // sand
-    { seek:+1, hue:46, sat:22, light:90, alpha:0.95, size:[0.80,1.70], drift:3.4, jitter:8.0, damp:0.84, blur:0.85, crowd:0   }, // salt
+    { seek:+1, hue:46, sat:22, light:90, alpha:0.95, size:[0.85,1.15], drift:3.4, jitter:8.0, damp:0.84, blur:0.85, crowd:0   }, // salt
     { seek:-1, hue:48, sat:60, light:74, alpha:0.70, size:[1.80,3.60], drift:2.4, jitter:6.0, damp:0.80, blur:2.20, crowd:0.9, pack:3.0 }, // lycopodium
     { seek:-1, hue:40, sat:18, light:93, alpha:0.66, size:[1.70,3.40], drift:2.1, jitter:5.5, damp:0.78, blur:2.50, crowd:1.1, pack:2.6 }, // fine flour
   ];
@@ -538,18 +568,27 @@
   }
   pour();
 
-  const grainDock=document.getElementById('grainDock');
-  const swatches=[].slice.call(grainDock.querySelectorAll('button'));
-  swatches.forEach((b,i)=> b.addEventListener('click', ()=>{
+  const grainSlider=document.getElementById('grainSlider');
+  const marks=[].slice.call(document.querySelectorAll('#grainDock .marks i'));
+  const SUB_NAMES=['sand','salt','lycopodium','fine flour'];
+  function setSubstance(i){
     subIdx=i; sub=SUBSTANCES[i];
-    swatches.forEach((o,j)=> o.setAttribute('aria-checked', String(j===i)));
-    // sweeping the plate clear and pouring the new one on is the whole gesture;
-    // it comes with its own colour, and its own strike so it settles at once
+    marks.forEach((m,j)=> m.classList.toggle('on', j===i));
+    grainSlider.setAttribute('aria-valuetext', SUB_NAMES[i]);
+    // sweeping the plate clear and pouring the new one on is the whole gesture,
+    // and it comes with its own colour — which the colour slider can still move
     hue=sub.hue; hueSlider.value=String(sub.hue);
     pour();
-    exciteAt=performance.now();
-    soundTone(freqForIdx(modeIdx), 0.09, 220, 0.6);
-  }));
+    exciteAt=performance.now();   // and its own strike, so it settles at once
+  }
+  grainSlider.addEventListener('input', ()=>{
+    const i=+grainSlider.value;
+    if(i!==subIdx) setSubstance(i);
+  });
+  // the strike sounds when the hand comes off, not once per notch on the way
+  // past — dragging the length of it would otherwise fire four in a second
+  grainSlider.addEventListener('change', ()=> soundTone(freqForIdx(modeIdx), 0.09, 220, 0.6));
+  setSubstance(0);
 
   const densitySlider=document.getElementById('densitySlider');
   densitySlider.addEventListener('input', ()=>{

@@ -86,7 +86,14 @@ thing?* That is a yes or a no.
 two families that are a real inversion of each other and not a recolour: heavy grains (sand, salt)
 are thrown off the moving plate and pile on the **nodal lines**, while very fine powder (lycopodium,
 fine flour) is too light to be thrown and is instead swept by the stirred air to the **antinodes**,
-drawing the exact negative of the same figure. Two things in there are worth knowing before touching
+drawing the exact negative of the same figure. They're chosen on a **slider**, her call over a row of
+swatches or tickboxes: the four are genuinely in an order — coarsest and heaviest to finest and
+lightest — and that ordering is the physics. The notches are evenly spaced and **nothing marks where
+the figure flips**; finding that is the point. The notches themselves are the grains, each at its own
+size, colour and shape (sand rounded, salt square because halite is cubic, the powders an even veil),
+the same move the chimes rods got. Emoji were considered for them and don't exist: 🧂 is the only one
+of the four, sand and flour have only metaphors (desert, hourglass, sheaf), and there is no spore at
+all — 🍄 is a fungus and lycopodium is a clubmoss. Two things in there are worth knowing before touching
 it: the powders carry a **pile of their own volume** (a coarse count per patch of plate, pushing back
 only once a patch holds more than a few times an even spread) or every grain converges on one
 infinitesimal point and it reads as a bare plate with dots on it; and the powders are deliberately
