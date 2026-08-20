@@ -33,12 +33,25 @@ plain HTML + CSS + JavaScript. Editing = changing those files directly.
 branch**. That's the key fact behind everything below: **a change is only live once it's on
 `main`.** Until then it's a private draft.
 
-**Landing page:** `index.html` (titled *sagne*) — the **apothecary shelf**: a photograph of a
-five-shelf case, the pieces standing face-front on the shelves, and the name of each type
-engraved on the brass plate beneath it. It replaced the flat card grid in Aug 2026. Every
-position on it derives from one table of measurements taken off the photograph itself
-(`shelves.jpg`, 990x1088) — the interior opening, each shelf's surface and the plate on its
-front rail. Change the picture and you change that table; don't retype percentages by hand.
+**Landing page:** `index.html` (titled *sagne*) — a **five-shelf case**, the pieces standing
+face-front on the shelves in mounts, and the name of each type on the brass plate beneath it.
+It replaced the flat card grid in Aug 2026. Every position on it derives from one table of
+measurements taken off the photograph itself — the interior opening, each shelf's surface and
+the rail its plate is screwed to. Change the picture and you change that table; don't retype
+percentages by hand.
+
+The case is **`shelves-navy.jpg`** (1024x1260), her dark cabinet, straight on. It replaced the
+walnut apothecary shelf in Aug 2026 — her call: *"while the shelves we built are undoubtedly
+beautiful, they're not as timeless or as understated."* `shelves.jpg`, the walnut one, is kept
+as a record and is no longer referenced by anything.
+
+**The brass is laid on, not photographed in.** The walnut case had its lettering engraved into
+the picture; this one carries her own plates as separate cut-outs — `shelfplate-<group>.png`,
+`shelfoval.png` — with the names set over them in **Libre Baskerville 700**, her pick over
+Cormorant: engraving wants even stroke weight, and Cormorant's hairlines vanish at the size a
+shelf plate allows. **Each plate is cut to the length of its own word**, which is why `plateW`
+is per shelf. Re-cutting is only needed if a group is renamed or the lettering resized; the
+sheet of ten blank lengths she generated is in her `daidle` Drive folder.
 
 ### The pages
 
@@ -160,26 +173,35 @@ which had no vertical front edge at all, only a floor, had the fourth rail clone
 the floor line so its plate had something to sit on. The scripts that did all this are gone
 with their scratchpad, so treat `shelves.jpg` as the source of truth.
 
-**A card stands on the board, not at the lip of it.** Aug 2026 the shelves were given
-headroom: every one now has the same 132px between its ceiling and where a card's foot
-lands, done by stretching the flat dark band of back panel inside each shelf while the
-boards, rails, crown and plinth were carried across rigid. That took the photograph from
-1088 to 1232 tall. A card's foot sits `seatBack` (8px) behind the front lip, so a sliver of the
-lit top shows in front of it. That number is narrow on both sides: on the lip they read as
-propped in front of the furniture, and 18px back they read as hovering above it. The
-cards' shadow is a short contact one for the same reason. The three upper brass plates were in shadow and their
-names couldn't be read, so a lit plate was set into each of those sockets. The **?** is a
-brass disc of hers (`shelfdisk.png`) let into the middle of the plinth carving, with the
-question mark engraved into it; the case stands on the floor of the page rather than
-floating in the middle of it.
+**A card stands in a mount, not merely on the board.** Her idea, off a photograph of a real
+display stand: an upright behind the card, an arm over its top edge, another taking its weight
+underneath, on a base that bears on the board. It is drawn as one SVG rather than photographed,
+so it stays crisp at every zoom, and it is what stops the cards reading as hovering a hair above
+the shelf. The upright must stay **behind** the card — an absolutely positioned stand paints over
+its own picture otherwise, and every card gets a black bar down the middle.
+
+**The case was worked on to get there,** and none of it shows in the file: a fifth compartment
+was spliced in (her generator gave four), cutting and rejoining inside the dark under a board
+where a seam cannot show, then re-grading the whole case so the light still falls away top to
+bottom; the panelled cupboard doors below were cut off at the counter's own front edge, her call;
+a band of the case's own near-black was added below the counter for the **?** disc to sit on;
+and the top compartment was compressed from 204 to 176 so the top of the unit comes down onto the
+first shelf — also her call, *"it does a good job in drawing the eye down"*. The lit openings now
+run 176, 176, 202, 202, 211: tactilia is held to 176 by a shadow cast under the first board, which
+none of the others have, so **the top shelf is not the odd one even though it can look it**.
+
+The **?** is a brass disc of hers (`shelfdisk.png`) with the question mark engraved into it,
+sitting on that band of dark below the counter; the case stands on the floor of the page rather
+than floating in the middle of it. The *sagne* oval is screwed **to the front face of the top
+rail**, edge to edge on it — not floating in the shadow of the recess behind, which is where it
+first went and which she caught.
 
 **The favicon** is her own candle, cut off its ground and wrapped inside `favicon.svg`, so
 every page that already links to that file picks it up without a reference changing. The
 same cut-out makes `apple-touch-icon.png` and `icon-192/512.png` on the site's navy.
 
 **No words on it that aren't cut into it.** The only lettering on the shelf is engraved
-into the photograph: *sagne* on the crown oval and the five group names on the brass
-plates. The card names that used to float over a piece on hover were removed Aug 2026 —
+on the brass: *sagne* on the oval and the five group names on the plates. The card names that used to float over a piece on hover were removed Aug 2026 —
 this site doesn't caption its objects — and so was the text **back** button; the way out
 of a zoom is the plate of the shelf you're in, a tap on the dark around the case, or
 Escape. The plate names size themselves to the height of the brass and sit centred in it — they
@@ -201,7 +223,7 @@ for them.
 
 **Getting across, not just in and out.** Each piece carries two brass discs, both cut
 from `shelfdisk.png`. Left is the way back (an arrow, to the case). Right brings out the
-five shelf plates — the very plates, each cut from its own place in `shelves.jpg` — and
+five shelf plates — the very plates off the case, each her own brass cut to its own name — and
 rolling one unfolds that group's pieces beside it. A mouse hovers to unfold and clicks the
 plate to go; a thumb taps once to unfold and twice to go, the same bargain the case itself
 strikes. A plate links to `/index.html#<group>`, which opens the case already zoomed to
