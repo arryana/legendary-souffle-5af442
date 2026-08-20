@@ -55,14 +55,19 @@
      plate, and the whole figure turns inside out — but the notches are evenly
      spaced and nothing marks where that happens. Finding it is the point.
 
-     The notches are photographs of the four substances, hers. The lycopodium
-     one is deliberately the clubmoss plant rather than the powder: her reason
-     is that a curious person can cut the picture and search it, and there is
-     nothing to see in a photograph of the spores themselves. No lettering on
-     any of them. They sit at 40px because a photograph of flour and a
-     photograph of sand are the same beige smudge at 26. The slider is a real
-     range input, so dragging, tapping a notch and the arrow keys all come
-     free; its thumb is a ring that closes around whichever one it lands on. */
+     The notches are photographs of the four substances, hers, kept as the
+     whole tile she made — her call over a tighter crop into the material,
+     because the tile reads more clearly at this size. Her cut-in crops are
+     kept alongside as chladni-grain-*.png in case that doesn't hold up in her
+     own testing; swapping back is this rule's background-image, the notch and
+     thumb radii, and nothing else. The lycopodium one is deliberately the
+     clubmoss plant rather than the powder: a curious person can cut the
+     picture and search it, and there is nothing to see in a photograph of the
+     spores themselves. No lettering on any of them. They sit at 40px because a
+     photograph of flour and a photograph of sand are the same beige smudge at
+     26. The slider is a real range input, so dragging, tapping a notch and the
+     arrow keys all come free; its thumb is a ring that closes around whichever
+     one it lands on — square, to take the shape of what it's picking up. */
   #grainDock{ position:relative; width:min(320px,86vw); height:46px; flex:0 0 auto; }
   #grainDock::before{ content:''; position:absolute; left:23px; right:23px; top:50%;
     height:3px; margin-top:-1.5px; border-radius:3px; background:rgba(223,230,234,.25); }
@@ -70,8 +75,8 @@
   #grainDock .marks i{ position:absolute; top:50%;
     left:calc(23px + (100% - 46px) * var(--i) / 3);
     transform:translate(-50%,-50%);
-    width:40px; height:40px; border-radius:50%; box-sizing:border-box;
-    border:1px solid rgba(223,230,234,.22);
+    width:40px; height:40px; border-radius:23%; box-sizing:border-box;
+    border:1px solid rgba(223,230,234,.10);
     background-color:#1b1f24; background-size:cover; background-position:center;
     /* dimmed by brightness rather than by opacity — a translucent disc would
        let the slider's own track show straight through its face */
@@ -80,9 +85,9 @@
   #grainSlider{ position:absolute; inset:0; width:100%; height:100%; margin:0;
     flex:none; background:none; cursor:pointer; }
   #grainSlider::-webkit-slider-thumb{ -webkit-appearance:none; width:46px; height:46px;
-    border-radius:50%; background:transparent; border:1.5px solid rgba(223,230,234,.8);
+    border-radius:26%; background:transparent; border:1.5px solid rgba(223,230,234,.8);
     box-shadow:0 0 9px rgba(223,230,234,.3); cursor:pointer; }
-  #grainSlider::-moz-range-thumb{ width:43px; height:43px; border-radius:50%;
+  #grainSlider::-moz-range-thumb{ width:43px; height:43px; border-radius:26%;
     background:transparent; border:1.5px solid rgba(223,230,234,.8); cursor:pointer; }  #densityDock{ display:flex; align-items:center; justify-content:center; gap:12px; }
   .grain-icon{ color:#dfe6ea; opacity:.6; flex-shrink:0; }
   #densitySlider{ width:100px; flex:0 0 auto; }
@@ -204,10 +209,10 @@
   </div>
   <div id="grainDock">
     <div class="marks" aria-hidden="true">
-      <i style="--i:0; background-image:url(chladni-grain-sand.png)"></i>
-      <i style="--i:1; background-image:url(chladni-grain-salt.png)"></i>
-      <i style="--i:2; background-image:url(chladni-grain-lycopodium.png)"></i>
-      <i style="--i:3; background-image:url(chladni-grain-flour.png)"></i>
+      <i style="--i:0; background-image:url(chladni-tile-sand.png)"></i>
+      <i style="--i:1; background-image:url(chladni-tile-salt.png)"></i>
+      <i style="--i:2; background-image:url(chladni-tile-lycopodium.png)"></i>
+      <i style="--i:3; background-image:url(chladni-tile-flour.png)"></i>
     </div>
     <input type="range" id="grainSlider" min="0" max="3" step="1" value="0"
            aria-label="what's on the plate" aria-valuetext="sand">
