@@ -82,12 +82,30 @@ thing?* That is a yes or a no.
 | `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
 | `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**. |
 | `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material) — **awaiting her ears**, which is the only test that counts here. |
-| `chladni/index.html` | ✅ | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound<br>**Done**. |
+| `chladni/index.html` | ✅ | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound<br>**Done**. Aug 2026 it was given **substances**, in
+two families that are a real inversion of each other and not a recolour: heavy grains (sand, salt)
+are thrown off the moving plate and pile on the **nodal lines**, while very fine powder (lycopodium,
+fine flour) is too light to be thrown and is instead swept by the stirred air to the **antinodes**,
+drawing the exact negative of the same figure. Two things in there are worth knowing before touching
+it: the powders carry a **pile of their own volume** (a coarse count per patch of plate, pushing back
+only once a patch holds more than a few times an even spread) or every grain converges on one
+infinitesimal point and it reads as a bare plate with dots on it; and the powders are deliberately
+drawn with **bigger, softer, fainter** marks than the heavy families, because ten thousand particles
+spread over a third of the plate have to stand for clumps of powder rather than single spores. |
 | `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
 | `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Awaiting her verdict**. |
 | `moths/index.html` | ✅ |  | **Moths** losing their bearings on a hanging bulb. Not attraction — a moth holds a course by keeping a distant light at a fixed angle, and a near one wraps that course into a spiral. Three sliders: dusk→dark, bulb, how many. Colour is a readout of depth (dark in front of the glass, pale behind), from her own three-shade cut<br>Built Aug 2026 from her brief, then put right by her own watching of it — she found that the moths crowded the bulb and stayed (an absorbing state: all five reached it and none ever left), that moths in front of the lower glass came out grey rather than black, that they all flew alike, and that they never tilted or wavered. In **natura**, which is therefore a shelf of four |
 | `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune |
-| `pendulum/index.html` | ✅ | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search<br>**Done** — precession, swing and pin ring all verified by measurement against the real physics. |
+| `pendulum/index.html` | ✅ | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search<br>**Done** — precession, swing and pin ring all verified by measurement against the real physics.
+Aug 2026 it was given a **real-world-time** checkbox (the clock face beside the ∞): ticked, the plane
+precesses at the true Foucault rate off the actual clock — Earth's turn times sin(latitude) — and the
+speed slider stands down. **It stores nothing.** The angle is a pure function of the clock and the
+latitude, and so is the whole sand trace, so ticking it (or changing latitude, or resizing) recomputes
+what the plate would have drawn since local midnight in one pass and lays it down. The honest caveat,
+which is why it's a checkbox and not the default: at the true rate the turn is very nearly
+imperceptible, the better part of a day for one rosette, and the trace comes out as swept ground
+rather than separate lines because successive passes land 0.007° apart — closer than a grain is wide.
+The swing itself stays exactly as lively as ever. |
 | `storm/index.html` | ✅ |  | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo) |
 | `crystal.html` | — | — | A crystal (not linked from the landing page) |
 | `chest.html`, `chest-open.html` | — | — | Dead apothecary-chest drafts she turned down; kept as a record, not linked |
