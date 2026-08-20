@@ -48,7 +48,47 @@
   .speaker-icon{ color:#dfe6ea; flex-shrink:0; transition:color .25s ease; }
   .toggle input:not(:checked) ~ .speaker-icon{ color:#7a8388; }
   #volumeSlider{ width:100px; flex:0 0 auto; }
-  #densityDock{ display:flex; align-items:center; justify-content:center; gap:12px; }
+  /* what's on the plate — a slider, because the four really are in an order:
+     coarsest and heaviest on the left, finest and lightest on the right. That
+     ordering is the physics, not a filing decision. Somewhere along it the
+     grain gets light enough that the air decides where it goes instead of the
+     plate, and the whole figure turns inside out — but the notches are evenly
+     spaced and nothing marks where that happens. Finding it is the point.
+
+     The notches are photographs of the four substances, hers, kept as the
+     whole tile she made — her call over a tighter crop into the material,
+     because the tile reads more clearly at this size. Her cut-in crops are
+     kept alongside as chladni-grain-*.png in case that doesn't hold up in her
+     own testing; swapping back is this rule's background-image, the notch and
+     thumb radii, and nothing else. The lycopodium one is deliberately the
+     clubmoss plant rather than the powder: a curious person can cut the
+     picture and search it, and there is nothing to see in a photograph of the
+     spores themselves. No lettering on any of them. They sit at 40px because a
+     photograph of flour and a photograph of sand are the same beige smudge at
+     26. The slider is a real range input, so dragging, tapping a notch and the
+     arrow keys all come free; its thumb is a ring that closes around whichever
+     one it lands on — square, to take the shape of what it's picking up. */
+  #grainDock{ position:relative; width:min(320px,86vw); height:46px; flex:0 0 auto; }
+  #grainDock::before{ content:''; position:absolute; left:23px; right:23px; top:50%;
+    height:3px; margin-top:-1.5px; border-radius:3px; background:rgba(223,230,234,.25); }
+  #grainDock .marks{ position:absolute; inset:0; pointer-events:none; }
+  #grainDock .marks i{ position:absolute; top:50%;
+    left:calc(23px + (100% - 46px) * var(--i) / 3);
+    transform:translate(-50%,-50%);
+    width:40px; height:40px; border-radius:23%; box-sizing:border-box;
+    border:1px solid rgba(223,230,234,.10);
+    background-color:#1b1f24; background-size:cover; background-position:center;
+    /* dimmed by brightness rather than by opacity — a translucent disc would
+       let the slider's own track show straight through its face */
+    filter:brightness(.62) saturate(.85); transition:filter .3s ease; }
+  #grainDock .marks i.on{ filter:none; }
+  #grainSlider{ position:absolute; inset:0; width:100%; height:100%; margin:0;
+    flex:none; background:none; cursor:pointer; }
+  #grainSlider::-webkit-slider-thumb{ -webkit-appearance:none; width:46px; height:46px;
+    border-radius:26%; background:transparent; border:1.5px solid rgba(223,230,234,.8);
+    box-shadow:0 0 9px rgba(223,230,234,.3); cursor:pointer; }
+  #grainSlider::-moz-range-thumb{ width:43px; height:43px; border-radius:26%;
+    background:transparent; border:1.5px solid rgba(223,230,234,.8); cursor:pointer; }  #densityDock{ display:flex; align-items:center; justify-content:center; gap:12px; }
   .grain-icon{ color:#dfe6ea; opacity:.6; flex-shrink:0; }
   #densitySlider{ width:100px; flex:0 0 auto; }
   #hueDock{ display:flex; align-items:center; justify-content:center; gap:12px; }
@@ -56,6 +96,20 @@
   #hueSlider{ width:100px; flex:0 0 auto;
     background:linear-gradient(to right, hsl(0,80%,68%), hsl(60,80%,68%), hsl(120,80%,68%), hsl(180,80%,68%), hsl(240,80%,68%), hsl(300,80%,68%), hsl(360,80%,68%)); }
   #micDock{ display:flex; align-items:center; justify-content:center; gap:8px; }
+  /* Everything that isn't the pitch, gathered. On a phone they stay stacked,
+     one to a line, because there is no width to spend. A desktop window has
+     width and nothing else to do with it, so the same five spread out onto one
+     line instead of hanging under the plate as a six-rung ladder. */
+  #knobs{ display:flex; flex-direction:column; align-items:center; gap:3vh; }
+  @media (min-width:820px){
+    #stage{ gap:2.6vh; }
+    #knobs{ flex-direction:row; flex-wrap:wrap; justify-content:center;
+      align-items:center; gap:22px 38px; max-width:min(1020px,92vw); }
+    /* the pitch is the one that changes the figure, so it keeps a line of its
+       own above the rest rather than becoming one more knob in the row */
+    #dock{ order:-1; flex-basis:100%; width:auto; }
+    #pitchSlider{ max-width:500px; }
+  }
   .mic-icon{ color:#dfe6ea; flex-shrink:0; transition:color .25s ease; }
   .toggle input:not(:checked) ~ .mic-icon{ color:#7a8388; }
   #pitchSlider.driven{ opacity:.5; pointer-events:none; }
@@ -124,6 +178,7 @@
   <div id="plateWrap">
     <canvas id="scene"></canvas>
   </div>
+  <div id="knobs">
   <div id="micDock">
     <label class="toggle">
       <input type="checkbox" id="chkMic" aria-label="listen with microphone">
@@ -167,6 +222,16 @@
     </label>
     <input type="range" id="volumeSlider" min="0" max="100" value="55" aria-label="volume">
   </div>
+  <div id="grainDock">
+    <div class="marks" aria-hidden="true">
+      <i style="--i:0; background-image:url(chladni-tile-sand.png)"></i>
+      <i style="--i:1; background-image:url(chladni-tile-salt.png)"></i>
+      <i style="--i:2; background-image:url(chladni-tile-lycopodium.png)"></i>
+      <i style="--i:3; background-image:url(chladni-tile-flour.png)"></i>
+    </div>
+    <input type="range" id="grainSlider" min="0" max="3" step="1" value="0"
+           aria-label="what's on the plate" aria-valuetext="sand">
+  </div>
   <div id="densityDock">
     <svg class="grain-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
       <circle cx="6" cy="9" r="1.3" fill="currentColor"/>
@@ -176,7 +241,7 @@
       <circle cx="15.5" cy="16" r="1.3" fill="currentColor"/>
       <circle cx="6" cy="17" r="0.9" fill="currentColor"/>
     </svg>
-    <input type="range" id="densitySlider" min="0" max="100" value="44" aria-label="sand density">
+    <input type="range" id="densitySlider" min="0" max="100" value="44" aria-label="how much">
   </div>
   <div id="hueDock">
     <svg class="palette-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -185,7 +250,8 @@
       <circle cx="11.3" cy="7.3" r="1" fill="currentColor" stroke="none"/>
       <circle cx="15.2" cy="8" r="1" fill="currentColor" stroke="none"/>
     </svg>
-    <input type="range" id="hueSlider" min="0" max="360" value="42" aria-label="sand colour">
+    <input type="range" id="hueSlider" min="0" max="360" value="42" aria-label="grain colour">
+  </div>
   </div>
 </div>
 <script>
@@ -469,21 +535,101 @@
   const px = new Float32Array(NMAX), py = new Float32Array(NMAX);
   const vx = new Float32Array(NMAX), vy = new Float32Array(NMAX);
   const gsize = new Float32Array(NMAX);
-  (function seed(){
+
+  // ---------- what's on the plate ----------
+  // Two families, and the difference between them is a real inversion of the
+  // figure, not a change of colour.
+  //
+  //   Heavy grains — sand, salt — are thrown into the air wherever the plate is
+  //   moving and land wherever it isn't, so they end up piled along the nodal
+  //   lines. That's the classic Chladni figure, and it's what this plate did
+  //   before there was anything to choose.
+  //
+  //   Very fine powder — lycopodium spores, fine flour — is too light to be
+  //   thrown. The shaking plate stirs the air just above it into small standing
+  //   vortices (acoustic streaming), and that flow sweeps the powder off the
+  //   nodes and heaps it at the antinodes instead: the same pattern, inside
+  //   out. Chladni saw both; Faraday worked out why, in 1831.
+  //
+  // seek: +1 gathers at the nodes, -1 at the antinodes. Everything else is that
+  // substance's own body — how coarse the grain is, how readily it moves, how
+  // much the air drags on it, and its own colour, which the colour slider is
+  // still free to override afterwards.
+  //
+  // One thing here is a drawing decision and not a physical one, and it looks
+  // backwards written down: the powders are drawn with the *bigger*, softer,
+  // fainter marks. There are only ten thousand or so particles to go round, and
+  // the heavy families spend them on thin lines where they read as grains,
+  // while a powder spreads its own over a third of the plate. So each powder
+  // mark stands for a clump of the stuff rather than one spore — otherwise a
+  // bed of lycopodium comes out as a sparse speckle of dots, which is exactly
+  // what it isn't.
+  const SUBSTANCES = [
+    { seek:+1, hue:42, sat:68, light:78, alpha:0.95, size:[0.55,1.45], drift:3.1, jitter:9.0, damp:0.86, blur:1.00, crowd:0   }, // sand
+    { seek:+1, hue:46, sat:22, light:90, alpha:0.95, size:[0.85,1.15], drift:3.4, jitter:8.0, damp:0.84, blur:0.85, crowd:0   }, // salt
+    { seek:-1, hue:48, sat:60, light:74, alpha:0.70, size:[1.80,3.60], drift:2.4, jitter:6.0, damp:0.80, blur:2.20, crowd:0.9, pack:3.0 }, // lycopodium
+    { seek:-1, hue:40, sat:18, light:93, alpha:0.66, size:[1.70,3.40], drift:2.1, jitter:5.5, damp:0.78, blur:2.50, crowd:1.1, pack:2.6 }, // fine flour
+  ];
+  let subIdx=0, sub=SUBSTANCES[0];
+
+  function pour(){
     for(let i=0;i<NMAX;i++){
       // start scattered across the whole plate, uniform in x/y (not polar,
       // so corners get grains too) — first excite sweeps it into shape
       px[i]=(Math.random()*2-1);
       py[i]=(Math.random()*2-1);
       vx[i]=0; vy[i]=0;
-      gsize[i]=0.55+Math.random()*0.9;
+      gsize[i]=sub.size[0]+Math.random()*(sub.size[1]-sub.size[0]);
     }
-  })();
+  }
+  pour();
+
+  const grainSlider=document.getElementById('grainSlider');
+  const marks=[].slice.call(document.querySelectorAll('#grainDock .marks i'));
+  const SUB_NAMES=['sand','salt','lycopodium','fine flour'];
+  function setSubstance(i){
+    subIdx=i; sub=SUBSTANCES[i];
+    marks.forEach((m,j)=> m.classList.toggle('on', j===i));
+    grainSlider.setAttribute('aria-valuetext', SUB_NAMES[i]);
+    // sweeping the plate clear and pouring the new one on is the whole gesture,
+    // and it comes with its own colour — which the colour slider can still move
+    hue=sub.hue; hueSlider.value=String(sub.hue);
+    pour();
+    exciteAt=performance.now();   // and its own strike, so it settles at once
+  }
+  grainSlider.addEventListener('input', ()=>{
+    const i=+grainSlider.value;
+    if(i!==subIdx) setSubstance(i);
+  });
+  // the strike sounds when the hand comes off, not once per notch on the way
+  // past — dragging the length of it would otherwise fire four in a second
+  grainSlider.addEventListener('change', ()=> soundTone(freqForIdx(modeIdx), 0.09, 220, 0.6));
+  setSubstance(0);
+
   const densitySlider=document.getElementById('densitySlider');
   densitySlider.addEventListener('input', ()=>{
     const t=densitySlider.value/100;
     activeN=Math.round(N_MIN+(NMAX-N_MIN)*t);
   });
+
+  // ---------- crowding: a heap has volume ----------
+  // The heavy families gather along the nodal *lines*, and a line has room —
+  // jitter alone gives those their real width. The powders gather at antinode
+  // *points*, and nothing in the flow above stops a grain once it arrives, so
+  // without a pile every last one would end up at the same infinitesimal spot:
+  // bare metal with a scatter of dots on it, which is not what lycopodium does.
+  // So the powders carry the pile itself — a coarse count of how much is
+  // already in each patch of plate, and a shove down that count's own slope.
+  //
+  // Only once it's actually heaped, though: loose powder lying thin doesn't
+  // push on itself at all, so nothing acts until a patch holds more than
+  // `pack` times an even spread. That threshold is what keeps the nodal lines
+  // swept clean — grains crossing one are never crowded back onto it — and it
+  // sets how far a heap spreads: at pack 3 it broadens until it covers about a
+  // third of the plate, which is roughly the room the antinodes give it.
+  const CG=96, cellCount=new Int32Array(CG*CG);
+  const cellPile=new Float32Array(CG*CG);
+  function cellXY(v){ return Math.min(CG-1, Math.max(0, ((v+1)*0.5*CG)|0)); }
 
   const EPS=0.01;
   function grad(x,y){
@@ -502,6 +648,14 @@
     // so settled sand still has a faint live shimmer
     const agitation = 0.055 + 1.6*Math.exp(-age*1.6);
 
+    if(sub.crowd){
+      cellCount.fill(0);
+      for(let i=0;i<activeN;i++) cellCount[cellXY(py[i])*CG+cellXY(px[i])]++;
+      // how much each patch is holding over and above what it can lie flat in
+      const evenly=(CG*CG)/activeN;   // scales a count so that 1 means "an even spread"
+      for(let c=0;c<cellPile.length;c++) cellPile[c]=Math.max(0, cellCount[c]*evenly-sub.pack);
+    }
+
     for(let i=0;i<activeN;i++){
       let x=px[i], y=py[i];
       const [f,fx,fy]=grad(x,y);
@@ -515,20 +669,44 @@
       // the direction first so every pitch converges at the same real speed
       const gmag=Math.hypot(fx,fy)||1e-6;
       const ux=fx/gmag, uy=fy/gmag;
-      const dirSign = f>0 ? -1 : 1;
-      const closeness=Math.min(1,Math.abs(f)*1.1);
-      const speed=3.1*closeness;
+      const af=Math.abs(f);
+      let dirSign, speed, amp;
+      if(sub.seek>0){
+        // heavy: downhill to the nearest node, fastest where the plate is
+        // loudest, and dead still once it gets there
+        dirSign = f>0 ? -1 : 1;
+        speed = sub.drift*Math.min(1, af*1.1);
+        // jitter scaled by the plate's local amplitude — grains sitting on an
+        // antinode dance hard, ones already on a node barely move
+        amp = Math.min(1, af*1.4);
+      } else {
+        // light: uphill instead, away from the node and on to the nearest
+        // crest of the standing wave, which is where the stirred air is taking
+        // it. The push is hardest exactly on the nodal line (nothing settles
+        // there) and fades to nothing at the crest, so that's where it heaps.
+        // |f| runs to 2 at a crest, which is what normalises both of these.
+        dirSign = f>0 ? 1 : -1;
+        const toCrest=Math.max(0, 1-af/2);
+        speed = sub.drift*toCrest;
+        // and it's restless over the swept nodes, calm in the heaps
+        amp = 0.30 + 0.45*toCrest;
+      }
       vx[i] += dirSign*ux*speed*dt;
       vy[i] += dirSign*uy*speed*dt;
-      // random jitter scaled by both the plate's local amplitude and the
-      // current agitation — grains sitting on an antinode dance hard, ones
-      // already on a node barely move, exactly like real sand does
-      const amp=Math.min(1,Math.abs(f)*1.4);
       const jitter=agitation*amp;
-      vx[i] += (Math.random()*2-1)*jitter*dt*9;
-      vy[i] += (Math.random()*2-1)*jitter*dt*9;
-      // damping
-      vx[i]*=0.86; vy[i]*=0.86;
+      vx[i] += (Math.random()*2-1)*jitter*dt*sub.jitter;
+      vy[i] += (Math.random()*2-1)*jitter*dt*sub.jitter;
+      if(sub.crowd){
+        const ix=cellXY(x), iy=cellXY(y);
+        const l=cellPile[iy*CG+Math.max(0,ix-1)],  r=cellPile[iy*CG+Math.min(CG-1,ix+1)];
+        const u=cellPile[Math.max(0,iy-1)*CG+ix],  d=cellPile[Math.min(CG-1,iy+1)*CG+ix];
+        // clamped, so a freshly-poured clump can't fling anything off the plate
+        const gx=Math.max(-8,Math.min(8,r-l)), gy=Math.max(-8,Math.min(8,d-u));
+        vx[i] -= sub.crowd*gx*dt;
+        vy[i] -= sub.crowd*gy*dt;
+      }
+      // damping — the air drags harder on the fine stuff
+      vx[i]*=sub.damp; vy[i]*=sub.damp;
       // hard speed limit, independent of pitch — nothing can ever tunnel
       // across the plate in one step, regardless of how fine the pattern is
       const vmag=Math.hypot(vx[i],vy[i]), vmax=2.4;
@@ -616,7 +794,7 @@
     grainCtx.clearRect(0,0,W,H);
     // same soft, pale character at every hue — only the hue itself moves,
     // so it always still reads as fine sand, never a saturated paint colour
-    grainCtx.fillStyle=`hsla(${hue}, 68%, 78%, 0.95)`;
+    grainCtx.fillStyle=`hsla(${hue}, ${sub.sat}%, ${sub.light}%, ${sub.alpha})`;
     for(let i=0;i<activeN;i++){
       const [x,y]=toPx(px[i],py[i]);
       const s=gsize[i]*DPR*1.1;
@@ -625,7 +803,8 @@
     // more blur as density rises — a light dusting stays crisp, individual
     // grains; a heavy pour softens into a real, fuzzy-edged glow
     const densityT=Math.max(0,Math.min(1,(activeN-N_MIN)/(NMAX-N_MIN)));
-    const blur=(0.25+densityT*1.5)*DPR;
+    // powder is a dust, not a scatter of grains — it softens further
+    const blur=(0.25+densityT*1.5)*DPR*sub.blur;
     ctx.save();
     ctx.filter=`blur(${blur.toFixed(2)}px)`;
     ctx.drawImage(grainCanvas,0,0);
@@ -637,9 +816,10 @@
 </script>
 <!-- shelf-tags: generated by tools/shelf-tags.py -- do not hand-edit -->
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&display=swap');
   /* The disc in the right corner is the mirror of the one in the left: same brass
      off the same plinth, arrow the other way. Touched, the five plates come out --
-     the very plates off the case, each cut from its own place in the photograph.
+     the very plates off the case, each one her own brass cut to its own name.
      Roll one and that group's pieces come out beside it. */
   #shelfdisc{ position:fixed; top:18px; right:22px; z-index:61;
     width:38px; height:38px; display:grid; place-items:center;
@@ -660,9 +840,9 @@
   #plates.open{ opacity:1; transform:none; pointer-events:auto; }
   #plates .row{ display:flex; align-items:center; justify-content:flex-end; gap:8px; }
   #plates .tag{ display:flex; align-items:center; justify-content:center; flex:none;
-    width:132px; height:20px; cursor:pointer; text-decoration:none;
-    font:700 11px/1 'Cormorant Garamond', Georgia, serif; letter-spacing:.02em;
-    color:#3b2807; text-shadow:0 1px 0 rgba(255,238,196,.42), 0 -1px 1px rgba(0,0,0,.3);
+    height:22px; cursor:pointer; text-decoration:none; background-repeat:no-repeat;
+    font:700 11px/1 'Libre Baskerville', Georgia, serif; letter-spacing:.045em;
+    color:#4a3208; text-shadow:0 1px 0 rgba(255,240,200,.42), 0 -1px 1px rgba(0,0,0,.28);
     filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));
     opacity:.9; transition:opacity .25s ease, transform .25s ease; }
   #plates .row:hover .tag, #plates .row:focus-within .tag,
@@ -687,23 +867,23 @@
 <div id="plates">
   <div class="row">
     <span class="pieces"><a href="../candler/"><img src="../candler/candle-card.png" alt="candler"></a><a href="../conometer/"><img src="../conometer/conometer-card.png" alt="conometer"></a><a href="../galileo/"><img src="../galileo/galileo-card.png" alt="galileo"></a><a href="../windower/"><img src="../windower/windower-card.png" alt="windower"></a><a href="../storm/"><img src="../storm/storm-card.png" alt="storm"></a></span>
-    <a class="tag" href="../index.html#instrumenta" style="background:url(../shelves.jpg) -352px -255px / 832px auto">instrumenta</a>
+    <a class="tag" href="../index.html#instrumenta" style="background:url(../shelfplate-instrumenta.png) center/100% 100%; width:111.5px">instrumenta</a>
   </div>
   <div class="row">
     <span class="pieces"><a href="../warmler/"><img src="../warmler/warmler-card.png" alt="warmler"></a><a href="../roller/"><img src="../roller/roller-card.png" alt="roller"></a><a href="../kaleidoscope/"><img src="../kaleidoscope/kaleidoscope-card.png" alt="kaleidoscope"></a></span>
-    <a class="tag" href="../index.html#tactilia" style="background:url(../shelves.jpg) -352px -410px / 832px auto">tactilia</a>
+    <a class="tag" href="../index.html#tactilia" style="background:url(../shelfplate-tactilia.png) center/100% 100%; width:88.0px">tactilia</a>
   </div>
   <div class="row">
     <span class="pieces"><a href="../musebox/"><img src="../musebox/musebox-card.png" alt="musebox"></a><a href="../gyre/"><img src="../gyre/gyre-card.png" alt="gyre"></a><a href="../chimes/"><img src="../chimes/chimes-card.png" alt="chimes"></a></span>
-    <a class="tag" href="../index.html#systema" style="background:url(../shelves.jpg) -352px -569px / 832px auto">systema</a>
+    <a class="tag" href="../index.html#systema" style="background:url(../shelfplate-systema.png) center/100% 100%; width:93.2px">systema</a>
   </div>
   <div class="row">
     <span class="pieces"><a href="../birds/"><img src="../birds/birds-card.png" alt="birds"></a><a href="../fireflies/"><img src="../fireflies/fireflies-card.png" alt="fireflies"></a><a href="../moths/"><img src="../moths/moths-card.png" alt="moths"></a><a href="../ant/"><img src="../ant/ant-card.png" alt="ant"></a></span>
-    <a class="tag" href="../index.html#natura" style="background:url(../shelves.jpg) -352px -728px / 832px auto">natura</a>
+    <a class="tag" href="../index.html#natura" style="background:url(../shelfplate-natura.png) center/100% 100%; width:84.5px">natura</a>
   </div>
   <div class="row" data-here="1">
     <span class="pieces"><a href="../lamp/"><img src="../lamp/lamp-card.png" alt="lamp"></a><a href="../rain/"><img src="../rain/rain-card.png" alt="rain"></a><a href="../bowl/"><img src="../bowl/bowl-card.png" alt="bowl"></a><a href="../pendulum/"><img src="../pendulum/pendulum-card.png" alt="pendulum"></a><a class="here" href="../chladni/"><img src="../chladni/chladni-card.png" alt="chladni"></a></span>
-    <a class="tag" href="../index.html#phenomena" style="background:url(../shelves.jpg) -352px -886px / 832px auto">phenomena</a>
+    <a class="tag" href="../index.html#phenomena" style="background:url(../shelfplate-phenomena.png) center/100% 100%; width:109.3px">phenomena</a>
   </div>
 </div>
 <script>

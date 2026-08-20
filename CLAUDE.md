@@ -33,12 +33,25 @@ plain HTML + CSS + JavaScript. Editing = changing those files directly.
 branch**. That's the key fact behind everything below: **a change is only live once it's on
 `main`.** Until then it's a private draft.
 
-**Landing page:** `index.html` (titled *sagne*) — the **apothecary shelf**: a photograph of a
-five-shelf case, the pieces standing face-front on the shelves, and the name of each type
-engraved on the brass plate beneath it. It replaced the flat card grid in Aug 2026. Every
-position on it derives from one table of measurements taken off the photograph itself
-(`shelves.jpg`, 990x1088) — the interior opening, each shelf's surface and the plate on its
-front rail. Change the picture and you change that table; don't retype percentages by hand.
+**Landing page:** `index.html` (titled *sagne*) — a **five-shelf case**, the pieces standing
+face-front on the shelves in mounts, and the name of each type on the brass plate beneath it.
+It replaced the flat card grid in Aug 2026. Every position on it derives from one table of
+measurements taken off the photograph itself — the interior opening, each shelf's surface and
+the rail its plate is screwed to. Change the picture and you change that table; don't retype
+percentages by hand.
+
+The case is **`shelves-navy.jpg`** (1024x1260), her dark cabinet, straight on. It replaced the
+walnut apothecary shelf in Aug 2026 — her call: *"while the shelves we built are undoubtedly
+beautiful, they're not as timeless or as understated."* `shelves.jpg`, the walnut one, is kept
+as a record and is no longer referenced by anything.
+
+**The brass is laid on, not photographed in.** The walnut case had its lettering engraved into
+the picture; this one carries her own plates as separate cut-outs — `shelfplate-<group>.png`,
+`shelfoval.png` — with the names set over them in **Libre Baskerville 700**, her pick over
+Cormorant: engraving wants even stroke weight, and Cormorant's hairlines vanish at the size a
+shelf plate allows. **Each plate is cut to the length of its own word**, which is why `plateW`
+is per shelf. Re-cutting is only needed if a group is renamed or the lettering resized; the
+sheet of ten blank lengths she generated is in her `daidle` Drive folder.
 
 ### The pages
 
@@ -82,12 +95,56 @@ thing?* That is a yes or a no.
 | `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
 | `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**. |
 | `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material) — **awaiting her ears**, which is the only test that counts here. |
-| `chladni/index.html` | ✅ | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound<br>**Done**. |
+| `chladni/index.html` | ✅ | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound<br>**Done**. Aug 2026 it was given **substances**, in
+two families that are a real inversion of each other and not a recolour: heavy grains (sand, salt)
+are thrown off the moving plate and pile on the **nodal lines**, while very fine powder (lycopodium,
+fine flour) is too light to be thrown and is instead swept by the stirred air to the **antinodes**,
+drawing the exact negative of the same figure. They're chosen on a **slider**, her call over a row of
+swatches or tickboxes: the four are genuinely in an order — coarsest and heaviest to finest and
+lightest — and that ordering is the physics. The notches are evenly spaced and **nothing marks where
+the figure flips**; finding that is the point. The notches themselves are the grains, each at its own
+size, colour and shape (sand rounded, salt square because halite is cubic, the powders an even veil),
+the same move the chimes rods got. Emoji were considered for them and don't exist: 🧂 is the only one
+of the four, sand and flour have only metaphors (desert, hourglass, sheaf), and there is no spore at
+all — 🍄 is a fungus and lycopodium is a clubmoss.<br>The notches are **her photographs**, one of each
+substance, cut from a sheet she made (`chladnithumbnails.jpg` and the three full-size tiles in her
+`daidle` Drive folder). Two of her decisions about them: the lycopodium notch is deliberately the
+**clubmoss plant**, not the powder, so that a curious person can cut the picture and search it — and
+there is nothing to see in a photograph of spores anyway; and the sheet's lettering (FLOUR, SAND, SALT
+— plus a PEBBLES tile Gemini added unasked, which she didn't want) all came off. The three other
+notches are cropped into the **substance itself and not the tool that is in the shot with it**: at
+40px, the full tiles read as a wooden scoop and a sieve rather than as salt and flour. Photographs
+need the notches at 40px; at 26 they are four beige smudges.<br>**Getting a picture out of her Drive
+is possible — don't conclude otherwise.** This session first decided it wasn't: the network is closed
+to Google, and the Drive tool hands a file back as base64 text, which at 650KB looked far too big to
+carry. It isn't. When a tool result is too big it is **spilled to a file** under the session's
+`tool-results/` directory and the path is handed back instead — so `json.load` that file, `base64`
+-decode its `content`, and write the bytes to disk. Nothing has to be retyped, and the size stops
+mattering. Two things in there are worth knowing before touching
+it: the powders carry a **pile of their own volume** (a coarse count per patch of plate, pushing back
+only once a patch holds more than a few times an even spread) or every grain converges on one
+infinitesimal point and it reads as a bare plate with dots on it; and the powders are deliberately
+drawn with **bigger, softer, fainter** marks than the heavy families, because ten thousand particles
+spread over a third of the plate have to stand for clumps of powder rather than single spores.<br>A
+**cornflour suspension** would be a genuine third family — not a scatter of particles at all but a
+connected shear-thickening layer, liquid on the nodal lines and locking into standing fingers and
+persistent holes over the antinodes. It was raised and **parked**, her call: it needs to be drawn as a
+fluid surface rather than as marks, and *"if it can't be rendered convincingly as a fluid, let's wait
+until we have better tools."* Don't re-propose it as a fifth swatch on the existing renderer. |
 | `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
 | `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Awaiting her verdict**. |
 | `moths/index.html` | ✅ |  | **Moths** losing their bearings on a hanging bulb. Not attraction — a moth holds a course by keeping a distant light at a fixed angle, and a near one wraps that course into a spiral. Three sliders: dusk→dark, bulb, how many. Colour is a readout of depth (dark in front of the glass, pale behind), from her own three-shade cut<br>Built Aug 2026 from her brief, then put right by her own watching of it — she found that the moths crowded the bulb and stayed (an absorbing state: all five reached it and none ever left), that moths in front of the lower glass came out grey rather than black, that they all flew alike, and that they never tilted or wavered. In **natura**, which is therefore a shelf of four |
 | `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune |
-| `pendulum/index.html` | ✅ | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search<br>**Done** — precession, swing and pin ring all verified by measurement against the real physics. |
+| `pendulum/index.html` | ✅ | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search<br>**Done** — precession, swing and pin ring all verified by measurement against the real physics.
+Aug 2026 it was given a **real-world-time** checkbox (the clock face beside the ∞): ticked, the plane
+precesses at the true Foucault rate off the actual clock — Earth's turn times sin(latitude) — and the
+speed slider stands down. **It stores nothing.** The angle is a pure function of the clock and the
+latitude, and so is the whole sand trace, so ticking it (or changing latitude, or resizing) recomputes
+what the plate would have drawn since local midnight in one pass and lays it down. The honest caveat,
+which is why it's a checkbox and not the default: at the true rate the turn is very nearly
+imperceptible, the better part of a day for one rosette, and the trace comes out as swept ground
+rather than separate lines because successive passes land 0.007° apart — closer than a grain is wide.
+The swing itself stays exactly as lively as ever. |
 | `storm/index.html` | ✅ |  | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo) |
 | `crystal.html` | — | — | A crystal (not linked from the landing page) |
 | `chest.html`, `chest-open.html` | — | — | Dead apothecary-chest drafts she turned down; kept as a record, not linked |
@@ -116,26 +173,35 @@ which had no vertical front edge at all, only a floor, had the fourth rail clone
 the floor line so its plate had something to sit on. The scripts that did all this are gone
 with their scratchpad, so treat `shelves.jpg` as the source of truth.
 
-**A card stands on the board, not at the lip of it.** Aug 2026 the shelves were given
-headroom: every one now has the same 132px between its ceiling and where a card's foot
-lands, done by stretching the flat dark band of back panel inside each shelf while the
-boards, rails, crown and plinth were carried across rigid. That took the photograph from
-1088 to 1232 tall. A card's foot sits `seatBack` (8px) behind the front lip, so a sliver of the
-lit top shows in front of it. That number is narrow on both sides: on the lip they read as
-propped in front of the furniture, and 18px back they read as hovering above it. The
-cards' shadow is a short contact one for the same reason. The three upper brass plates were in shadow and their
-names couldn't be read, so a lit plate was set into each of those sockets. The **?** is a
-brass disc of hers (`shelfdisk.png`) let into the middle of the plinth carving, with the
-question mark engraved into it; the case stands on the floor of the page rather than
-floating in the middle of it.
+**A card stands in a mount, not merely on the board.** Her idea, off a photograph of a real
+display stand: an upright behind the card, an arm over its top edge, another taking its weight
+underneath, on a base that bears on the board. It is drawn as one SVG rather than photographed,
+so it stays crisp at every zoom, and it is what stops the cards reading as hovering a hair above
+the shelf. The upright must stay **behind** the card — an absolutely positioned stand paints over
+its own picture otherwise, and every card gets a black bar down the middle.
+
+**The case was worked on to get there,** and none of it shows in the file: a fifth compartment
+was spliced in (her generator gave four), cutting and rejoining inside the dark under a board
+where a seam cannot show, then re-grading the whole case so the light still falls away top to
+bottom; the panelled cupboard doors below were cut off at the counter's own front edge, her call;
+a band of the case's own near-black was added below the counter for the **?** disc to sit on;
+and the top compartment was compressed from 204 to 176 so the top of the unit comes down onto the
+first shelf — also her call, *"it does a good job in drawing the eye down"*. The lit openings now
+run 176, 176, 202, 202, 211: tactilia is held to 176 by a shadow cast under the first board, which
+none of the others have, so **the top shelf is not the odd one even though it can look it**.
+
+The **?** is a brass disc of hers (`shelfdisk.png`) with the question mark engraved into it,
+sitting on that band of dark below the counter; the case stands on the floor of the page rather
+than floating in the middle of it. The *sagne* oval is screwed **to the front face of the top
+rail**, edge to edge on it — not floating in the shadow of the recess behind, which is where it
+first went and which she caught.
 
 **The favicon** is her own candle, cut off its ground and wrapped inside `favicon.svg`, so
 every page that already links to that file picks it up without a reference changing. The
 same cut-out makes `apple-touch-icon.png` and `icon-192/512.png` on the site's navy.
 
 **No words on it that aren't cut into it.** The only lettering on the shelf is engraved
-into the photograph: *sagne* on the crown oval and the five group names on the brass
-plates. The card names that used to float over a piece on hover were removed Aug 2026 —
+on the brass: *sagne* on the oval and the five group names on the plates. The card names that used to float over a piece on hover were removed Aug 2026 —
 this site doesn't caption its objects — and so was the text **back** button; the way out
 of a zoom is the plate of the shelf you're in, a tap on the dark around the case, or
 Escape. The plate names size themselves to the height of the brass and sit centred in it — they
@@ -157,7 +223,7 @@ for them.
 
 **Getting across, not just in and out.** Each piece carries two brass discs, both cut
 from `shelfdisk.png`. Left is the way back (an arrow, to the case). Right brings out the
-five shelf plates — the very plates, each cut from its own place in `shelves.jpg` — and
+five shelf plates — the very plates off the case, each her own brass cut to its own name — and
 rolling one unfolds that group's pieces beside it. A mouse hovers to unfold and clicks the
 plate to go; a thumb taps once to unfold and twice to go, the same bargain the case itself
 strikes. A plate links to `/index.html#<group>`, which opens the case already zoomed to
