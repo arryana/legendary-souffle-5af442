@@ -271,6 +271,58 @@ rate-limited or revoked, which is a worse failure than the outage it insures aga
 honestly is the answer here, not a second source that can quietly disagree with the first. (These are also why a *faithful* Preview matters — a plain
 screenshot can't show live weather.)
 
+### Touch targets: a slider is a mouse dimension
+
+Most of this site's sliders were painted as a **3px hairline**, which is right for a
+mouse — a mouse is pixel-precise, and a hairline reads as elegant. A thumb is about 9mm
+across: it can only catch the little knob, and it covers the whole track the moment it
+lands. Aug 2026 every slider on the site was given a **body a thumb can catch, without
+moving the painted line by a pixel**: padding grows the box, `background-clip:content-box`
+keeps the paint in the middle strip, and a matching negative margin gives the space back so
+nothing on the page shifts. It applies only under `@media (pointer: coarse)` — a desktop is
+untouched.
+
+That block is **generated** — run `node tools/touch-targets.js` (needs `playwright-core`
+and the site served locally; see the header in the script). Don't hand-edit between the
+`touch-targets` markers. Each slider grows only as far as **half the gap to its nearest
+neighbour**, so no two ever overlap and steal each other's taps; the widths come from
+measuring the real page at 390px, not from guessing. `chladni`'s notch slider is skipped —
+its photographs already make it 46px.
+
+Two things in there cost a pass each and will cost another if forgotten:
+
+- **`border-radius` is measured off the outer box**, so padding eats the rounding off the
+  painted strip and leaves the track with square ends. The fix is an elliptical radius that
+  gives the vertical axis back exactly what the padding took.
+- **CSS scales every radius down proportionally when they don't fit the box**, so a declared
+  `4px` on a 4px-tall track is really 2px on screen — and `getComputedStyle` hands back the
+  declared figure, not the drawn one. Clamp it to half the height first or the cap comes out
+  a different shape from the one it replaced. Getting this wrong is visible: candler's track
+  went from a round cap to a tapered one.
+
+Verified by screenshotting every slider against a pristine copy of the site: **16 of 19 are
+identical to the pixel**, and the other three differ by at most 5/255 in the dither of a
+faint gradient. Nothing moved, nothing overlaps, and the desktop is byte-identical.
+
+**`kaleidoscope` and `moths` had to be given room first** — their sliders sat 14px and 11px
+apart, which leaves nothing to grow into. Both had space going spare on a phone, so the gaps
+were opened (kaleidoscope's `.sliders` to 26px, moths' `#dock` to 26px). That one *is* a
+visible change, unlike the rest of this.
+
+**candler's pins are the same fault in another shape.** A pin's picture is about 23 units
+tall and a unit is roughly a pixel on a phone, so grabbing one asked for a thumb inside a
+23px band — and a near miss doesn't do nothing, it puts a *new* pin on the candle. Each pin
+now carries a transparent 44px-tall rect in its own `<g>`; nothing of it shows, and the grab
+box went from 70x23 to 82x44. It has to be built inside `pinMarkup`, because `movePinTo`
+rewrites the group's `innerHTML` from that function on every drag frame. It cannot swallow a
+neighbour's taps that the picture wasn't already overlapping — two pins may legitimately sit
+`MIN_PIN_GAP` apart, which is narrower than the pin image itself.
+
+**The music player's track name** was revealed on `:hover`, so on a phone it never appeared
+at all — and an invisible element sat there taking taps. It now simply shows while something
+is playing (`#musicBtn.playing ~ #musicName`), on all 14 pages that carry the player. That is
+not a caption on a piece: it is the visitor's own file's name, not the site's words.
+
 ### Asset naming conventions (follow these for any new asset)
 
 - **Card previews** on the landing page: `<demo>-card.png` (e.g. `lamp-card.png`).
