@@ -50,6 +50,16 @@
     input[type=range]{ width:78px; }
     #dock{ right:12px; bottom:12px; gap:9px; }
   }
+  /* On a phone the three of them stack in the corner, out of the way of a thumb
+     and of the bulb. A desktop window has a whole empty foot of sky under the
+     lamp, and huddling them into the right corner there reads as three things
+     dropped rather than three things laid out — so they spread along the
+     bottom, centred, the way every other piece on the site holds its controls. */
+  @media (min-width:760px){
+    #dock{ right:auto; left:50%; transform:translateX(-50%); bottom:30px;
+      flex-direction:row; align-items:center; gap:34px; }
+    input[type=range]{ width:136px; }
+  }
 </style>
 </head>
 <body>

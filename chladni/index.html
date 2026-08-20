@@ -96,6 +96,20 @@
   #hueSlider{ width:100px; flex:0 0 auto;
     background:linear-gradient(to right, hsl(0,80%,68%), hsl(60,80%,68%), hsl(120,80%,68%), hsl(180,80%,68%), hsl(240,80%,68%), hsl(300,80%,68%), hsl(360,80%,68%)); }
   #micDock{ display:flex; align-items:center; justify-content:center; gap:8px; }
+  /* Everything that isn't the pitch, gathered. On a phone they stay stacked,
+     one to a line, because there is no width to spend. A desktop window has
+     width and nothing else to do with it, so the same five spread out onto one
+     line instead of hanging under the plate as a six-rung ladder. */
+  #knobs{ display:flex; flex-direction:column; align-items:center; gap:3vh; }
+  @media (min-width:820px){
+    #stage{ gap:2.6vh; }
+    #knobs{ flex-direction:row; flex-wrap:wrap; justify-content:center;
+      align-items:center; gap:22px 38px; max-width:min(1020px,92vw); }
+    /* the pitch is the one that changes the figure, so it keeps a line of its
+       own above the rest rather than becoming one more knob in the row */
+    #dock{ order:-1; flex-basis:100%; width:auto; }
+    #pitchSlider{ max-width:500px; }
+  }
   .mic-icon{ color:#dfe6ea; flex-shrink:0; transition:color .25s ease; }
   .toggle input:not(:checked) ~ .mic-icon{ color:#7a8388; }
   #pitchSlider.driven{ opacity:.5; pointer-events:none; }
@@ -164,6 +178,7 @@
   <div id="plateWrap">
     <canvas id="scene"></canvas>
   </div>
+  <div id="knobs">
   <div id="micDock">
     <label class="toggle">
       <input type="checkbox" id="chkMic" aria-label="listen with microphone">
@@ -236,6 +251,7 @@
       <circle cx="15.2" cy="8" r="1" fill="currentColor" stroke="none"/>
     </svg>
     <input type="range" id="hueSlider" min="0" max="360" value="42" aria-label="grain colour">
+  </div>
   </div>
 </div>
 <script>
