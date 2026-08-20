@@ -93,7 +93,18 @@ the figure flips**; finding that is the point. The notches themselves are the gr
 size, colour and shape (sand rounded, salt square because halite is cubic, the powders an even veil),
 the same move the chimes rods got. Emoji were considered for them and don't exist: 🧂 is the only one
 of the four, sand and flour have only metaphors (desert, hourglass, sheaf), and there is no spore at
-all — 🍄 is a fungus and lycopodium is a clubmoss. Two things in there are worth knowing before touching
+all — 🍄 is a fungus and lycopodium is a clubmoss.<br>**Pending, and blocked on plumbing:** she has
+made **photographs** for the four notches — a picture of each substance in a rounded tile — and they
+sit in her `daidle` Drive folder as `chladnifloursand.jpg`, `chlandisalt.jpg` and `chladnilyco.jpg`.
+They are hers, and they are the better answer: real photographed things are what this site does. Two
+notes on them from her: the lycopodium tile is deliberately the **clubmoss plant**, not the powder, so
+that a curious person can cut the picture and search it; and the sheet's lettering (FLOUR, SAND, SALT
+— and a PEBBLES tile Gemini added unasked) all comes off. Using them needs the notches at ~40px
+instead of 26px, which fits on a phone with room to spare. They could not be fetched in Aug 2026: the
+session's network is closed to Google, and the Drive tool hands a file back as text, which at 650KB+
+apiece is far too big to carry and re-write to disk. What is needed is the four tiles cropped square,
+about 120px, at `chladni/chladni-grain-{sand,salt,lycopodium,flour}.png`. Until then the drawn grains
+stand and the piece is complete without them. Two things in there are worth knowing before touching
 it: the powders carry a **pile of their own volume** (a coarse count per patch of plate, pushing back
 only once a patch holds more than a few times an even spread) or every grain converges on one
 infinitesimal point and it reads as a bare plate with dots on it; and the powders are deliberately
