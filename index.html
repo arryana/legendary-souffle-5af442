@@ -102,8 +102,8 @@
   body.tray #back{ display:none; }   /* the plate at the foot of the tray is the way back */
 
   #frame{ position:relative; overflow:hidden; flex:none;
-    --h: min(95vh, calc(96vw * 1.257813), 1288px);
-    height:var(--h); width:calc(var(--h) / 1.257813); }
+    --h: min(95vh, calc(96vw * 1.230469), 1260px);
+    height:var(--h); width:calc(var(--h) / 1.230469); }
   /* Sizes here are fractions of the case's own height, so the lettering keeps its
      proportion to the furniture at every screen size. They cannot be written as
      "unit x px" -- --h is a length, and a length times a length is not a size, so
@@ -252,7 +252,7 @@
   // percentages, which had to be retyped by hand every time the picture changed.
   // ---------------------------------------------------------------------------
   var GEO = {
-    W:1024, H:1288,
+    W:1024, H:1260,
     interior:{ left:85, right:939 },      // the opening between the two posts
     // The brass is laid on rather than photographed in, so these are the boxes the
     // cut-out plates are drawn into. The oval is 135 wide -- her call, shrunk twice
@@ -261,7 +261,7 @@
     // y 0..58 in the photograph, so the plate takes all 58 of it and its width
     // follows from the brass's own proportion.
     oval:{ x:436, y:0, w:152, h:58 },
-    disc:{ cx:512, cy:1250, d:42 },       // on the band of dark below the counter
+    disc:{ cx:512, cy:1222, d:42 },       // on the band of dark below the counter
     // Each plate was cut to the length of its own word, so the width is per shelf.
     // 26 tall on every one; the names are engraved at 13px of the photograph's own
     // scale, which is what those lengths were cut for.
@@ -283,29 +283,32 @@
     // the other four, which would have left its cards with visibly less air. Its
     // flat lit back panel was stretched to match -- the top frame above and the
     // board below carried across rigid, so no joinery moved. That took the
-    // photograph from 1238 to 1288 tall, and these figures with it. All five
-    // openings now run 198 to 210.
+    // photograph from 1238 to 1288 tall. Then her call, looking at it: the top of
+    // the unit was to come closer to the first board, so that compartment's lit
+    // panel was compressed 204 -> 176 and the case is 1260. It now matches
+    // tactilia, which a shadow under the first board holds to the same 176; the
+    // lower three stand at 202, 202 and 211.
     shelves:[
-      { name:'instrumenta', ceil:107, surf:310, railY:318.5, plateW:131.8,
+      { name:'instrumenta', ceil:107, surf:282, railY:290.5, plateW:131.8,
         pieces:[['candler','candler/index.html','candler/candle-card.png'],
                 ['conometer','conometer/index.html','conometer/conometer-card.png'],
                 ['galileo','galileo/index.html','galileo/galileo-card.png'],
                 ['windower','windower/index.html','windower/windower-card.png'],
                 ['storm','storm/index.html','storm/storm-card.png']] },
-      { name:'tactilia', ceil:327, surf:525, railY:533.5, plateW:104.0,
+      { name:'tactilia', ceil:299, surf:497, railY:505.5, plateW:104.0,
         pieces:[['warmler','warmler/index.html','warmler/warmler-card.png'],
                 ['roller','roller/index.html','roller/roller-card.png'],
                 ['kaleidoscope','kaleidoscope/index.html','kaleidoscope/kaleidoscope-card.png']] },
-      { name:'systema', ceil:542, surf:743, railY:752, plateW:110.1,
+      { name:'systema', ceil:514, surf:715, railY:724, plateW:110.1,
         pieces:[['musebox','musebox/index.html','musebox/musebox-card.png'],
                 ['gyre','gyre/index.html','gyre/gyre-card.png'],
                 ['chimes','chimes/index.html','chimes/chimes-card.png']] },
-      { name:'natura', ceil:761, surf:962, railY:969.5, plateW:99.9,
+      { name:'natura', ceil:733, surf:934, railY:941.5, plateW:99.9,
         pieces:[['birds','birds/index.html','birds/birds-card.png'],
                 ['fireflies','fireflies/index.html','fireflies/fireflies-card.png'],
                 ['moths','moths/index.html','moths/moths-card.png'],
                 ['ant','ant/index.html','ant/ant-card.png']] },
-      { name:'phenomena', ceil:977, surf:1187, railY:1194.5, plateW:129.2,
+      { name:'phenomena', ceil:949, surf:1159, railY:1166.5, plateW:129.2,
         pieces:[['lamp','lamp/index.html','lamp/lamp-card.png'],
                 ['rain','rain/index.html','rain/rain-card.png'],
                 ['bowl','bowl/index.html','bowl/bowl-card.png'],
