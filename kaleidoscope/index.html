@@ -109,6 +109,51 @@
   @media (min-width: 1240px) {
     #palette{ grid-template-columns:repeat(14, 44px); }
   }
+
+  /* PHONE. Four rows of pieces and a stacked right-hand cluster came to 380px of
+     controls under a 400px scope, on a screen 844 tall that does not scroll: the
+     two sliders and the mirror buttons sat entirely below the bottom edge and
+     could not be reached at all. So on a phone the pieces are a small closed tray
+     of tiles that takes 66px, and everything else fits above the fold.
+     Touch the tray and it opens into a drawer with a thumb's worth of tile in it,
+     low enough that the scope and the dish are both still in sight above it -- a
+     piece is carried up out of the drawer and onto the dish in one movement, and
+     the drawer shuts itself the moment one lands. The tray keeps its 66px while
+     the drawer is out (min-height on the cluster), or the column would re-centre
+     and slide the dish out from under the visitor's own thumb mid-carry. */
+  @media (max-width: 899px) {
+    #scopeWrap{ width:min(50vh, 400px, 88vw); }
+    /* a column, not a wrapping row: with the drawer out the palette leaves the
+       flow, and a wrapping row would collapse from two lines to one and slide the
+       dish out from under the thumb carrying a piece towards it */
+    #controls{ flex-direction:column; align-items:center; gap:14px; }
+    #mirrors{ grid-template-columns:repeat(4, 44px); }
+    #leftCluster{ min-height:66px; justify-content:flex-start; }
+
+    /* the two sliders sat 14px apart, which leaves nothing for a thumb to grow
+       into; the column has room to spare on a phone, so they take some of it */
+    .sliders{ gap:26px; }
+
+    #palette{ grid-template-columns:repeat(7, 30px); gap:6px; }
+    #palette .piece{ width:30px; height:30px; border-radius:5px; }
+    #palette .add-plus{ font-size:14px; }
+    #palette .swap-btn{ display:none; }
+
+    /* a dim, and deliberately no blur: the dish is what a piece is being carried
+       towards, and you do not blur the thing someone is aiming at */
+    #paletteVeil{ position:fixed; inset:0; z-index:80; background:rgba(4,5,8,.38);
+      opacity:0; pointer-events:none; transition:opacity .25s ease; }
+    #paletteVeil.on{ opacity:1; pointer-events:auto; }
+
+    #palette.open{ position:fixed; left:0; right:0; bottom:0; z-index:90;
+      grid-template-columns:repeat(5, 52px); gap:10px; justify-content:center;
+      padding:16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+      background:rgba(10,11,14,.94); border-top:1px solid rgba(201,151,78,.28);
+      box-shadow:0 -14px 34px rgba(0,0,0,.6); }
+    #palette.open .piece{ width:52px; height:52px; border-radius:9px; opacity:1; }
+    #palette.open .add-plus{ font-size:22px; }
+    #palette.open .piece.add-tile.has-image .swap-btn{ display:block; }
+  }
   .mbtn{ width:44px; height:44px; border-radius:8px; border:1.5px solid rgba(236,227,208,.18);
     background:rgba(255,255,255,.02); cursor:pointer; opacity:.6; padding:0;
     transition:opacity .2s ease, border-color .2s ease, background .2s ease; }
@@ -145,6 +190,11 @@
   #musicBtn.playing{ color:#f0d69a; border-color:rgba(201,151,78,.6); opacity:.9; }
   #musicName{ max-width:40vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:#f2e9d8; opacity:0; transition:opacity .3s; letter-spacing:.02em; cursor:pointer; }
   #music:hover #musicName{ opacity:.55; }
+  /* a phone has no hover, so the name of the visitor's own track was never
+     visible on one at all -- and worse, an invisible thing sat there taking
+     taps. While something is playing it simply shows, next to the button.
+     Not a caption on the piece: it is their file's name, not the site's words. */
+  #musicBtn.playing ~ #musicName{ opacity:.5; }
 </style>
 <div id="music" title="play your own music">
   <button id="musicBtn" aria-label="play your own music">🎧</button>
@@ -168,6 +218,7 @@
   sync();
 })();
 </script>
+<div id="paletteVeil"></div>
 <div id="wrap">
   <div class="disc" id="scopeWrap">
     <canvas id="ringBase"></canvas>
@@ -643,8 +694,21 @@
   const imgPick=document.getElementById('imgPick'), customPiece=document.getElementById('customPiece');
   let customLoaded=false, customObjectURL=null;
 
+  /* the phone's drawer of pieces -- see the max-width:899px block above */
+  const PHONE = matchMedia('(max-width: 899px)');
+  const palette = document.getElementById('palette');
+  const paletteVeil = document.getElementById('paletteVeil');
+  const drawerShut = () => PHONE.matches && !palette.classList.contains('open');
+  function openDrawer(){ palette.classList.add('open'); paletteVeil.classList.add('on'); }
+  function closeDrawer(){ palette.classList.remove('open'); paletteVeil.classList.remove('on'); }
+  paletteVeil.addEventListener('pointerdown', e=>{ e.preventDefault(); closeDrawer(); });
+  PHONE.addEventListener('change', closeDrawer);
+
   document.querySelectorAll('.piece').forEach(piece=>{
     piece.addEventListener('pointerdown', e=>{
+      // shut, the tray is one object: the whole thing opens, and nothing is picked
+      // up yet. The same once-to-unfold, again-to-act bargain the case itself makes.
+      if(drawerShut()){ openDrawer(); e.preventDefault(); return; }
       const type=piece.dataset.type;
       if(type==='custom' && !customLoaded){ imgPick.click(); e.preventDefault(); return; }
       dragging={ type, x:0.5, y:0.5, size: (DROP_SIZE[type]||0.2)*sizeMul, hue: type==='gem'?currentHue:undefined };
@@ -658,6 +722,7 @@
 
   customPiece.querySelector('.swap-btn').addEventListener('pointerdown', e=>{
     e.stopPropagation(); e.preventDefault();
+    if(drawerShut()){ openDrawer(); return; }
     imgPick.click();
   });
   imgPick.addEventListener('change', ()=>{
@@ -711,6 +776,7 @@
         const p=separateFromPlaced(clientToTray(e.clientX, e.clientY), dragging.size);
         dragging.x=p.x; dragging.y=p.y;
         placed.push(dragging);
+        closeDrawer();   // it landed; a miss leaves the drawer out to try again
       }
       ghost.style.display='none';
     } else {
@@ -838,5 +904,21 @@
 })();
 </script>
 <!-- /shelf-tags -->
+<!-- touch-targets -->
+<style>
+  /* GENERATED by tools/touch-targets.js -- do not hand-edit between the markers.
+     A 3px-tall slider is a mouse dimension: a mouse is pixel-precise, a thumb is
+     about 9mm across and covers the whole track the moment it lands on it. These
+     rules grow the BODY that catches a thumb without moving the painted line by a
+     pixel -- the padding grows the box, background-clip keeps the paint in the
+     content strip, and the matching negative margin gives back the space so
+     nothing on the page shifts. Each slider grows only as far as half the gap to
+     its nearest neighbour, so no two ever overlap and steal each other's taps. */
+  @media (pointer: coarse){
+  input[type=range]#sizeSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:3px 3px 3px 3px / 11px 11px 18px 18px; padding:8px 0 15px; margin-top:-6px; margin-bottom:-13px; }
+  input[type=range]#hueSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:3px 3px 3px 3px / 18px 18px 9px 9px; padding:15px 0 6px; margin-top:-13px; margin-bottom:-4px; }
+  }
+</style>
+<!-- /touch-targets -->
 </body>
 </html>

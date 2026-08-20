@@ -88,7 +88,10 @@ thing?* That is a yes or a no.
 | `warmler/index.html` | ✅ |  | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked) |
 | `rain/index.html` | ✅ |  | Rain on glass |
 | `ant/index.html` | ✅ |  | Ants |
-| `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights. |
+| `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Aug 2026 the
+location flag moved up onto the line with the three tickboxes, her call. It had been on a line of its own
+below them, and that line was what pushed the page 27px off the bottom of a 1440x900 laptop; it now fits
+that screen exactly. A 1200x860 window is still 12px over — small, known, not chased. |
 | `galileo/index.html` | ✅ | ✅ | A **Galileo thermometer** whose floats rise and sink with the visitor's **real local temperature** (open-meteo API); has a °C/°F toggle. Three instruments of different ranges, together reading 12–116°F<br>**Done** — "it needs no design changes, it covers a hell of a range, and i can't think of anything it needs to do that it doesn't." |
 | `conometer/index.html` | ✅ | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle<br>**Done**. |
 | `gyre/index.html` | ✅ | ✅ | Meshable **gears** you place and connect on a board, plus a signal-lamp piece whose lights are driven by the gear train. See `gears.md` for how the gear math/rendering works<br>**Done**. |
@@ -132,7 +135,18 @@ persistent holes over the antinodes. It was raised and **parked**, her call: it 
 fluid surface rather than as marks, and *"if it can't be rendered convincingly as a fluid, let's wait
 until we have better tools."* Don't re-propose it as a fifth swatch on the existing renderer. |
 | `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
-| `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Awaiting her verdict**. |
+| `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Awaiting her verdict**.<br>**The phone case was
+broken and is now a drawer.** Four rows of pieces under a 400px scope came to 380px of controls on a screen
+844 tall that does not scroll, so both sliders and every mirror button sat below the bottom edge and could
+not be reached at all — worse than the 'bottom row under the fold' it was first reported as. On a phone the
+pieces are now a small closed tray of 30px tiles taking 66px, and everything fits above the fold. Touch the
+tray and it opens into a bottom drawer of 52px tiles, low enough that the scope and the dish are both still
+in sight above it, so a piece is carried up out of the drawer onto the dish in one movement and the drawer
+shuts itself when one lands (a miss leaves it out to try again). Two things there are load-bearing: the
+phone `#controls` is a **column, not a wrapping row** — as a wrapping row it collapsed from two lines to one
+when the palette left the flow and slid the dish out from under the thumb mid-carry — and `#leftCluster`
+keeps a `min-height` of 66px for the same reason. The veil behind the drawer dims and deliberately does
+**not** blur: you don't blur the thing someone is aiming at. |
 | `moths/index.html` | ✅ |  | **Moths** losing their bearings on a hanging bulb. Not attraction — a moth holds a course by keeping a distant light at a fixed angle, and a near one wraps that course into a spiral. Three sliders: dusk→dark, bulb, how many. Colour is a readout of depth (dark in front of the glass, pale behind), from her own three-shade cut<br>Built Aug 2026 from her brief, then put right by her own watching of it — she found that the moths crowded the bulb and stayed (an absorbing state: all five reached it and none ever left), that moths in front of the lower glass came out grey rather than black, that they all flew alike, and that they never tilted or wavered. In **natura**, which is therefore a shelf of four |
 | `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune |
 | `pendulum/index.html` | ✅ | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search<br>**Done** — precession, swing and pin ring all verified by measurement against the real physics.
@@ -256,6 +270,58 @@ alternatives need an API key, and a key in a static page is readable by anyone a
 rate-limited or revoked, which is a worse failure than the outage it insures against. Failing
 honestly is the answer here, not a second source that can quietly disagree with the first. (These are also why a *faithful* Preview matters — a plain
 screenshot can't show live weather.)
+
+### Touch targets: a slider is a mouse dimension
+
+Most of this site's sliders were painted as a **3px hairline**, which is right for a
+mouse — a mouse is pixel-precise, and a hairline reads as elegant. A thumb is about 9mm
+across: it can only catch the little knob, and it covers the whole track the moment it
+lands. Aug 2026 every slider on the site was given a **body a thumb can catch, without
+moving the painted line by a pixel**: padding grows the box, `background-clip:content-box`
+keeps the paint in the middle strip, and a matching negative margin gives the space back so
+nothing on the page shifts. It applies only under `@media (pointer: coarse)` — a desktop is
+untouched.
+
+That block is **generated** — run `node tools/touch-targets.js` (needs `playwright-core`
+and the site served locally; see the header in the script). Don't hand-edit between the
+`touch-targets` markers. Each slider grows only as far as **half the gap to its nearest
+neighbour**, so no two ever overlap and steal each other's taps; the widths come from
+measuring the real page at 390px, not from guessing. `chladni`'s notch slider is skipped —
+its photographs already make it 46px.
+
+Two things in there cost a pass each and will cost another if forgotten:
+
+- **`border-radius` is measured off the outer box**, so padding eats the rounding off the
+  painted strip and leaves the track with square ends. The fix is an elliptical radius that
+  gives the vertical axis back exactly what the padding took.
+- **CSS scales every radius down proportionally when they don't fit the box**, so a declared
+  `4px` on a 4px-tall track is really 2px on screen — and `getComputedStyle` hands back the
+  declared figure, not the drawn one. Clamp it to half the height first or the cap comes out
+  a different shape from the one it replaced. Getting this wrong is visible: candler's track
+  went from a round cap to a tapered one.
+
+Verified by screenshotting every slider against a pristine copy of the site: **16 of 19 are
+identical to the pixel**, and the other three differ by at most 5/255 in the dither of a
+faint gradient. Nothing moved, nothing overlaps, and the desktop is byte-identical.
+
+**`kaleidoscope` and `moths` had to be given room first** — their sliders sat 14px and 11px
+apart, which leaves nothing to grow into. Both had space going spare on a phone, so the gaps
+were opened (kaleidoscope's `.sliders` to 26px, moths' `#dock` to 26px). That one *is* a
+visible change, unlike the rest of this.
+
+**candler's pins are the same fault in another shape.** A pin's picture is about 23 units
+tall and a unit is roughly a pixel on a phone, so grabbing one asked for a thumb inside a
+23px band — and a near miss doesn't do nothing, it puts a *new* pin on the candle. Each pin
+now carries a transparent 44px-tall rect in its own `<g>`; nothing of it shows, and the grab
+box went from 70x23 to 82x44. It has to be built inside `pinMarkup`, because `movePinTo`
+rewrites the group's `innerHTML` from that function on every drag frame. It cannot swallow a
+neighbour's taps that the picture wasn't already overlapping — two pins may legitimately sit
+`MIN_PIN_GAP` apart, which is narrower than the pin image itself.
+
+**The music player's track name** was revealed on `:hover`, so on a phone it never appeared
+at all — and an invisible element sat there taking taps. It now simply shows while something
+is playing (`#musicBtn.playing ~ #musicName`), on all 14 pages that carry the player. That is
+not a caption on a piece: it is the visitor's own file's name, not the site's words.
 
 ### Asset naming conventions (follow these for any new asset)
 
