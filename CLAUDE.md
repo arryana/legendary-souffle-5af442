@@ -91,7 +91,12 @@ it: the powders carry a **pile of their own volume** (a coarse count per patch o
 only once a patch holds more than a few times an even spread) or every grain converges on one
 infinitesimal point and it reads as a bare plate with dots on it; and the powders are deliberately
 drawn with **bigger, softer, fainter** marks than the heavy families, because ten thousand particles
-spread over a third of the plate have to stand for clumps of powder rather than single spores. |
+spread over a third of the plate have to stand for clumps of powder rather than single spores.<br>A
+**cornflour suspension** would be a genuine third family — not a scatter of particles at all but a
+connected shear-thickening layer, liquid on the nodal lines and locking into standing fingers and
+persistent holes over the antinodes. It was raised and **parked**, her call: it needs to be drawn as a
+fluid surface rather than as marks, and *"if it can't be rendered convincingly as a fluid, let's wait
+until we have better tools."* Don't re-propose it as a fifth swatch on the existing renderer. |
 | `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
 | `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Awaiting her verdict**. |
 | `moths/index.html` | ✅ |  | **Moths** losing their bearings on a hanging bulb. Not attraction — a moth holds a course by keeping a distant light at a fixed angle, and a near one wraps that course into a spiral. Three sliders: dusk→dark, bulb, how many. Colour is a readout of depth (dark in front of the glass, pale behind), from her own three-shade cut<br>Built Aug 2026 from her brief, then put right by her own watching of it — she found that the moths crowded the bulb and stayed (an absorbing state: all five reached it and none ever left), that moths in front of the lower glass came out grey rather than black, that they all flew alike, and that they never tilted or wavered. In **natura**, which is therefore a shelf of four |
