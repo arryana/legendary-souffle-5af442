@@ -208,16 +208,44 @@
   }
 
   // ---- layout ----
-  let hangerX=0, hangerTopY=60, hangerDrawH=0, pivotY=0, ringSpan=0;
+  let hangerX=0, hangerTopY=60, hangerDrawH=0, pivotY=0, ringSpan=0, ringY=0;
   function layout(){
     hangerX = W/2;
     hangerDrawH = HANGER_W * 1.02;
     pivotY = hangerTopY + hangerDrawH*0.92;
+    ringY  = hangerTopY + hangerDrawH*0.05;
     ringSpan = HANGER_W*0.85;
   }
+  // where a rod's cord is tied to the bar, with the bar hanging straight
   function pivotX(i, n){
     if(n<=1) return hangerX;
     return hangerX + (i - (n-1)/2) * (ringSpan/(n-1));
+  }
+
+  // The whole thing hangs off one brass ring, so it is a pendulum in its own
+  // right -- a heavy, slow one whose weight is mostly the rods hanging well
+  // below the bar. What drives it is drag, and drag goes as the SQUARE of the
+  // wind: in a light air the lean is a fraction of a pixel and you would swear
+  // the bar were nailed up, and it is only in a real blow that it visibly leans
+  // and drifts. There is no threshold anywhere here -- the v-squared law is the
+  // whole of it.
+  let hangAng = 0, hangVel = 0, hangAcc = 0;
+  const HANG_CATCH = 0.18;   // sail area per unit mass -- a fraction of a bare rod's
+  const HANG_DAMP  = 0.55;
+
+  // where that cord is tied once the bar has leaned: the bar is rigid, so the tie
+  // point turns about the ring with it
+  function suspend(i, n){
+    const u = pivotX(i,n) - hangerX, d = pivotY - ringY;
+    const c = Math.cos(hangAng), sn = Math.sin(hangAng);
+    return { x: hangerX + u*c + d*sn, y: ringY + d*c - u*sn };
+  }
+  // and how hard that tie point is being thrown sideways -- a swaying bar is a
+  // moving support, and a moving support swings the rods hanging off it
+  function suspendAccX(i, n){
+    const u = pivotX(i,n) - hangerX, d = pivotY - ringY;
+    const c = Math.cos(hangAng), sn = Math.sin(hangAng);
+    return (-u*sn + d*c)*hangAcc + (-u*c - d*sn)*hangVel*hangVel;
   }
 
   function resize(){
@@ -343,7 +371,7 @@
   let lastT = null, elapsed = 0;
   function bobX(r, i, n){
     const eff = state.cordLength + r.rodLength*0.5;
-    return pivotX(i,n) + Math.sin(r.angle)*eff;
+    return suspend(i,n).x + Math.sin(r.angle)*eff;
   }
 
   function tick(now){
@@ -369,13 +397,27 @@
     // the fourteen-pixel contact band in a single frame and, tested once a frame,
     // sail straight through its neighbour without ever registering; four sub-steps
     // shrink that skip below the band so the strike is always caught.
+    // the bar's weight is mostly where the rods are: well below it
+    let meanRod = 0;
+    for(let i=0;i<n;i++) meanRod += state.rods[i].rodLength;
+    meanRod = n ? meanRod/n : 0;
+    const hangEff = (pivotY - ringY) + 0.6*(state.cordLength + meanRod*0.5);
+    // the same swelling air the rods feel, but squared, and against far more weight
+    const hangGust = WIND_MAX * state.wind * state.wind * HANG_CATCH * breeze;
+
     const STEPS = 4, h = dt/STEPS;
     for(let s2=0;s2<STEPS;s2++){
+      hangAcc = -(G/hangEff)*Math.sin(hangAng) - HANG_DAMP*hangVel + (hangGust/hangEff)*Math.cos(hangAng);
+      hangVel += hangAcc*h;
+      hangAng += hangVel*h;
+
       for(let i=0;i<n;i++){
         const r = state.rods[i];
         const eff = state.cordLength + r.rodLength*0.5;
         const damping = 0.40 + r.rodLength*0.0004;   // longer rods lose a touch more
-        const angAcc = -(G/eff)*Math.sin(r.angle) - damping*r.angVel + (r.gust/eff)*Math.cos(r.angle);
+        const aS = suspendAccX(i,n);
+        const angAcc = -(G/eff)*Math.sin(r.angle) - damping*r.angVel
+                     + (r.gust/eff)*Math.cos(r.angle) - (aS/eff)*Math.cos(r.angle);
         r.angVel += angAcc*h;
         r.angle  += r.angVel*h;
       }
@@ -419,10 +461,15 @@
   function drawRodsAndCords(rodMat, cordMat, cordThick, n){
     for(let i=0;i<n;i++){
       const r = state.rods[i];
-      const px = pivotX(i,n);
+      const sp = suspend(i,n);
       ctx.save();
-      ctx.translate(px, pivotY);
-      ctx.rotate(r.angle);
+      ctx.translate(sp.x, sp.y);
+      // NOTE the minus. Canvas turns the opposite way to the convention the swing
+      // is solved in (x = tie point + sin(angle)*length). Drawn with +angle, every
+      // rod hung on the mirror image of its own swing, so the contact test was
+      // watching a different scene from the one on the glass: rods passed clean
+      // through each other in silence, and chimed with a plain gap between them.
+      ctx.rotate(-r.angle);
       drawCord(state.cordLength, cordMat);
       drawRod(state.cordLength, r.rodLength, rodMat);
       ctx.restore();
@@ -575,10 +622,16 @@
   }
 
   function drawHanger(n){
-    const cx = hangerX, top = hangerTopY;
+    const cx = hangerX;
     const barH = hangerDrawH*0.15, barBottom = pivotY, barTop = barBottom - barH;
     const barCY = (barTop+barBottom)/2, halfW = HANGER_W/2;
-    const ringCY = top + hangerDrawH*0.05, ringR = hangerDrawH*0.045;
+    const ringCY = ringY, ringR = hangerDrawH*0.045;
+
+    // everything below the ring leans with it. The ring is the hook and does not
+    // move, but it is round and centred on the turn, so it is inside the lean
+    // too and nothing of it shows.
+    ctx.save();
+    ctx.translate(cx, ringCY); ctx.rotate(-hangAng); ctx.translate(-cx, -ringCY);
 
     // suspension: two cords from the ring down to the bar ends
     ctx.save(); ctx.lineCap='round';
@@ -618,24 +671,26 @@
     ctx.save(); ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(cx-halfW+br, barBottom); ctx.lineTo(cx+halfW-br, barBottom); ctx.stroke();
     ctx.restore();
+
+    ctx.restore();   // the lean
   }
 
   // world position of the point midway down a rod's body -- used to anchor its length popup
   function rodMidWorld(i, n){
     const r = state.rods[i];
     const mid = state.cordLength + r.rodLength*0.5;
-    const px = pivotX(i,n);
-    return { x: px - Math.sin(r.angle)*mid, y: pivotY + Math.cos(r.angle)*mid };
+    const sp = suspend(i,n);
+    return { x: sp.x + Math.sin(r.angle)*mid, y: sp.y + Math.cos(r.angle)*mid };
   }
   // inverse of the canvas translate+rotate used to draw rod i, for hit-testing a click point
   function hitTestRod(clientX, clientY, n){
     for(let i=n-1;i>=0;i--){
       const r = state.rods[i];
-      const px = pivotX(i,n);
-      const dx = clientX-px, dy = clientY-pivotY;
+      const sp = suspend(i,n);
+      const dx = clientX-sp.x, dy = clientY-sp.y;
       const cosA = Math.cos(r.angle), sinA = Math.sin(r.angle);
-      // inverse of the canvas rotate(angle) transform used to draw this rod
-      const lx = dx*cosA + dy*sinA, ly = -dx*sinA + dy*cosA;
+      // inverse of the canvas rotate(-angle) transform used to draw this rod
+      const lx = dx*cosA - dy*sinA, ly = dx*sinA + dy*cosA;
       const padX = 12, padTop = 8, padBottom = 12;
       if(lx > -ROD_THICK/2-padX && lx < ROD_THICK/2+padX &&
          ly > state.cordLength-padTop && ly < state.cordLength+r.rodLength+padBottom){
