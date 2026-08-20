@@ -29,8 +29,9 @@ PLATE_H = 26                     # every plate is this tall in the case's own sc
 TAG_H = 22                       # how tall a plate is drawn on a piece page
 
 # pages that already keep something in the top right corner, and how far down it
-# has to move to leave the disc its own space
-NUDGE = {'roller': '#hint{ top:74px; }'}
+# has to move to leave the disc its own space. Empty since roller's instruction
+# was taken off it -- the pieces do not tell anyone what to do.
+NUDGE = {}
 
 
 def groups(root):
