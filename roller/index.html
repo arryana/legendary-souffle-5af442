@@ -8,20 +8,20 @@
 <link rel="manifest" href="../manifest.json">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="description" content="Tip the tray and watch a pebble, disc, or stone roll around.">
+<meta name="description" content="roll objects.">
 <meta name="theme-color" content="#0e1c30">
 <link rel="canonical" href="https://sagne.co.uk/roller/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="sagne">
 <meta property="og:title" content="roller — sagne">
-<meta property="og:description" content="Tip the tray and watch a pebble, disc, or stone roll around.">
+<meta property="og:description" content="roll objects.">
 <meta property="og:url" content="https://sagne.co.uk/roller/">
 <meta property="og:image" content="https://sagne.co.uk/og/roller.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="roller — sagne">
-<meta name="twitter:description" content="Tip the tray and watch a pebble, disc, or stone roll around.">
+<meta name="twitter:description" content="roll objects.">
 <meta name="twitter:image" content="https://sagne.co.uk/og/roller.png">
 <style>
   :root{
@@ -128,10 +128,6 @@
   }
   #muteBtn:hover{ opacity:1; }
 
-  #hint{
-    position:fixed; top:22px; right:26px; font-size:13px; opacity:.4;
-    letter-spacing:.03em; z-index:40; text-align:right; max-width:200px;
-  }
 </style>
 <style>
   /* The way back is the brass disc off the shelf's plinth, with an arrow cut into
@@ -181,7 +177,6 @@
   sync();
 })();
 </script>
-<div id="hint">tilt your device<br>or move your mouse</div>
 
 <div id="permissionGate">
   <button id="tiltBtn" class="gateBtn" title="phone/tablet tilt" aria-label="phone/tablet tilt">📱</button>
@@ -219,7 +214,6 @@
   const gate = document.getElementById('permissionGate');
   const tiltBtn = document.getElementById('tiltBtn');
   const skipDesktop = document.getElementById('skipDesktop');
-  const hint = document.getElementById('hint');
   const objBtns = document.querySelectorAll('.objBtn');
   const colorRow = document.getElementById('colorRow');
   const muteBtn = document.getElementById('muteBtn');
@@ -320,7 +314,6 @@
   }
 
   function useMouseTilt(){
-    hint.textContent = 'move your mouse over the tray';
     window.addEventListener('pointermove', (e) => {
       const rect = trayWrap.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
@@ -1098,7 +1091,6 @@
   @media (prefers-reduced-motion: reduce){
     #plates, #plates .pieces{ transition:none; }
   }
-  #hint{ top:74px; }
 </style>
 <button type="button" id="shelfdisc" aria-expanded="false" aria-controls="plates"
         aria-label="the other shelves"><img src="../shelfdisk.png" alt=""><i>&#8594;</i></button>
