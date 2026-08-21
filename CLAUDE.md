@@ -114,7 +114,20 @@ through that test, and the standard for the ones that follow. |
 location flag moved up onto the line with the three tickboxes, her call. It had been on a line of its own
 below them, and that line was what pushed the page 27px off the bottom of a 1440x900 laptop; it now fits
 that screen exactly. A 1200x860 window is still 12px over — small, known, not chased. |
-| `galileo/index.html` | ✅ | ✅ | A **Galileo thermometer** whose floats rise and sink with the visitor's **real local temperature** (open-meteo API); has a °C/°F toggle. Three instruments of different ranges, together reading 12–116°F<br>**Done** — "it needs no design changes, it covers a hell of a range, and i can't think of anything it needs to do that it doesn't." |
+| `galileo/index.html` | ✅ | ✅ | A **Galileo thermometer** whose floats rise and sink with the visitor's **real local temperature** (open-meteo API); has a °C/°F toggle. Three instruments of different ranges, together reading 12–116°F<br>**Done** — "it needs no design changes, it covers a hell of a range, and i can't think of anything it needs to do that it doesn't."<br>Third piece through her four-device test, Aug 2026, and the fault was
+that **a finger is not a pointer**. A float tapped on a touch screen was enlarged only while the finger was
+held on it — and the finger then covered the very thing it had enlarged, so on the Kindle and the 3in phone
+you could never actually see one. A tap now leaves it up; tap it again, tap a different float, or tap
+anywhere else and it goes away. That last part is her rule for popups generally: *they go away if touched
+again or if something around them is touched* — the flag's search closes the same way. The `pointerenter`
+/`pointerleave` pair is **guarded to `pointerType === 'mouse'`**, because a touch raises those two as well
+and unguarded they put the enlargement straight back down on release; don't remove the guard. The flag
+itself and the line that answers it were 15px and 11px, which is a mouse dimension in the same way a 3px
+slider is: under `(pointer: coarse)` they go to 22 and 15 with the field at 19. Desktop untouched.<br>Note
+for anyone measuring this: **the floats' hit circles overlap**, so a tap lands on whichever is topmost, and
+comparing "the hit circle I aimed at" with "the float that came up" will show a mismatch that isn't one.
+Check `document.elementFromPoint` instead — the enlargement always belongs to the float actually under the
+finger. |
 | `conometer/index.html` | ✅ | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle<br>**Done**.<br>Second piece through her four-device
 test, Aug 2026. The picture is centred and grows with the screen, so on a short wide one its top corners
 came up under the two brass discs and each disc sat **half on the photograph and half off it**. Her rule for

@@ -150,6 +150,17 @@
     font-family:'Cormorant Garamond', serif; min-height:1.2em;
   }
 
+  /* A thumb, and an eye at arm's length. At 15px the flag is a small target and
+     the line that answers it -- 11px -- is genuinely hard to read on a Kindle or
+     a 3in phone, which is what she found. None of this touches a desktop. */
+  @media (pointer: coarse){
+    #loc-flag{ font-size:22px; padding:6px 10px; }
+    #loc-search.open{ max-height:56px; }
+    #loc-search input{ font:19px/1.3 'Jost', sans-serif; width:min(62vw, 240px); padding:6px 4px; }
+    #loc-search-status{ font-size:15px; }
+    #loc-note{ font-size:13px; }
+  }
+
   /* On a phone all three still fit across, just small — the tags were already
      too small to read at rest there and have always been tap-to-enlarge. What
      changes is how big that enlargement gets: see HOVER_SCALE below, which goes
@@ -343,6 +354,12 @@
   const SVGNS = 'http://www.w3.org/2000/svg';
   const bulbEls = [];
 
+  // the one float left enlarged by a tap, if any
+  let stuckFloat = null;
+  function clearStuckFloat(){
+    if (stuckFloat){ stuckFloat.classList.remove('show'); stuckFloat = null; }
+  }
+
   INSTRUMENTS.forEach((inst, instIdx) => {
     const box = document.createElement('div');
     box.className = 'instrument';
@@ -420,10 +437,21 @@
 
       const show = ()=>{ hg.classList.add('show'); };
       const hide = ()=>{ hg.classList.remove('show'); };
-      hit.addEventListener('pointerenter', show);
-      hit.addEventListener('pointerleave', hide);
-      hit.addEventListener('touchstart', (e)=>{ e.preventDefault(); show(); }, {passive:false});
-      hit.addEventListener('touchend', hide);
+      // A finger is not a pointer. Held down, it enlarged the float and then
+      // covered the thing it had enlarged; lifted, the enlargement went with it,
+      // so on a phone or a Kindle you could never actually SEE a tapped float.
+      // A tap now leaves it up. Tap it again, tap a different one, or tap
+      // anywhere else, and it goes away. The hover pair is guarded to the mouse
+      // because a touch raises pointerenter and pointerleave too, and unguarded
+      // they would put it straight back down on release.
+      hit.addEventListener('pointerenter', (e)=>{ if (e.pointerType === 'mouse') show(); });
+      hit.addEventListener('pointerleave', (e)=>{ if (e.pointerType === 'mouse') hide(); });
+      hit.addEventListener('touchstart', (e)=>{
+        e.preventDefault();
+        const wasThisOne = (stuckFloat === hg);
+        clearStuckFloat();
+        if (!wasThisOne){ show(); stuckFloat = hg; }
+      }, {passive:false});
 
       bulbEls.push({ inst, el:g, tagEl:tg, hoverEl:hg, hoverInner:inner,
                      hitEl:hit, hoverText:inner.querySelector('text'),
@@ -840,6 +868,26 @@
   window.addEventListener('resize', setVisibleHeight);
   window.addEventListener('orientationchange', () => setTimeout(setVisibleHeight, 120));
   document.addEventListener('focusout', () => setTimeout(setVisibleHeight, 60));
+
+  /* Touch anywhere that isn't a float or the flag's own cluster and whatever is
+     up goes away -- the enlarged float, and the flag's search with it. Her rule:
+     a popup should close on a second touch, or on a touch beside it. The hit
+     circles are checked by class rather than by closest() so this holds in an
+     older browser too. */
+  document.addEventListener('touchstart', (e) => {
+    const t = e.target;
+    const onFloat = t && t.classList && t.classList.contains('hit-circle');
+    if (!onFloat) clearStuckFloat();
+    const cluster = document.getElementById('loc-cluster');
+    const form = document.getElementById('loc-search');
+    const flag = document.getElementById('loc-flag');
+    if (form && form.classList.contains('open') && cluster && !cluster.contains(t)){
+      form.classList.remove('open');
+      flag.classList.remove('open');
+      flag.setAttribute('aria-expanded', 'false');
+      document.getElementById('loc-search-status').textContent = '';
+    }
+  }, { passive: true });
 
   function initLocationSearch(){
     const flag = document.getElementById('loc-flag');
