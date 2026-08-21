@@ -624,6 +624,62 @@ undid** in one sentence.
   Netlify↔GitHub permissions/connection problem, not a code problem — same rule applies: explain
   it in plain terms once, don't loop on fixes yourself, and see the escalation guardrail below.
 
+## Where the device testing has got to
+
+**The programme is hers**: a Rocketbook page per piece, each tested for what it does on **all
+settings and at all times of day**, on four machines — her Mac (*frelliple*), a **Windows tablet**,
+a **Kindle Fire** and a **Unihertz Jelly Star** (a 3in phone, about 240px across). A piece is not
+finished until she has run it on all four. Her words: *"I intend to finish every one of them to the
+same standard."*
+
+**Through as of Fri 21 Aug 2026: candler, conometer, galileo, windower** — every fault they turned
+up is fixed and live, and the details are in each one's row above. The case itself was worked on the
+same day: light on the wall behind it, the white cut line off all five plates, darker arrows in the
+two discs.
+
+**Her order from here**: `storm` finishes instrumenta; then **tactilia** and **systema**, six pieces
+between them, which she expects may both go in a day; then **natura**, which she expects to cost the
+most in repairs and testing. Worth knowing when that shelf comes up: all four natura pieces animate
+continuously, and on a Kindle Fire the thing that bites an animated canvas is frame rate, which is a
+fault class none of the pieces tested so far could expose. Budget it for watching rather than
+repairing.
+
+### Three faults turned out to be systemic, so all sixteen untested pieces were swept for them
+
+Measured on 21 Aug, before testing rather than after, so her device time goes on what a sweep cannot
+see. **None of these four are fixed yet** — she asked for them to be ready to fix, and the offer
+stands:
+
+| piece | how far below the browser's own bar | reachable? |
+|---|---|---|
+| `storm` | 64–92px, on **all four** devices (the chart key) | no, the page cannot scroll |
+| `kaleidoscope` | 20–231px, all four (the mirror buttons) | no on three; the Jelly Star scrolls, which is the stopgap its row already describes |
+| `chladni` | 36–101px, all four (the hue and grain sliders) | no |
+| `musebox` | 105px on the Kindle sideways, 29px on the tablet (the tempo control) | no |
+
+`warmler`, `roller`, `gyre`, `chimes`, `birds`, `fireflies`, `moths`, `ant`, `lamp`, `rain`, `bowl`
+and `pendulum` are clear on all four. The fix is the one candler and conometer got: lay out to
+`innerHeight`, held steady while a text field has focus.
+
+**White cut halos: none left.** Nine files flagged by a crude test, all innocent on inspection — the
+pinecone frames do carry a pale rim but the cone sits on a photograph of straw, so nothing shows; the
+chime rod's bright edge is the wood's own curve; the rest were masks, which are meant to be white.
+That fault was confined to the shelf plates and windower's centre pane, both fixed.
+
+**Mouse dimensions: one good surprise, one steady drip.** Galileo's press-and-hold float was the
+**only** hover-only behaviour on the site — nothing else asks for a gesture a finger cannot perform.
+What does recur is small targets: tickboxes and icon buttons at **14–29px** where a thumb wants about
+40 (chladni's mic and sound boxes 16, lamp's mute 14, ant's food box 16, storm's live box 16,
+musebox's save and clear 22x18, bowl's two pickers 29x21, roller's colour buttons 26). The sliders
+measure 25–33px, but those are already grown as far as their neighbours allow by the `touch-targets`
+pass, so they are at their limit rather than neglected.
+
+**Still open, both small:** `conometer` leaves a 6px sliver of disc proud of the picture on an
+ordinary 390px phone (none of her four devices shows it, so it was left); and candler's "flashing
+line" — the back disc, before it was pinned, sat in the flow inside the area the flame repaints, so
+its edge was being re-rasterised every frame. It went with the fix; the diagnosis is inference, not
+proof.
+
 ## The standard: does it behave like the real thing?
 
 This is the actual spec for every piece on this site, not a nice-to-have. The whole premise the
