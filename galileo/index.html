@@ -150,6 +150,17 @@
     font-family:'Cormorant Garamond', serif; min-height:1.2em;
   }
 
+  /* A thumb, and an eye at arm's length. At 15px the flag is a small target and
+     the line that answers it -- 11px -- is genuinely hard to read on a Kindle or
+     a 3in phone, which is what she found. None of this touches a desktop. */
+  @media (pointer: coarse){
+    #loc-flag{ font-size:22px; padding:6px 10px; }
+    #loc-search.open{ max-height:56px; }
+    #loc-search input{ font:19px/1.3 'Jost', sans-serif; width:min(62vw, 240px); padding:6px 4px; }
+    #loc-search-status{ font-size:15px; }
+    #loc-note{ font-size:13px; }
+  }
+
   /* On a phone all three still fit across, just small — the tags were already
      too small to read at rest there and have always been tap-to-enlarge. What
      changes is how big that enlargement gets: see HOVER_SCALE below, which goes
@@ -343,6 +354,12 @@
   const SVGNS = 'http://www.w3.org/2000/svg';
   const bulbEls = [];
 
+  // the one float left enlarged by a tap, if any
+  let stuckFloat = null;
+  function clearStuckFloat(){
+    if (stuckFloat){ stuckFloat.classList.remove('show'); stuckFloat = null; }
+  }
+
   INSTRUMENTS.forEach((inst, instIdx) => {
     const box = document.createElement('div');
     box.className = 'instrument';
@@ -420,10 +437,21 @@
 
       const show = ()=>{ hg.classList.add('show'); };
       const hide = ()=>{ hg.classList.remove('show'); };
-      hit.addEventListener('pointerenter', show);
-      hit.addEventListener('pointerleave', hide);
-      hit.addEventListener('touchstart', (e)=>{ e.preventDefault(); show(); }, {passive:false});
-      hit.addEventListener('touchend', hide);
+      // A finger is not a pointer. Held down, it enlarged the float and then
+      // covered the thing it had enlarged; lifted, the enlargement went with it,
+      // so on a phone or a Kindle you could never actually SEE a tapped float.
+      // A tap now leaves it up. Tap it again, tap a different one, or tap
+      // anywhere else, and it goes away. The hover pair is guarded to the mouse
+      // because a touch raises pointerenter and pointerleave too, and unguarded
+      // they would put it straight back down on release.
+      hit.addEventListener('pointerenter', (e)=>{ if (e.pointerType === 'mouse') show(); });
+      hit.addEventListener('pointerleave', (e)=>{ if (e.pointerType === 'mouse') hide(); });
+      hit.addEventListener('touchstart', (e)=>{
+        e.preventDefault();
+        const wasThisOne = (stuckFloat === hg);
+        clearStuckFloat();
+        if (!wasThisOne){ show(); stuckFloat = hg; }
+      }, {passive:false});
 
       bulbEls.push({ inst, el:g, tagEl:tg, hoverEl:hg, hoverInner:inner,
                      hitEl:hit, hoverText:inner.querySelector('text'),
@@ -506,6 +534,52 @@
       while(sole > roof && !admits(sole)) sole -= stepY;
       const hi = Math.max(inst.top + inst.fw*0.892, roof, inst.fill || 0);
       const lo = Math.max(hi, Math.min(inst.bot - inst.fw*0.892, sole));
+
+      // THE FLOOR OF A NARROWING VESSEL IS A BOWL, NOT A PLANE.
+      //
+      // lo is one height, the same all the way across, and everything that sinks
+      // came to rest on it — so in the teardrop five floats sat in a flat row at
+      // one level, out to a width the glass does not have down there. What gave it
+      // away is the TAG. A float is not a sphere: a metal tag hangs about two
+      // thirds of a bulb-width below its centre, and by that depth the teardrop has
+      // closed in by another 40 units, so the outer floats' tags hung straight
+      // through the glass. Measured off a sprite (60x107): below its centre the
+      // thing is 0.36 of fw wide at the bulb's skirt, pinches to 0.12 at the
+      // hanger, and swells again to 0.19 at the tag.
+      //
+      // So the depth a float can reach depends on how far out it is: in the middle
+      // it goes all the way to lo, and out by the wall it comes to rest higher, its
+      // tag against the curve. Which is what a heap in a round-bottomed vessel
+      // looks like — the outer ones riding up the sides, nested, not a line of them
+      // level with each other. The tube doesn't care (straight sides, the answer is
+      // lo everywhere) and the capsule barely does. The teardrop is the whole
+      // reason this exists.
+      const BELOW = [[0.30,0.36],[0.42,0.13],[0.60,0.12],[0.71,0.19],[0.85,0.10]];
+      const fitsBelow = (y, rad) => {
+        for(const [dy, hw] of BELOW){
+          if(halfAt(y + dy*inst.fw) < rad + hw*inst.fw) return false;
+        }
+        return true;
+      };
+      // precomputed once per pass: the deepest reach at each distance out
+      const BOWL_N = 40, bowlStep = (lo - hi)/240;
+      const widest = Math.max(...inst.halfWidth);
+      const bowl = [];
+      for(let k=0;k<=BOWL_N;k++){
+        const rad = (k/BOWL_N)*widest;
+        let y = lo;
+        while(y > hi && !fitsBelow(y, rad)) y -= bowlStep;
+        bowl.push(y);
+      }
+      // conservative: a radius between two samples takes the shallower of them
+      const floorFor = (rad) => {
+        const k = Math.min(BOWL_N, Math.ceil((Math.max(0,rad)/widest)*BOWL_N));
+        return bowl[k];
+      };
+      // How much the floor actually rises between the middle and the wall. Zero in
+      // a straight-sided vessel, and it decides how much slack the contact rule
+      // below is allowed: see the note there.
+      const bowlRise = lo - floorFor(roomAt(inst, lo));
 
       // Where each float wants to be. Buoyancy is a threshold, not a slope: a
       // sphere is either lighter than the liquid or heavier, and only the one
@@ -605,6 +679,8 @@
         let y = dir > 0 ? Math.max(from, hi, limit) : Math.min(from, lo, limit);
         let room = roomAt(inst, y);
         let x = inst.cx + sx*room, z = sz*room;
+        // a sinking float stops where its tag meets the bowl, not where the plane is
+        if(dir < 0) y = Math.min(y, floorFor(Math.hypot(x - inst.cx, z)));
         for(let step=0; step<50; step++){
           let moved = false;
           for(const a of mine){
@@ -618,6 +694,10 @@
           if(!moved) break;
           room = roomAt(inst, y);
           x = inst.cx + sx*room; z = sz*room;   // the glass narrows as it travels
+          if(dir < 0){
+            const f = floorFor(Math.hypot(x - inst.cx, z));
+            if(y > f) y = f;
+          }
         }
         return { x, y, z };
       };
@@ -682,8 +762,25 @@
               if(!fallback || depth > fallback.depth) fallback = cand;
               b.x = at.x; b.y = at.y; b.z = at.z;
               if(clashes(b, others)) continue;
-              if(!best || depth > best.depth + bh*0.40 ||
-                 (depth > best.depth - bh*0.40 && huddle > best.huddle)) best = cand;
+              // Gravity first, and how much slack that rule gets depends on the
+              // floor. bh*0.40 is 17.7 units in the teardrop, and against the curve
+              // of that base a spot at the glass sits about 16 units higher than
+              // the middle -- so it slipped inside the tolerance and won on
+              // contact, and the heap perched up the side of the bowl with clear
+              // glass beneath it. A float on a slope does not do that; it rolls
+              // down until the floor or another float stops it.
+              //
+              // But the slack is not wrong in general: on a FLAT floor every spot
+              // is the same depth to the last decimal, and contact is the only
+              // thing left to choose by -- that is the tube, and it is what stops
+              // its twelve floats stacking into a tower up the middle. So the
+              // slack is the flatness itself: full where the floor is flat -- the
+              // tube, bowlRise 0, whose arrangement comes back the same at every
+              // temperature bar 1-2 of 255 in the anti-aliasing -- and strict
+              // where it curves, which is the teardrop and the capsule.
+              const tieTol = bowlRise > bh*0.15 ? bh*0.08 : bh*0.40;
+              if(!best || depth > best.depth + tieTol ||
+                 (depth > best.depth - tieTol && huddle > best.huddle)) best = cand;
             }
           }
           const pick = best || fallback || { x: inst.cx, y: dir > 0 ? hi : lo, z: 0 };
@@ -840,6 +937,26 @@
   window.addEventListener('resize', setVisibleHeight);
   window.addEventListener('orientationchange', () => setTimeout(setVisibleHeight, 120));
   document.addEventListener('focusout', () => setTimeout(setVisibleHeight, 60));
+
+  /* Touch anywhere that isn't a float or the flag's own cluster and whatever is
+     up goes away -- the enlarged float, and the flag's search with it. Her rule:
+     a popup should close on a second touch, or on a touch beside it. The hit
+     circles are checked by class rather than by closest() so this holds in an
+     older browser too. */
+  document.addEventListener('touchstart', (e) => {
+    const t = e.target;
+    const onFloat = t && t.classList && t.classList.contains('hit-circle');
+    if (!onFloat) clearStuckFloat();
+    const cluster = document.getElementById('loc-cluster');
+    const form = document.getElementById('loc-search');
+    const flag = document.getElementById('loc-flag');
+    if (form && form.classList.contains('open') && cluster && !cluster.contains(t)){
+      form.classList.remove('open');
+      flag.classList.remove('open');
+      flag.setAttribute('aria-expanded', 'false');
+      document.getElementById('loc-search-status').textContent = '';
+    }
+  }, { passive: true });
 
   function initLocationSearch(){
     const flag = document.getElementById('loc-flag');

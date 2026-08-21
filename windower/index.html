@@ -99,6 +99,41 @@
     #window-wrap{ width:min(84vw, 520px, 62vh); aspect-ratio:3/4; }
   }
 
+  /* ---------- small screens: the sill is what gives way ----------
+     Her call, and it is the right thing to give up: below the window sit the
+     chart, the sliders, the tickboxes and the flag, and on a Kindle or a 3in
+     phone the page ran 65-140px past the bottom, so the flag and half the
+     controls were down there out of sight. The sill is the deepest part of the
+     picture that carries no reading -- so the window box gets shorter and the
+     frame is anchored to its TOP, which crops the sill rather than squashing
+     the view or losing sky. The light patch is masked to the same box and moves
+     with it, so what is left of the sill still catches the sun.
+     Held to a coarse pointer and a short screen: a desktop keeps its full sill. */
+  @media (pointer:coarse) and (max-height:900px){
+    #window-wrap{ aspect-ratio:8/4.1; }
+    #frame-img, #beam-sun, #beam-moon{ top:0; bottom:auto; height:139%; }
+  }
+  @media (pointer:coarse) and (orientation:portrait) and (max-height:1100px){
+    #window-wrap{ width:min(84vw, 520px); aspect-ratio:1/1; }
+    #frame-img, #beam-sun, #beam-moon{ top:0; bottom:auto; height:133%; }
+  }
+
+  /* ---------- small screens: the discs move inside the window ----------
+     Also hers. In the page's corners they sat half on the window and half off
+     it on every one of those screens -- and the room kept clear above them was
+     room the piece could have used. Inside the window's own top corners they
+     read as part of the furniture, and the page starts at the top. They are
+     ABSOLUTE here rather than fixed, so that if the page still has to scroll on
+     some screen they travel with the window rather than hanging over it. */
+  @media (pointer:coarse) and (max-height:900px){
+    #stage{ padding-top:6px; }
+    /* html-qualified on purpose: the shelf disc's own block is GENERATED and sits
+       at the end of the body, so a plain #shelfdisc rule here loses to it on
+       source order however specific it looks. */
+    html #backlink{ position:absolute; top:var(--disc-top, 18px); left:var(--disc-left, 22px); }
+    html #shelfdisc{ position:absolute; top:var(--disc-top, 18px); left:var(--disc-right, auto); right:auto; }
+  }
+
   #frame-img{
     position:absolute;
     inset:0;
@@ -276,6 +311,17 @@
     padding:14px 18px 10px;
     flex-shrink:0;
   }
+
+  /* A Kindle turned sideways is the hardest case on the site: 430px of height
+     with the window, the chart, two sliders, three tickboxes and the flag all
+     stacked in it. The sill and the discs together get most of the way, and the
+     chart -- which is drawn at 78vw and so grows with a WIDE screen no matter how
+     short it is -- gives up the rest. Landscape only: a phone on end keeps its
+     chart full width. */
+  @media (pointer:coarse) and (orientation:landscape) and (max-height:560px){
+    #chart-wrap{ width:min(78vw, 900px, 74vh); }
+  }
+
 
   #chart-wrap svg{ display:block; width:100%; height:auto; overflow:visible; }
 
@@ -679,6 +725,25 @@
   // wherever the visitor actually is — never open by default, no page text anywhere
   // else hints it exists. Geocoding goes through OpenStreetMap's Nominatim (free, no
   // key) since open-meteo's own geocoder searches place names, not postcodes.
+  /* where the discs go when they go inside the window: its own top corners,
+     in page coordinates so they scroll with it. Only read by the coarse-pointer
+     rules above; a desktop ignores both properties. */
+  function placeDiscs(){
+    const win = document.getElementById('window-wrap');
+    const back = document.getElementById('backlink');
+    if(!win || !back) return;
+    const r = win.getBoundingClientRect();
+    const inset = Math.max(6, Math.min(14, r.width*0.03));
+    const st = document.documentElement.style;
+    st.setProperty('--disc-top',   Math.round(r.top + window.scrollY + inset) + 'px');
+    st.setProperty('--disc-left',  Math.round(r.left + window.scrollX + inset) + 'px');
+    st.setProperty('--disc-right', Math.round(r.right + window.scrollX - inset - back.offsetWidth) + 'px');
+  }
+  placeDiscs();
+  window.addEventListener('resize', placeDiscs);
+  window.addEventListener('orientationchange', () => setTimeout(placeDiscs, 120));
+  window.addEventListener('load', placeDiscs);
+
   (function initLocationSearch(){
     const flag = document.getElementById('loc-flag');
     const form = document.getElementById('loc-search');
