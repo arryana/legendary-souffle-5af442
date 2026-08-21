@@ -102,7 +102,9 @@ number on every browser there is, old ones included; re-measured on resize and r
 **not while a pin's time field has focus**, because an on-screen keyboard shrinks `innerHeight` and would
 collapse the candle under someone typing a time into it. Below 320px the first pill is also tightened, or the
 snooze — last in the row once the timer is on — hangs 11px off the right-hand edge of a pill whose sideways
-scrollbar is hidden. |
+scrollbar is hidden. **She then re-ran the whole page on all four machines and passed it**: everything she
+found is fixed and re-checked on the devices themselves, not in a screenshot. candler is the first piece
+through that test, and the standard for the ones that follow. |
 | `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does." |
 | `lamp/index.html` | ✅ | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. A fuel level you find by *tapping* the base is designed but not built; the note in the file records which way the pitch must go<br>**Done** as it stands — the tap-for-fuel idea is recorded as a future build, not a gap in it. |
 | `warmler/index.html` | ✅ |  | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked) |
