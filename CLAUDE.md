@@ -347,6 +347,25 @@ marks are generated — run `python3 tools/fetch-trouble.py`, don't hand-edit be
 it were the one outside, which is the exact promise this site makes not to break. Storm was
 the one that didn't, until Aug 2026.
 
+**The location flag answers Enter itself** on all seven pieces that carry one (`conometer`,
+`galileo`, `windower`, `storm`, `pendulum`, `chimes`, `fireflies`). A one-field form submits on
+Enter in a desktop browser, but the Go key on some Android keyboards leaves the form alone, so a
+typed-in place did nothing and said nothing. The keydown handler prevents the key's own default,
+which is what stops a browser that *does* submit from searching twice — measured, one geocode
+call per Enter on all seven.
+
+**Where the flag's reply landed under the browser's own bar.** `height:100%` with
+`overflow:hidden` is the whole screen with the address bar counted as though it weren't there,
+and the reply line is the last thing on the page — so on a Kindle you could type a location in,
+the piece would go and fetch it, and the line saying where it had gone was off the screen. That
+is what "no location response" turned out to be. `conometer`, `galileo` and `storm` now lay out
+to `innerHeight`, held steady while a text field has focus so an on-screen keyboard can't resize
+the piece under someone typing. **The other four don't need it and weren't touched**: `pendulum`,
+`chimes` and `fireflies` anchor their docks with `position:fixed`, which a mobile browser keeps
+inside the visible area on its own, and `windower` has no `overflow:hidden`, so its page simply
+scrolls. Measured on all seven before and after; the desktop layout of every one is identical to
+the pixel.
+
 **Don't add a second weather provider as a failover.** It was considered and rejected: the
 alternatives need an API key, and a key in a static page is readable by anyone and gets
 rate-limited or revoked, which is a worse failure than the outage it insures against. Failing
