@@ -340,6 +340,20 @@ apart, which leaves nothing to grow into. Both had space going spare on a phone,
 were opened (kaleidoscope's `.sliders` to 26px, moths' `#dock` to 26px). That one *is* a
 visible change, unlike the rest of this.
 
+**Still small, and deliberately not chased: the icons beside the sliders.** Measured Aug 2026
+at 390px, the smallest tap target on eleven pieces is between 14 and 18px — `fireflies` 14,
+`lamp` 14, `candler` 15, `ant`/`windower`/`conometer`/`chladni`/`storm` 16, `galileo` 17,
+`chimes`/`musebox` 18. These are the little emoji and toggles, not the sliders, which are all
+dealt with above. On a 3-inch screen 14px is about 1.1mm. Real, but annoying rather than broken,
+and she has not ruled on it — **don't start moving her controls about on a measurement alone.**
+
+**A measurement in an emulator is not a device, and this file has one clear case of it.** Every
+small-screen finding here was taken in a headless browser at the right *size*. Then she opened
+the case on her actual phone and inside a minute found a pale rectangle behind the zoomed shelf
+plate that no amount of measuring had turned up — because the zoomed view is a TOUCH path a
+desktop session barely visits — and in the same minute disproved a finding of mine about the 6px
+plates. Treat measured findings as places to look, not verdicts, and treat hers as the verdict.
+
 **The music button and the docks fight over the bottom-left corner.** The player is `position:fixed` at
 `left:18 bottom:16` on all 14 pages that carry it, and a piece's own dock runs the full width of the screen,
 so on a narrow one they overlap — and the button wins, being the higher layer. Aug 2026 this was measured
