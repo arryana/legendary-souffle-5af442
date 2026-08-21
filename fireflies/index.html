@@ -280,6 +280,19 @@
     if (open && lat==null && liveTemp==null) tryGeolocation();
   });
 
+  /* An on-screen keyboard is not a keyboard. A one-field form submits on Enter in
+     a desktop browser, but the Go key on some Android ones -- the Kindle's among
+     them -- can leave the form alone entirely, and then a typed-in location does
+     nothing and says nothing. Asking the form directly costs a line; preventing
+     the key's own default is what stops a browser that DOES submit searching
+     twice. */
+  locSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.keyCode === 13){
+      e.preventDefault();
+      locSearch.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
+  });
+
   locSearch.addEventListener('submit', async (e)=>{
     e.preventDefault();
     const q = locSearchInput.value.trim();

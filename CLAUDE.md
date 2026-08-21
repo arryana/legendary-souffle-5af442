@@ -115,7 +115,22 @@ location flag moved up onto the line with the three tickboxes, her call. It had 
 below them, and that line was what pushed the page 27px off the bottom of a 1440x900 laptop; it now fits
 that screen exactly. A 1200x860 window is still 12px over — small, known, not chased. |
 | `galileo/index.html` | ✅ | ✅ | A **Galileo thermometer** whose floats rise and sink with the visitor's **real local temperature** (open-meteo API); has a °C/°F toggle. Three instruments of different ranges, together reading 12–116°F<br>**Done** — "it needs no design changes, it covers a hell of a range, and i can't think of anything it needs to do that it doesn't." |
-| `conometer/index.html` | ✅ | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle<br>**Done**. |
+| `conometer/index.html` | ✅ | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle<br>**Done**.<br>Second piece through her four-device
+test, Aug 2026. The picture is centred and grows with the screen, so on a short wide one its top corners
+came up under the two brass discs and each disc sat **half on the photograph and half off it**. Her rule for
+this, and it settles the general case: *half-on* is what reads as a mistake — wholly on or wholly off both
+look deliberate. So on a 3in phone, where the discs sit entirely inside the picture, nothing was changed and
+nothing should be: pushing them outside there would leave the picture too narrow to read, which is her call
+and a good one. Where they did straddle an edge the picture's SIDES are trimmed to clear them, which costs a
+tenth of the picture where clearing them vertically costs nearly a third.<br>Underneath that, the same fault
+candler had: `html,body{height:100%}` with `overflow:hidden` is the whole screen with the browser's bar
+counted as though it weren't there. On a Kindle that put the flag's own reply line under the bar — so you
+could type a location in, and the piece would go and fetch it, and the line saying where it had gone was off
+the screen. That is what "no location response" was. It lays out to `innerHeight` now, held steady while the
+flag's field has focus. The flag also answers **Enter directly** rather than relying on the form submitting
+itself: an on-screen keyboard is not a keyboard, and the Go key on some Android browsers leaves a one-field
+form alone. **The same flag is on `galileo`, `windower`, `storm`, `pendulum`, `chimes` and `fireflies`, and
+they have not had that line yet.** |
 | `gyre/index.html` | ✅ | ✅ | Meshable **gears** you place and connect on a board, plus a signal-lamp piece whose lights are driven by the gear train. See `gears.md` for how the gear math/rendering works<br>**Done**. |
 | `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
 | `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**.<br>Aug 2026, found by measuring for a 3-inch phone: the dock is one row that never wrapped and wants **369px** laid out end to end, so on anything narrower the LAST thing in it — the flower, which is the whole object chooser — was pushed clean off the right edge, and with the page unable to scroll there was no way to reach it. It cleared a 390px phone by 22px, which is exactly why it looked perfect everywhere anyone had looked. Behind that sat a second fault: the chooser popup is a fixed 326px grid and hung 43px off **both** edges of a 240px screen, so fixing the button alone would only have revealed half the flowers. Below 379px the dock now wraps to two lines and the popup drops to three slightly smaller tiles; above it, nothing applies and the dock is pixel-identical at 390, 600 and 1200. The wrapped row is **right-aligned, not centred** — the music button is pinned in the bottom-left corner and a centred second row lands straight on top of it. |
@@ -237,6 +252,20 @@ first shelf — also her call, *"it does a good job in drawing the eye down"*. T
 run 176, 176, 202, 202, 211: tactilia is held to 176 by a shadow cast under the first board, which
 none of the others have, so **the top shelf is not the odd one even though it can look it**.
 
+**There is light on the wall behind the case**, her ask, and it was needed for a reason
+that is invisible until measured: the photograph's own surround is *darker* than the wall it
+is laid on (2,5,13 against the wall's 16,21,33), so the case's outer edges had nothing to be
+seen against and the whole unit read as a dark patch with no silhouette. The lift is about
+5/255 at the sides. Two things about it are load-bearing. It must **not** be given
+`z-index:-1` — html and body both carry the wall colour, and a body background paints *over*
+a negative-z-index descendant, so the glow simply vanishes; being first in the stage and
+unpositioned in z, it lands behind the frame on document order alone. And **the gradient has
+to reach nothing before the box ends**: the first version's ellipse was wider than its own
+element, so the paint was cut off with about 5% alpha still in it and drew a hard vertical
+band down the wall, which she photographed. It fades with the case — away on a zoom, the way
+the ground shadow does, and down to .15 behind the tray, or a halo hangs round a case
+deliberately dimmed to almost nothing.
+
 The **?** is a brass disc of hers (`shelfdisk.png`) with the question mark engraved into it,
 sitting on that band of dark below the counter; the case stands on the floor of the page rather
 than floating in the middle of it. The *sagne* oval is screwed **to the front face of the top
@@ -317,6 +346,25 @@ marks are generated — run `python3 tools/fetch-trouble.py`, don't hand-edit be
 `fetch-trouble` markers. A reply that arrives carrying no reading counts as a failure too. Going quiet instead would mean showing an old sky as though
 it were the one outside, which is the exact promise this site makes not to break. Storm was
 the one that didn't, until Aug 2026.
+
+**The location flag answers Enter itself** on all seven pieces that carry one (`conometer`,
+`galileo`, `windower`, `storm`, `pendulum`, `chimes`, `fireflies`). A one-field form submits on
+Enter in a desktop browser, but the Go key on some Android keyboards leaves the form alone, so a
+typed-in place did nothing and said nothing. The keydown handler prevents the key's own default,
+which is what stops a browser that *does* submit from searching twice — measured, one geocode
+call per Enter on all seven.
+
+**Where the flag's reply landed under the browser's own bar.** `height:100%` with
+`overflow:hidden` is the whole screen with the address bar counted as though it weren't there,
+and the reply line is the last thing on the page — so on a Kindle you could type a location in,
+the piece would go and fetch it, and the line saying where it had gone was off the screen. That
+is what "no location response" turned out to be. `conometer`, `galileo` and `storm` now lay out
+to `innerHeight`, held steady while a text field has focus so an on-screen keyboard can't resize
+the piece under someone typing. **The other four don't need it and weren't touched**: `pendulum`,
+`chimes` and `fireflies` anchor their docks with `position:fixed`, which a mobile browser keeps
+inside the visible area on its own, and `windower` has no `overflow:hidden`, so its page simply
+scrolls. Measured on all seven before and after; the desktop layout of every one is identical to
+the pixel.
 
 **Don't add a second weather provider as a failover.** It was considered and rejected: the
 alternatives need an API key, and a key in a static page is readable by anyone and gets

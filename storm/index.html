@@ -27,9 +27,15 @@
   #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#dfe6ea; opacity:.5;
     text-decoration:none; font-size:14px; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); transition:opacity .3s ease; }
   #backlink:hover{ opacity:.9; }
-  #stage{ height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    /* On a phone or tablet, 100% of the page -- like 100vh -- is the whole screen
+       with the browser's own address bar counted as though it weren't there, and
+       nothing here can scroll, so whatever lands under that bar is unreachable:
+       on a Kindle in landscape that was the location flag's own field and the
+       line that answers it. innerHeight is the honest number on every browser
+       there is, old ones included. */
+  #stage{ height:100%; height:calc(var(--vh, 1vh) * 100); display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:6vh 3vw 2vh; gap:2vh; }
-  #scene-wrap{ position:relative; height:min(76vh,720px); aspect-ratio:410/700; }
+  #scene-wrap{ position:relative; height:min(calc(var(--vh, 1vh) * 76),720px); aspect-ratio:410/700; }
   #scene-wrap canvas{ position:absolute; inset:0; width:100%; height:100%; transition:opacity .9s ease; }
   #dock{ display:flex; align-items:center; justify-content:center; gap:20px; padding:0 22px; }
   .toggle{ display:flex; align-items:center; gap:8px; cursor:pointer; }
@@ -570,6 +576,20 @@
   // wherever the visitor actually is — never open by default, no page text anywhere
   // else hints it exists. Geocoding goes through OpenStreetMap's Nominatim (free, no
   // key) since open-meteo's own geocoder searches place names, not postcodes.
+  /* ---------- the height of the screen you can actually see ----------
+     see the note on #stage. Re-measured on resize and rotation, but NOT while a
+     text field has focus: an on-screen keyboard shrinks innerHeight, and the
+     piece must not resize itself under someone typing a place into it. */
+  function setVisibleHeight(){
+    const el = document.activeElement;
+    if (el && el.tagName === 'INPUT' && el.type !== 'range' && el.type !== 'checkbox') return;
+    document.documentElement.style.setProperty('--vh', (window.innerHeight / 100) + 'px');
+  }
+  setVisibleHeight();
+  window.addEventListener('resize', setVisibleHeight);
+  window.addEventListener('orientationchange', () => setTimeout(setVisibleHeight, 120));
+  document.addEventListener('focusout', () => setTimeout(setVisibleHeight, 60));
+
   (function initLocationSearch(){
     const flag=document.getElementById('loc-flag');
     const form=document.getElementById('loc-search');
@@ -583,6 +603,19 @@
       flag.setAttribute('aria-expanded', open ? 'true' : 'false');
       if(open) input.focus();
       else status.textContent='';
+    });
+
+    /* An on-screen keyboard is not a keyboard. A one-field form submits on Enter in
+       a desktop browser, but the Go key on some Android ones -- the Kindle's among
+       them -- can leave the form alone entirely, and then a typed-in location does
+       nothing and says nothing. Asking the form directly costs a line; preventing
+       the key's own default is what stops a browser that DOES submit searching
+       twice. */
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.keyCode === 13){
+        e.preventDefault();
+        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      }
     });
 
     form.addEventListener('submit', async (e)=>{

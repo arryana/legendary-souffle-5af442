@@ -76,11 +76,16 @@
      vanishes. Being first in the stage and unpositioned in z, it lands behind
      #frame on document order alone. */
   #stage::before{ content:''; position:absolute; pointer-events:none;
-    left:-8%; right:-8%; top:-5.6%; bottom:-1%;
+    left:-50%; right:-50%; top:-40%; bottom:-24%;
     opacity:1; transition:opacity .45s ease;
     background:
-      radial-gradient(60% 66% at 50% 48%, rgba(120,158,214,.17), rgba(120,158,214,0) 100%),
-      radial-gradient(80% 38% at 50% 16%, rgba(120,158,214,.10), rgba(120,158,214,0) 100%); }
+      radial-gradient(37% 40% at 50% 53%,
+        rgba(120,158,214,.17)  0%, rgba(120,158,214,.150) 18%, rgba(120,158,214,.112) 36%,
+        rgba(120,158,214,.070) 54%, rgba(120,158,214,.034) 72%, rgba(120,158,214,.012) 86%,
+        rgba(120,158,214,0)   100%),
+      radial-gradient(44% 21% at 50% 30%,
+        rgba(120,158,214,.085) 0%, rgba(120,158,214,.055) 40%, rgba(120,158,214,.020) 72%,
+        rgba(120,158,214,0)   100%); }
   /* The first shape was half the height of this one and died away by the third
      shelf down, so the lower half of the case kept the edge it always had --
      measured, the lift at the sides went 27,25,21,18 top to bottom, where 18 IS
