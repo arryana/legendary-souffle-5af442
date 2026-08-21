@@ -96,7 +96,7 @@ that screen exactly. A 1200x860 window is still 12px over — small, known, not 
 | `conometer/index.html` | ✅ | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle<br>**Done**. |
 | `gyre/index.html` | ✅ | ✅ | Meshable **gears** you place and connect on a board, plus a signal-lamp piece whose lights are driven by the gear train. See `gears.md` for how the gear math/rendering works<br>**Done**. |
 | `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
-| `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**. |
+| `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**.<br>Aug 2026, found by measuring for a 3-inch phone: the dock is one row that never wrapped and wants **369px** laid out end to end, so on anything narrower the LAST thing in it — the flower, which is the whole object chooser — was pushed clean off the right edge, and with the page unable to scroll there was no way to reach it. It cleared a 390px phone by 22px, which is exactly why it looked perfect everywhere anyone had looked. Behind that sat a second fault: the chooser popup is a fixed 326px grid and hung 43px off **both** edges of a 240px screen, so fixing the button alone would only have revealed half the flowers. Below 379px the dock now wraps to two lines and the popup drops to three slightly smaller tiles; above it, nothing applies and the dock is pixel-identical at 390, 600 and 1200. The wrapped row is **right-aligned, not centred** — the music button is pinned in the bottom-left corner and a centred second row lands straight on top of it. |
 | `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material) — **awaiting her ears**, which is the only test that counts here.<br>Two things went in Aug 2026 after she watched it. The **hanger sways** — the whole set hangs off one ring, so it is a slow heavy pendulum of its own, its weight mostly the rods well below the bar, and the rods then hang from a *moving* support and are swung by it. What drives the sway is drag, and **drag goes as the square of the wind**, which is her own observation in one line: at a light air the lean is a tenth of a pixel and the bar looks nailed up; at full wind it is 3° (about 8px at the bar, twice that at the rod tips). There is no threshold in the code — the v-squared law is the whole of it, so don't add one.<br>Underneath that, a real fault: **the swing is solved in the convention `x = tie point + sin(angle)·length`, and canvas rotates the other way.** Every rod had been drawn with `rotate(+angle)`, so the contact test was watching the mirror image of the scene on the glass — measured at full wind, the two frames disagreed about who was touching on **43% of pair-frames**, rods passed clean through each other in silence, and it chimed with a plain gap showing. Now 0%. If you ever change how a rod is drawn or hit-tested, the minus sign in `ctx.rotate(-r.angle)` is load-bearing and so are the matching signs in `rodMidWorld` and `hitTestRod`. |
 | `chladni/index.html` | ✅ | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound<br>**Done**. Aug 2026 it was given **substances**, in
 two families that are a real inversion of each other and not a recolour: heavy grains (sand, salt)
@@ -133,7 +133,10 @@ spread over a third of the plate have to stand for clumps of powder rather than 
 connected shear-thickening layer, liquid on the nodal lines and locking into standing fingers and
 persistent holes over the antinodes. It was raised and **parked**, her call: it needs to be drawn as a
 fluid surface rather than as marks, and *"if it can't be rendered convincingly as a fluid, let's wait
-until we have better tools."* Don't re-propose it as a fifth swatch on the existing renderer. |
+until we have better tools."* Don't re-propose it as a fifth swatch on the existing renderer.<br>Aug 2026 the **pitch slider's pulse
+came out**. Its knob glowed until a visitor first touched it, and the comment in the code said in as many
+words that it "nudges a first-time visitor toward the control that actually changes the pattern" — which is
+the exact thing the *Exploring is the point* rule below forbids. It predated the rule. Don't put it back. |
 | `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
 | `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Awaiting her verdict**.<br>**The phone case was
 broken and is now a drawer.** Four rows of pieces under a 400px scope came to 380px of controls on a screen
@@ -146,7 +149,15 @@ shuts itself when one lands (a miss leaves it out to try again). Two things ther
 phone `#controls` is a **column, not a wrapping row** — as a wrapping row it collapsed from two lines to one
 when the palette left the flow and slid the dish out from under the thumb mid-carry — and `#leftCluster`
 keeps a `min-height` of 66px for the same reason. The veil behind the drawer dims and deliberately does
-**not** blur: you don't blur the thing someone is aiming at. |
+**not** blur: you don't blur the thing someone is aiming at.<br>**That fix was measured at 390 and holds only
+there.** At 240 the layout ran 158px past the bottom of a page that could not scroll (20 controls
+unreachable, and the closed 7-column tray is itself 246px on a 240px screen); at 320 it was 114px over,
+taking both sliders and the mirror buttons with it. Her call was to **let it scroll below 380** and do a
+proper small-screen arrangement later — so `html,body{height:100%}` is lifted down there, `#wrap` ends 96px
+above the bottom so the corner music button never lands on the last row, the dish keeps `touch-action:none`
+(or dragging a piece on it scrolls the page instead), and below 280 the tray drops to six columns. It is a
+**stopgap and is labelled as one in the file**: these pieces are meant to sit still, and the arrangement is
+still owed. Above 380 nothing applies and the page is the same fixed frame it always was. |
 | `moths/index.html` | ✅ |  | **Moths** losing their bearings on a hanging bulb. Not attraction — a moth holds a course by keeping a distant light at a fixed angle, and a near one wraps that course into a spiral. Three sliders: dusk→dark, bulb, how many. Colour is a readout of depth (dark in front of the glass, pale behind), from her own three-shade cut<br>Built Aug 2026 from her brief, then put right by her own watching of it — she found that the moths crowded the bulb and stayed (an absorbing state: all five reached it and none ever left), that moths in front of the lower glass came out grey rather than black, that they all flew alike, and that they never tilted or wavered. In **natura**, which is therefore a shelf of four |
 | `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune |
 | `pendulum/index.html` | ✅ | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search<br>**Done** — precession, swing and pin ring all verified by measurement against the real physics.
@@ -252,6 +263,26 @@ pointer a card opens on the first click instead, and the shelf zoom stays reacha
 name plates. If you change the picture, the zoom transforms recompute themselves from the
 measurement table; nothing there is hand-typed.
 
+**On a 3-inch screen the case's plates are unreadable — and it does not matter, which is a
+correction to a measurement.** At 240x427 nothing is below the fold (the whole cabinet is on
+screen with room above and below) but everything scales off the screen's WIDTH, so the engraved
+plates come out **6px** tall and the cards 19x28. A session measured that and reported the case
+as needing a small-screen arrangement. She then opened it on the actual phone and found the
+opposite: **touching anywhere zooms to that shelf, and the zoomed tray plate fills the foot of
+the screen and is perfectly readable** — her word for it was "awesome". The tiny plates on the
+un-zoomed case are decoration at that size, not the way in; the way in is the card, and the card
+works. Don't "fix" the 6px plates, and don't trust a static tap-target measurement on a page
+whose whole interaction is a zoom.
+
+**A `<button>` carries the browser's own button face** (`rgb(239,239,239)`), and four of them on
+this site show a cut-out with transparent edges over it — so a pale rectangle sat behind the
+brass. `#trayplate` here, warmler's `#finishTrigger`, and chimes' two `.matTrigger`s. She caught
+it on the phone, on the zoomed shelf plate, where the transparent margin is widest; on the small
+swatch triggers it was a faint rim nobody had noticed. It survived this long because the zoomed
+view is mostly a TOUCH path — with a mouse a card opens on the first click, so a desktop session
+rarely sees that plate at all. If you make a brass cut-out into a button, clear its
+`background-color`.
+
 **Live-data pieces** — `galileo`, `conometer`, `windower`, `storm` — read the visitor's
 **geolocation** and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that
 working; don't break the geolocation or the fetch. **All four must fail out loud, and wordlessly.** They count
@@ -308,6 +339,18 @@ faint gradient. Nothing moved, nothing overlaps, and the desktop is byte-identic
 apart, which leaves nothing to grow into. Both had space going spare on a phone, so the gaps
 were opened (kaleidoscope's `.sliders` to 26px, moths' `#dock` to 26px). That one *is* a
 visible change, unlike the rest of this.
+
+**The music button and the docks fight over the bottom-left corner.** The player is `position:fixed` at
+`left:18 bottom:16` on all 14 pages that carry it, and a piece's own dock runs the full width of the screen,
+so on a narrow one they overlap — and the button wins, being the higher layer. Aug 2026 this was measured
+and found on five pieces, two of them **on an ordinary 390px phone**: warmler's finish trigger (the whole
+point of the piece) sat 17px under the headphones, and gyre's run toggle sat under them entirely. The fix is
+that **the furniture gives way, not the piece**: a `@media` rule lifts `#music` to just above that dock,
+by that dock's own measured height. Relocating it to the top-left was tried first and rejected — measured,
+that corner is the artwork on ten of the fourteen (the scope ring on kaleidoscope, an icon button on
+candler). If you change a dock's height, change the matching `#music{bottom:}` with it. gyre also needed its
+dock to **wrap** below 380: the row wants 322px and never wrapped, so the toggle sat 41px off the left edge
+of a 240px screen.
 
 **candler's pins are the same fault in another shape.** A pin's picture is about 23 units
 tall and a unit is roughly a pixel on a phone, so grabbing one asked for a thumb inside a

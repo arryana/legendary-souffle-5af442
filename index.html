@@ -91,6 +91,11 @@
   #trayplate{ position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
     display:flex; align-items:center; justify-content:center;
     border:0; padding:0; cursor:pointer; background-repeat:no-repeat;
+    /* a <button> carries the browser's own button face, and these all show a
+       cut-out with transparent edges over it -- so a pale rectangle sat behind
+       the brass. It is only obvious where the transparent margin is wide. */
+    background-color:transparent;
+
     font:700 1em/1 'Libre Baskerville', Georgia, serif;
     letter-spacing:.045em; color:#4a3208;
     text-shadow:0 1px 0 rgba(255,240,200,.42), 0 -1px 1px rgba(0,0,0,.28);

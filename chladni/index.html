@@ -114,18 +114,9 @@
   .toggle input:not(:checked) ~ .mic-icon{ color:#7a8388; }
   #pitchSlider.driven{ opacity:.5; pointer-events:none; }
 
-  /* a quiet pulse on the pitch slider until it's first touched — nudges a
-     first-time visitor toward the control that actually changes the
-     pattern, since tapping the plate itself only re-strikes the same one */
-  #pitchSlider.hint::-webkit-slider-thumb{ animation:pitchHint 2.1s ease-in-out infinite; }
-  #pitchSlider.hint::-moz-range-thumb{ animation:pitchHint 2.1s ease-in-out infinite; }
-  @keyframes pitchHint{
-    0%, 100% { box-shadow:0 0 8px rgba(223,230,234,.5); }
-    50%      { box-shadow:0 0 8px rgba(223,230,234,.5), 0 0 16px 4px rgba(223,230,234,.55); }
-  }
-  @media (prefers-reduced-motion: reduce){
-    #pitchSlider.hint::-webkit-slider-thumb, #pitchSlider.hint::-moz-range-thumb{ animation:none; }
-  }
+  /* No pulse on the pitch slider. There was one, glowing until a visitor first
+     touched it, to point them at the control that changes the pattern -- which
+     is exactly the nudge this site does not do. Finding that out is the point. */
 </style>
 <style>
   /* The way back is the brass disc off the shelf's plinth, with an arrow cut into
@@ -266,19 +257,6 @@
   const ctx=canvas.getContext('2d');
   const slider=document.getElementById('pitchSlider');
 
-  // quiet pulse on the pitch slider until this visitor has ever touched it —
-  // clears itself for good, per-browser, the first time they do
-  try{
-    if(!localStorage.getItem('chladni-pitch-touched')){
-      slider.classList.add('hint');
-      const clearHint=()=>{
-        slider.classList.remove('hint');
-        localStorage.setItem('chladni-pitch-touched','1');
-        slider.removeEventListener('pointerdown', clearHint);
-      };
-      slider.addEventListener('pointerdown', clearHint, { once:true });
-    }
-  }catch(e){ /* localStorage unavailable (private mode etc) — hint just stays, harmless */ }
 
   const chkSound=document.getElementById('chkSound');
   const volumeSlider=document.getElementById('volumeSlider');
