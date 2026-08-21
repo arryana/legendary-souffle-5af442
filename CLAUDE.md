@@ -126,7 +126,14 @@ is the sill rather than sky or proportion, and the light patch is masked to the 
 still catches the sun. A Kindle turned sideways needed one thing more — the chart is drawn at 78vw and so
 grows with a wide screen however short it is, so in landscape under 560px tall it is capped by height
 instead. All of it is held to `(pointer: coarse)`; the desktop layout is identical to the live site,
-measured. |<br>Aug 2026 the
+measured.<br>**The window shows the same slice of sky whatever shape it is** — about 100° either side of
+south, mapped to a percentage of the opening, so on a phone the sun crosses a narrower window rather than
+going behind the wall for part of the day. A real aperture that narrow would crop the sky instead of
+squeezing it, and this was put to her as a fidelity question in Aug 2026. **Her ruling: it stands.** *"The
+representation still appears to be what other people would be seeing outside. I'm okay with that."* Cropped
+honestly, a phone would show an empty sky for hours at a stretch. Don't re-propose it. (The sun and the
+hills are both percentages of the window, which is why they stay registered with each other at any shape —
+including the shortened one; take height off the bottom only, below the hills, or that breaks.) |<br>Aug 2026 the
 location flag moved up onto the line with the three tickboxes, her call. It had been on a line of its own
 below them, and that line was what pushed the page 27px off the bottom of a 1440x900 laptop; it now fits
 that screen exactly. A 1200x860 window is still 12px over — small, known, not chased. |
@@ -616,6 +623,67 @@ undid** in one sentence.
 - **If a Netlify deploy itself fails** (e.g. "unable to access repository"), that's a
   Netlify↔GitHub permissions/connection problem, not a code problem — same rule applies: explain
   it in plain terms once, don't loop on fixes yourself, and see the escalation guardrail below.
+
+## Where the device testing has got to
+
+**The programme is hers**: a Rocketbook page per piece, each tested for what it does on **all
+settings and at all times of day**, on four machines — her Mac (*frelliple*), a **Windows tablet**,
+a **Kindle Fire** and a **Unihertz Jelly Star** (a 3in phone, about 240px across). A piece is not
+finished until she has run it on all four. Her words: *"I intend to finish every one of them to the
+same standard."*
+
+**Through as of Fri 21 Aug 2026: candler, conometer, galileo, windower** — every fault they turned
+up is fixed and live, and the details are in each one's row above. The case itself was worked on the
+same day: light on the wall behind it, the white cut line off all five plates, darker arrows in the
+two discs.
+
+**Her order from here**: `storm` finishes instrumenta; then **tactilia** and **systema**, six pieces
+between them, which she expects may both go in a day; then **natura**, which she expects to cost the
+most in repairs and testing. Worth knowing when that shelf comes up: all four natura pieces animate
+continuously, and on a Kindle Fire the thing that bites an animated canvas is frame rate, which is a
+fault class none of the pieces tested so far could expose. Budget it for watching rather than
+repairing.
+
+### Three faults turned out to be systemic, so all sixteen untested pieces were swept for them
+
+Measured on 21 Aug, before testing rather than after, so her device time goes on what a sweep cannot
+see. **None of these four are fixed yet** — she asked for them to be ready to fix, and the offer
+stands:
+
+**One caution about how this was swept, because it caught me out.** The first pass laid each page out
+at the device's FULL height and asked what fell below the visible line — which is exactly what the
+trap does, but it cannot tell an unfixed page from a fixed one, since a page that measures
+`innerHeight` would never have been that tall. Re-measured at the height a device actually leaves
+visible, the four flags came apart:
+
+| piece | at the true visible height | what it really is |
+|---|---|---|
+| `chladni` | was 36–101px under the bar on all four | **the trap. Fixed 21 Aug** — lays out to `innerHeight` now, and the plate is sized off the same figure or it stays scaled to a screen the visitor hasn't got. Desktop identical, measured. |
+| `storm` | fits on all four | **nothing to do** — it got the `innerHeight` fix earlier the same day. The sweep flagged its own blind spot, not a fault. |
+| `musebox` | fits, bar 24px on a Kindle sideways | **mild**: it already carries `min-height:100dvh` with a `100vh` fallback, and its page can scroll, so the tempo control is reachable. Left alone. |
+| `kaleidoscope` | 63–167px over on three of the four | **not the trap — the design debt its own row describes.** The content genuinely does not fit; a proper small-screen arrangement is still owed and is her call, not a repair. |
+
+`warmler`, `roller`, `gyre`, `chimes`, `birds`, `fireflies`, `moths`, `ant`, `lamp`, `rain`, `bowl`
+and `pendulum` are clear on all four.
+
+**White cut halos: none left.** Nine files flagged by a crude test, all innocent on inspection — the
+pinecone frames do carry a pale rim but the cone sits on a photograph of straw, so nothing shows; the
+chime rod's bright edge is the wood's own curve; the rest were masks, which are meant to be white.
+That fault was confined to the shelf plates and windower's centre pane, both fixed.
+
+**Mouse dimensions: one good surprise, one steady drip.** Galileo's press-and-hold float was the
+**only** hover-only behaviour on the site — nothing else asks for a gesture a finger cannot perform.
+What does recur is small targets: tickboxes and icon buttons at **14–29px** where a thumb wants about
+40 (chladni's mic and sound boxes 16, lamp's mute 14, ant's food box 16, storm's live box 16,
+musebox's save and clear 22x18, bowl's two pickers 29x21, roller's colour buttons 26). The sliders
+measure 25–33px, but those are already grown as far as their neighbours allow by the `touch-targets`
+pass, so they are at their limit rather than neglected.
+
+**Still open, both small:** `conometer` leaves a 6px sliver of disc proud of the picture on an
+ordinary 390px phone (none of her four devices shows it, so it was left); and candler's "flashing
+line" — the back disc, before it was pinned, sat in the flow inside the area the flame repaints, so
+its edge was being re-rasterised every frame. It went with the fix; the diagnosis is inference, not
+proof.
 
 ## The standard: does it behave like the real thing?
 

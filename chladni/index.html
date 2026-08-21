@@ -27,9 +27,16 @@
   #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#dfe6ea; opacity:.5;
     text-decoration:none; font-size:14px; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 9px rgba(0,0,0,.55); transition:opacity .3s ease; }
   #backlink:hover{ opacity:.9; }
-  #stage{ height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  /* On a phone or tablet, 100% of the page -- like 100vh -- is the whole screen
+     with the browser's own address bar counted as though it weren't there, and
+     nothing here can scroll, so whatever lands under that bar is unreachable.
+     Measured on a Kindle's dimensions that was the hue and grain sliders, which
+     are two of the four things this piece does. innerHeight is the honest number
+     on every browser there is. The plate is sized off the same figure, or it
+     stays scaled to a screen the visitor hasn't got. */
+  #stage{ height:100%; height:calc(var(--vh, 1vh) * 100); display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:6vh 3vw 2vh; gap:3vh; }
-  #plateWrap{ position:relative; width:min(72vh,660px,88vw); height:min(72vh,660px,88vw); cursor:pointer; }
+  #plateWrap{ position:relative; width:min(calc(var(--vh, 1vh) * 72),660px,88vw); height:min(calc(var(--vh, 1vh) * 72),660px,88vw); cursor:pointer; }
   #plateWrap canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
   #dock{ display:flex; align-items:center; justify-content:center; gap:16px; padding:0 22px; width:min(360px,80vw); }
   input[type=range]{ -webkit-appearance:none; appearance:none; flex:1; height:3px; border-radius:3px;
@@ -250,6 +257,20 @@
   </div>
   </div>
 </div>
+<script>
+/* ---------- the height of the screen you can actually see ----------
+   see the note on #stage. Re-measured on resize and rotation, but not while a
+   text field has focus: an on-screen keyboard shrinks innerHeight. */
+function setVisibleHeight(){
+  const el = document.activeElement;
+  if (el && el.tagName === 'INPUT' && el.type !== 'range' && el.type !== 'checkbox') return;
+  document.documentElement.style.setProperty('--vh', (window.innerHeight / 100) + 'px');
+}
+setVisibleHeight();
+window.addEventListener('resize', setVisibleHeight);
+window.addEventListener('orientationchange', () => setTimeout(setVisibleHeight, 120));
+document.addEventListener('focusout', () => setTimeout(setVisibleHeight, 60));
+</script>
 <script>
 (function(){
   const wrap=document.getElementById('plateWrap');
