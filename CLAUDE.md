@@ -263,12 +263,25 @@ pointer a card opens on the first click instead, and the shelf zoom stays reacha
 name plates. If you change the picture, the zoom transforms recompute themselves from the
 measurement table; nothing there is hand-typed.
 
-**On a 3-inch screen the case is too small to use, and scrolling cannot fix it.** Measured at
-240x427: nothing is below the fold — the whole cabinet is on screen with room above and below —
-but everything scales off the screen's WIDTH, so the brass plates come out 6px tall and the cards
-19x28. The plates are the way into a shelf on touch, so the way in is smaller than a grain of rice.
-Growing the case to make them tappable would need it roughly four screens wide, so this is not a
-tweak; it wants a small-screen arrangement of its own. Parked Aug 2026 with kaleidoscope's, her call.
+**On a 3-inch screen the case's plates are unreadable — and it does not matter, which is a
+correction to a measurement.** At 240x427 nothing is below the fold (the whole cabinet is on
+screen with room above and below) but everything scales off the screen's WIDTH, so the engraved
+plates come out **6px** tall and the cards 19x28. A session measured that and reported the case
+as needing a small-screen arrangement. She then opened it on the actual phone and found the
+opposite: **touching anywhere zooms to that shelf, and the zoomed tray plate fills the foot of
+the screen and is perfectly readable** — her word for it was "awesome". The tiny plates on the
+un-zoomed case are decoration at that size, not the way in; the way in is the card, and the card
+works. Don't "fix" the 6px plates, and don't trust a static tap-target measurement on a page
+whose whole interaction is a zoom.
+
+**A `<button>` carries the browser's own button face** (`rgb(239,239,239)`), and four of them on
+this site show a cut-out with transparent edges over it — so a pale rectangle sat behind the
+brass. `#trayplate` here, warmler's `#finishTrigger`, and chimes' two `.matTrigger`s. She caught
+it on the phone, on the zoomed shelf plate, where the transparent margin is widest; on the small
+swatch triggers it was a faint rim nobody had noticed. It survived this long because the zoomed
+view is mostly a TOUCH path — with a mouse a card opens on the first click, so a desktop session
+rarely sees that plate at all. If you make a brass cut-out into a button, clear its
+`background-color`.
 
 **Live-data pieces** — `galileo`, `conometer`, `windower`, `storm` — read the visitor's
 **geolocation** and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that
