@@ -110,7 +110,23 @@ through that test, and the standard for the ones that follow. |
 | `warmler/index.html` | ✅ |  | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked) |
 | `rain/index.html` | ✅ |  | Rain on glass |
 | `ant/index.html` | ✅ |  | Ants |
-| `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Aug 2026 the
+| `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Fourth piece
+through her four-device test, Aug 2026. **`windower-frame.png`'s centre pane was cut out of a light
+background** and kept a 3px white halo all the way round it — the same family of fault as the shelf plates,
+and she spotted it as the same thing. Recoloured to the frame's own wood with the alpha ramp kept, inside and
+out of the cut, so the pane's edge stays soft. The side panes were clean.<br>The layout on a Kindle or a 3in
+phone ran 65–140px past the bottom of the page, taking the flag and half the controls with it, and both fixes
+are hers. **The discs moved inside the window's own top corners** (they had been sitting half on it and half
+off, and the room kept clear above them was room the piece could have used) — `position:absolute` there
+rather than fixed, so if a screen still has to scroll they travel with the window instead of hanging over it,
+and the rules are written `html #backlink` / `html #shelfdisc` **because the shelf disc's own block is
+generated and sits at the end of the body, where a plain `#shelfdisc` rule loses to it on source order**.
+And **the sill gives way**: the window box gets shorter and the frame is anchored to its top, so what is lost
+is the sill rather than sky or proportion, and the light patch is masked to the same box so what's left of it
+still catches the sun. A Kindle turned sideways needed one thing more — the chart is drawn at 78vw and so
+grows with a wide screen however short it is, so in landscape under 560px tall it is capped by height
+instead. All of it is held to `(pointer: coarse)`; the desktop layout is identical to the live site,
+measured. |<br>Aug 2026 the
 location flag moved up onto the line with the three tickboxes, her call. It had been on a line of its own
 below them, and that line was what pushed the page 27px off the bottom of a 1440x900 laptop; it now fits
 that screen exactly. A 1200x860 window is still 12px over — small, known, not chased. |
