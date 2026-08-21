@@ -51,7 +51,12 @@ the picture; this one carries her own plates as separate cut-outs — `shelfplat
 Cormorant: engraving wants even stroke weight, and Cormorant's hairlines vanish at the size a
 shelf plate allows. **Each plate is cut to the length of its own word**, which is why `plateW`
 is per shelf. Re-cutting is only needed if a group is renamed or the lettering resized; the
-sheet of ten blank lengths she generated is in her `daidle` Drive folder.
+sheet of ten blank lengths she generated is in her `daidle` Drive folder. **`shelfplate-natura.png`
+carried six rows of its own background above the plate**, opaque where the other four fade to
+nothing, and stretched into a 22px-tall box that drew as a pale bar hanging over the plate —
+on the case itself and on every page's plate popup, since all 20 pages use the same file. She
+caught it on the popup. Cleared Aug 2026; the plate's own pixels weren't touched. If a plate is
+ever re-cut, check the top rows are transparent before putting it in.
 
 ### The pages
 
@@ -82,7 +87,22 @@ thing?* That is a yes or a no.
 | File | On landing page? | Done? | What it is |
 |------|:---:|:---:|------------|
 | `index.html` | — | — | Landing page: the apothecary shelf ("sagne"), five shelves, all 20 pieces |
-| `candler/index.html` | ✅ | ✅ | *Sagne Candle* — an interactive candle. `candler_5.html` is an alternate version (not linked)<br>**Done** — "as perfect as I can make it without overhauling the actual candle itself." |
+| `candler/index.html` | ✅ | ✅ | *Sagne Candle* — an interactive candle. `candler_5.html` is an alternate version (not linked)<br>**Done** — "as perfect as I can make it without overhauling the actual candle itself."<br>Aug 2026 it was the first piece put through her four-device test (Mac, Windows tablet,
+Kindle Fire, Jelly Star), and two faults under it accounted for most of what she found. **candler was the only
+page on the site without the `#backlink{position:fixed;top:18px;left:22px}` rule** — the generated back-disc
+block only says what the disc looks like and assumes the page already places it, so here the brass disc stood
+in the page's own flow as a 38px-tall block at 0,0, shoving the whole candle down and pushing the last 38px of
+the page off the bottom. That is why the readout line under the controls was invisible **on every device
+including her Mac**, not just the small ones. And the page was `height:100vh` with `overflow:hidden`: on a
+phone or tablet `100vh` is the whole screen *with the browser's own address bar counted as though it weren't
+there*, and with nothing able to scroll, whatever lands under that bar is simply unreachable. On the Kindle
+Fire that was both control pills — no menu at all — and on the 3in Jelly Star the second pill, which carries the
+candle's size and type, so **no candle could be set**. It now lays out to `innerHeight`, which is the honest
+number on every browser there is, old ones included; re-measured on resize and rotation but deliberately
+**not while a pin's time field has focus**, because an on-screen keyboard shrinks `innerHeight` and would
+collapse the candle under someone typing a time into it. Below 320px the first pill is also tightened, or the
+snooze — last in the row once the timer is on — hangs 11px off the right-hand edge of a pill whose sideways
+scrollbar is hidden. |
 | `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does." |
 | `lamp/index.html` | ✅ | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. A fuel level you find by *tapping* the base is designed but not built; the note in the file records which way the pitch must go<br>**Done** as it stands — the tap-for-fuel idea is recorded as a future build, not a gap in it. |
 | `warmler/index.html` | ✅ |  | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked) |

@@ -52,10 +52,27 @@
     overflow: hidden;
   }
 
+  /* The way back sits in the top-left corner, fixed, mirroring the shelf disc
+     opposite it. Every other piece on the site has this rule; candler was the
+     only one without it, so its disc stood in the page's own flow at 0,0 as a
+     38px-tall block -- shoving the whole candle down 38px and pushing the last
+     38px of the page (the readout, and part of the pin list) off the bottom of
+     every screen there is. */
+  #backlink {
+    position: fixed;
+    top: 18px;
+    left: 22px;
+    z-index: 50;
+    opacity: 0.55;
+    transition: opacity 0.3s ease;
+  }
+  #backlink:hover { opacity: 0.95; }
+
   .stage {
     position: relative;
     width: 100%;
     height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -83,6 +100,7 @@
     width: min(640px, 78vw);
     height: 100%;
     max-height: 78vh;
+    max-height: calc(var(--vh, 1vh) * 78);
     overflow: visible;
   }
 
@@ -198,7 +216,17 @@
     /* the candle itself: same proportions (SVG's own aspect-ratio
        scaling keeps it exact), just sized up so the wax nearly
        touches the phone's left and right edges */
-    svg#scene { width: 98vw; max-height: 80vh; }
+    svg#scene { width: 98vw; max-height: 80vh; max-height: calc(var(--vh, 1vh) * 80); }
+  }
+
+  /* A 3in phone is 240px across, and there the first pill runs 11px wider than
+     the screen the moment the timer is on and the snooze joins the row -- so the
+     snooze, being last in it, sat off the right-hand edge of a pill whose
+     sideways scrollbar is deliberately hidden. Tighten the row rather than let a
+     control hide behind the edge. */
+  @media (max-width: 320px) {
+    .panel { gap: 6px; padding: 8px 9px; }
+    input[type=range] { width: 40px; }
   }
 
   #repeatCtrl { transition: opacity 0.25s ease, width 0.25s ease; }
@@ -739,6 +767,27 @@
    stop the others, and you can keep adding pins (up to the limit)
    any time while the candle burns.
    ============================================================ */
+
+/* ---------- the height of the screen you can actually see ----------
+   A phone or tablet browser reports 100vh as the WHOLE screen, with its own
+   address bar counted as if it weren't there. This page is height:100vh with
+   overflow hidden, so the last inch of it sat underneath that bar with no way
+   to scroll to it: on a Kindle Fire that was both control pills (no menu at
+   all), on a 3in phone the second pill -- which is the candle's own size and
+   type, so no candle could be set. innerHeight is the honest number on every
+   browser there is, old ones included, so the page measures it and lays itself
+   out to that. Re-measured on resize and rotation, but NOT while a pin's time
+   field has focus: an on-screen keyboard shrinks innerHeight, and the candle
+   must not collapse under someone typing into it. */
+function setVisibleHeight() {
+  const el = document.activeElement;
+  if (el && (el.tagName === 'INPUT' && el.type !== 'range' && el.type !== 'checkbox')) return;
+  document.documentElement.style.setProperty('--vh', (window.innerHeight / 100) + 'px');
+}
+setVisibleHeight();
+window.addEventListener('resize', setVisibleHeight);
+window.addEventListener('orientationchange', () => setTimeout(setVisibleHeight, 120));
+document.addEventListener('focusout', () => setTimeout(setVisibleHeight, 60));
 
 // ---------- DOM ----------
 const sizeSlider     = document.getElementById('sizeSlider');
