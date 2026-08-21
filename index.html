@@ -65,6 +65,29 @@
      nothing, so it goes when the case is zoomed */
   #stage:has(#frame.zoomed)::after{ opacity:0; }
 
+  /* Light on the wall behind the case. Her ask, and the reason it was needed:
+     the photograph's own surround is DARKER than the wall it is laid on (2,5,13
+     against the wall's 16,21,33), so the case's outer edges had nothing to be
+     seen against and the whole unit read as a dark patch with no silhouette. A
+     soft ambient lift immediately around it gives the edges something to stand
+     out from -- about 5/255 at the sides, which is the whole of it. It must NOT
+     be given z-index:-1: html and body both carry the wall colour, and a body
+     background paints OVER a negative-z-index descendant, so the glow simply
+     vanishes. Being first in the stage and unpositioned in z, it lands behind
+     #frame on document order alone. */
+  #stage::before{ content:''; position:absolute; pointer-events:none;
+    left:-8%; right:-8%; top:-5.6%; bottom:-1%;
+    opacity:1; transition:opacity .45s ease;
+    background:
+      radial-gradient(58% 54% at 50% 44%, rgba(120,158,214,.17), rgba(120,158,214,0) 100%),
+      radial-gradient(80% 38% at 50% 16%, rgba(120,158,214,.11), rgba(120,158,214,0) 100%); }
+  /* same reasoning as the ground shadow: a shelf that has come forward is not
+     the case standing off a wall any more, so the light behind it goes with it --
+     and it goes when the tray takes over, or a halo hangs round a case that has
+     deliberately been dimmed to almost nothing */
+  #stage:has(#frame.zoomed)::before{ opacity:0; }
+  body.tray #stage::before{ opacity:.15; }
+
   /* ------------------------------------------------------------------ tray --
      Her design, and it answers the thing the zoom could not: on a small phone the
      engraved name stayed too small to read however far the photograph came
