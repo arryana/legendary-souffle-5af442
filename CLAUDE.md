@@ -150,10 +150,14 @@ phone `#controls` is a **column, not a wrapping row** — as a wrapping row it c
 when the palette left the flow and slid the dish out from under the thumb mid-carry — and `#leftCluster`
 keeps a `min-height` of 66px for the same reason. The veil behind the drawer dims and deliberately does
 **not** blur: you don't blur the thing someone is aiming at.<br>**That fix was measured at 390 and holds only
-there.** At 240 the layout still runs 158px past the bottom of a page that cannot scroll (20 controls
-unreachable, and the closed 7-column tray is itself 246px on a 240px screen); at 320 it is 114px over, taking
-both sliders and the mirror buttons with it. That is not a collision to nudge out of the way, it is a layout
-that does not fit a 3-inch screen — the same question as the case's 6px plates, and parked with it. |
+there.** At 240 the layout ran 158px past the bottom of a page that could not scroll (20 controls
+unreachable, and the closed 7-column tray is itself 246px on a 240px screen); at 320 it was 114px over,
+taking both sliders and the mirror buttons with it. Her call was to **let it scroll below 380** and do a
+proper small-screen arrangement later — so `html,body{height:100%}` is lifted down there, `#wrap` ends 96px
+above the bottom so the corner music button never lands on the last row, the dish keeps `touch-action:none`
+(or dragging a piece on it scrolls the page instead), and below 280 the tray drops to six columns. It is a
+**stopgap and is labelled as one in the file**: these pieces are meant to sit still, and the arrangement is
+still owed. Above 380 nothing applies and the page is the same fixed frame it always was. |
 | `moths/index.html` | ✅ |  | **Moths** losing their bearings on a hanging bulb. Not attraction — a moth holds a course by keeping a distant light at a fixed angle, and a near one wraps that course into a spiral. Three sliders: dusk→dark, bulb, how many. Colour is a readout of depth (dark in front of the glass, pale behind), from her own three-shade cut<br>Built Aug 2026 from her brief, then put right by her own watching of it — she found that the moths crowded the bulb and stayed (an absorbing state: all five reached it and none ever left), that moths in front of the lower glass came out grey rather than black, that they all flew alike, and that they never tilted or wavered. In **natura**, which is therefore a shelf of four |
 | `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune |
 | `pendulum/index.html` | ✅ | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search<br>**Done** — precession, swing and pin ring all verified by measurement against the real physics.
@@ -258,6 +262,13 @@ a phone cannot show a card big enough to read; her idea, and the right one. With
 pointer a card opens on the first click instead, and the shelf zoom stays reachable from the
 name plates. If you change the picture, the zoom transforms recompute themselves from the
 measurement table; nothing there is hand-typed.
+
+**On a 3-inch screen the case is too small to use, and scrolling cannot fix it.** Measured at
+240x427: nothing is below the fold — the whole cabinet is on screen with room above and below —
+but everything scales off the screen's WIDTH, so the brass plates come out 6px tall and the cards
+19x28. The plates are the way into a shelf on touch, so the way in is smaller than a grain of rice.
+Growing the case to make them tappable would need it roughly four screens wide, so this is not a
+tweak; it wants a small-screen arrangement of its own. Parked Aug 2026 with kaleidoscope's, her call.
 
 **Live-data pieces** — `galileo`, `conometer`, `windower`, `storm` — read the visitor's
 **geolocation** and call **public APIs** (`api.open-meteo.com`). If you edit these, keep that

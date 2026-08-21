@@ -154,6 +154,28 @@
     #palette.open .add-plus{ font-size:22px; }
     #palette.open .piece.add-tile.has-image .swap-btn{ display:block; }
   }
+
+  /* Below 380 the stack is simply taller than the glass -- at 240 it ran the
+     better part of a screen past the bottom -- and `height:100%` on the page
+     meant the document never grew to match, so everything under the fold was
+     not merely hard to reach but absent. Down here the page is allowed to
+     scroll to its own content, and it ends far enough above the bottom that the
+     music button in the corner never lands on the last row of controls.
+     This is a stopgap and was agreed as one: these pieces are meant to sit
+     still and be looked at, and a small-screen arrangement is still owed.
+     Above 380 nothing here applies -- the page is the same fixed, unscrolling
+     frame it always was. */
+  @media (max-width: 379px){
+    html, body{ height:auto; min-height:100%; }
+    #wrap{ padding-bottom:96px; }
+    /* the dish keeps the drag, or pulling a piece about on it scrolls the page
+       underneath instead */
+    #trayWrap{ touch-action:none; }
+  }
+  /* seven 30px tiles come to 246px, which is wider than a 3-inch screen */
+  @media (max-width: 280px){
+    #palette{ grid-template-columns:repeat(6, 30px); }
+  }
   .mbtn{ width:44px; height:44px; border-radius:8px; border:1.5px solid rgba(236,227,208,.18);
     background:rgba(255,255,255,.02); cursor:pointer; opacity:.6; padding:0;
     transition:opacity .2s ease, border-color .2s ease, background .2s ease; }
