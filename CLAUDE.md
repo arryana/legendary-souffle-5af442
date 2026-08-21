@@ -127,7 +127,22 @@ slider is: under `(pointer: coarse)` they go to 22 and 15 with the field at 19. 
 for anyone measuring this: **the floats' hit circles overlap**, so a tap lands on whichever is topmost, and
 comparing "the hit circle I aimed at" with "the float that came up" will show a mismatch that isn't one.
 Check `document.elementFromPoint` instead — the enlargement always belongs to the float actually under the
-finger. |
+finger.<br>She then found the **floats puddling wrongly in the teardrop's base**, and the cause is worth
+keeping: **the floor of a narrowing vessel is a bowl, not a plane.** Everything that sank came to rest on one
+height, `lo`, the same all the way across — so five floats sat in a flat row out to a width the glass does not
+have down there. What gives it away is the **tag**: a float is not a sphere, a metal tag hangs about two
+thirds of a bulb-width below its centre, and by that depth the teardrop has closed in by another 40 units, so
+the outer floats' tags hung straight through the glass. Swept across 14–118°F, **116 of 1015 placements had
+some part of a float outside its vessel; it is 0 now**, with no float interpenetrating another in either
+version. The depth a float can reach is now a function of how far out it sits.<br>One thing there is
+delicately balanced. Among spots that settle equally deep the code prefers the one *resting against
+something*, the glass included, and that is what stops the tube's twelve floats stacking into a tower up the
+middle — its floor is flat, so every spot is the same depth and contact is the only thing left to choose by.
+But on a curved floor a spot at the wall is genuinely higher, and the old slack (`bh*0.40`, 17.7 units) was
+wide enough for it to win on contact — which perched the whole heap up the side of the bowl with clear glass
+beneath it. **So the slack is now the flatness itself**: full where the floor is flat, strict where it curves.
+Don't replace it with a constant in either direction — one value cannot serve both vessels. The tube's
+arrangement is unchanged at every temperature bar 1–2 of 255 in the anti-aliasing. |
 | `conometer/index.html` | ✅ | ✅ | A **pinecone hygrometer** — the pinecone opens (dry) and closes (wet) with the visitor's **real local humidity** (open-meteo API); has a live/manual toggle<br>**Done**.<br>Second piece through her four-device
 test, Aug 2026. The picture is centred and grows with the screen, so on a short wide one its top corners
 came up under the two brass discs and each disc sat **half on the photograph and half off it**. Her rule for
