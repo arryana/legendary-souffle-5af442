@@ -42,6 +42,13 @@
   .glyph{ font-size:15px; opacity:.85; }
   .divider{ width:1px; height:24px; background:rgba(242,233,216,.2); }
   #speedRow{ display:flex; align-items:center; gap:10px; }
+  /* The row wants 322px laid out end to end and never wrapped, so on a narrow
+     screen it ran off BOTH edges -- the run toggle sat 41px to the left of the
+     glass at 240. Below 380 the toggle and the speed take a line each; below
+     280 the slider gives up some length as well, because a line of its own is
+     still not enough down there. */
+  @media (max-width: 379px){ #dock{ flex-wrap:wrap; row-gap:12px; } }
+  @media (max-width: 280px){ #speedSlider{ width:120px; } }
   input[type=range]{ -webkit-appearance:none; appearance:none; width:160px; height:3px; border-radius:3px; background:rgba(242,233,216,.25); outline:none; }
   input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--brass); cursor:pointer; box-shadow:0 0 6px rgba(201,151,78,.6); }
 </style>
@@ -74,6 +81,14 @@
      taps. While something is playing it simply shows, next to the button.
      Not a caption on the piece: it is their file's name, not the site's words. */
   #musicBtn.playing ~ #musicName{ opacity:.5; }
+  /* The music button is pinned in the bottom-left corner and the piece's own
+     dock runs the width of the screen, so on a narrow one they land on top of
+     each other -- and the button wins, being the higher layer. Rather than
+     reshape the dock, the furniture gives way: the headphones sit just above
+     it. The offset is this dock's own measured height plus a little. */
+  @media (max-width: 420px){ #music{ bottom:74px; } }
+  /* below 380 the dock wraps to two lines and grows to 96 */
+  @media (max-width: 379px){ #music{ bottom:104px; } }
 </style>
 <div id="music" title="play your own music">
   <button id="musicBtn" aria-label="play your own music">🎧</button>

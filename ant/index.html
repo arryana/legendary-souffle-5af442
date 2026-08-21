@@ -144,6 +144,12 @@
      taps. While something is playing it simply shows, next to the button.
      Not a caption on the piece: it is their file's name, not the site's words. */
   #musicBtn.playing ~ #musicName{ opacity:.5; }
+  /* The music button is pinned in the bottom-left corner and the piece's own
+     dock runs the width of the screen, so on a narrow one they land on top of
+     each other -- and the button wins, being the higher layer. Rather than
+     reshape the dock, the furniture gives way: the headphones sit just above
+     it. The offset is this dock's own measured height plus a little. */
+  @media (max-width: 280px){ #music{ bottom:323px; } }
 </style>
 <div id="music" title="play your own music">
   <button id="musicBtn" aria-label="play your own music">🎧</button>
