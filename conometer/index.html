@@ -43,7 +43,14 @@
     overflow:hidden;
   }
   #stage{
+    /* On a phone or tablet, 100% of the page -- like 100vh -- is the whole screen
+       with the browser's own address bar counted as though it weren't there, and
+       nothing here can scroll. On a Kindle that put the flag's reply line ~40px
+       under the bar: you could type a location into the flag and the piece would
+       go and fetch it, but the line saying where it had gone was off the screen.
+       innerHeight is the honest number on every browser there is. */
     height:100%;
+    height:calc(var(--vh, 1vh) * 100);
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -54,6 +61,17 @@
 
   #scene-wrap{
     position:relative;
+    /* The two brass discs sit in the page's top corners, and the picture is
+       centred and grows with the screen -- so on a short, wide one (a tablet in
+       landscape) its top corners came up UNDER the discs and each disc sat half
+       on the photograph and half off it. Half-on is the thing that reads as a
+       mistake; wholly on or wholly off both look deliberate. The third term
+       keeps the picture's SIDES clear of the discs by their own width, which is
+       the gentler trim: holding it short enough to clear them vertically costs
+       nearly a third of the picture, where this costs a tenth. Past 1236px it
+       never binds, so a desktop is untouched. The trim is held to the screens
+       that need it (below) -- an 800x1280 tablet stood upright has room to spare
+       and its picture is left alone. */
     width:min(94vw, 1100px);
     aspect-ratio:1376/768;
     border-radius:8px;
@@ -219,7 +237,25 @@
     /* on a phone, a landscape scene at 94vw leaves the tall screen mostly empty above and
        below it — switch to a portrait frame (matching the landing card's own proportions)
        so it actually fills the screen; object-fit:cover on #bg-img reframes automatically */
-    #scene-wrap{ width:min(94vw, calc(74vh * 11 / 16)); aspect-ratio:11 / 16; }
+    #scene-wrap{ width:min(94vw, calc(var(--vh, 1vh) * 74 * 11 / 16)); aspect-ratio:11 / 16; }
+  }
+
+  /* 74vh, and the picture came so close to filling a Kindle stood upright that
+     its top edge rose into the disc band and cut both discs in half. 67 drops
+     the picture clear below them. Held to 420px and up, which is a small tablet
+     and not a phone: on a 3in screen the height term binds too, and there the
+     discs sit WHOLLY inside the picture already -- which is not the fault. The
+     fault is a disc half on and half off; wholly on reads as deliberate. */
+  @media (min-width:420px) and (max-width:700px){
+    #scene-wrap{ width:min(94vw, calc(var(--vh, 1vh) * 67 * 11 / 16)); }
+  }
+
+  /* the sides-clear trim itself. Only a screen short enough for the centred
+     picture to rise into the disc band needs it: above 840px of height the
+     picture never reaches them, and past 1236px of width the term never binds
+     anyway. */
+  @media (min-width:701px) and (max-height:840px){
+    #scene-wrap{ width:min(94vw, 1100px, calc(100vw - 136px)); }
   }
 </style>
 <style>
@@ -331,6 +367,20 @@
   // wherever the visitor actually is — never open by default, no page text anywhere
   // else hints it exists. Geocoding goes through OpenStreetMap's Nominatim (free, no
   // key) since open-meteo's own geocoder searches place names, not postcodes.
+  /* ---------- the height of the screen you can actually see ----------
+     see the note on #stage. Re-measured on resize and rotation, but NOT while
+     the flag's field has focus: an on-screen keyboard shrinks innerHeight, and
+     the picture must not jump about under someone typing a place into it. */
+  function setVisibleHeight(){
+    const el = document.activeElement;
+    if (el && el.tagName === 'INPUT' && el.type !== 'range' && el.type !== 'checkbox') return;
+    document.documentElement.style.setProperty('--vh', (window.innerHeight / 100) + 'px');
+  }
+  setVisibleHeight();
+  window.addEventListener('resize', setVisibleHeight);
+  window.addEventListener('orientationchange', () => setTimeout(setVisibleHeight, 120));
+  document.addEventListener('focusout', () => setTimeout(setVisibleHeight, 60));
+
   (function initLocationSearch(){
     const flag = document.getElementById('loc-flag');
     const form = document.getElementById('loc-search');
@@ -346,16 +396,31 @@
       else status.textContent = '';
     });
 
+    /* An on-screen keyboard is not a keyboard. A one-field form submits on Enter
+       in a desktop browser, but the Go key on some Android ones -- the Kindle's
+       among them -- can leave the form alone entirely, and then a typed-in
+       location does nothing and says nothing. Asking the form directly costs a
+       line. The guard is because a browser that DOES submit would otherwise
+       search twice. */
+    let searching = false;
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.keyCode === 13){
+        e.preventDefault();
+        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      }
+    });
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const q = input.value.trim();
-      if (!q) return;
+      if (!q || searching) return;
+      searching = true;
       status.textContent = 'looking…';
       try {
         const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
         const res = await fetch(url);
         const results = await res.json();
-        if (!results || !results.length) { status.textContent = "couldn't find that"; return; }
+        if (!results || !results.length) { status.textContent = "couldn't find that"; return; }  // finally{} below releases the guard
         lat = parseFloat(results[0].lat); lon = parseFloat(results[0].lon);
         hideLocationNote();
         setLive(true);
@@ -364,6 +429,8 @@
         input.value = '';
       } catch (e) {
         status.textContent = "couldn't reach the map — try again";
+      } finally {
+        searching = false;
       }
     });
   })();
