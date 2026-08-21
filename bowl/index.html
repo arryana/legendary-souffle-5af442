@@ -36,8 +36,20 @@
   #backlink:hover{ opacity:1; }
   canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
   #dock{ position:fixed; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:space-between;
-    padding:16px 22px 26px; z-index:40;
+    padding:16px 22px 26px; z-index:40; flex-wrap:wrap; gap:14px 0;
     background:linear-gradient(to top, rgba(8,7,5,.85), rgba(8,7,5,0)); }
+  /* The row wants 369px laid out end to end. It never wrapped, so on anything
+     narrower the LAST thing in it -- the flower, the whole object chooser --
+     was simply pushed off the right edge, and with the page unable to scroll
+     there was no way to reach it at all. It fitted a 390px phone by 22px, which
+     is why this only shows up on a small one. Below that the two groups take a
+     line each; there is nothing under the bowl but water, so the room is free. */
+  @media (max-width: 379px){
+    /* right-aligned, not centred: the music button is pinned in the bottom-left
+       corner, and a centred second row lands straight on top of it. */
+    #dock{ justify-content:flex-end; }
+    .dockGroup{ flex:0 0 auto; }
+  }
   .dockGroup{ display:flex; align-items:center; gap:14px; }
   .glyph{ font-size:15px; opacity:.7; }
   .divider{ width:1px; height:22px; background:rgba(231,221,201,.2); }
@@ -61,6 +73,17 @@
   .pickerOverlay.open{ display:flex; }
   .pickerPopup{ background:#1c1712; border-radius:14px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,.5); }
   .pickerList{ display:grid; grid-template-columns:repeat(4,64px); gap:10px; }
+  /* The popup was a fixed 326px grid. On a 240px screen it hung 43px off BOTH
+     edges, so half the flowers could not be reached even once the chooser was
+     open -- the fault behind the fault. Narrow screens get three slightly
+     smaller tiles; above 379px nothing here applies and it is the same 4x64
+     grid it always was. */
+  .pickerPopup{ box-sizing:border-box; max-width:calc(100vw - 12px); }
+  @media (max-width: 379px){
+    .pickerPopup{ padding:12px; }
+    .pickerList{ grid-template-columns:repeat(3, 60px); }
+    .pickerOption{ width:60px; height:60px; }
+  }
   .pickerOption{ position:relative; width:64px; height:64px; border-radius:10px; border:2px solid transparent;
     background:#0f0d0a; padding:0; cursor:pointer; overflow:hidden; opacity:.4;
     transition:opacity .2s ease, border-color .2s ease; }
