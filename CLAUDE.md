@@ -650,16 +650,21 @@ Measured on 21 Aug, before testing rather than after, so her device time goes on
 see. **None of these four are fixed yet** — she asked for them to be ready to fix, and the offer
 stands:
 
-| piece | how far below the browser's own bar | reachable? |
+**One caution about how this was swept, because it caught me out.** The first pass laid each page out
+at the device's FULL height and asked what fell below the visible line — which is exactly what the
+trap does, but it cannot tell an unfixed page from a fixed one, since a page that measures
+`innerHeight` would never have been that tall. Re-measured at the height a device actually leaves
+visible, the four flags came apart:
+
+| piece | at the true visible height | what it really is |
 |---|---|---|
-| `storm` | 64–92px, on **all four** devices (the chart key) | no, the page cannot scroll |
-| `kaleidoscope` | 20–231px, all four (the mirror buttons) | no on three; the Jelly Star scrolls, which is the stopgap its row already describes |
-| `chladni` | 36–101px, all four (the hue and grain sliders) | no |
-| `musebox` | 105px on the Kindle sideways, 29px on the tablet (the tempo control) | no |
+| `chladni` | was 36–101px under the bar on all four | **the trap. Fixed 21 Aug** — lays out to `innerHeight` now, and the plate is sized off the same figure or it stays scaled to a screen the visitor hasn't got. Desktop identical, measured. |
+| `storm` | fits on all four | **nothing to do** — it got the `innerHeight` fix earlier the same day. The sweep flagged its own blind spot, not a fault. |
+| `musebox` | fits, bar 24px on a Kindle sideways | **mild**: it already carries `min-height:100dvh` with a `100vh` fallback, and its page can scroll, so the tempo control is reachable. Left alone. |
+| `kaleidoscope` | 63–167px over on three of the four | **not the trap — the design debt its own row describes.** The content genuinely does not fit; a proper small-screen arrangement is still owed and is her call, not a repair. |
 
 `warmler`, `roller`, `gyre`, `chimes`, `birds`, `fireflies`, `moths`, `ant`, `lamp`, `rain`, `bowl`
-and `pendulum` are clear on all four. The fix is the one candler and conometer got: lay out to
-`innerHeight`, held steady while a text field has focus.
+and `pendulum` are clear on all four.
 
 **White cut halos: none left.** Nine files flagged by a crude test, all innocent on inspection — the
 pinecone frames do carry a pale rim but the cone sits on a photograph of straw, so nothing shows; the
