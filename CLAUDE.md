@@ -126,7 +126,14 @@ is the sill rather than sky or proportion, and the light patch is masked to the 
 still catches the sun. A Kindle turned sideways needed one thing more — the chart is drawn at 78vw and so
 grows with a wide screen however short it is, so in landscape under 560px tall it is capped by height
 instead. All of it is held to `(pointer: coarse)`; the desktop layout is identical to the live site,
-measured. |<br>Aug 2026 the
+measured.<br>**The window shows the same slice of sky whatever shape it is** — about 100° either side of
+south, mapped to a percentage of the opening, so on a phone the sun crosses a narrower window rather than
+going behind the wall for part of the day. A real aperture that narrow would crop the sky instead of
+squeezing it, and this was put to her as a fidelity question in Aug 2026. **Her ruling: it stands.** *"The
+representation still appears to be what other people would be seeing outside. I'm okay with that."* Cropped
+honestly, a phone would show an empty sky for hours at a stretch. Don't re-propose it. (The sun and the
+hills are both percentages of the window, which is why they stay registered with each other at any shape —
+including the shortened one; take height off the bottom only, below the hills, or that breaks.) |<br>Aug 2026 the
 location flag moved up onto the line with the three tickboxes, her call. It had been on a line of its own
 below them, and that line was what pushed the page 27px off the bottom of a 1440x900 laptop; it now fits
 that screen exactly. A 1200x860 window is still 12px over — small, known, not chased. |
