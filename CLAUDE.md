@@ -848,16 +848,22 @@ a **Kindle Fire** and a **Unihertz Jelly Star** (a 3in phone, about 240px across
 finished until she has run it on all four. Her words: *"I intend to finish every one of them to the
 same standard."*
 
-**Through as of Mon 24 Aug 2026: candler, conometer, galileo, windower, storm, warmler** — every fault they turned
-up is fixed and live, and the details are in each one's row above. The case itself was worked on the
-same day: light on the wall behind it, the white cut line off all five plates, darker arrows in the
-two discs.
+**Through as of Mon 24 Aug 2026: candler, conometer, galileo, windower, storm, warmler, chladni,
+bowl** — her call on all eight; every fault they turned up is fixed and live, and the details are in
+each one's row above. The case itself was worked on the same day: light on the wall behind it, the
+white cut line off all five plates, darker arrows in the two discs.
 
-**Her order from here**: instrumenta is finished — `storm` closed it on Mon 24 Aug. She is into
-**tactilia** and **systema** now, six pieces between them, which she expected may both go in a day
-and which is running that way: `warmler` passed the same morning with nothing to repair, and she
-went straight to `roller`. Then **natura**, which she expects to cost the most in repairs and
-testing. Worth knowing when that shelf comes up: all four natura pieces animate
+**Eight through, twelve to go.** `chladni` and `bowl` closed on the afternoon of the 24th and cost
+one repair each — chladni's microphone tickbox moving onto the sound line, and bowl not loading at
+all on the 3in phone. Bowl's is the one to remember: it was **two** faults, and the larger of them
+belonged to every page on the site rather than to bowl.
+
+**Her order from here**: instrumenta is finished — `storm` closed it on Mon 24 Aug. She is through
+**tactilia** as of the same day (`warmler` with nothing to repair, then `roller`, `kaleidoscope` and
+`chladni`), and `bowl` off **phenomena** with it. **`musebox` and `chimes` are the two she has still
+to run**, both repaired and waiting on her devices; chimes needs its rods set to DIFFERENT LENGTHS or
+the tangle it was reported for cannot appear at all. Then **natura**, which she expects to cost the
+most in repairs and testing. Worth knowing when that shelf comes up: all four natura pieces animate
 continuously, and on a Kindle Fire the thing that bites an animated canvas is frame rate, which is a
 fault class none of the pieces tested so far could expose. Budget it for watching rather than
 repairing.
