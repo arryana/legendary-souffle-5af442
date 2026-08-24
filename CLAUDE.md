@@ -438,7 +438,29 @@ the whole rosette in one pass; worst frame gap on a desktop 73ms, and on a Kindl
 when the box is ticked, 30–91ms otherwise — one hitch, at the moment you ask for it, never a freeze.
 `rebuildRealTrace` clears its own pending flag on its first line, so it cannot run every frame, and
 the rebuild is deferred while the globe is being dragged so it happens once on release. After all of
-it the angle still equals the pure clock function, so nothing accumulates or drifts. |
+it the angle still equals the pure clock function, so nothing accumulates or drifts.<br>**"It looks as
+if the line is moving like a clock hand, not responding to the swings."** Her report on the real-time
+view, and the impression is right even though the swing under it is not: measured with the box
+ticked, the bob travels its full 287px each way and passes the centre 6 times in 10s — a 3.4s period,
+**identical to the ordinary mode**. What she was actually looking at is the swept sand. Since local
+midnight the plane really has turned ~139°, so the plate really is worked across two opposite 139°
+sectors — correct, and it reads as a pie chart, because a filled sector with a hard radial edge
+creeping round a circle is the visual language of a clock hand.<br>The sand's own signature was the
+part that was wrong. A swinging weight is slowest at the ends of its swing, so working goes as 1/v ∝
+1/√(A²−r²): a hard pile-up at both turning points and a middle barely touched. The rebuild's gradient
+ran **0.20 at the pivot to 0.44 at the rim — barely two to one, near enough a flat fill**. It now
+follows the real curve, 0.085 to 0.527 (clamped, because the true curve is infinite at the turning
+point), so the rim band is the brightest thing on the plate and the body is faint.<br>**A temporal
+fade was tried and backed out, and it is worth knowing why before anyone tries it again**: fading the
+sweep from settled at the far end to fresh at the leading edge takes ~18 stacked wedge fills at an
+alpha of a few thousandths each, and the canvas **dithers alpha that low** — the whole region came
+out crosshatched with stipple. Noise instead of sand is worse than the hard edge it was meant to
+soften. Doing it properly wants an angular gradient (`createConicGradient`), which the older browsers
+on her bench may not have; the way in, if it is ever wanted, is conic where it exists and the flat
+fill where it doesn't.<br>**Still open, and hers**: whether the sector now reads as sand or still as a
+dial. The geometry is honest — that ground really has been worked — so this is a question about the
+look, not a fault to fix. Her word on the change was ***"it's better"*** — which is an improvement
+banked and not a verdict, so **don't revert it and don't treat it as settled either**. |
 | `storm/index.html` | ✅ | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo)<br>**Done**, and the piece that finishes instrumenta. Fifth through her four-device test, Aug 2026,
 and four things came out of it.<br>**The needle lied whenever it had nothing to say.** Untranslated,
 `#baro-needle-g` sits at x=0 in its own SVG — off the left-hand end of the printed scale, past
