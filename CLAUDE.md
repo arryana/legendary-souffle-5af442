@@ -879,6 +879,24 @@ is a fault class none of the pieces tested so far could expose. Budget it for wa
 repairing, **don't propose reordering the shelf to get a number up, and don't propose a shortcut
 through natura**. The slowness is the test.
 
+**What she expects from the nine still to run** (Mon 24 Aug, her own read — recorded because a
+session that only counts ✅s will guess this wrong, as one did):
+- `musebox`, `chimes` — **unguessable until she hears them.** Both were rebuilt by ear this month and
+  sound is the one thing no measurement here settles.
+- `lamp` — **may not be a test at all but a build.** The tap-the-base-for-fuel idea in its row is
+  still unbuilt, and she may want it made before she calls the piece run.
+- `pendulum` — **she doubts it, and the doubt is well founded.** Its ✅ was given for precession,
+  swing and pin ring verified by measurement, and the **real-world-time checkbox came after that**, so
+  the mark predates the feature. She expects hiccups. A Done mark records what was true when it was
+  given; it does not follow the piece forward.
+- `rain` — *"as done as i can make it without an animating software"*, so likely quick, and any
+  remaining wish there is a tooling problem rather than a fault.
+- `birds`, `fireflies`, `moths`, `ant` — **the big lift**, as above.
+
+The general point, which cost a wrong guess: **"marked done and untouched today" does not mean
+"quick".** Two of the four pieces that fitted that description are the ones she expects most work
+from.
+
 ### Three faults turned out to be systemic, so all sixteen untested pieces were swept for them
 
 Measured on 21 Aug, before testing rather than after, so her device time goes on what a sweep cannot
