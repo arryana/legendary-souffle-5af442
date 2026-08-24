@@ -422,7 +422,23 @@ what the plate would have drawn since local midnight in one pass and lays it dow
 which is why it's a checkbox and not the default: at the true rate the turn is very nearly
 imperceptible, the better part of a day for one rosette, and the trace comes out as swept ground
 rather than separate lines because successive passes land 0.007° apart — closer than a grain is wide.
-The swing itself stays exactly as lively as ever. |
+The swing itself stays exactly as lively as ever.<br>**The rate was wrong, and had been since the checkbox was added.** She suspected the
+piece after real-time arrived and asked for it checked before running it on the machines; she was
+right to, though not about what. `DAY=86400` — the **solar** day — was driving the precession, and
+what a Foucault plane turns against is the **fixed stars**, so the day that governs it is the
+**sidereal** one, 86164.0905s. It is why the textbook figure is 15.041°/hour and not a round 15.
+Measured on the running page before the fix: a full turn at the pole took **24h 00m** against the
+real **23h 56m 04s**, and every latitude ran **0.27% slow**. After: 23h 56m 04s exactly, and the
+rate matches 15.041·sin(lat) at 90, 60, 51.5, 30, 0, −34 and −90°, with the sign right in both
+hemispheres. Invisible to anyone watching — about a degree of lag after a whole day — and wrong all
+the same, which is the standard this piece was signed off against. The same constant also drove the
+manual speed-slider mode, so that is now right too.<br>**The hiccups she expected are not there**, and
+that is measured rather than assumed. Ticking the box, moving latitude and resizing each re-derive
+the whole rosette in one pass; worst frame gap on a desktop 73ms, and on a Kindle-speed CPU 129ms
+when the box is ticked, 30–91ms otherwise — one hitch, at the moment you ask for it, never a freeze.
+`rebuildRealTrace` clears its own pending flag on its first line, so it cannot run every frame, and
+the rebuild is deferred while the globe is being dragged so it happens once on release. After all of
+it the angle still equals the pure clock function, so nothing accumulates or drifts. |
 | `storm/index.html` | ✅ | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo)<br>**Done**, and the piece that finishes instrumenta. Fifth through her four-device test, Aug 2026,
 and four things came out of it.<br>**The needle lied whenever it had nothing to say.** Untranslated,
 `#baro-needle-g` sits at x=0 in its own SVG — off the left-hand end of the printed scale, past

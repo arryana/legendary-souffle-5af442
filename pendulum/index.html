@@ -410,7 +410,17 @@
 
   // ---------- pendulum ----------
   const SWING_PERIOD=3.4;      // seconds, the ordinary back-and-forth
-  const DAY=86400;             // seconds
+  const DAY=86400;             // seconds -- the solar day, for clock things
+  /* What the plane of a Foucault pendulum turns against is the FIXED STARS, not
+     the sun, so the day that governs it is the SIDEREAL one: 23h 56m 04s, not 24
+     hours. It is the second-most-quoted fact about these pendulums after the
+     sin(latitude) rule, and it is why the textbook rate is 15.041 deg/hour rather
+     than a round 15. Measured before this was put right: the plane came round in
+     exactly 24h 00m at the pole against the real 23h 56m 04s, and every latitude
+     ran 0.27% slow. Invisible to anybody watching -- about a degree of lag after a
+     whole day -- and wrong all the same, which is the standard this piece was
+     signed off against. */
+  const SIDEREAL_DAY=86164.0905;   // seconds: one turn of the Earth against the stars
   let planeAngle=0;
   let simClock=0;
   let last=performance.now();
@@ -546,7 +556,7 @@
     const d=new Date();
     return d.getHours()*3600+d.getMinutes()*60+d.getSeconds()+d.getMilliseconds()/1000;
   }
-  function realPlaneAngle(){ return (Math.PI*2)*Math.sin(lat)*(secondsSinceMidnight()/DAY); }
+  function realPlaneAngle(){ return (Math.PI*2)*Math.sin(lat)*(secondsSinceMidnight()/SIDEREAL_DAY); }
 
   // the ground the bob has been over between two plane angles. At the real rate
   // successive passes land 0.007 degrees apart — far closer than a grain is
@@ -637,8 +647,10 @@
     const swingFrac = Math.cos((simClock/SWING_PERIOD)*Math.PI*2);
 
     // the plane's precession is the only thing time-speed touches — real
-    // Foucault physics: a full turn in 24h at the poles, none at the equator,
-    // scaled by sin(latitude) everywhere between; opposite sign each hemisphere
+    // Foucault physics: a full turn in one SIDEREAL day at the poles (23h 56m 04s,
+    // because what it turns against is the stars and not the sun), none at the
+    // equator, scaled by sin(latitude) everywhere between; opposite sign each
+    // hemisphere
     if(realTime){
       // no accumulation at all here: the angle is read straight off the clock,
       // which is why nothing has to be remembered between visits
@@ -646,7 +658,7 @@
       planeAngle = realPlaneAngle();
     } else {
       const dtSim = dtReal*speedMultiplier();
-      planeAngle += (Math.PI*2) * (Math.sin(lat)/DAY) * dtSim;
+      planeAngle += (Math.PI*2) * (Math.sin(lat)/SIDEREAL_DAY) * dtSim;
     }
     updatePins(t, swingFrac);
 
