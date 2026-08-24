@@ -660,12 +660,22 @@
     // tray
     // Every gear used to be scaled to FILL its own slot, so an 8-tooth pinion and a
     // 40-tooth wheel came out within a pixel of each other and the menu told you
-    // nothing about what you were picking. One scale for the whole rack instead,
-    // set by the biggest gear in it, so they stand in true proportion: the smallest
-    // is 24% of the largest, because it is. The tap target is the slot and does not
-    // shrink with the drawing.
-    const trayScale = (trayRects.length ? trayRects[0].hit : 0)*0.95/outerR(TRAY_MAX);
-    for(const t of trayRects){ ctx.save(); ctx.translate(t.cx,t.cy); const s=Math.min(1,trayScale); ctx.scale(s,s); gearBody(t.N,false,false); ctx.restore(); }
+    // nothing about what you were picking. They are graded by size now -- but NOT
+    // in true proportion, which was tried and is the wrong answer here: at true
+    // proportion the smallest is 24% of the largest and on a zoomed-out board it
+    // came out a speck. Her call, and the right one: for a menu, clarity beats
+    // fidelity. The drawn size follows the SQUARE ROOT of the true ratio, which
+    // splits the difference -- the smallest sits at 49% of the largest, plainly
+    // the small one and plainly still a gear. The tap target is the slot and does
+    // not shrink with the drawing either way.
+    const maxR = outerR(TRAY_MAX);
+    const trayScale = (trayRects.length ? trayRects[0].hit : 0)*0.95/maxR;
+    for(const t of trayRects){
+      const rel = outerR(t.N)/maxR;
+      ctx.save(); ctx.translate(t.cx,t.cy);
+      const s=Math.min(1, trayScale/Math.sqrt(rel));
+      ctx.scale(s,s); gearBody(t.N,false,false); ctx.restore();
+    }
     if(lampTrayRect){ ctx.save(); ctx.translate(lampTrayRect.cx,lampTrayRect.cy);
       // drawLamp applies its own extra 1/LAMP_GS scale (needed on the real board so the lamp's
       // gears match every other gear's true size) — multiply that back in here so the tray icon
