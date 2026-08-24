@@ -566,24 +566,57 @@
   // pile the middle up to white, where all of them cross, and leave the rim
   // faint — the exact inverse of the trace's real signature, which is darkest
   // at the turning points because that's where the bob lingers.
+  /* How hard the sand has been worked, across the radius.
+     A swinging weight is slowest at the ends of its swing and fastest through the
+     middle, so the time it spends per unit of radius goes as 1/v — and for a
+     pendulum v is proportional to sqrt(A^2 - r^2). That piles the working up hard
+     at both turning points near the rim and leaves the middle barely touched. It
+     is the real signature of one of these plates, and it is what makes a trace
+     read as SAND rather than as a shape.
+     The gradient here used to run 0.20 at the pivot to 0.44 at the rim — barely
+     two to one, near enough a flat fill — so the swept region came out as a solid
+     slab with a straight edge, which reads as a clock hand sweeping a dial rather
+     than as a pendulum. Her report, and she was right about the impression even
+     though the swing underneath it was measured as perfect.
+     Clamped near the rim, because the true curve goes to infinity at the turning
+     point itself and an infinitely bright ring is not sand either. */
+  const SWEPT_BASE=0.085, SWEPT_CLAMP=6.2;
+  const dwellAt=u=>Math.min(SWEPT_CLAMP, 1/Math.sqrt(Math.max(1e-4, 1-u*u)));
+  function sweptGradient(scale){
+    const amp=floorR*0.72;
+    const g=sandCtx.createRadialGradient(cx,cy,0,cx,cy,amp);
+    for(const u of [0,0.3,0.5,0.7,0.82,0.9,0.95,0.97,0.99,1]){
+      g.addColorStop(u, 'rgba(233,217,168,'+(SWEPT_BASE*dwellAt(u)*scale).toFixed(4)+')');
+    }
+    return g;
+  }
+
   function sweepSand(from, to){
     if(!sandCtx || from===to) return;
     const amp=floorR*0.72;
     let lo=Math.min(from,to), hi=Math.max(from,to);
     if(hi-lo>=Math.PI){ lo=0; hi=Math.PI; }   // half a turn already covers the whole floor
-    const g=sandCtx.createRadialGradient(cx,cy,0,cx,cy,amp);
-    g.addColorStop(0,'rgba(233,217,168,0.20)');
-    g.addColorStop(0.82,'rgba(233,217,168,0.25)');
-    g.addColorStop(0.97,'rgba(233,217,168,0.44)');
-    g.addColorStop(1,'rgba(233,217,168,0.38)');
-    sandCtx.fillStyle=g;
     // a pass is a whole diameter, so each arc of plane angle scours two
     // opposite sectors — the same symmetry that empties the pin ring in half
     // a turn rather than a whole one
-    for(const off of [0, Math.PI]){
-      sandCtx.beginPath(); sandCtx.moveTo(cx,cy);
-      sandCtx.arc(cx,cy,amp,lo+off,hi+off); sandCtx.closePath(); sandCtx.fill();
-    }
+    const wedge=(a0,a1)=>{
+      for(const off of [0, Math.PI]){
+        sandCtx.beginPath(); sandCtx.moveTo(cx,cy);
+        sandCtx.arc(cx,cy,amp,a0+off,a1+off); sandCtx.closePath(); sandCtx.fill();
+      }
+    };
+    /* One fill, not a stack. Fading the sweep from settled at the far end to
+       fresh at the leading edge was tried and BACKED OUT: built from wedges that
+       share the leading edge and reach progressively further back, it needs about
+       eighteen fills at an alpha of a few thousandths each, and the canvas
+       dithers alpha that low — the whole swept region came out crosshatched with
+       stipple. Noise instead of sand is a worse fault than the hard edge it was
+       there to soften, and softening that edge properly wants an angular gradient
+       the older browsers on her test bench may not have. If it is ever wanted,
+       that is the way in: a conic gradient where it exists, this fill where it
+       doesn't. */
+    sandCtx.fillStyle=sweptGradient(1);
+    wedge(lo, hi);
     const STEP=(Math.PI*2)/SAND_BINS;
     for(let a=lo; a<=hi+STEP; a+=STEP){
       sandDeposit[sandBin(a)]=SAND_CAP_PASSES;   // worked ground; the live stylus adds nothing to it
