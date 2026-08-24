@@ -82,7 +82,7 @@ of anything, so a number would be inventing a ranking she doesn't mean. The test
 apply to every piece is the one further down this file: *does it behave like the real
 thing?* That is a yes or a no.
 
-**13 of the 20 are done.**
+**14 of the 20 are done.**
 
 | File | On landing page? | Done? | What it is |
 |------|:---:|:---:|------------|
@@ -144,7 +144,12 @@ worked out, it's fine on all four machines."* The edge issues were the two alrea
 site-wide sweeps — the music button sitting on the finish trigger at 390px, and the `<button>`
 face showing behind `#finishTrigger`'s cut-out — so this is the first piece to pass on the
 strength of work done before she ever opened it, rather than on repairs found by opening it. |
-| `rain/index.html` | ✅ |  | Rain on glass |
+| `rain/index.html` | ✅ | ✅ | Rain on glass<br>**Done** — her call, Mon 24 Aug: *"as done as i can make it"*, and earlier the same
+afternoon, *"as done as i can make it without an animating software"*. Read that qualifier as part of
+the mark. It is not *"there is nothing more to want here"*; it is *"what is left wants a tool I
+haven't got"*. So **don't propose rebuilding it** to chase the remainder, and don't read the tick as
+an invitation to polish. Not yet run on the four machines — done and tested are separate columns and
+she has only ruled on the first. |
 | `ant/index.html` | ✅ |  | Ants |
 | `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Fourth piece
 through her four-device test, Aug 2026. **`windower-frame.png`'s centre pane was cut out of a light
