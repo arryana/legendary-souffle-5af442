@@ -459,7 +459,8 @@ soften. Doing it properly wants an angular gradient (`createConicGradient`), whi
 on her bench may not have; the way in, if it is ever wanted, is conic where it exists and the flat
 fill where it doesn't.<br>**Still open, and hers**: whether the sector now reads as sand or still as a
 dial. The geometry is honest — that ground really has been worked — so this is a question about the
-look, not a fault to fix. |
+look, not a fault to fix. Her word on the change was ***"it's better"*** — which is an improvement
+banked and not a verdict, so **don't revert it and don't treat it as settled either**. |
 | `storm/index.html` | ✅ | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo)<br>**Done**, and the piece that finishes instrumenta. Fifth through her four-device test, Aug 2026,
 and four things came out of it.<br>**The needle lied whenever it had nothing to say.** Untranslated,
 `#baro-needle-g` sits at x=0 in its own SVG — off the left-hand end of the printed scale, past
