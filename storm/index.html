@@ -61,7 +61,13 @@
   #baro-svg .rule{ stroke:rgba(223,230,234,.28); stroke-width:1; }
   #baro-needle{ stroke:#e9f1f5; stroke-width:2.2; stroke-linecap:round; }
   #baro-hub{ fill:#e9f1f5; }
-  #baro-needle-g{ transition:transform .9s cubic-bezier(.34,.1,.2,1); }
+  /* No reading is not a reading of 950. Untranslated, the needle stands at x=0 --
+     off the left-hand end of the printed scale, past STORMY -- so until the
+     pressure has actually arrived it claims a catastrophic low that nobody
+     measured, while the readout beside it honestly says nothing at all. It is
+     simply not shown until it has something to point at. */
+  #baro-needle-g{ transition:transform .9s cubic-bezier(.34,.1,.2,1); visibility:hidden; }
+  #baro-needle-g.has-reading{ visibility:visible; }
   #baro-set{ fill:#b8903f; stroke:#6b5220; stroke-width:.7; cursor:grab; }
   #baro-set-g{ cursor:grab; }
   #baro-set-g.dragging{ cursor:grabbing; }
@@ -511,8 +517,17 @@
   });
 
   function drawBarometer(){
-    if(baroHpaNow == null){ elHpa.textContent = '—'; elTend.textContent = ''; return; }
+    if(baroHpaNow == null){
+      elNeedleG.classList.remove('has-reading');
+      elHpa.textContent = '—'; elTend.textContent = ''; return;
+    }
+    // The first reading is placed with the sweep turned off, or the needle would be
+    // seen travelling up from the dead left end it was never really at.
+    const first = !elNeedleG.classList.contains('has-reading');
+    if(first) elNeedleG.style.transition = 'none';
     elNeedleG.setAttribute('transform', 'translate(' + baroX(baroHpaNow).toFixed(1) + ',0)');
+    elNeedleG.classList.add('has-reading');
+    if(first){ elNeedleG.getBoundingClientRect(); elNeedleG.style.transition = ''; }
     elHpa.textContent = Math.round(baroHpaNow) + ' hPa';
     elTend.textContent = baroTrend == null ? ''
       : tendencyWords(baroTrend) + ' · ' + (baroTrend >= 0 ? '+' : '') + baroTrend.toFixed(1) + ' in 3h';
