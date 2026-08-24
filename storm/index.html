@@ -66,7 +66,12 @@
      pressure has actually arrived it claims a catastrophic low that nobody
      measured, while the readout beside it honestly says nothing at all. It is
      simply not shown until it has something to point at. */
-  #baro-needle-g{ transition:transform .9s cubic-bezier(.34,.1,.2,1); visibility:hidden; }
+  /* The needle is painted AFTER the brass hand and its stroke takes a pointer, so
+     it was intercepting every grab at its own position -- which is exactly where
+     the hand is meant to be parked, since setting the hand against the needle is
+     the whole use of the instrument. It is a reading, not a control; it takes
+     nothing. */
+  #baro-needle-g{ transition:transform .9s cubic-bezier(.34,.1,.2,1); visibility:hidden; pointer-events:none; }
   #baro-needle-g.has-reading{ visibility:visible; }
   #baro-set{ fill:#b8903f; stroke:#6b5220; stroke-width:.7; cursor:grab; }
   #baro-set-g{ cursor:grab; }
@@ -74,7 +79,25 @@
   #baro-read{ display:flex; align-items:center; justify-content:center; gap:10px;
     font-size:12.5px; letter-spacing:.04em; color:#9aa4a9; min-height:1.5em; }
   #baro-hpa{ color:#dfe6ea; }
-  #baro-tend{ color:#9aa4a9; }
+  /* The tendency is the half of a barometer that actually forecasts, and it was
+     the one piece of prose on the piece. It is now a mark, the way everything
+     else here is: chevrons pointing where the pressure is going, ONE PER RUNG of
+     the WMO tendency scale -- slowly, plain, rapidly, very rapidly -- and a level
+     bar for steady. The words are still underneath it and are still exact; the
+     mark answers to a touch and gives them up, and puts them away when it or
+     anything around it is touched. That is galileo's own bargain for a popup, and
+     it is a thing responding rather than a thing explaining itself unasked.
+     A <button> carries the browser's own button face, so its background is cleared. */
+  #baro-tend{ appearance:none; border:0; background:none; background-color:transparent;
+    margin:0; padding:0 2px; display:flex; align-items:center; gap:7px; cursor:pointer;
+    color:#9aa4a9; font:inherit; font-size:12.5px; letter-spacing:.04em; line-height:1; }
+  #baro-tend[hidden]{ display:none; }
+  #baro-tend-mark{ display:block; width:13px; height:19px; flex-shrink:0; overflow:visible; }
+  #baro-tend-mark path{ fill:none; stroke:currentColor; stroke-width:1.5;
+    stroke-linecap:round; stroke-linejoin:round; }
+  #baro-tend-words{ max-width:0; overflow:hidden; white-space:nowrap; opacity:0;
+    transition:max-width .4s ease, opacity .4s ease; }
+  #baro-tend.open #baro-tend-words{ max-width:16em; opacity:1; }
   #baro-set-btn{ appearance:none; border:0; background:none; padding:2px 4px; font-size:12px;
     line-height:1; cursor:pointer; opacity:.4; transition:opacity .3s ease; }
   #baro-set-btn:hover{ opacity:.85; }
@@ -140,12 +163,14 @@
     <svg id="baro-svg" viewBox="0 0 600 104" aria-hidden="true">
       <g id="baro-bands"></g>
       <g id="baro-scale"></g>
-      <g id="baro-set-g"><polygon id="baro-set" points="0,0 0,0 0,0"/></g>
+      <g id="baro-set-g"><rect id="baro-set-grab" fill="transparent" x="0" y="0" width="0" height="0"/><polygon id="baro-set" points="0,0 0,0 0,0"/></g>
       <g id="baro-needle-g"><line id="baro-needle" x1="0" y1="0" x2="0" y2="0"/><circle id="baro-hub" r="3.4"/></g>
     </svg>
     <div id="baro-read">
       <span id="baro-hpa">—</span>
-      <span id="baro-tend"></span>
+      <button type="button" id="baro-tend" hidden>
+        <svg id="baro-tend-mark" viewBox="0 0 13 19" aria-hidden="true"></svg><span id="baro-tend-words"></span>
+      </button>
       <button type="button" id="baro-set-btn" title="set the hand to the reading now" aria-label="set the hand to the reading now">👆</button>
     </div>
   </div>
@@ -434,6 +459,8 @@
   const elSet = document.getElementById('baro-set');
   const elHpa = document.getElementById('baro-hpa');
   const elTend = document.getElementById('baro-tend');
+  const elTendMark = document.getElementById('baro-tend-mark');
+  const elTendWords = document.getElementById('baro-tend-words');
   const elBaro = document.getElementById('barometer');
 
   (function drawScale(){
@@ -480,6 +507,39 @@
     elSet.setAttribute('points', '-6,' + (YAXIS-20) + ' 6,' + (YAXIS-20) + ' 0,' + (YAXIS-9));
   })();
 
+  /* ---------- a thumb can't catch an 11px hand ----------
+     The brass hand is 11px across on a Kindle and 4px on the 3in phone, and it is
+     the one control a barometer is actually used through: set it against the
+     needle, come back later, read the gap. So it gets candler's pin treatment --
+     a transparent rect inside its own <g>, nothing of it showing, not one pixel of
+     the brass moved.
+     Two things differ from a pin. The SVG is SCALED to the screen, so a rect fixed
+     in viewBox units is a different size on every device; it is sized in the units
+     that make it a real 44px wherever it is, re-measured on resize. And on the 3in
+     phone the whole dial is only 39px tall, so 44 is not available vertically --
+     it takes the full height of the dial there and stops, which is all there is.
+     Held to (pointer: coarse); a mouse is pixel-precise and the desktop is
+     untouched, as with every other target on this site.
+     Safe to make generous because nothing else inside this SVG takes a pointer at
+     all, and because a TAP does not move the hand -- only a drag does, and a drag
+     is deliberate. */
+  const elGrab = document.getElementById('baro-set-grab');
+  const coarse = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
+  const HAND_MID = YAXIS - 14.5;             // the polygon spans YAXIS-20..YAXIS-9
+  function sizeGrab(){
+    if(!coarse || !coarse.matches){ elGrab.setAttribute('width', 0); elGrab.setAttribute('height', 0); return; }
+    const box = document.getElementById('baro-svg').getBoundingClientRect();
+    if(!box.width) return;
+    const u = 600 / box.width;                // viewBox units per CSS pixel
+    const w = Math.min(44 * u, 96);           // capped at 96 units (~18 hPa) either way
+    const h = Math.min(44 * u, 104);          // 104 is the whole height of the dial
+    elGrab.setAttribute('x', (-w/2).toFixed(2)); elGrab.setAttribute('width', w.toFixed(2));
+    elGrab.setAttribute('y', Math.max(0, HAND_MID - h/2).toFixed(2)); elGrab.setAttribute('height', h.toFixed(2));
+  }
+  sizeGrab();
+  window.addEventListener('resize', sizeGrab);
+  window.addEventListener('orientationchange', () => setTimeout(sizeGrab, 140));
+
   // The brass hand. On a real barometer you set it against the needle and come
   // back later to read the gap, so it has to stay where it was put — including
   // between visits.
@@ -499,14 +559,21 @@
       const r = svg.getBoundingClientRect();
       return X0 + ((ev.clientX - r.left)/r.width*600 - X0);
     };
+    // Where in the hand it was taken hold of, kept for the length of the drag. The
+    // grab box is wider than the brass, so placing the hand at the bare pointer
+    // would snap it across to the finger the instant it was touched -- which reads
+    // as the hand jumping out from under you. It moves WITH the finger instead.
+    let grabOff = 0;
     elSetG.addEventListener('pointerdown', ev => {
       dragging = true; elSetG.classList.add('dragging');
       elSetG.setPointerCapture(ev.pointerId); ev.preventDefault();
+      const r = svg.getBoundingClientRect();
+      grabOff = (ev.clientX - r.left)/r.width*600 - baroX(setHpa);
     });
     elSetG.addEventListener('pointermove', ev => {
       if(!dragging) return;
       const r = svg.getBoundingClientRect();
-      placeSet(baroHpa((ev.clientX - r.left)/r.width*600));
+      placeSet(baroHpa((ev.clientX - r.left)/r.width*600 - grabOff));
     });
     const stop = ev => { dragging = false; elSetG.classList.remove('dragging'); };
     elSetG.addEventListener('pointerup', stop);
@@ -516,10 +583,49 @@
     if(baroHpaNow != null) placeSet(baroHpaNow);
   });
 
+  // The same four speeds tendencyWords() names, counted rather than spelled, so
+  // the mark and the words can never drift apart: one chevron for 'slowly', two
+  // for the plain word, three for 'rapidly', four for 'very rapidly'. Three would
+  // have been tidier and would have had to merge two rungs of a real scale.
+  function tendencySteps(d){
+    const a = Math.abs(d);
+    if(a < 0.1) return 0;
+    if(a < 1.6) return 1;
+    if(a < 3.6) return 2;
+    if(a < 6.0) return 3;
+    return 4;
+  }
+  function drawTendencyMark(d){
+    const n = tendencySteps(d), up = d > 0;
+    // steady: a level bar. It cannot be confused with the reading's own dash,
+    // which shows only when there is no pressure at all -- and then this mark is
+    // not on the page.
+    if(n === 0){ elTendMark.innerHTML = '<path d="M2.5,9.5 H10.5"/>'; return; }
+    const P = 4.4, RISE = 4;                       // pitch between chevrons, and each one's depth
+    const top = 9.5 - ((n-1)*P + RISE)/2;          // the stack sits centred on the line, whatever its height
+    let path = '';
+    for(let i=0;i<n;i++){
+      const y = +(top + i*P).toFixed(2), b = +(y + RISE).toFixed(2);
+      path += up ? `M2.5,${b} L6.5,${y} L10.5,${b} ` : `M2.5,${y} L6.5,${b} L10.5,${y} `;
+    }
+    elTendMark.innerHTML = '<path d="' + path.trim() + '"/>';
+  }
+  function setTendency(){
+    if(baroTrend == null){ elTend.hidden = true; elTend.classList.remove('open'); return; }
+    const words = tendencyWords(baroTrend) + ' · ' + (baroTrend >= 0 ? '+' : '') + baroTrend.toFixed(1) + ' in 3h';
+    drawTendencyMark(baroTrend);
+    elTendWords.textContent = words;
+    elTend.setAttribute('aria-label', words);
+    elTend.hidden = false;
+  }
+  elTend.addEventListener('click', ev => { ev.stopPropagation(); elTend.classList.toggle('open'); });
+  document.addEventListener('pointerdown', ev => { if(!elTend.contains(ev.target)) elTend.classList.remove('open'); });
+  document.addEventListener('keydown', ev => { if(ev.key === 'Escape') elTend.classList.remove('open'); });
+
   function drawBarometer(){
     if(baroHpaNow == null){
       elNeedleG.classList.remove('has-reading');
-      elHpa.textContent = '—'; elTend.textContent = ''; return;
+      elHpa.textContent = '—'; elTend.hidden = true; elTend.classList.remove('open'); return;
     }
     // The first reading is placed with the sweep turned off, or the needle would be
     // seen travelling up from the dead left end it was never really at.
@@ -529,8 +635,7 @@
     elNeedleG.classList.add('has-reading');
     if(first){ elNeedleG.getBoundingClientRect(); elNeedleG.style.transition = ''; }
     elHpa.textContent = Math.round(baroHpaNow) + ' hPa';
-    elTend.textContent = baroTrend == null ? ''
-      : tendencyWords(baroTrend) + ' · ' + (baroTrend >= 0 ? '+' : '') + baroTrend.toFixed(1) + ' in 3h';
+    setTendency();
   }
 
   // One missed refresh is not worth interrupting anyone over -- open-meteo refreshes
