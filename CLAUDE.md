@@ -851,21 +851,23 @@ finished until she has run it on all four. Her words: *"I intend to finish every
 same standard."*
 
 **Through as of Mon 24 Aug 2026: candler, conometer, galileo, windower, storm, warmler, chladni,
-bowl, roller, kaleidoscope** — her call on all ten; every fault they turned up is fixed and live, and
+bowl, roller, kaleidoscope, gyre** — her call on all eleven; every fault they turned up is fixed and live, and
 the details are in each one's row above. The case itself was worked on the same day: light on the wall behind it, the
 white cut line off all five plates, darker arrows in the two discs.
 
-**Ten through, ten to go**, by shelf: **instrumenta 5/5**, **tactilia 3/3**, phenomena 2/5 (`bowl`
-and `chladni`), systema 0/3, natura 0/4. `chladni` and `bowl` cost one repair each on the afternoon of
+**Eleven through, nine to go**, by shelf: **instrumenta 5/5**, **tactilia 3/3**, systema 1/3
+(`gyre`, straight after its two changes — *"gyre works on everything too"*), phenomena 2/5 (`bowl`
+and `chladni`), natura 0/4. The nine left are `musebox`, `chimes`, `lamp`, `rain`, `pendulum`,
+`birds`, `fireflies`, `moths`, `ant`. `chladni` and `bowl` cost one repair each on the afternoon of
 the 24th — the microphone tickbox onto the sound line, and bowl not loading at all on the 3in phone.
 Bowl's is the one to remember: it was **two** faults, and the larger belonged to every page on the
 site rather than to bowl.
 
 **Her order from here**: **instrumenta and tactilia are both finished** as of Mon 24 Aug — `storm`
 closed the first, and `warmler`, `roller` and `kaleidoscope` the second. `bowl` and `chladni` are
-through off **phenomena**, which leaves `lamp`, `rain` and `pendulum` there. In **systema**,
-**`musebox` and `chimes` are repaired and waiting on her devices** and `gyre` has had its two changes
-but has not been run since; chimes needs its rods set to DIFFERENT LENGTHS or the tangle it was
+through off **phenomena**, which leaves `lamp`, `rain` and `pendulum` there. In **systema**, `gyre` is through and
+**`musebox` and `chimes` are repaired and waiting on her devices** — the last two pieces of the day's
+work she has not yet run. Chimes needs its rods set to DIFFERENT LENGTHS or the tangle it was
 reported for cannot appear at all. Then **natura**, which she expects to cost the most in repairs and
 testing. Worth knowing when that shelf comes up: all four natura pieces animate
 continuously, and on a Kindle Fire the thing that bites an animated canvas is frame rate, which is a
