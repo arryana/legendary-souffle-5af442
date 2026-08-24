@@ -869,10 +869,15 @@ through off **phenomena**, which leaves `lamp`, `rain` and `pendulum` there. In 
 **`musebox` and `chimes` are repaired and waiting on her devices** — the last two pieces of the day's
 work she has not yet run. Chimes needs its rods set to DIFFERENT LENGTHS or the tangle it was
 reported for cannot appear at all. Then **natura**, which she expects to cost the most in repairs and
-testing. Worth knowing when that shelf comes up: all four natura pieces animate
-continuously, and on a Kindle Fire the thing that bites an animated canvas is frame rate, which is a
-fault class none of the pieces tested so far could expose. Budget it for watching rather than
-repairing.
+testing — and **it is last on purpose, not by accident**. Her reasoning, in her own words: she is
+doing this *personally* over four machines, and she is *"deliberately leaving the 'slowest' ones for
+last, so they don't get rushed and are tested in all states"*. All four natura pieces animate
+continuously and three run on the clock — birds at sunset, fireflies from dusk to night, moths from
+dusk to dark — so testing one is not a pass over its controls but sitting with it through its whole
+cycle, on each machine. On a Kindle Fire the thing that bites an animated canvas is frame rate, which
+is a fault class none of the pieces tested so far could expose. Budget it for watching rather than
+repairing, **don't propose reordering the shelf to get a number up, and don't propose a shortcut
+through natura**. The slowness is the test.
 
 ### Three faults turned out to be systemic, so all sixteen untested pieces were swept for them
 
