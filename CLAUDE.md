@@ -309,7 +309,35 @@ width and meet the corner music button, and applying it wider merely made a page
 the page underneath instead, and below 280 the tray drops to six columns. **A small-screen arrangement
 is no longer owed**: scrolling is the answer she took, not a placeholder for one. |
 | `moths/index.html` | ✅ |  | **Moths** losing their bearings on a hanging bulb. Not attraction — a moth holds a course by keeping a distant light at a fixed angle, and a near one wraps that course into a spiral. Three sliders: dusk→dark, bulb, how many. Colour is a readout of depth (dark in front of the glass, pale behind), from her own three-shade cut<br>Built Aug 2026 from her brief, then put right by her own watching of it — she found that the moths crowded the bulb and stayed (an absorbing state: all five reached it and none ever left), that moths in front of the lower glass came out grey rather than black, that they all flew alike, and that they never tilted or wavered. In **natura**, which is therefore a shelf of four |
-| `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune |
+| `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune<br>**She is unconvinced it is finished** — not the behaviour but the look: *"you did a lovely job
+building it, but i'm not sure it's -beautiful-"*, and she may bring pictures from Gemini to rebuild
+it from. That is open, and nothing here settles it.<br>Aug 2026 it got **four voices** at her ask, the
+chime she already liked plus **piano, guitar and a Native American flute**, each built from how the
+real instrument makes its sound rather than from a preset. A struck string is stiff, so the piano's
+partials are stretched by n·√(1+Bn²) — that stretch is most of what makes a piano sound like a piano
+and not an organ — with the hammer landing underneath as its own pitchless knock. A plucked string's
+harmonics are set by WHERE it is plucked, sin(nπp)/n², so the guitar has real holes in its spectrum
+at the pluck's own nodes (p=0.22, an ordinary picking position). A fipple flute gives a strong
+fundamental, a soft second and almost nothing above, and the half that matters is **breath running
+the whole length of the note** rather than only its start — that is what makes a flute sound blown
+instead of struck — with a slow attack, a chiff at the front, and vibrato arriving only after the
+note has settled, the way a player's does.<br>The icons are **drawn, not emoji**, deliberately: the
+only flute emoji arrived in 2022 and a Kindle Fire would show an empty box where it should be.<br>**The
+rabbit is grey.** Her call — white was the brightest thing on the page, brighter than the disc or the
+brass, so the eye went to the tempo control before the music box.<br>**And it was clipping.** Eight
+rings can be pinned on one step, and eight notes together measured nearly **three times full scale**,
+1.2% of samples squared off flat — a buzz over the note, and present long before the new voices. A
+`DynamicsCompressorNode` is the obvious answer and is the WRONG tool: ~6ms of lookahead and gain
+riding left the chime **silent for its first 5ms** where the live page is already at 93% of peak, and
+moved the peak from 6ms out to 74. That is not a level change, it is taking the strike out of a
+struck instrument — and it is only visible if you measure the attack envelope rather than the peak. A
+**waveshaper** has no lookahead and no attack or release at all: this curve is exactly y=x up to 0.75
+and bends only above it, so a single note passes through sample-for-sample unchanged and a pile-up is
+rounded instead of squared. Eight notes now peak at exactly 1.0 with **zero** samples over, on all
+four voices, and the chime's attack envelope is unchanged (peak at 5.8ms before and after).<br>The
+page also **grows to its own content now**, as kaleidoscope does: the instrument row put the last 26px
+of controls off the bottom of a 3in phone that could not scroll to them. Desktop, an ordinary phone
+and a Kindle are unchanged and do not scroll. |
 | `pendulum/index.html` | ✅ | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search<br>**Done** — precession, swing and pin ring all verified by measurement against the real physics.
 Aug 2026 it was given a **real-world-time** checkbox (the clock face beside the ∞): ticked, the plane
 precesses at the true Foucault rate off the actual clock — Earth's turn times sin(latitude) — and the
