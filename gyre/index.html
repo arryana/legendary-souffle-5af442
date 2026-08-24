@@ -122,7 +122,21 @@
 (function(){
   const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
   const runChk=document.getElementById('runChk'), speedSlider=document.getElementById('speedSlider');
-  let W=0,H=0,DPR=1;
+  // W and H are the board's size in BOARD UNITS, not screen pixels, and SCALE is
+  // what stands between them. Everything below -- gear radii, the lamp's
+  // footprint, the tray, hit tests -- is written in board units and none of it
+  // knows the screen exists.
+  //
+  // It has to be this way round because the lamp box is 353 board units across
+  // and every gear is sized off one fixed MODULE, so on a 240px phone the box was
+  // WIDER THAN THE WHOLE SCREEN and a 40-tooth gear came out 227px. Scaling the
+  // lamp alone is not available: its two gears are deliberately built to the same
+  // MODULE as every other gear so they can mesh with them, and shrinking one side
+  // of a mesh is not a thing a mesh survives. So the whole board zooms out
+  // together, which keeps every tooth in step and is the only version of this
+  // that is still a gear train.
+  const BOARD_MIN_W=620, BOARD_MIN_H=560;   // room to lay the lamp down and drive a train into it
+  let W=0,H=0,DPR=1,SCALE=1;
 
   const MODULE=5.4, ADD=MODULE, DED=1.25*MODULE;
   const pitchR=N=>MODULE*N/2, outerR=N=>pitchR(N)+ADD;
@@ -146,7 +160,34 @@
   const TRAY=[8,12,16,22,30,40];
   let trayRects=[], lampTrayRect=null;
   function layoutTray(){
-    const n=TRAY.length+1, slot=Math.min(70,(W*0.82)/n), x0=W/2-(n*slot)/2, y=92;
+    const n=TRAY.length+1;
+    // On a screen wider than it is tall the parts stand in a column down the left
+    // -- her call, and the room it frees is the point: the tray used to run across
+    // the top, which is the whole width of the board it is there to help you fill.
+    // The band the column has to live in: clear of the brass disc at the top and
+    // of the dock and the music button at the bottom. Both are pinned in SCREEN
+    // pixels, so how much of the BOARD they eat depends on the zoom -- which is
+    // why this is measured rather than assumed. On a 3in phone turned sideways
+    // the band is 156 units against the 308 seven parts need, and the column
+    // simply does not fit; there it stays a row across the top rather than
+    // running off the bottom of the board.
+    const bandTop=60/SCALE, bandBot=H-70/SCALE, band=bandBot-bandTop;
+    if(W>H && band>=n*44){
+      const slot=Math.min(70,band/n);
+      const x=Math.max(slot*0.62+18, 30);
+      const y0=bandTop+(band-n*slot)/2;
+      trayRects=TRAY.map((N,i)=>({N,cx:x,cy:y0+slot*i+slot/2,hit:slot*0.42}));
+      lampTrayRect={cx:x, cy:y0+slot*TRAY.length+slot/2, hit:slot*0.42};
+      return;
+    }
+    const slot=Math.min(70,(W*0.82)/n), x0=W/2-(n*slot)/2;
+    // The two brass discs are pinned in the top corners in SCREEN pixels, so the
+    // further the board is zoomed out the further down it they reach -- on a 3in
+    // phone the first gear sat under the back arrow and the lamp under the shelf
+    // disc, which is the half-on-half-off reading her conometer rule calls a
+    // mistake. The row drops below them. At full zoom this moves it 3px and
+    // nothing else.
+    const y=Math.max(92, 60/SCALE + slot/2);
     trayRects=TRAY.map((N,i)=>({N,cx:x0+slot*i+slot/2,cy:y,hit:slot*0.42}));
     lampTrayRect={cx:x0+slot*TRAY.length+slot/2, cy:y, hit:slot*0.42};
   }
@@ -162,8 +203,13 @@
   }
   function resize(){
     DPR=Math.min(window.devicePixelRatio||1,2);
-    W=window.innerWidth; H=window.innerHeight;
-    canvas.width=W*DPR; canvas.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    const vw=window.innerWidth, vh=window.innerHeight;
+    // never zooms IN: at 1 the board is pixel-for-pixel what it always was, so a
+    // desktop is untouched and only a screen too small to hold the pieces zooms out
+    SCALE=Math.min(1, vw/BOARD_MIN_W, vh/BOARD_MIN_H);
+    W=vw/SCALE; H=vh/SCALE;
+    canvas.width=vw*DPR; canvas.height=vh*DPR;
+    ctx.setTransform(DPR*SCALE,0,0,DPR*SCALE,0,0);
     layoutTray(); initGears();
   }
   window.addEventListener('resize',resize);
@@ -445,7 +491,8 @@
 
   // ---- drag / place / remove ----
   let drag=null;
-  const P=e=>({x:e.clientX,y:e.clientY});
+  // the pointer arrives in screen pixels and everything here thinks in board units
+  const P=e=>({x:e.clientX/SCALE,y:e.clientY/SCALE});
   // gears are solid — dragged one can reach exact meshing distance against a neighbour
   // (teeth touching) but never closer than that; push it back out if the cursor tries to
   // shove it through another gear
