@@ -105,7 +105,38 @@ snooze — last in the row once the timer is on — hangs 11px off the right-han
 scrollbar is hidden. **She then re-ran the whole page on all four machines and passed it**: everything she
 found is fixed and re-checked on the devices themselves, not in a screenshot. candler is the first piece
 through that test, and the standard for the ones that follow. |
-| `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does." |
+| `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does."<br>Three
+things Aug 2026, all hers, all after she had it in front of her.<br>**The speed slider was not a speed
+slider.** It multiplied how hard tilt pushed and nothing else — not friction, not the wall bounce — so
+once anything was moving it careered about at much the same rate wherever the slider sat. Measured
+under a held full tilt: the pebble averaged **130px/s at the bottom of the range against 146 in the
+middle**, eleven per cent, nothing anyone could feel, while its PEAKS moved two and a half times. She
+asked for a speed slider so things could slide slower and it was reasonable to think there wasn't
+one. What actually makes a thing slide slowly is the surface, so below the middle the tray now gets
+draggier as well as gentler — the same friction raised to a higher power, which is what a shorter
+settling distance is. Re-measured: pebble **73px/s** at 20, disc **48**, bean **63**, and the peaks
+down by more. **At 100 the exponent is exactly 1 and nothing changes at all** — from the middle of
+the slider upward the feel she already approved is identical, measured, which is the point of doing
+it this way round rather than retuning the physics. The bottom of the range went from 20 to 10.<br>**The
+dock spreads on a desktop.** Four groups stacked in a column 180px wide under a 640px tray on a
+screen 1440 across, with the speed row lapping over the tray's own bottom edge. Side by side now, and
+the dock stands 92px instead of 184, so it stops touching the tray. Gated on **width AND a fine
+pointer**: the generated `touch-targets` block grows each slider by half the distance to its nearest
+neighbour, measured on the stacked layout, so a coarse screen has to keep the layout those figures
+came from — a Windows tablet in landscape is wide but coarse and keeps the column.<br>**The bean is
+the most saturated of the three now, and shiny**, which is what she always wanted it to be and what
+it was furthest from: it was pulled only 30–44% toward the tint from a pale cream stone, so cobalt
+and black — the two she named — arrived as a dusty blue-grey and a dusty grey. Mixing harder is not
+the answer; past about half, all three stops converge on the one tint and the bead goes flat. So the
+bean stopped borrowing the stone's cream ramp and got **its own, built out of the tint**: a light
+stop lifted toward white, the tint at full strength in the middle, a dark stop taken well down. Every
+part of it is the colour and it still has real form. Gloss is three things at once and wants all
+three — a long soft sheen down its length, ONE small hard specular where the light is (the tight
+bright spot is what reads as wet; a big soft one only reads as pale), and a bounce light along the
+shaded edge coming back up off the tray. The outline is the same dark at **half** strength: at full
+it reads as a drawn line round the stone and turns the body polygon's facets into corners. The
+`bean` numbers in the GLASS table are now unused and kept only so the table still reads one row per
+colour. The pebble and the disc are untouched. |
 | `lamp/index.html` | ✅ | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. A fuel level you find by *tapping* the base is designed but not built; the note in the file records which way the pitch must go<br>**Done** as it stands — the tap-for-fuel idea is recorded as a future build, not a gap in it. |
 | `warmler/index.html` | ✅ | ✅ | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked)<br>**Done** — through her four-device test Aug 2026 with nothing to repair: *"i honestly can't
 find any fault with warmler. it's a simple twiddle toy, and now that we have the edge issues
