@@ -82,7 +82,7 @@ of anything, so a number would be inventing a ranking she doesn't mean. The test
 apply to every piece is the one further down this file: *does it behave like the real
 thing?* That is a yes or a no.
 
-**12 of the 20 are done.**
+**13 of the 20 are done.**
 
 | File | On landing page? | Done? | What it is |
 |------|:---:|:---:|------------|
@@ -335,7 +335,9 @@ joined row wanted 229px against the 226 it had, three pixels short, and wrapped 
 to two lines, so below 320 the volume gives up a little length — the one thing in that row with
 any to spare. Desktop unchanged. |
 | `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
-| `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Awaiting her verdict**.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
+| `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
+after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
+and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
 report: *"the ring drag is.. terrible. on every machine. the first quarter turn or so works, then it
 goes off the rails."* It was `turn += (clientX - lastX) * 0.012` — horizontal travel and nothing
 else. Grab the knob at twelve o'clock, pull right, and it obeys; but the knob is now carrying round
@@ -849,21 +851,23 @@ finished until she has run it on all four. Her words: *"I intend to finish every
 same standard."*
 
 **Through as of Mon 24 Aug 2026: candler, conometer, galileo, windower, storm, warmler, chladni,
-bowl** — her call on all eight; every fault they turned up is fixed and live, and the details are in
-each one's row above. The case itself was worked on the same day: light on the wall behind it, the
+bowl, roller, kaleidoscope** — her call on all ten; every fault they turned up is fixed and live, and
+the details are in each one's row above. The case itself was worked on the same day: light on the wall behind it, the
 white cut line off all five plates, darker arrows in the two discs.
 
-**Eight through, twelve to go.** `chladni` and `bowl` closed on the afternoon of the 24th and cost
-one repair each — chladni's microphone tickbox moving onto the sound line, and bowl not loading at
-all on the 3in phone. Bowl's is the one to remember: it was **two** faults, and the larger of them
-belonged to every page on the site rather than to bowl.
+**Ten through, ten to go**, by shelf: **instrumenta 5/5**, **tactilia 3/3**, phenomena 2/5 (`bowl`
+and `chladni`), systema 0/3, natura 0/4. `chladni` and `bowl` cost one repair each on the afternoon of
+the 24th — the microphone tickbox onto the sound line, and bowl not loading at all on the 3in phone.
+Bowl's is the one to remember: it was **two** faults, and the larger belonged to every page on the
+site rather than to bowl.
 
-**Her order from here**: instrumenta is finished — `storm` closed it on Mon 24 Aug. She is through
-**tactilia** as of the same day (`warmler` with nothing to repair, then `roller`, `kaleidoscope` and
-`chladni`), and `bowl` off **phenomena** with it. **`musebox` and `chimes` are the two she has still
-to run**, both repaired and waiting on her devices; chimes needs its rods set to DIFFERENT LENGTHS or
-the tangle it was reported for cannot appear at all. Then **natura**, which she expects to cost the
-most in repairs and testing. Worth knowing when that shelf comes up: all four natura pieces animate
+**Her order from here**: **instrumenta and tactilia are both finished** as of Mon 24 Aug — `storm`
+closed the first, and `warmler`, `roller` and `kaleidoscope` the second. `bowl` and `chladni` are
+through off **phenomena**, which leaves `lamp`, `rain` and `pendulum` there. In **systema**,
+**`musebox` and `chimes` are repaired and waiting on her devices** and `gyre` has had its two changes
+but has not been run since; chimes needs its rods set to DIFFERENT LENGTHS or the tangle it was
+reported for cannot appear at all. Then **natura**, which she expects to cost the most in repairs and
+testing. Worth knowing when that shelf comes up: all four natura pieces animate
 continuously, and on a Kindle Fire the thing that bites an animated canvas is frame rate, which is a
 fault class none of the pieces tested so far could expose. Budget it for watching rather than
 repairing.
