@@ -23,7 +23,13 @@
 <style>
   :root{ --bg1:#11161f; --bg2:#080a0f; --brass:#c9974e; --cream:#e7d9b4; --dim:#8f7a4e; }
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body{ height:100%; margin:0;
+  /* The page grows to its own content and scrolls when it has to -- the same
+     answer she took for kaleidoscope. `height:100%` pinned the document to the
+     glass however tall the row of controls became, so on a 3in phone the
+     instruments pushed the last 26px of them off the bottom of a page that could
+     not scroll to reach them. #wrap still carries min-height:100dvh, so anything
+     with room to spare is the same unscrolling frame it always was. */
+  html,body{ height:auto; min-height:100%; margin:0;
     background:radial-gradient(ellipse at 50% 30%, var(--bg1) 0%, var(--bg2) 78%);
     color:var(--cream); font-family: Georgia,'Times New Roman',serif;
     overflow-x:hidden; -webkit-font-smoothing:antialiased; user-select:none;
@@ -57,6 +63,29 @@
   input[type=range]{ width:200px; accent-color:var(--brass); cursor:pointer; }
   .iconbtn{ font-family:inherit; font-size:18px; line-height:1; background:none; border:0; cursor:pointer; padding:0; opacity:.6; transition:opacity .2s ease; }
   .iconbtn:hover{ opacity:1; }
+  /* The rabbit arrives white, and white on this page is the brightest thing on
+     the screen -- brighter than the disc, the pins or the brass -- so the eye
+     goes to the tempo control before it goes to the music box. Her call. It is
+     taken to grey and down in brightness so it sits at the same weight as the
+     turtle opposite it and stops competing with the piece. */
+  .hare{ filter:grayscale(1) brightness(.66) contrast(1.05); opacity:.85; }
+  /* The instruments. Drawn rather than set in emoji on purpose: there is no old
+     enough emoji for a flute (the one that exists arrived in 2022) and a Kindle
+     Fire would show an empty box where the flute ought to be. Drawn also means
+     they can all share one weight and one colour, which four emoji from four
+     different sets never would. */
+  .voices{ display:flex; align-items:center; gap:4px; }
+  .voicebtn{ background:none; border:0; padding:5px 6px; margin:0; cursor:pointer;
+    line-height:0; color:var(--dim); opacity:.55; border-radius:7px;
+    transition:opacity .2s ease, color .2s ease, background-color .2s ease; }
+  .voicebtn:hover{ opacity:.9; }
+  .voicebtn.active{ opacity:1; color:var(--brass); background:rgba(201,151,78,.13); }
+  .voicebtn svg{ display:block; width:22px; height:22px; }
+  /* a thumb is about 9mm and these are 22px of drawing; the box grows, the
+     drawing does not move */
+  @media (pointer: coarse){
+    .voicebtn{ padding:10px 9px; }
+  }
   @media (max-width:480px){
     .controls{ gap:10px; }
     input[type=range]{ width:140px; }
@@ -86,7 +115,36 @@
   <div class="controls">
     <span title="slower">🐢</span>
     <input id="tempo" type="range" min="1.2" max="7" step="0.1" value="3.2">
-    <span title="faster">🐇</span>
+    <span class="hare" title="faster">🐇</span>
+    <span class="voices" role="group" aria-label="instrument">
+      <button class="voicebtn" data-voice="chime" title="chime" aria-label="chime">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+          <path d="M4.5 6.5h15"/><path d="M8 6.5v10"/><path d="M12 6.5v13.5"/><path d="M16 6.5v8"/>
+        </svg>
+      </button>
+      <button class="voicebtn" data-voice="piano" title="piano" aria-label="piano">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="7.5" width="18" height="9.5" rx="1.2"/>
+          <path d="M7.5 7.5v9.5M12 7.5v9.5M16.5 7.5v9.5"/>
+          <path d="M7.5 7.8v4.9M12 7.8v4.9M16.5 7.8v4.9" stroke-width="3.2"/>
+        </svg>
+      </button>
+      <button class="voicebtn" data-voice="guitar" title="guitar" aria-label="guitar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="8.8" cy="15.6" r="4.5"/><circle cx="12.4" cy="10.7" r="3.1"/>
+          <circle cx="9.2" cy="14.8" r="1.4"/>
+          <path d="M14.8 8.4 20.2 3.3"/><path d="M19.2 2.3l1.9 1.9"/>
+        </svg>
+      </button>
+      <button class="voicebtn" data-voice="flute" title="flute" aria-label="flute">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2.4" y="10.05" width="19.2" height="3.9" rx="1.95" transform="rotate(-38 12 12)"/>
+          <circle cx="10.6" cy="13.0" r="0.72" fill="currentColor" stroke="none"/>
+          <circle cx="12.9" cy="11.2" r="0.72" fill="currentColor" stroke="none"/>
+          <circle cx="15.2" cy="9.4" r="0.72" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+    </span>
     <button class="iconbtn" id="save" title="save" aria-label="save">💾</button>
     <button class="iconbtn" id="clear" title="clear" aria-label="clear">🗑️</button>
   </div>
@@ -137,11 +195,42 @@ function initAudio(){
   actx=new (window.AudioContext||window.webkitAudioContext)();
   const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=4800; lp.Q.value=0.6;
   const master=actx.createGain(); master.gain.value=0.85;
-  lp.connect(master); master.connect(actx.destination);
+  /* Eight rings can be pinned on the same step, and eight notes struck together
+     came to nearly THREE times full scale -- measured, with 1.2% of samples
+     squared off flat, which is a buzz laid over the note rather than a quiet
+     fault.
+     A DynamicsCompressorNode was the obvious answer and is the wrong tool: it
+     carries about 6ms of lookahead and rides its gain, and measured against the
+     live page it left the chime SILENT for its first 5ms where the live one is
+     already at 93% of peak, moving the peak from 6ms out to 74. That is not a
+     level change, it is taking the strike out of a struck instrument.
+     A waveshaper has no lookahead and no attack or release at all -- it is a
+     curve, applied sample by sample. This one is exactly the straight line y=x
+     up to 0.75 and only bends above it, so anything up to a single note passes
+     through UNCHANGED, sample for sample, and a pile-up is rounded over instead
+     of being squared off. The gain either side of it is because a shaper's curve
+     is indexed over -1..1, so the signal is scaled into that range and the curve
+     is built for what it really means. */
+  const HEAD=4;                                   // the shaper's input range, in full scales
+  const shaper=actx.createWaveShaper();
+  (function(){
+    const N=2048, curve=new Float32Array(N);
+    const knee=0.75;
+    for(let i=0;i<N;i++){
+      const r=(i/(N-1)*2-1)*HEAD, a=Math.abs(r);
+      const y=a<=knee ? a : knee+(1-knee)*Math.tanh((a-knee)/(1-knee));
+      curve[i]=Math.sign(r)*y;
+    }
+    shaper.curve=curve;
+  })();
+  const pre=actx.createGain(); pre.gain.value=1/HEAD;
+  pre.connect(shaper); shaper.connect(actx.destination);
+  const limiter=pre;
+  lp.connect(master); master.connect(limiter);
   const dl=actx.createDelay(); dl.delayTime.value=0.19;
   const fb=actx.createGain(); fb.gain.value=0.22;
   const wet=actx.createGain(); wet.gain.value=0.12;
-  master.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(actx.destination);
+  master.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(limiter);
   inNode=lp;
 }
 function tine(freq){
@@ -165,6 +254,153 @@ function tine(freq){
   ns.connect(hp); hp.connect(ng); ng.connect(inNode); ns.start(t); ns.stop(t+0.05);
 }
 
+/* ---------- the other voices ----------
+   The box strikes; WHAT it strikes is the visitor's to choose. Each of these is
+   built out of how the real instrument makes its sound rather than out of a
+   preset, which is the test everything else on this site is held to. The chime
+   above is untouched -- it is the one she already had right. */
+
+// shared: a short burst of shaped noise, which is what every one of these needs
+// for the part of the sound that is not a pitch at all -- a hammer landing, a
+// nail leaving a string, air catching an edge.
+function noiseBurst(t, amp, dur, type, hz, q){
+  const len=Math.max(1,Math.floor(actx.sampleRate*dur));
+  const nb=actx.createBuffer(1,len,actx.sampleRate);
+  const d=nb.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+  const src=actx.createBufferSource(); src.buffer=nb;
+  const f=actx.createBiquadFilter(); f.type=type; f.frequency.value=hz; if(q) f.Q.value=q;
+  const g=actx.createGain();
+  g.gain.setValueAtTime(amp,t);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  src.connect(f); f.connect(g); g.connect(inNode); src.start(t); src.stop(t+dur+0.02);
+}
+
+// PIANO. A struck string is stiff, so its partials are not whole multiples of
+// the fundamental: they are stretched, n*sqrt(1 + B*n^2), where B is the string's
+// own inharmonicity. That stretch is most of what makes a piano sound like a
+// piano rather than like an organ, and it is why the top of a piano is tuned
+// sharp to match its own overtones. The hammer feeds the high partials hardest
+// and the string loses them fastest, so they are bright at the front and gone
+// first; and the hammer itself lands underneath as a separate short knock that
+// has no pitch in it at all. Bass strings ring far longer than treble ones.
+function piano(freq){
+  if(!actx) return;
+  const t=actx.currentTime, B=0.0004;
+  const base=3.0*Math.pow(261.63/freq,0.45);
+  for(let n=1;n<=10;n++){
+    const f=freq*n*Math.sqrt(1+B*n*n);
+    if(f>11000) break;
+    const amp=0.34/Math.pow(n,1.3), d=base/Math.pow(n,0.5);
+    const o=actx.createOscillator(); o.type='sine';
+    o.frequency.value=f*(1+(Math.random()-0.5)*0.0012);
+    const g=actx.createGain();
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(amp,t+0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+    o.connect(g); g.connect(inNode); o.start(t); o.stop(t+d+0.05);
+  }
+  noiseBurst(t,0.10,0.035,'lowpass',1100);
+}
+
+// GUITAR. Where a string is plucked decides what comes out of it: pluck at a
+// fraction p along its length and the nth harmonic arrives at sin(n*pi*p)/n^2.
+// Near the bridge that is thin and bright, over the soundhole it is round -- and
+// any harmonic whose node falls exactly on the pluck is missing altogether, a
+// real hole in the spectrum and a good part of why one plucked note is enough to
+// recognise a guitar. p is 0.22 here, an ordinary picking position a little way
+// in from the bridge. The nail leaving the string is the click on the front.
+function guitar(freq){
+  if(!actx) return;
+  const t=actx.currentTime, p=0.22;
+  const base=2.2*Math.pow(261.63/freq,0.35);
+  for(let n=1;n<=14;n++){
+    const f=freq*n;
+    if(f>11000) break;
+    const amp=0.9*Math.abs(Math.sin(n*Math.PI*p))/(n*n);
+    if(amp<0.0015) continue;
+    const d=base/Math.pow(n,0.42);
+    const o=actx.createOscillator(); o.type='sine';
+    o.frequency.value=f*(1+(Math.random()-0.5)*0.0015);
+    const g=actx.createGain();
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(amp,t+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+    o.connect(g); g.connect(inNode); o.start(t); o.stop(t+d+0.05);
+  }
+  noiseBurst(t,0.045,0.018,'highpass',3000);
+}
+
+// NATIVE AMERICAN FLUTE. A fipple flute: a duct throws a ribbon of air across a
+// sharp edge, and an air column driven that way gives very few partials -- a
+// strong fundamental, a soft second, a trace of a third, and almost nothing
+// above. The other half of the sound is BREATH, and the thing that matters is
+// that the air noise runs the WHOLE length of the note rather than only its
+// start; that is what makes a flute sound blown rather than struck, and it is
+// what these are usually missing. It cannot speak instantly either -- the column
+// takes time to settle, so the attack is slow and there is a small chiff at the
+// front where the jet first catches the edge. And a held note wavers, so the
+// vibrato arrives AFTER the note has settled, the way a player's does, instead
+// of being there from the first instant.
+function flute(freq){
+  if(!actx) return;
+  const t=actx.currentTime;
+  const A=0.085, S=0.40, R=0.50, end=t+A+S+R;
+  const vib=actx.createOscillator(); vib.type='sine';
+  vib.frequency.value=4.6+Math.random()*0.5;
+  vib.start(t); vib.stop(end+0.05);
+  [[1,0.46],[2,0.11],[3,0.04]].forEach(([n,a])=>{
+    const o=actx.createOscillator(); o.type='sine';
+    o.frequency.value=freq*n*(1+(Math.random()-0.5)*0.002);
+    // the waver is a fraction of the pitch, so it has to grow with the partial
+    const vg=actx.createGain();
+    vg.gain.setValueAtTime(0,t);
+    vg.gain.setValueAtTime(0,t+0.22);
+    vg.gain.linearRampToValueAtTime(freq*n*0.007,t+0.55);
+    vib.connect(vg); vg.connect(o.frequency);
+    const g=actx.createGain();
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(a,t+A);
+    g.gain.setValueAtTime(a,t+A+S);
+    g.gain.exponentialRampToValueAtTime(0.0001,end);
+    o.connect(g); g.connect(inNode); o.start(t); o.stop(end+0.05);
+  });
+  // breath, for the whole note: band-passed around the pitch so it reads as air
+  // moving through this flute rather than as hiss laid over the top of it
+  const len=Math.floor(actx.sampleRate*(A+S+R));
+  const nb=actx.createBuffer(1,len,actx.sampleRate);
+  const nd=nb.getChannelData(0);
+  for(let i=0;i<len;i++) nd[i]=Math.random()*2-1;
+  const ns=actx.createBufferSource(); ns.buffer=nb;
+  const bp=actx.createBiquadFilter(); bp.type='bandpass';
+  bp.frequency.value=freq*2.1; bp.Q.value=0.9;
+  const ng=actx.createGain();
+  ng.gain.setValueAtTime(0,t);
+  ng.gain.linearRampToValueAtTime(0.055,t+A*0.8);
+  ng.gain.setValueAtTime(0.055,t+A+S);
+  ng.gain.exponentialRampToValueAtTime(0.0001,end);
+  ns.connect(bp); bp.connect(ng); ng.connect(inNode); ns.start(t); ns.stop(end+0.05);
+  // the chiff: the jet catching the edge before the column has settled
+  noiseBurst(t,0.06,0.05,'bandpass',freq*4,1.2);
+}
+
+/* which voice the box is strung with. The chime is the default and what a first
+   visit hears; the choice is remembered between visits like the pins are. */
+const VOICES={ chime:tine, piano:piano, guitar:guitar, flute:flute };
+let voice=localStorage.getItem('sagne-musebox-voice');
+if(!VOICES[voice]) voice='chime';
+function strike(freq){ (VOICES[voice]||tine)(freq); }
+document.querySelectorAll('.voicebtn').forEach(btn=>{
+  btn.classList.toggle('active', btn.dataset.voice===voice);
+  btn.addEventListener('click',()=>{
+    voice=btn.dataset.voice;
+    try{ localStorage.setItem('sagne-musebox-voice',voice); }catch(e){}
+    document.querySelectorAll('.voicebtn').forEach(b=>b.classList.toggle('active',b.dataset.voice===voice));
+    initAudio();
+    strike(NOTES[3]);          // it answers in the voice you just chose
+  });
+});
+
 /* ---------- loop ---------- */
 let last=performance.now();
 function frame(now){
@@ -173,7 +409,7 @@ function frame(now){
   const curStep=Math.round(norm(pluckAng-rotation)/stepAngle)%N_STEPS;
   if(curStep!==lastStep){
     lastStep=curStep;
-    for(let r=0;r<N_RINGS;r++) if(pins[r][curStep]){ tine(NOTES[r]); flashes.push({ring:r,t:now}); }
+    for(let r=0;r<N_RINGS;r++) if(pins[r][curStep]){ strike(NOTES[r]); flashes.push({ring:r,t:now}); }
   }
   draw(now);
   requestAnimationFrame(frame);

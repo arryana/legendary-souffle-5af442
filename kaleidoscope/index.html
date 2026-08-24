@@ -23,7 +23,17 @@
 <style>
   :root{ --bg1:#11161f; --bg2:#080a0f; --brass:#c9974e; --dim:#8b93a1; }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{ height:100%; margin:0;
+  /* The page grows to its own content and scrolls when it has to -- her ruling,
+     and it replaces the width-gated stopgap that used to be the only place this
+     happened. `height:100%` pinned the document to the glass however tall the
+     content was, so anything past the bottom was not merely hard to reach but
+     absent: measured at the height a browser actually leaves visible (not the
+     device's full height, which is the trap this site has hit before), an
+     ORDINARY 390px phone had 89px of controls off the bottom -- the mirror
+     buttons and one slider, gone, with no way to scroll to them. #wrap still
+     carries min-height:100dvh, so a screen with room to spare is the same
+     unscrolling frame it always was and does not scroll by a pixel. */
+  html,body{ height:auto; min-height:100%; margin:0;
     background:radial-gradient(ellipse at 50% 30%, var(--bg1) 0%, var(--bg2) 78%);
     overflow-x:hidden; }
   #backlink{ position:fixed; top:18px; left:22px; z-index:50; color:#dfe6ea; opacity:.5;
@@ -57,6 +67,9 @@
 
   #trayWrap{ width:min(20vh,160px); aspect-ratio:1/1; cursor:default; margin-bottom:8px; }
   #trayWrap canvas{ position:absolute; inset:0; width:100%; height:100%; border-radius:50%; }
+  /* the dish keeps the drag at every width now the page can scroll, or pulling a
+     piece about on it scrolls the page underneath instead */
+  #trayWrap{ touch-action:none; }
 
   #controls{ display:flex; align-items:flex-end; justify-content:center; gap:44px; flex-wrap:wrap; }
   #leftCluster{ display:flex; flex-direction:column; align-items:center; gap:10px; }
@@ -165,12 +178,13 @@
      still and be looked at, and a small-screen arrangement is still owed.
      Above 380 nothing here applies -- the page is the same fixed, unscrolling
      frame it always was. */
+  /* Only down here do the controls run the full width of the screen, which is
+     where the music button pinned in the corner would otherwise come to rest on
+     the last row of them. Measured: at 390 and above the two never overlap
+     horizontally, and adding this padding there merely made a page that fitted
+     scroll. */
   @media (max-width: 379px){
-    html, body{ height:auto; min-height:100%; }
     #wrap{ padding-bottom:96px; }
-    /* the dish keeps the drag, or pulling a piece about on it scrolls the page
-       underneath instead */
-    #trayWrap{ touch-action:none; }
   }
   /* seven 30px tiles come to 246px, which is wider than a 3-inch screen */
   @media (max-width: 280px){
@@ -658,11 +672,44 @@
   function drawAll(){ drawTray(); drawScope(); }
 
   // ---------- turning the scope ----------
-  let scopeDragging=false, lastX=0;
-  scopeWrap.addEventListener('pointerdown', e=>{ scopeDragging=true; lastX=e.clientX; scopeWrap.setPointerCapture(e.pointerId); });
+  // This was a SIDEWAYS SWIPE, not a turn: `turn += (clientX - lastX) * 0.012`,
+  // which reads horizontal travel and nothing else. Grab the knob at the top,
+  // pull right, and it obeys -- but the knob is now carrying round toward three
+  // o'clock, and to keep following it your hand has to move DOWN, which has no
+  // sideways component at all, so the ring stops dead. Carry on round the bottom
+  // and your hand is travelling LEFT, so it turns backwards under you. That is
+  // the whole of "the first quarter turn works and then it goes off the rails",
+  // and it was never a machine's fault: the gesture the code listened for and the
+  // gesture a bezel asks for only agree for about ninety degrees.
+  //
+  // A real bezel turns by the ANGLE your hand has moved around its centre, so
+  // that is what is measured now -- grab it anywhere, it stays under your finger
+  // all the way round, as many turns as you like, either direction. The unwrap is
+  // the load-bearing part: atan2 jumps from +pi to -pi crossing due west, and
+  // without folding that back the ring would snap a full turn every lap.
+  let scopeDragging=false, lastAng=0;
+  function ringAngle(e){
+    const r = scopeWrap.getBoundingClientRect();
+    return Math.atan2(e.clientY - (r.top + r.height/2), e.clientX - (r.left + r.width/2));
+  }
+  // Near the middle, a hand that has barely moved has swept a huge angle, so the
+  // ring would spin wildly off a twitch. Inside a tenth of the radius the angle
+  // is followed but not applied -- pick the drag up again further out and it
+  // carries on from wherever the hand actually is, with no jump.
+  function ringGrip(e){
+    const r = scopeWrap.getBoundingClientRect();
+    return Math.hypot(e.clientX - (r.left + r.width/2), e.clientY - (r.top + r.height/2)) > r.width * 0.1;
+  }
+  scopeWrap.addEventListener('pointerdown', e=>{ scopeDragging=true; lastAng=ringAngle(e); scopeWrap.setPointerCapture(e.pointerId); });
   scopeWrap.addEventListener('pointermove', e=>{
     if(!scopeDragging) return;
-    turn += (e.clientX-lastX)*0.012; lastX=e.clientX;
+    const a = ringAngle(e);
+    let d = a - lastAng;
+    if(d >  Math.PI) d -= Math.PI*2;
+    if(d < -Math.PI) d += Math.PI*2;
+    lastAng = a;
+    if(!ringGrip(e)) return;
+    turn += d;
     updateRing();
     drawScope();
   });

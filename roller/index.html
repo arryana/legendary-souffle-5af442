@@ -101,6 +101,20 @@
     display:flex; align-items:center; gap:12px;
     font-size:13px; opacity:.75; letter-spacing:.03em;
   }
+  /* On a desktop the four groups were stacked in a column about 180px wide under
+     a 640px tray, on a screen 1440 across -- a huddle of controls in the middle of
+     an empty room, with the speed slider's own row lapping over the bottom edge of
+     the tray. They go side by side, which is what all that width is for, and the
+     dock then stands 92px tall instead of 184 so it stops touching the tray at all.
+     Width AND a fine pointer: the generated touch-targets block below grows each
+     slider by half the distance to its nearest neighbour, measured on the stacked
+     layout, so a coarse-pointer screen must keep the layout those measurements were
+     taken from. A Windows tablet in landscape is wide but coarse, and keeps the
+     column. */
+  @media (min-width: 900px) and (pointer: fine){
+    #dock{ flex-direction:row; justify-content:center; align-items:center;
+      gap:clamp(38px, 6vw, 96px); padding:14px 26px 22px; }
+  }
   input[type=range]{
     -webkit-appearance:none; appearance:none;
     width:150px; height:3px; border-radius:3px;
@@ -197,7 +211,7 @@
 <div id="dock">
   <div id="speedRow">
     <span title="speed">💨</span>
-    <input type="range" id="speedSlider" min="20" max="220" value="100" aria-label="speed">
+    <input type="range" id="speedSlider" min="10" max="220" value="100" aria-label="speed">
   </div>
   <div id="objRow">
     <button class="objBtn active" data-obj="pebble" title="river pebble" aria-label="river pebble">⬮</button>
@@ -489,6 +503,32 @@
   // the stone prefers its own mineral tint; the bean keeps the plain one
   const stoneTintRgb = () => GLASS[glassColor].stoneTint || GLASS[glassColor].tint;
 
+  // The bean is meant to be the MOST saturated of the three and the shiniest, and
+  // it was the least of both: it was pulled only 30-44% toward the tint from a pale
+  // cream stone, so cobalt and black -- the two she named -- arrived as a dusty
+  // blue-grey and a dusty grey. Mixing harder is not the answer, because at high
+  // amounts all three stops converge on the one tint and the bead goes flat.
+  //
+  // So the bean stops borrowing the stone's cream ramp and gets its OWN, built out
+  // of the tint itself: a light stop lifted toward white, the tint at full strength
+  // in the middle, and a dark stop taken well down. Every part of it is the colour
+  // and it still has a real light-to-dark form, which is what a polished bead
+  // actually looks like. `bean` in the GLASS table is now unused by the bean and
+  // kept only so the table still reads as one row per colour.
+  const beanRamp = () => {
+    const t = GLASS[glassColor].tint;
+    const lift = v => Math.round(v + (255 - v) * 0.62);
+    const deep = v => Math.round(v * 0.28);
+    const d = t.map(deep);
+    return { light:'rgb('+t.map(lift).join(',')+')',
+             mid:  'rgb('+t.join(',')+')',
+             dark: 'rgb('+d.join(',')+')',
+             // the outline is the same dark, but half-strength: at full opacity it
+             // reads as a drawn line round the stone rather than as the stone's own
+             // shaded edge, and it makes the body polygon's facets into corners
+             edge: 'rgba('+d.join(',')+',0.5)' };
+  };
+
   let activeType = 'pebble';
   let obj = { x: 0, y: 0, vx: 0, vy: 0, spin: 0, jellySpin: 0, rollDistance: 0, nextCatch: 40, curlDir: 1, discSpin: 0, discAngVel: 0 };
 
@@ -536,14 +576,30 @@
     });
   });
 
-  // speed slider: a direct multiplier on how strongly tilt translates
-  // into force — 100 is the original feel, lower is gentler/slower,
-  // higher is quicker to accelerate
+  // speed slider: a multiplier on how strongly tilt translates into force.
+  //
+  // On its own that could not make anything SLIDE slower, which is what she asked
+  // for, because it changed how hard the tray pushed and not how freely the tray
+  // let go. Measured under a held full tilt: the pebble averaged 130px/s at the
+  // bottom of the range against 146 in the middle -- eleven per cent, which is
+  // nothing you could feel -- while its PEAKS moved by two and a half times. Once
+  // anything was moving it careered about at much the same rate whatever the
+  // slider said, because friction and the wall bounce were never in the slider's
+  // hands at all.
+  //
+  // What actually makes a thing slide slowly is the surface it is sliding on. So
+  // below the middle the tray gets draggier as well as gentler: the same friction
+  // raised to a higher power, which is precisely what a shorter settling distance
+  // is. At 100 the exponent is exactly 1 and nothing whatsoever changes -- from
+  // the middle of the slider upward this is the feel she already approved, to the
+  // pixel -- and the bottom of the range is now a genuine crawl rather than a
+  // slightly softer version of the same skidding.
   const speedSlider = document.getElementById('speedSlider');
   let speedMult = speedSlider.value / 100;
   speedSlider.addEventListener('input', () => {
     speedMult = speedSlider.value / 100;
   });
+  const effFriction = (f) => Math.pow(f, 1 / Math.max(0.10, Math.min(1, speedMult)));
 
   // tap/click the tray itself to recentre the object at rest, and
   // recalibrate — covers picking the phone back up and repropping it at
@@ -627,6 +683,7 @@
 
     const speed = Math.hypot(obj.vx, obj.vy);
     const r = spec.radius;
+    const fr = effFriction(spec.friction);
 
     if (spec.wobble) {
       obj.rollDistance += speed;
@@ -697,11 +754,11 @@
         obj.vy = nvy;
       }
 
-      obj.vx *= spec.friction;
-      obj.vy *= spec.friction;
+      obj.vx *= fr;
+      obj.vy *= fr;
     } else {
-      obj.vx *= spec.friction;
-      obj.vy *= spec.friction;
+      obj.vx *= fr;
+      obj.vy *= fr;
     }
 
     if (spec.spinOnImpact) {
@@ -990,25 +1047,51 @@
     ctx.rotate(obj.jellySpin);
     ctx.scale(1, squash);
 
-    const body = tintStops(ctx.createRadialGradient(-r*0.2, -r*0.35, r*0.1, 0, r*0.05, r*1.1),
-                           ['#e8dcc4','#c1a97e','#8a7250'], GLASS[glassColor].bean);
+    const ramp = beanRamp();
+    const body = ctx.createRadialGradient(-r*0.2, -r*0.35, r*0.1, 0, r*0.05, r*1.1);
+    body.addColorStop(0, ramp.light);
+    body.addColorStop(0.55, ramp.mid);
+    body.addColorStop(1, ramp.dark);
     pathFromPoints(ctx, JELLYBEAN_BODY, 0, 0, r, r);
     ctx.fillStyle = body;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(60,46,24,0.45)';
+    ctx.strokeStyle = ramp.edge;
     ctx.lineWidth = Math.max(1, r*0.025);
     ctx.stroke();
 
-    // a soft highlight stroke down its length, a brushed-shading touch
+    // Gloss. A polished bead is read as shiny off three things at once and it
+    // wants all three: a long soft sheen down its length, ONE small hard specular
+    // where the light source is (the tight bright spot is what actually says
+    // 'wet-looking' -- a big soft one only says 'pale'), and a bounce light
+    // creeping along the shaded edge, which is light coming back up off the tray.
+    // All clipped inside the body, so none of it can escape the stone's outline.
     ctx.save();
     pathFromPoints(ctx, JELLYBEAN_BODY, 0, 0, r, r);
     ctx.clip();
-    ctx.strokeStyle = 'rgba(255,245,220,0.3)';
-    ctx.lineWidth = r*0.14;
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.34)';
+    ctx.lineWidth = r*0.16;
     ctx.beginPath();
     ctx.moveTo(-r*0.15, -r*0.6);
-    ctx.quadraticCurveTo(-r*0.28, 0, -r*0.1, r*0.65);
+    ctx.quadraticCurveTo(-r*0.3, 0, -r*0.1, r*0.62);
     ctx.stroke();
+
+    const hotSpot = ctx.createRadialGradient(-r*0.34, -r*0.42, 0, -r*0.34, -r*0.42, r*0.3);
+    hotSpot.addColorStop(0,   'rgba(255,255,255,0.92)');
+    hotSpot.addColorStop(0.4, 'rgba(255,255,255,0.42)');
+    hotSpot.addColorStop(1,   'rgba(255,255,255,0)');
+    ctx.fillStyle = hotSpot;
+    ctx.beginPath();
+    ctx.ellipse(-r*0.34, -r*0.42, r*0.3, r*0.2, -0.5, 0, Math.PI*2);
+    ctx.fill();
+
+    const bounce = ctx.createLinearGradient(0, r*0.15, 0, r*0.95);
+    bounce.addColorStop(0, 'rgba(255,255,255,0)');
+    bounce.addColorStop(1, 'rgba(255,255,255,0.3)');
+    ctx.fillStyle = bounce;
+    ctx.beginPath();
+    ctx.ellipse(r*0.06, r*0.42, r*0.72, r*0.5, 0, 0, Math.PI*2);
+    ctx.fill();
     ctx.restore();
 
     ctx.restore();

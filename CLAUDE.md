@@ -82,7 +82,7 @@ of anything, so a number would be inventing a ranking she doesn't mean. The test
 apply to every piece is the one further down this file: *does it behave like the real
 thing?* That is a yes or a no.
 
-**10 of the 20 are done.**
+**12 of the 20 are done.**
 
 | File | On landing page? | Done? | What it is |
 |------|:---:|:---:|------------|
@@ -105,9 +105,45 @@ snooze — last in the row once the timer is on — hangs 11px off the right-han
 scrollbar is hidden. **She then re-ran the whole page on all four machines and passed it**: everything she
 found is fixed and re-checked on the devices themselves, not in a screenshot. candler is the first piece
 through that test, and the standard for the ones that follow. |
-| `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does." |
+| `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does."<br>Three
+things Aug 2026, all hers, all after she had it in front of her.<br>**The speed slider was not a speed
+slider.** It multiplied how hard tilt pushed and nothing else — not friction, not the wall bounce — so
+once anything was moving it careered about at much the same rate wherever the slider sat. Measured
+under a held full tilt: the pebble averaged **130px/s at the bottom of the range against 146 in the
+middle**, eleven per cent, nothing anyone could feel, while its PEAKS moved two and a half times. She
+asked for a speed slider so things could slide slower and it was reasonable to think there wasn't
+one. What actually makes a thing slide slowly is the surface, so below the middle the tray now gets
+draggier as well as gentler — the same friction raised to a higher power, which is what a shorter
+settling distance is. Re-measured: pebble **73px/s** at 20, disc **48**, bean **63**, and the peaks
+down by more. **At 100 the exponent is exactly 1 and nothing changes at all** — from the middle of
+the slider upward the feel she already approved is identical, measured, which is the point of doing
+it this way round rather than retuning the physics. The bottom of the range went from 20 to 10.<br>**The
+dock spreads on a desktop.** Four groups stacked in a column 180px wide under a 640px tray on a
+screen 1440 across, with the speed row lapping over the tray's own bottom edge. Side by side now, and
+the dock stands 92px instead of 184, so it stops touching the tray. Gated on **width AND a fine
+pointer**: the generated `touch-targets` block grows each slider by half the distance to its nearest
+neighbour, measured on the stacked layout, so a coarse screen has to keep the layout those figures
+came from — a Windows tablet in landscape is wide but coarse and keeps the column.<br>**The bean is
+the most saturated of the three now, and shiny**, which is what she always wanted it to be and what
+it was furthest from: it was pulled only 30–44% toward the tint from a pale cream stone, so cobalt
+and black — the two she named — arrived as a dusty blue-grey and a dusty grey. Mixing harder is not
+the answer; past about half, all three stops converge on the one tint and the bead goes flat. So the
+bean stopped borrowing the stone's cream ramp and got **its own, built out of the tint**: a light
+stop lifted toward white, the tint at full strength in the middle, a dark stop taken well down. Every
+part of it is the colour and it still has real form. Gloss is three things at once and wants all
+three — a long soft sheen down its length, ONE small hard specular where the light is (the tight
+bright spot is what reads as wet; a big soft one only reads as pale), and a bounce light along the
+shaded edge coming back up off the tray. The outline is the same dark at **half** strength: at full
+it reads as a drawn line round the stone and turns the body polygon's facets into corners. The
+`bean` numbers in the GLASS table are now unused and kept only so the table still reads one row per
+colour. The pebble and the disc are untouched. |
 | `lamp/index.html` | ✅ | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. A fuel level you find by *tapping* the base is designed but not built; the note in the file records which way the pitch must go<br>**Done** as it stands — the tap-for-fuel idea is recorded as a future build, not a gap in it. |
-| `warmler/index.html` | ✅ |  | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked) |
+| `warmler/index.html` | ✅ | ✅ | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked)<br>**Done** — through her four-device test Aug 2026 with nothing to repair: *"i honestly can't
+find any fault with warmler. it's a simple twiddle toy, and now that we have the edge issues
+worked out, it's fine on all four machines."* The edge issues were the two already fixed in the
+site-wide sweeps — the music button sitting on the finish trigger at 390px, and the `<button>`
+face showing behind `#finishTrigger`'s cut-out — so this is the first piece to pass on the
+strength of work done before she ever opened it, rather than on repairs found by opening it. |
 | `rain/index.html` | ✅ |  | Rain on glass |
 | `ant/index.html` | ✅ |  | Ants |
 | `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Fourth piece
@@ -226,7 +262,25 @@ came out**. Its knob glowed until a visitor first touched it, and the comment in
 words that it "nudges a first-time visitor toward the control that actually changes the pattern" — which is
 the exact thing the *Exploring is the point* rule below forbids. It predated the rule. Don't put it back. |
 | `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
-| `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Awaiting her verdict**.<br>**The phone case was
+| `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Awaiting her verdict**.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
+report: *"the ring drag is.. terrible. on every machine. the first quarter turn or so works, then it
+goes off the rails."* It was `turn += (clientX - lastX) * 0.012` — horizontal travel and nothing
+else. Grab the knob at twelve o'clock, pull right, and it obeys; but the knob is now carrying round
+toward three, and to keep following it your hand has to move DOWN, which has no sideways component
+at all, so the ring stops dead. Round the bottom your hand is going LEFT and it turns backwards
+under you. Measured before the fix, sweeping the pointer in a circle round the ring: hand at 30°
+gave 58°, at 90° gave 116°, at 120° gave 100°, at 180° gave **0**, and a full circle of the hand
+left the ring exactly where it started. Her "every machine" was the clue — the gesture the code
+listened for and the gesture a bezel asks for only agree for about ninety degrees, and no device
+could have made that better or worse. It reads the ANGLE swept about the ring's centre now, 1:1,
+unwrapped across the ±π seam (without that it would snap a whole turn every lap) and ignored inside
+a tenth of the radius (near the middle a hand that has barely moved has swept a huge angle, and it
+would spin off a twitch). Verified 1:1 at every 30° of a full circle and back again, on desktop and
+on touch.<br>**The card was still the old look** — flat gold stripes and a sparse pattern, from
+before the ring was redrawn as brass-bound wood with a grab knob and the objects re-cropped. Reshot
+Aug 2026 with a spread of pieces on the tray at warm and cool hues, the tray and controls hidden so
+only the scope is in frame, and the brass scaled to the card's full width by **measuring** the ring's
+painted extent in the shot rather than trusting a ratio. Same 440x640 as the rest.<br>**The phone case was
 broken and is now a drawer.** Four rows of pieces under a 400px scope came to 380px of controls on a screen
 844 tall that does not scroll, so both sliders and every mirror button sat below the bottom edge and could
 not be reached at all — worse than the 'bottom row under the fold' it was first reported as. On a phone the
@@ -237,17 +291,53 @@ shuts itself when one lands (a miss leaves it out to try again). Two things ther
 phone `#controls` is a **column, not a wrapping row** — as a wrapping row it collapsed from two lines to one
 when the palette left the flow and slid the dish out from under the thumb mid-carry — and `#leftCluster`
 keeps a `min-height` of 66px for the same reason. The veil behind the drawer dims and deliberately does
-**not** blur: you don't blur the thing someone is aiming at.<br>**That fix was measured at 390 and holds only
-there.** At 240 the layout ran 158px past the bottom of a page that could not scroll (20 controls
-unreachable, and the closed 7-column tray is itself 246px on a 240px screen); at 320 it was 114px over,
-taking both sliders and the mirror buttons with it. Her call was to **let it scroll below 380** and do a
-proper small-screen arrangement later — so `html,body{height:100%}` is lifted down there, `#wrap` ends 96px
-above the bottom so the corner music button never lands on the last row, the dish keeps `touch-action:none`
-(or dragging a piece on it scrolls the page instead), and below 280 the tray drops to six columns. It is a
-**stopgap and is labelled as one in the file**: these pieces are meant to sit still, and the arrangement is
-still owed. Above 380 nothing applies and the page is the same fixed frame it always was. |
+**not** blur: you don't blur the thing someone is aiming at.<br>**That fix was measured at the phone's FULL height, which is
+the trap this site has hit before.** At 240 the layout ran 158px past the bottom of a page that could
+not scroll (20 controls unreachable, and the closed 7-column tray is itself 246px on a 240px screen);
+at 320 it was 114px over. Both were caught, and a `max-width:379px` rule let the page scroll down
+there. What that rule could not catch is that **an ordinary 390px phone was cut off too** — measured at
+the height a browser actually leaves visible (664, not the device's 844), 89px of `#controls` hung off
+the bottom, taking the mirror buttons and one slider with it, on a page that could not scroll to them.
+Aug 2026 her ruling was simply **have it scroll**, and the width gate came off with it: `html,body` grow
+to their own content at every width, and `#wrap` still carries `min-height:100dvh`, so a screen with
+room to spare is the same fixed, unscrolling frame it always was. Verified: desktop at 1440 and 1280,
+a Kindle upright and a tablet at 800 are **identical to the pixel and do not scroll**; 240, 320, 379,
+390, a Kindle sideways and the 3in phone sideways all scroll and have everything reachable. The
+`padding-bottom:96px` stays held to `max-width:379px` — only down there do the controls run the full
+width and meet the corner music button, and applying it wider merely made a page that fitted scroll.
+`#trayWrap` keeps `touch-action:none` at every width now, or dragging a piece about on the dish scrolls
+the page underneath instead, and below 280 the tray drops to six columns. **A small-screen arrangement
+is no longer owed**: scrolling is the answer she took, not a placeholder for one. |
 | `moths/index.html` | ✅ |  | **Moths** losing their bearings on a hanging bulb. Not attraction — a moth holds a course by keeping a distant light at a fixed angle, and a near one wraps that course into a spiral. Three sliders: dusk→dark, bulb, how many. Colour is a readout of depth (dark in front of the glass, pale behind), from her own three-shade cut<br>Built Aug 2026 from her brief, then put right by her own watching of it — she found that the moths crowded the bulb and stayed (an absorbing state: all five reached it and none ever left), that moths in front of the lower glass came out grey rather than black, that they all flew alike, and that they never tilted or wavered. In **natura**, which is therefore a shelf of four |
-| `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune |
+| `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune<br>**She is unconvinced it is finished** — not the behaviour but the look: *"you did a lovely job
+building it, but i'm not sure it's -beautiful-"*, and she may bring pictures from Gemini to rebuild
+it from. That is open, and nothing here settles it.<br>Aug 2026 it got **four voices** at her ask, the
+chime she already liked plus **piano, guitar and a Native American flute**, each built from how the
+real instrument makes its sound rather than from a preset. A struck string is stiff, so the piano's
+partials are stretched by n·√(1+Bn²) — that stretch is most of what makes a piano sound like a piano
+and not an organ — with the hammer landing underneath as its own pitchless knock. A plucked string's
+harmonics are set by WHERE it is plucked, sin(nπp)/n², so the guitar has real holes in its spectrum
+at the pluck's own nodes (p=0.22, an ordinary picking position). A fipple flute gives a strong
+fundamental, a soft second and almost nothing above, and the half that matters is **breath running
+the whole length of the note** rather than only its start — that is what makes a flute sound blown
+instead of struck — with a slow attack, a chiff at the front, and vibrato arriving only after the
+note has settled, the way a player's does.<br>The icons are **drawn, not emoji**, deliberately: the
+only flute emoji arrived in 2022 and a Kindle Fire would show an empty box where it should be.<br>**The
+rabbit is grey.** Her call — white was the brightest thing on the page, brighter than the disc or the
+brass, so the eye went to the tempo control before the music box.<br>**And it was clipping.** Eight
+rings can be pinned on one step, and eight notes together measured nearly **three times full scale**,
+1.2% of samples squared off flat — a buzz over the note, and present long before the new voices. A
+`DynamicsCompressorNode` is the obvious answer and is the WRONG tool: ~6ms of lookahead and gain
+riding left the chime **silent for its first 5ms** where the live page is already at 93% of peak, and
+moved the peak from 6ms out to 74. That is not a level change, it is taking the strike out of a
+struck instrument — and it is only visible if you measure the attack envelope rather than the peak. A
+**waveshaper** has no lookahead and no attack or release at all: this curve is exactly y=x up to 0.75
+and bends only above it, so a single note passes through sample-for-sample unchanged and a pile-up is
+rounded instead of squared. Eight notes now peak at exactly 1.0 with **zero** samples over, on all
+four voices, and the chime's attack envelope is unchanged (peak at 5.8ms before and after).<br>The
+page also **grows to its own content now**, as kaleidoscope does: the instrument row put the last 26px
+of controls off the bottom of a 3in phone that could not scroll to them. Desktop, an ordinary phone
+and a Kindle are unchanged and do not scroll. |
 | `pendulum/index.html` | ✅ | ✅ | A **Foucault pendulum**, its swing slowly turning with the Earth; real-photo globe with a locator search<br>**Done** — precession, swing and pin ring all verified by measurement against the real physics.
 Aug 2026 it was given a **real-world-time** checkbox (the clock face beside the ∞): ticked, the plane
 precesses at the true Foucault rate off the actual clock — Earth's turn times sin(latitude) — and the
@@ -258,7 +348,48 @@ which is why it's a checkbox and not the default: at the true rate the turn is v
 imperceptible, the better part of a day for one rosette, and the trace comes out as swept ground
 rather than separate lines because successive passes land 0.007° apart — closer than a grain is wide.
 The swing itself stays exactly as lively as ever. |
-| `storm/index.html` | ✅ |  | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo) |
+| `storm/index.html` | ✅ | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo)<br>**Done**, and the piece that finishes instrumenta. Fifth through her four-device test, Aug 2026,
+and four things came out of it.<br>**The needle lied whenever it had nothing to say.** Untranslated,
+`#baro-needle-g` sits at x=0 in its own SVG — off the left-hand end of the printed scale, past
+STORMY, below 950 — so between page load and open-meteo's first reply, and permanently whenever
+the weather could not be reached at all, the dial showed a catastrophic low nobody had measured
+while the readout beside it honestly said nothing. Correct underneath and a lie to look at, which
+is the *reads as broken* class the standard below names. It is not drawn until it has a pressure
+to point at, and the first placement suppresses the .9s sweep so it is never seen travelling up
+from a position it was never at.<br>**The tendency is a mark now, not a sentence** — her call, and
+the last prose on any piece. Chevrons pointing where the pressure is going, **one per rung of the
+WMO tendency scale**: slowly, plain, rapidly, very rapidly, with a level bar for steady. Four, not
+the three she first sketched — three would have had to merge two speeds of a real scale, and the
+scale is the reason the readout is trustworthy. The words are still exact and still there: touch
+the mark and it gives them, touch it again or anything around it and they go, which is galileo's
+own rule for a popup. The steady bar cannot be read as the reading's own dash, since that shows
+only when there is no pressure at all — and then the mark is off the page.<br>**The brass hand got
+candler's pin treatment**, her own reminder that this was already settled: a transparent rect
+inside the hand's `<g>`, no brass moved. Two things differ from a pin. The SVG is scaled to the
+screen, so the rect is measured in the units that make it a real 44px wherever it is and
+re-measured on resize; and on the 3in phone the whole dial is 39px tall, so it takes the dial's
+full height and stops. Measured: 0x0 on desktop, 44x44 at 390 and on the Kindle, 36x39 on the 3in
+phone, against brass of 11.2 / 7.3 / 4.5px. A tap still never moves the hand — only a drag — and
+the drag keeps the offset it was taken hold of at, or a wide grab box would snap the hand out from
+under a thumb.<br>**And the needle was swallowing the grab.** It is painted after the hand and its
+stroke took pointer events, so a grab landing at the needle's own position never reached the hand —
+which is exactly where the hand is meant to be parked, since setting it against the needle is the
+whole use of the instrument. Half of the piece's one gesture was dead. The needle is a reading, not
+a control, and takes nothing now.<br>**The 3in phone: the key was eating the piece.** Eight buttons,
+each an icon *and* a 24px thumbnail of the glass, wrapped to three rows and took 169px of a 350px
+screen — and `#scene-wrap`, an ordinary flex item, gave way to it and shrank to **13px across**.
+Eight little glasses on screen, every one of them bigger than the real one. Below 380 the
+thumbnails come off and the icons stay, four to a row: the thumbnail is the one genuinely redundant
+thing at that size, since the glass itself is a tap away and changes instantly, and it was being
+paid for out of the glass's own room. Nothing hidden, no new gesture, nothing to discover. Glass
+13x22 -> 91x155 at 240x350; above 380 nothing applies and the page is pixel-identical, measured at
+380 and 390.<br>**Sideways on that phone is 180px tall and no arrangement fits it** — the barometer
+alone is 88px of it. That one is allowed to **scroll**, which is the answer she took for
+kaleidoscope when content genuinely did not fit: the glass is held to a size rather than shrunk to
+a sliver, and everything is reachable. The `(orientation: landscape)` qualifier on that rule is
+load-bearing — the same phone is 350px tall in portrait, where the compact key already fits with
+room to spare, and without it the rule set a page scrolling that didn't need to and pushed the
+glass up under the two brass discs. A Kindle in landscape is 476 tall and never reaches it. |
 | `crystal.html` | — | — | A crystal (not linked from the landing page) |
 | `chest.html`, `chest-open.html` | — | — | Dead apothecary-chest drafts she turned down; kept as a record, not linked |
 
@@ -632,14 +763,16 @@ a **Kindle Fire** and a **Unihertz Jelly Star** (a 3in phone, about 240px across
 finished until she has run it on all four. Her words: *"I intend to finish every one of them to the
 same standard."*
 
-**Through as of Fri 21 Aug 2026: candler, conometer, galileo, windower** — every fault they turned
+**Through as of Mon 24 Aug 2026: candler, conometer, galileo, windower, storm, warmler** — every fault they turned
 up is fixed and live, and the details are in each one's row above. The case itself was worked on the
 same day: light on the wall behind it, the white cut line off all five plates, darker arrows in the
 two discs.
 
-**Her order from here**: `storm` finishes instrumenta; then **tactilia** and **systema**, six pieces
-between them, which she expects may both go in a day; then **natura**, which she expects to cost the
-most in repairs and testing. Worth knowing when that shelf comes up: all four natura pieces animate
+**Her order from here**: instrumenta is finished — `storm` closed it on Mon 24 Aug. She is into
+**tactilia** and **systema** now, six pieces between them, which she expected may both go in a day
+and which is running that way: `warmler` passed the same morning with nothing to repair, and she
+went straight to `roller`. Then **natura**, which she expects to cost the most in repairs and
+testing. Worth knowing when that shelf comes up: all four natura pieces animate
 continuously, and on a Kindle Fire the thing that bites an animated canvas is frame rate, which is a
 fault class none of the pieces tested so far could expose. Budget it for watching rather than
 repairing.
