@@ -54,7 +54,15 @@ def block(slug, groups_, extra=''):
         w = round(TAG_H * plate_w / PLATE_H, 1)
         pos = 'url(../shelfplate-%s.png) center/100%% 100%%; width:%spx' % (name, w)
         cards = ''.join(
-            '<a%s href="../%s/"><img src="../%s" alt="%s"></a>'
+            # The plates' pieces are behind a max-width:0 span until a plate is
+            # rolled, so not one of these is visible on load -- and yet every page
+            # on the site was fetching all twenty of them, 6.2MB of card art,
+            # ahead of the piece's own assets. Measured on bowl at 240px with a
+            # slow phone's CPU and connection: the bowl had not appeared after 100
+            # seconds; deferred, it is there in 12, and the bytes before it shows
+            # went from 21.5MB to 2.3MB. They load when a plate is opened, which
+            # is the only moment anyone can see them.
+            '<a%s href="../%s/"><img loading="lazy" decoding="async" data-src="../%s" alt="%s"></a>'
             % (' class="here"' if p == slug else '', p, card, p)
             for p, href, card in pieces)
         rows.append(
@@ -123,9 +131,29 @@ def block(slug, groups_, extra=''):
   function unroll(){ rows.forEach(function(r){ r.classList.remove('rolled'); }); }
   function shut(){ box.classList.remove('open'); disc.setAttribute('aria-expanded','false'); unroll(); }
 
+  /* The twenty cards behind these plates are 6.2MB and not one of them can be
+     seen until a plate is opened, but every page on the site was fetching the lot
+     on load, ahead of the piece's own assets. Measured on bowl at 240px with a
+     slow phone's CPU and connection, the bowl had still not appeared after 100
+     seconds; held back, it is there in 12.
+     They are held behind data-src rather than left to loading="lazy" alone,
+     because that is a heuristic and not a promise -- the same page deferred them
+     on a throttled connection and fetched all twenty on a fast one, since the
+     browser's idea of "near the viewport" widens with bandwidth. This is the same
+     on every machine. The attribute stays as a second line for anything that
+     scrolls them into view another way. */
+  var wired=false;
+  function fetchCards(){
+    if(wired) return; wired=true;
+    [].slice.call(box.querySelectorAll('img[data-src]')).forEach(function(im){
+      im.src=im.getAttribute('data-src'); im.removeAttribute('data-src');
+    });
+  }
+
   disc.addEventListener('click', function(ev){
     ev.stopPropagation();
     var open=box.classList.toggle('open');
+    if(open) fetchCards();
     disc.setAttribute('aria-expanded', open?'true':'false');
     if(!open) unroll();
   });

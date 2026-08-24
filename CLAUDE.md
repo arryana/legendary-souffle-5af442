@@ -249,7 +249,18 @@ picture of what a thing is, not a scale drawing of it, and this site's usual ins
 the wrong instinct in a picker. The tap target is the slot and does not shrink with the drawing
 either way, so the little ones are as easy to pick as the big ones. |
 | `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
-| `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**.<br>Aug 2026, found by measuring for a 3-inch phone: the dock is one row that never wrapped and wants **369px** laid out end to end, so on anything narrower the LAST thing in it — the flower, which is the whole object chooser — was pushed clean off the right edge, and with the page unable to scroll there was no way to reach it. It cleared a 390px phone by 22px, which is exactly why it looked perfect everywhere anyone had looked. Behind that sat a second fault: the chooser popup is a fixed 326px grid and hung 43px off **both** edges of a 240px screen, so fixing the button alone would only have revealed half the flowers. Below 379px the dock now wraps to two lines and the popup drops to three slightly smaller tiles; above it, nothing applies and the dock is pixel-identical at 390, 600 and 1200. The wrapped row is **right-aligned, not centred** — the music button is pinned in the bottom-left corner and a centred second row lands straight on top of it. |
+| `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**.<br>Aug 2026, found by measuring for a 3-inch phone: the dock is one row that never wrapped and wants **369px** laid out end to end, so on anything narrower the LAST thing in it — the flower, which is the whole object chooser — was pushed clean off the right edge, and with the page unable to scroll there was no way to reach it. It cleared a 390px phone by 22px, which is exactly why it looked perfect everywhere anyone had looked. Behind that sat a second fault: the chooser popup is a fixed 326px grid and hung 43px off **both** edges of a 240px screen, so fixing the button alone would only have revealed half the flowers. Below 379px the dock now wraps to two lines and the popup drops to three slightly smaller tiles; above it, nothing applies and the dock is pixel-identical at 390, 600 and 1200. The wrapped row is **right-aligned, not centred** — the music button is pinned in the bottom-left corner and a centred second row lands straight on top of it.<br>**It did not load on the Jelly Star** — her report, Aug 2026, and it was true in the
+strongest sense. The ten bowl photographs are 1408x768 and about 1.5MB apiece, **15.7MB**
+of them, and *nothing was drawn until every one had arrived*: the first `resize()` and the
+first frame both sat behind one `Promise.all` over the lot. The picker made it worse, building
+ten `<img>` thumbnails pointing at the same full-size files. Measured at 240x350 with the CPU
+six times slower and the connection at 1.6Mbps: **the bowl had still not appeared after 100
+seconds**, having pulled 21.5MB. Only the bowl on screen is loaded now; the other nine come in
+behind the running piece **one at a time** (ten at once is worse on the machine that is already
+struggling), a thumbnail's `src` is set only once its photograph is in the cache, and asking for
+a bowl that has not arrived fetches it and takes it the moment it lands rather than swapping to
+an empty bowl. **12.0s and 2.3MB** on the same simulated phone. The other half of that fix was
+not bowl's at all — see the shelf plates' cards above, which every page was fetching on load. |
 | `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material) — **awaiting her ears**, which is the only test that counts here.<br>Two things went in Aug 2026 after she watched it. The **hanger sways** — the whole set hangs off one ring, so it is a slow heavy pendulum of its own, its weight mostly the rods well below the bar, and the rods then hang from a *moving* support and are swung by it. What drives the sway is drag, and **drag goes as the square of the wind**, which is her own observation in one line: at a light air the lean is a tenth of a pixel and the bar looks nailed up; at full wind it is 3° (about 8px at the bar, twice that at the rod tips). There is no threshold in the code — the v-squared law is the whole of it, so don't add one.<br>Underneath that, a real fault: **the swing is solved in the convention `x = tie point + sin(angle)·length`, and canvas rotates the other way.** Every rod had been drawn with `rotate(+angle)`, so the contact test was watching the mirror image of the scene on the glass — measured at full wind, the two frames disagreed about who was touching on **43% of pair-frames**, rods passed clean through each other in silence, and it chimed with a plain gap showing. Now 0%. If you ever change how a rod is drawn or hit-tested, the minus sign in `ctx.rotate(-r.angle)` is load-bearing and so are the matching signs in `rodMidWorld` and `hitTestRod`.<br>**And it tangled, and stayed tangled** — her report, with a photograph of two long
 rods lying across each other. Two faults in one, both in the contact test.<br>**A rod was a POINT, not a
 body.** The test compared the two rods' CENTRES, and when rods differ in length their centres hang at
@@ -311,7 +322,14 @@ fluid surface rather than as marks, and *"if it can't be rendered convincingly a
 until we have better tools."* Don't re-propose it as a fifth swatch on the existing renderer.<br>Aug 2026 the **pitch slider's pulse
 came out**. Its knob glowed until a visitor first touched it, and the comment in the code said in as many
 words that it "nudges a first-time visitor toward the control that actually changes the pattern" — which is
-the exact thing the *Exploring is the point* rule below forbids. It predated the rule. Don't put it back. |
+the exact thing the *Exploring is the point* rule below forbids. It predated the rule. Don't put it back.<br>Aug 2026, hers off the Kindle and the phone: **the microphone tickbox joins the sound
+line** below 820px instead of having a line to itself for one 16px box. It belongs beside the
+sound it is an alternative to — listening to the room rather than to the tone — and the plate
+gets a line of height back. The pitch is not reordered; it simply becomes the first line once
+the mic stops taking one, which is where the desktop has always put it. On a 3in screen the
+joined row wanted 229px against the 226 it had, three pixels short, and wrapped straight back
+to two lines, so below 320 the volume gives up a little length — the one thing in that row with
+any to spare. Desktop unchanged. |
 | `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
 | `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Awaiting her verdict**.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
 report: *"the ring drag is.. terrible. on every machine. the first quarter turn or so works, then it
@@ -540,6 +558,18 @@ that shelf. **That block is generated** — run `python3 tools/shelf-tags.py` fr
 root after changing the shelves table, and it rewrites the marked block on all 19 pages
 from the table itself. Don't hand-edit between the `shelf-tags` markers; the next run
 overwrites it.
+
+**The twenty cards behind those plates are held back until a plate is opened, and that
+is worth knowing because it was costing every page on the site.** They are 6.2MB of card
+art and not one of them can be seen until the disc is pressed — but each page was
+fetching all twenty on load, ahead of the piece's own assets. It surfaced as bowl not
+loading at all on the 3in phone (its own bowl photograph was queued behind them), and it
+was slowing down all nineteen. They are held behind `data-src` and swapped in when the
+plates open. **`loading="lazy"` alone is not enough and was tried**: it is a heuristic,
+not a promise — the same page deferred them on a throttled connection and fetched all
+twenty on a fast one, because the browser's idea of "near the viewport" widens with
+bandwidth. The attribute is still there as a second line for anything that scrolls them
+into view another way.
 
 **Interaction.** On a touch screen it is three taps — shelf, then card, then open — because
 a phone cannot show a card big enough to read; her idea, and the right one. With a fine
