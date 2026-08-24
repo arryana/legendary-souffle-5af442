@@ -658,11 +658,44 @@
   function drawAll(){ drawTray(); drawScope(); }
 
   // ---------- turning the scope ----------
-  let scopeDragging=false, lastX=0;
-  scopeWrap.addEventListener('pointerdown', e=>{ scopeDragging=true; lastX=e.clientX; scopeWrap.setPointerCapture(e.pointerId); });
+  // This was a SIDEWAYS SWIPE, not a turn: `turn += (clientX - lastX) * 0.012`,
+  // which reads horizontal travel and nothing else. Grab the knob at the top,
+  // pull right, and it obeys -- but the knob is now carrying round toward three
+  // o'clock, and to keep following it your hand has to move DOWN, which has no
+  // sideways component at all, so the ring stops dead. Carry on round the bottom
+  // and your hand is travelling LEFT, so it turns backwards under you. That is
+  // the whole of "the first quarter turn works and then it goes off the rails",
+  // and it was never a machine's fault: the gesture the code listened for and the
+  // gesture a bezel asks for only agree for about ninety degrees.
+  //
+  // A real bezel turns by the ANGLE your hand has moved around its centre, so
+  // that is what is measured now -- grab it anywhere, it stays under your finger
+  // all the way round, as many turns as you like, either direction. The unwrap is
+  // the load-bearing part: atan2 jumps from +pi to -pi crossing due west, and
+  // without folding that back the ring would snap a full turn every lap.
+  let scopeDragging=false, lastAng=0;
+  function ringAngle(e){
+    const r = scopeWrap.getBoundingClientRect();
+    return Math.atan2(e.clientY - (r.top + r.height/2), e.clientX - (r.left + r.width/2));
+  }
+  // Near the middle, a hand that has barely moved has swept a huge angle, so the
+  // ring would spin wildly off a twitch. Inside a tenth of the radius the angle
+  // is followed but not applied -- pick the drag up again further out and it
+  // carries on from wherever the hand actually is, with no jump.
+  function ringGrip(e){
+    const r = scopeWrap.getBoundingClientRect();
+    return Math.hypot(e.clientX - (r.left + r.width/2), e.clientY - (r.top + r.height/2)) > r.width * 0.1;
+  }
+  scopeWrap.addEventListener('pointerdown', e=>{ scopeDragging=true; lastAng=ringAngle(e); scopeWrap.setPointerCapture(e.pointerId); });
   scopeWrap.addEventListener('pointermove', e=>{
     if(!scopeDragging) return;
-    turn += (e.clientX-lastX)*0.012; lastX=e.clientX;
+    const a = ringAngle(e);
+    let d = a - lastAng;
+    if(d >  Math.PI) d -= Math.PI*2;
+    if(d < -Math.PI) d += Math.PI*2;
+    lastAng = a;
+    if(!ringGrip(e)) return;
+    turn += d;
     updateRing();
     drawScope();
   });
