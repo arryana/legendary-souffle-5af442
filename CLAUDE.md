@@ -82,7 +82,7 @@ of anything, so a number would be inventing a ranking she doesn't mean. The test
 apply to every piece is the one further down this file: *does it behave like the real
 thing?* That is a yes or a no.
 
-**12 of the 20 are done.**
+**13 of the 20 are done.**
 
 | File | On landing page? | Done? | What it is |
 |------|:---:|:---:|------------|
@@ -259,8 +259,12 @@ seconds**, having pulled 21.5MB. Only the bowl on screen is loaded now; the othe
 behind the running piece **one at a time** (ten at once is worse on the machine that is already
 struggling), a thumbnail's `src` is set only once its photograph is in the cache, and asking for
 a bowl that has not arrived fetches it and takes it the moment it lands rather than swapping to
-an empty bowl. **12.0s and 2.3MB** on the same simulated phone. The other half of that fix was
-not bowl's at all — see the shelf plates' cards above, which every page was fetching on load. |
+an empty bowl. **12.0s and 2.3MB** on the same simulated phone, and **she confirmed it on the real Jelly
+Star** — *"bowl works fine now"* — so the simulation held. The other half of that fix was not bowl's
+at all: see the shelf plates' cards above, which every page on the site was fetching on load. Worth
+drawing the general lesson, since it took a report to find it — these pages had been swept for layout
+faults several times and **nobody had ever measured what one of them FETCHES**. A sweep that only
+looks at where things land cannot see 6MB queued in front of the piece. |
 | `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material) — **awaiting her ears**, which is the only test that counts here.<br>Two things went in Aug 2026 after she watched it. The **hanger sways** — the whole set hangs off one ring, so it is a slow heavy pendulum of its own, its weight mostly the rods well below the bar, and the rods then hang from a *moving* support and are swung by it. What drives the sway is drag, and **drag goes as the square of the wind**, which is her own observation in one line: at a light air the lean is a tenth of a pixel and the bar looks nailed up; at full wind it is 3° (about 8px at the bar, twice that at the rod tips). There is no threshold in the code — the v-squared law is the whole of it, so don't add one.<br>Underneath that, a real fault: **the swing is solved in the convention `x = tie point + sin(angle)·length`, and canvas rotates the other way.** Every rod had been drawn with `rotate(+angle)`, so the contact test was watching the mirror image of the scene on the glass — measured at full wind, the two frames disagreed about who was touching on **43% of pair-frames**, rods passed clean through each other in silence, and it chimed with a plain gap showing. Now 0%. If you ever change how a rod is drawn or hit-tested, the minus sign in `ctx.rotate(-r.angle)` is load-bearing and so are the matching signs in `rodMidWorld` and `hitTestRod`.<br>**And it tangled, and stayed tangled** — her report, with a photograph of two long
 rods lying across each other. Two faults in one, both in the contact test.<br>**A rod was a POINT, not a
 body.** The test compared the two rods' CENTRES, and when rods differ in length their centres hang at
@@ -331,7 +335,9 @@ joined row wanted 229px against the 226 it had, three pixels short, and wrapped 
 to two lines, so below 320 the volume gives up a little length — the one thing in that row with
 any to spare. Desktop unchanged. |
 | `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
-| `kaleidoscope/index.html` | ✅ |  | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Awaiting her verdict**.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
+| `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
+after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
+and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
 report: *"the ring drag is.. terrible. on every machine. the first quarter turn or so works, then it
 goes off the rails."* It was `turn += (clientX - lastX) * 0.012` — horizontal travel and nothing
 else. Grab the knob at twelve o'clock, pull right, and it obeys; but the knob is now carrying round
@@ -416,7 +422,23 @@ what the plate would have drawn since local midnight in one pass and lays it dow
 which is why it's a checkbox and not the default: at the true rate the turn is very nearly
 imperceptible, the better part of a day for one rosette, and the trace comes out as swept ground
 rather than separate lines because successive passes land 0.007° apart — closer than a grain is wide.
-The swing itself stays exactly as lively as ever. |
+The swing itself stays exactly as lively as ever.<br>**The rate was wrong, and had been since the checkbox was added.** She suspected the
+piece after real-time arrived and asked for it checked before running it on the machines; she was
+right to, though not about what. `DAY=86400` — the **solar** day — was driving the precession, and
+what a Foucault plane turns against is the **fixed stars**, so the day that governs it is the
+**sidereal** one, 86164.0905s. It is why the textbook figure is 15.041°/hour and not a round 15.
+Measured on the running page before the fix: a full turn at the pole took **24h 00m** against the
+real **23h 56m 04s**, and every latitude ran **0.27% slow**. After: 23h 56m 04s exactly, and the
+rate matches 15.041·sin(lat) at 90, 60, 51.5, 30, 0, −34 and −90°, with the sign right in both
+hemispheres. Invisible to anyone watching — about a degree of lag after a whole day — and wrong all
+the same, which is the standard this piece was signed off against. The same constant also drove the
+manual speed-slider mode, so that is now right too.<br>**The hiccups she expected are not there**, and
+that is measured rather than assumed. Ticking the box, moving latitude and resizing each re-derive
+the whole rosette in one pass; worst frame gap on a desktop 73ms, and on a Kindle-speed CPU 129ms
+when the box is ticked, 30–91ms otherwise — one hitch, at the moment you ask for it, never a freeze.
+`rebuildRealTrace` clears its own pending flag on its first line, so it cannot run every frame, and
+the rebuild is deferred while the globe is being dragged so it happens once on release. After all of
+it the angle still equals the pure clock function, so nothing accumulates or drifts. |
 | `storm/index.html` | ✅ | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo)<br>**Done**, and the piece that finishes instrumenta. Fifth through her four-device test, Aug 2026,
 and four things came out of it.<br>**The needle lied whenever it had nothing to say.** Untranslated,
 `#baro-needle-g` sits at x=0 in its own SVG — off the left-hand end of the printed scale, past
@@ -844,19 +866,52 @@ a **Kindle Fire** and a **Unihertz Jelly Star** (a 3in phone, about 240px across
 finished until she has run it on all four. Her words: *"I intend to finish every one of them to the
 same standard."*
 
-**Through as of Mon 24 Aug 2026: candler, conometer, galileo, windower, storm, warmler** — every fault they turned
-up is fixed and live, and the details are in each one's row above. The case itself was worked on the
-same day: light on the wall behind it, the white cut line off all five plates, darker arrows in the
-two discs.
+**Through as of Mon 24 Aug 2026: candler, conometer, galileo, windower, storm, warmler, chladni,
+bowl, roller, kaleidoscope, gyre** — her call on all eleven; every fault they turned up is fixed and live, and
+the details are in each one's row above. The case itself was worked on the same day: light on the wall behind it, the
+white cut line off all five plates, darker arrows in the two discs.
 
-**Her order from here**: instrumenta is finished — `storm` closed it on Mon 24 Aug. She is into
-**tactilia** and **systema** now, six pieces between them, which she expected may both go in a day
-and which is running that way: `warmler` passed the same morning with nothing to repair, and she
-went straight to `roller`. Then **natura**, which she expects to cost the most in repairs and
-testing. Worth knowing when that shelf comes up: all four natura pieces animate
-continuously, and on a Kindle Fire the thing that bites an animated canvas is frame rate, which is a
-fault class none of the pieces tested so far could expose. Budget it for watching rather than
-repairing.
+**Eleven through, nine to go**, by shelf: **instrumenta 5/5**, **tactilia 3/3**, systema 1/3
+(`gyre`, straight after its two changes — *"gyre works on everything too"*), phenomena 2/5 (`bowl`
+and `chladni`), natura 0/4. The nine left are `musebox`, `chimes`, `lamp`, `rain`, `pendulum`,
+`birds`, `fireflies`, `moths`, `ant`. `chladni` and `bowl` cost one repair each on the afternoon of
+the 24th — the microphone tickbox onto the sound line, and bowl not loading at all on the 3in phone.
+Bowl's is the one to remember: it was **two** faults, and the larger belonged to every page on the
+site rather than to bowl.
+
+**Her order from here**: **instrumenta and tactilia are both finished** as of Mon 24 Aug — `storm`
+closed the first, and `warmler`, `roller` and `kaleidoscope` the second. `bowl` and `chladni` are
+through off **phenomena**, which leaves `lamp`, `rain` and `pendulum` there. In **systema**, `gyre` is through and
+**`musebox` and `chimes` are repaired and waiting on her devices** — the last two pieces of the day's
+work she has not yet run. Chimes needs its rods set to DIFFERENT LENGTHS or the tangle it was
+reported for cannot appear at all. Then **natura**, which she expects to cost the most in repairs and
+testing — and **it is last on purpose, not by accident**. Her reasoning, in her own words: she is
+doing this *personally* over four machines, and she is *"deliberately leaving the 'slowest' ones for
+last, so they don't get rushed and are tested in all states"*. All four natura pieces animate
+continuously and three run on the clock — birds at sunset, fireflies from dusk to night, moths from
+dusk to dark — so testing one is not a pass over its controls but sitting with it through its whole
+cycle, on each machine. On a Kindle Fire the thing that bites an animated canvas is frame rate, which
+is a fault class none of the pieces tested so far could expose. Budget it for watching rather than
+repairing, **don't propose reordering the shelf to get a number up, and don't propose a shortcut
+through natura**. The slowness is the test.
+
+**What she expects from the nine still to run** (Mon 24 Aug, her own read — recorded because a
+session that only counts ✅s will guess this wrong, as one did):
+- `musebox`, `chimes` — **unguessable until she hears them.** Both were rebuilt by ear this month and
+  sound is the one thing no measurement here settles.
+- `lamp` — **may not be a test at all but a build.** The tap-the-base-for-fuel idea in its row is
+  still unbuilt, and she may want it made before she calls the piece run.
+- `pendulum` — **she doubts it, and the doubt is well founded.** Its ✅ was given for precession,
+  swing and pin ring verified by measurement, and the **real-world-time checkbox came after that**, so
+  the mark predates the feature. She expects hiccups. A Done mark records what was true when it was
+  given; it does not follow the piece forward.
+- `rain` — *"as done as i can make it without an animating software"*, so likely quick, and any
+  remaining wish there is a tooling problem rather than a fault.
+- `birds`, `fireflies`, `moths`, `ant` — **the big lift**, as above.
+
+The general point, which cost a wrong guess: **"marked done and untouched today" does not mean
+"quick".** Two of the four pieces that fitted that description are the ones she expects most work
+from.
 
 ### Three faults turned out to be systemic, so all sixteen untested pieces were swept for them
 
