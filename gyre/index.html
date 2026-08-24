@@ -158,6 +158,7 @@
   const lampPreview=mkLamp(0,0);   // static, never added to lamps[] — only used to draw the tray's catalogue icon (box + its gears + screw), so the picker shows what you're actually picking
 
   const TRAY=[8,12,16,22,30,40];
+  const TRAY_MAX=Math.max(...TRAY);   // the biggest gear sets the scale the rack is drawn at
   let trayRects=[], lampTrayRect=null;
   function layoutTray(){
     const n=TRAY.length+1;
@@ -176,8 +177,10 @@
       const slot=Math.min(70,band/n);
       const x=Math.max(slot*0.62+18, 30);
       const y0=bandTop+(band-n*slot)/2;
-      trayRects=TRAY.map((N,i)=>({N,cx:x,cy:y0+slot*i+slot/2,hit:slot*0.42}));
-      lampTrayRect={cx:x, cy:y0+slot*TRAY.length+slot/2, hit:slot*0.42};
+      // the lamp stands at the head of the column -- her call -- and the gears keep
+      // the order they were already in, smallest first, behind it
+      lampTrayRect={cx:x, cy:y0+slot/2, hit:slot*0.42};
+      trayRects=TRAY.map((N,i)=>({N,cx:x,cy:y0+slot*(i+1)+slot/2,hit:slot*0.42}));
       return;
     }
     const slot=Math.min(70,(W*0.82)/n), x0=W/2-(n*slot)/2;
@@ -188,8 +191,9 @@
     // mistake. The row drops below them. At full zoom this moves it 3px and
     // nothing else.
     const y=Math.max(92, 60/SCALE + slot/2);
-    trayRects=TRAY.map((N,i)=>({N,cx:x0+slot*i+slot/2,cy:y,hit:slot*0.42}));
-    lampTrayRect={cx:x0+slot*TRAY.length+slot/2, cy:y, hit:slot*0.42};
+    // a row has no top, so the head of it is the near end: the lamp leads here too
+    lampTrayRect={cx:x0+slot/2, cy:y, hit:slot*0.42};
+    trayRects=TRAY.map((N,i)=>({N,cx:x0+slot*(i+1)+slot/2,cy:y,hit:slot*0.42}));
   }
   let inited=false;
   function initGears(){
@@ -654,7 +658,14 @@
 
     ctx.clearRect(0,0,W,H);
     // tray
-    for(const t of trayRects){ ctx.save(); ctx.translate(t.cx,t.cy); const s=Math.min(1,(t.hit*0.95)/outerR(t.N)); ctx.scale(s,s); gearBody(t.N,false,false); ctx.restore(); }
+    // Every gear used to be scaled to FILL its own slot, so an 8-tooth pinion and a
+    // 40-tooth wheel came out within a pixel of each other and the menu told you
+    // nothing about what you were picking. One scale for the whole rack instead,
+    // set by the biggest gear in it, so they stand in true proportion: the smallest
+    // is 24% of the largest, because it is. The tap target is the slot and does not
+    // shrink with the drawing.
+    const trayScale = (trayRects.length ? trayRects[0].hit : 0)*0.95/outerR(TRAY_MAX);
+    for(const t of trayRects){ ctx.save(); ctx.translate(t.cx,t.cy); const s=Math.min(1,trayScale); ctx.scale(s,s); gearBody(t.N,false,false); ctx.restore(); }
     if(lampTrayRect){ ctx.save(); ctx.translate(lampTrayRect.cx,lampTrayRect.cy);
       // drawLamp applies its own extra 1/LAMP_GS scale (needed on the real board so the lamp's
       // gears match every other gear's true size) — multiply that back in here so the tray icon
