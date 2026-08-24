@@ -82,7 +82,7 @@ of anything, so a number would be inventing a ranking she doesn't mean. The test
 apply to every piece is the one further down this file: *does it behave like the real
 thing?* That is a yes or a no.
 
-**10 of the 20 are done.**
+**12 of the 20 are done.**
 
 | File | On landing page? | Done? | What it is |
 |------|:---:|:---:|------------|
@@ -107,7 +107,12 @@ found is fixed and re-checked on the devices themselves, not in a screenshot. ca
 through that test, and the standard for the ones that follow. |
 | `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does." |
 | `lamp/index.html` | ✅ | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. A fuel level you find by *tapping* the base is designed but not built; the note in the file records which way the pitch must go<br>**Done** as it stands — the tap-for-fuel idea is recorded as a future build, not a gap in it. |
-| `warmler/index.html` | ✅ |  | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked) |
+| `warmler/index.html` | ✅ | ✅ | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked)<br>**Done** — through her four-device test Aug 2026 with nothing to repair: *"i honestly can't
+find any fault with warmler. it's a simple twiddle toy, and now that we have the edge issues
+worked out, it's fine on all four machines."* The edge issues were the two already fixed in the
+site-wide sweeps — the music button sitting on the finish trigger at 390px, and the `<button>`
+face showing behind `#finishTrigger`'s cut-out — so this is the first piece to pass on the
+strength of work done before she ever opened it, rather than on repairs found by opening it. |
 | `rain/index.html` | ✅ |  | Rain on glass |
 | `ant/index.html` | ✅ |  | Ants |
 | `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Fourth piece
@@ -258,7 +263,48 @@ which is why it's a checkbox and not the default: at the true rate the turn is v
 imperceptible, the better part of a day for one rosette, and the trace comes out as swept ground
 rather than separate lines because successive passes land 0.007° apart — closer than a grain is wide.
 The swing itself stays exactly as lively as ever. |
-| `storm/index.html` | ✅ |  | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo) |
+| `storm/index.html` | ✅ | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo)<br>**Done**, and the piece that finishes instrumenta. Fifth through her four-device test, Aug 2026,
+and four things came out of it.<br>**The needle lied whenever it had nothing to say.** Untranslated,
+`#baro-needle-g` sits at x=0 in its own SVG — off the left-hand end of the printed scale, past
+STORMY, below 950 — so between page load and open-meteo's first reply, and permanently whenever
+the weather could not be reached at all, the dial showed a catastrophic low nobody had measured
+while the readout beside it honestly said nothing. Correct underneath and a lie to look at, which
+is the *reads as broken* class the standard below names. It is not drawn until it has a pressure
+to point at, and the first placement suppresses the .9s sweep so it is never seen travelling up
+from a position it was never at.<br>**The tendency is a mark now, not a sentence** — her call, and
+the last prose on any piece. Chevrons pointing where the pressure is going, **one per rung of the
+WMO tendency scale**: slowly, plain, rapidly, very rapidly, with a level bar for steady. Four, not
+the three she first sketched — three would have had to merge two speeds of a real scale, and the
+scale is the reason the readout is trustworthy. The words are still exact and still there: touch
+the mark and it gives them, touch it again or anything around it and they go, which is galileo's
+own rule for a popup. The steady bar cannot be read as the reading's own dash, since that shows
+only when there is no pressure at all — and then the mark is off the page.<br>**The brass hand got
+candler's pin treatment**, her own reminder that this was already settled: a transparent rect
+inside the hand's `<g>`, no brass moved. Two things differ from a pin. The SVG is scaled to the
+screen, so the rect is measured in the units that make it a real 44px wherever it is and
+re-measured on resize; and on the 3in phone the whole dial is 39px tall, so it takes the dial's
+full height and stops. Measured: 0x0 on desktop, 44x44 at 390 and on the Kindle, 36x39 on the 3in
+phone, against brass of 11.2 / 7.3 / 4.5px. A tap still never moves the hand — only a drag — and
+the drag keeps the offset it was taken hold of at, or a wide grab box would snap the hand out from
+under a thumb.<br>**And the needle was swallowing the grab.** It is painted after the hand and its
+stroke took pointer events, so a grab landing at the needle's own position never reached the hand —
+which is exactly where the hand is meant to be parked, since setting it against the needle is the
+whole use of the instrument. Half of the piece's one gesture was dead. The needle is a reading, not
+a control, and takes nothing now.<br>**The 3in phone: the key was eating the piece.** Eight buttons,
+each an icon *and* a 24px thumbnail of the glass, wrapped to three rows and took 169px of a 350px
+screen — and `#scene-wrap`, an ordinary flex item, gave way to it and shrank to **13px across**.
+Eight little glasses on screen, every one of them bigger than the real one. Below 380 the
+thumbnails come off and the icons stay, four to a row: the thumbnail is the one genuinely redundant
+thing at that size, since the glass itself is a tap away and changes instantly, and it was being
+paid for out of the glass's own room. Nothing hidden, no new gesture, nothing to discover. Glass
+13x22 -> 91x155 at 240x350; above 380 nothing applies and the page is pixel-identical, measured at
+380 and 390.<br>**Sideways on that phone is 180px tall and no arrangement fits it** — the barometer
+alone is 88px of it. That one is allowed to **scroll**, which is the answer she took for
+kaleidoscope when content genuinely did not fit: the glass is held to a size rather than shrunk to
+a sliver, and everything is reachable. The `(orientation: landscape)` qualifier on that rule is
+load-bearing — the same phone is 350px tall in portrait, where the compact key already fits with
+room to spare, and without it the rule set a page scrolling that didn't need to and pushed the
+glass up under the two brass discs. A Kindle in landscape is 476 tall and never reaches it. |
 | `crystal.html` | — | — | A crystal (not linked from the landing page) |
 | `chest.html`, `chest-open.html` | — | — | Dead apothecary-chest drafts she turned down; kept as a record, not linked |
 
@@ -632,14 +678,16 @@ a **Kindle Fire** and a **Unihertz Jelly Star** (a 3in phone, about 240px across
 finished until she has run it on all four. Her words: *"I intend to finish every one of them to the
 same standard."*
 
-**Through as of Fri 21 Aug 2026: candler, conometer, galileo, windower** — every fault they turned
+**Through as of Mon 24 Aug 2026: candler, conometer, galileo, windower, storm, warmler** — every fault they turned
 up is fixed and live, and the details are in each one's row above. The case itself was worked on the
 same day: light on the wall behind it, the white cut line off all five plates, darker arrows in the
 two discs.
 
-**Her order from here**: `storm` finishes instrumenta; then **tactilia** and **systema**, six pieces
-between them, which she expects may both go in a day; then **natura**, which she expects to cost the
-most in repairs and testing. Worth knowing when that shelf comes up: all four natura pieces animate
+**Her order from here**: instrumenta is finished — `storm` closed it on Mon 24 Aug. She is into
+**tactilia** and **systema** now, six pieces between them, which she expected may both go in a day
+and which is running that way: `warmler` passed the same morning with nothing to repair, and she
+went straight to `roller`. Then **natura**, which she expects to cost the most in repairs and
+testing. Worth knowing when that shelf comes up: all four natura pieces animate
 continuously, and on a Kindle Fire the thing that bites an animated canvas is frame rate, which is a
 fault class none of the pieces tested so far could expose. Budget it for watching rather than
 repairing.

@@ -110,6 +110,48 @@
   .keyItem svg{ width:17px; height:17px; color:#dfe6ea; flex-shrink:0; }
   .keyItem canvas{ width:24px; height:auto; display:block; border-radius:2px; }
 
+  /* ---------- the 3in phone ----------
+     Below 380 the key was eating the piece. Eight buttons, each an icon AND a 24px
+     thumbnail of the glass, wrapped to three rows and took 169px of a 350px screen
+     -- and #scene-wrap, being an ordinary flex item, gave way to it and shrank to
+     THIRTEEN pixels across. Eight little glasses on screen, all of them bigger than
+     the real one.
+     So down here the thumbnails come off and the icons stay, four to a row. The
+     thumbnail is the one thing on the page that is genuinely redundant at this
+     size: the glass itself is a tap away and changes instantly, so a 24px picture
+     of it is a worse view of the same thing, and it is being paid for out of the
+     glass's own room. The icons are already distinct from each other and they are
+     what the row is FOR. Nothing is hidden, no new gesture, nothing to discover.
+     The stage's own padding gives a little too -- the two brass discs are fixed and
+     the glass is far too narrow here to reach them. Above 380 none of this applies
+     and the piece is what it always was, measured. */
+  @media (max-width: 379px){
+    #stage{ padding:2.4vh 3vw 1.2vh; gap:1.2vh; }
+    .keyItem canvas{ display:none; }
+    .keyItem{ flex:0 0 calc(25% - 3px); justify-content:center; padding:7px 4px; }
+    #key{ gap:3px; }
+  }
+  /* The 3in phone turned sideways is 180px tall, and no arrangement puts a storm
+     glass, a barometer, a dock and eight states into that -- the barometer alone
+     is 88px of it. So this is the one place the page is allowed to SCROLL, which
+     is the answer she took for kaleidoscope when the content genuinely did not
+     fit: everything reachable, nothing squeezed to a sliver, rather than a tidy
+     screen with the piece missing off the bottom of it. The glass is held to a
+     size instead of being shrunk to fit, which is why it needs the scroll.
+     Landscape only, and that qualifier is load-bearing: the 3in phone is 350px
+     tall in PORTRAIT too, where the compact key above already makes everything
+     fit with room to spare. Without it this rule caught portrait as well, set the
+     page scrolling that did not need to scroll, and pushed the glass up under the
+     two brass discs. A Kindle in landscape is 476 tall and never reaches this. */
+  @media (max-height: 430px) and (orientation: landscape){
+    html,body{ height:auto; overflow:visible; }
+    #stage{ height:auto; min-height:calc(var(--vh, 1vh) * 100); padding:3vh 3vw 4vh; gap:1.4vh; }
+    #scene-wrap{ height:min(calc(var(--vh, 1vh) * 76), 300px); flex-shrink:0; }
+    #barometer, #key, #dock{ flex-shrink:0; }
+    .keyItem canvas{ display:none; }
+    .keyItem{ justify-content:center; padding:7px 8px; }
+  }
+
   /* a quiet flag, always available, for checking the weather somewhere other than
      wherever the visitor actually is — opens a small search bar, never on by default */
   #loc-flag{
