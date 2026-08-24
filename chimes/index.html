@@ -161,6 +161,10 @@
   const SEPARATE = 3;                   // and this much further apart before they can meet again
   const RESTITUTION = 0.45;             // rods are not bouncy; most of the closing speed is lost
   const MIN_STRIKE_SPEED = 5;           // below this they are nudging each other, not striking
+  // which PAIRS are currently in contact, so a rod resting against one neighbour
+  // can still ring against another. A per-rod flag could not say who was touching
+  // whom, and with every pair now tested it would have muted real strikes.
+  const touching = new Set();
   const CORD_THICK = { rope:7, chain:5, string:3 };
   const HANGER_W = 172;
 
@@ -374,6 +378,48 @@
     return suspend(i,n).x + Math.sin(r.angle)*eff;
   }
 
+  /* Where two rods actually meet, if they meet at all.
+     A rod is a BODY, not a point. The contact test used to compare the two rods'
+     CENTRES and treat each as a single point, and that cannot see the thing she
+     photographed: when rods differ in length their centres hang at quite
+     different depths, so two of them can be lying right across each other while
+     their centre points are nowhere near. Measured on an arrangement of long and
+     short rods, some pair was passing clean through another on 96.7% of frames,
+     six pairs at once at worst, and the longest tangle ran 14.7 SECONDS -- it
+     never resolved, because nothing in the old test could see it to resolve. On
+     the default set of rods, which are all much of a length, it never happened
+     once, which is why it survived this long.
+     Two rods hanging in a row can only touch where they are at the same DEPTH.
+     Each is a straight line from its own tie point, so the sideways gap between
+     them across their shared depth band is linear in depth and its smallest
+     value is at one end of that band or the other -- so two evaluations find the
+     contact exactly, no marching along the rod.
+     The gap is SIGNED, and that is the other half of the fault. Rod i is tied to
+     the bar to the left of rod j and cannot get past it; comparing magnitudes let
+     a crossed pair read as a comfortably separated one, so nothing ever pushed
+     them back -- "and appears to stay tangled". */
+  function contactBetween(i, j, n){
+    const a = state.rods[i], b = state.rods[j];
+    const spA = suspend(i,n), spB = suspend(j,n);
+    const ca = Math.cos(a.angle), cb = Math.cos(b.angle);
+    if(ca <= 0.05 || cb <= 0.05) return null;          // swung to horizontal: no depth to compare
+    const aTop = spA.y + ca*state.cordLength, aBot = spA.y + ca*(state.cordLength + a.rodLength);
+    const bTop = spB.y + cb*state.cordLength, bBot = spB.y + cb*(state.cordLength + b.rodLength);
+    const yTop = Math.max(aTop, bTop), yBot = Math.min(aBot, bBot);
+    if(yBot <= yTop) return null;                      // they are never at the same depth
+    const tA = Math.tan(a.angle), tB = Math.tan(b.angle);
+    let sep = Infinity, at = yTop;
+    for(let k=0;k<2;k++){
+      const y = k ? yBot : yTop;
+      const s = (spB.x + tB*(y-spB.y)) - (spA.x + tA*(y-spA.y));
+      if(s < sep){ sep = s; at = y; }
+    }
+    // the lever arms are the distance down each rod to the point they touch at,
+    // not to their centres -- a knock near the tip turns a rod far more than the
+    // same knock at its throat
+    return { sep, dA: Math.max(1,(at-spA.y)/ca), dB: Math.max(1,(at-spB.y)/cb) };
+  }
+
   function tick(now){
     if(lastT===null) lastT = now;
     const dt = Math.min((now-lastT)/1000, 1/45); lastT = now;
@@ -421,35 +467,38 @@
         r.angVel += angAcc*h;
         r.angle  += r.angVel*h;
       }
-      // contacts between neighbours, resolved this sub-step
-      for(let i=0;i<n-1;i++){
-        const a = state.rods[i], b = state.rods[i+1];
-        const effA = state.cordLength+a.rodLength*0.5, effB = state.cordLength+b.rodLength*0.5;
-        const ax = bobX(a,i,n), bx = bobX(b,i+1,n);
-        const gap = Math.abs(ax-bx);
-        if(gap >= COLLIDE_DIST + SEPARATE){ a.touching = false; continue; }
-        if(gap >= COLLIDE_DIST){ continue; }
-        const dir = Math.sign(bx - ax) || 1;
+      // Contacts, resolved this sub-step. EVERY pair, not just neighbours: a long
+      // rod reaches past a short one entirely, so two rods with a stubby one
+      // between them can meet at a depth their neighbour never gets down to, and
+      // an adjacent-only loop has no constraint linking them at all.
+      for(let i=0;i<n-1;i++) for(let j=i+1;j<n;j++){
+        const a = state.rods[i], b = state.rods[j];
+        const key = i*64 + j;
+        const ct = contactBetween(i,j,n);
+        if(!ct){ touching.delete(key); continue; }
+        if(ct.sep >= COLLIDE_DIST + SEPARATE){ touching.delete(key); continue; }
+        if(ct.sep >= COLLIDE_DIST){ continue; }
 
-        // separate them so the two solid rods never occupy the same space -- the old
-        // code only nudged velocities and let the bodies overlap and pass through
-        const overlap = COLLIDE_DIST - gap;
-        a.angle -= (overlap*0.5/effA)*dir;
-        b.angle += (overlap*0.5/effB)*dir;
+        // separate them so the two solid rods never occupy the same space. sep can
+        // be NEGATIVE here -- that is a pair already crossed -- and the push is
+        // capped so recovering from one is a shove rather than a teleport.
+        const overlap = Math.min(COLLIDE_DIST - ct.sep, COLLIDE_DIST*1.5);
+        a.angle -= overlap*0.5/ct.dA;
+        b.angle += overlap*0.5/ct.dB;
 
-        const closing = (a.angVel*effA - b.angVel*effB) * dir;   // >0 = coming together
+        const closing = a.angVel*ct.dA - b.angVel*ct.dB;   // >0 = coming together
         if(closing <= 0){ continue; }
 
-        const j = (1 + RESTITUTION) * closing / (1/a.rodLength + 1/b.rodLength);
-        a.angVel -= (j/a.rodLength) * dir / effA;
-        b.angVel += (j/b.rodLength) * dir / effB;
+        const imp = (1 + RESTITUTION) * closing / (1/a.rodLength + 1/b.rodLength);
+        a.angVel -= (imp/a.rodLength) / ct.dA;
+        b.angVel += (imp/b.rodLength) / ct.dB;
 
-        if(!a.touching && closing > MIN_STRIKE_SPEED){
+        if(!touching.has(key) && closing > MIN_STRIKE_SPEED){
           ensureAudio();
           strike(pitchFor(a.rodLength, state.rodMaterial), closing, state.rodMaterial);
           strike(pitchFor(b.rodLength, state.rodMaterial), closing, state.rodMaterial);
         }
-        a.touching = true;
+        touching.add(key);
       }
     }
 

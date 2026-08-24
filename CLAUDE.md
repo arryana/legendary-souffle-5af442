@@ -218,10 +218,61 @@ flag's field has focus. The flag also answers **Enter directly** rather than rel
 itself: an on-screen keyboard is not a keyboard, and the Go key on some Android browsers leaves a one-field
 form alone. **The same flag is on `galileo`, `windower`, `storm`, `pendulum`, `chimes` and `fireflies`, and
 they have not had that line yet.** |
-| `gyre/index.html` | ✅ | ✅ | Meshable **gears** you place and connect on a board, plus a signal-lamp piece whose lights are driven by the gear train. See `gears.md` for how the gear math/rendering works<br>**Done**. |
+| `gyre/index.html` | ✅ | ✅ | Meshable **gears** you place and connect on a board, plus a signal-lamp piece whose lights are driven by the gear train. See `gears.md` for how the gear math/rendering works<br>**Done**.<br>Two of hers, Aug 2026.<br>**The parts stand in a column down the left on a screen wider than it is
+tall.** The tray used to run across the top, which is the whole width of the board it exists to help
+you fill; the room that frees is the point of the change. It falls back to the row when the column
+would not fit — measured, a 3in phone sideways leaves a band of 156 units between the brass disc and
+the dock against the 308 seven parts need, and both are pinned in SCREEN pixels so how much of the
+BOARD they eat depends on the zoom below.<br>**And the board zooms out on a small screen.** The lamp
+box is **353 board units** across and every gear is sized off one fixed `MODULE`, so on the Jelly
+Star the box was **wider than the whole screen** (353 against 240) and a 40-tooth gear came out
+227px. Scaling the lamp alone is not available: its two gears are deliberately built to the same
+`MODULE` as every other gear so they can mesh with them, and shrinking one side of a mesh is not
+something a mesh survives. So the whole board zooms together — `W`/`H` became board units,
+`SCALE` stands between them and the screen, and the one place the pointer comes in divides by it.
+Everything else on the page is written in board units and never learns the screen exists.
+`SCALE=min(1, vw/620, vh/560)`, so it never zooms **in** and a desktop is pixel-identical. Lamp box
+measured on screen: **353 -> 136px** at 240 wide, 221px at 390, unchanged at 1440. The horizontal
+tray also drops below the two brass discs now: they are pinned in screen pixels, so zoomed out they
+reached far enough down the board that the first gear sat under the back arrow and the lamp under the
+shelf disc — the half-on-half-off reading her conometer rule calls a mistake. At full zoom that moves
+the row 3px and nothing else.<br>Two tweaks of hers after seeing it: **the lamp stands at the head of
+the menu** (the gears keep the order they were in behind it), and **the gears in the menu are graded by
+size** (the menu only — the gears on the board are untouched). Each used to be scaled to FILL its own
+slot, so an 8-tooth pinion and a 40-tooth wheel came out within a pixel of one another and the menu
+told you nothing about what you were picking. **True proportion is the wrong answer here and was
+tried**: at true proportion the smallest is 24% of the largest and on a zoomed-out board it came out
+a speck. Her ruling — *"for this purpose clarity is paramount... split the difference a bit"* — so the
+drawn size follows the **square root** of the true ratio, putting the smallest at 49% of the largest:
+plainly the small one, plainly still a gear. Worth remembering as a general point: a menu is a
+picture of what a thing is, not a scale drawing of it, and this site's usual instinct for fidelity is
+the wrong instinct in a picker. The tap target is the slot and does not shrink with the drawing
+either way, so the little ones are as easy to pick as the big ones. |
 | `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
 | `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**.<br>Aug 2026, found by measuring for a 3-inch phone: the dock is one row that never wrapped and wants **369px** laid out end to end, so on anything narrower the LAST thing in it — the flower, which is the whole object chooser — was pushed clean off the right edge, and with the page unable to scroll there was no way to reach it. It cleared a 390px phone by 22px, which is exactly why it looked perfect everywhere anyone had looked. Behind that sat a second fault: the chooser popup is a fixed 326px grid and hung 43px off **both** edges of a 240px screen, so fixing the button alone would only have revealed half the flowers. Below 379px the dock now wraps to two lines and the popup drops to three slightly smaller tiles; above it, nothing applies and the dock is pixel-identical at 390, 600 and 1200. The wrapped row is **right-aligned, not centred** — the music button is pinned in the bottom-left corner and a centred second row lands straight on top of it. |
-| `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material) — **awaiting her ears**, which is the only test that counts here.<br>Two things went in Aug 2026 after she watched it. The **hanger sways** — the whole set hangs off one ring, so it is a slow heavy pendulum of its own, its weight mostly the rods well below the bar, and the rods then hang from a *moving* support and are swung by it. What drives the sway is drag, and **drag goes as the square of the wind**, which is her own observation in one line: at a light air the lean is a tenth of a pixel and the bar looks nailed up; at full wind it is 3° (about 8px at the bar, twice that at the rod tips). There is no threshold in the code — the v-squared law is the whole of it, so don't add one.<br>Underneath that, a real fault: **the swing is solved in the convention `x = tie point + sin(angle)·length`, and canvas rotates the other way.** Every rod had been drawn with `rotate(+angle)`, so the contact test was watching the mirror image of the scene on the glass — measured at full wind, the two frames disagreed about who was touching on **43% of pair-frames**, rods passed clean through each other in silence, and it chimed with a plain gap showing. Now 0%. If you ever change how a rod is drawn or hit-tested, the minus sign in `ctx.rotate(-r.angle)` is load-bearing and so are the matching signs in `rodMidWorld` and `hitTestRod`. |
+| `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material) — **awaiting her ears**, which is the only test that counts here.<br>Two things went in Aug 2026 after she watched it. The **hanger sways** — the whole set hangs off one ring, so it is a slow heavy pendulum of its own, its weight mostly the rods well below the bar, and the rods then hang from a *moving* support and are swung by it. What drives the sway is drag, and **drag goes as the square of the wind**, which is her own observation in one line: at a light air the lean is a tenth of a pixel and the bar looks nailed up; at full wind it is 3° (about 8px at the bar, twice that at the rod tips). There is no threshold in the code — the v-squared law is the whole of it, so don't add one.<br>Underneath that, a real fault: **the swing is solved in the convention `x = tie point + sin(angle)·length`, and canvas rotates the other way.** Every rod had been drawn with `rotate(+angle)`, so the contact test was watching the mirror image of the scene on the glass — measured at full wind, the two frames disagreed about who was touching on **43% of pair-frames**, rods passed clean through each other in silence, and it chimed with a plain gap showing. Now 0%. If you ever change how a rod is drawn or hit-tested, the minus sign in `ctx.rotate(-r.angle)` is load-bearing and so are the matching signs in `rodMidWorld` and `hitTestRod`.<br>**And it tangled, and stayed tangled** — her report, with a photograph of two long
+rods lying across each other. Two faults in one, both in the contact test.<br>**A rod was a POINT, not a
+body.** The test compared the two rods' CENTRES, and when rods differ in length their centres hang at
+quite different depths — so two rods can be lying right across one another while their centre points
+are nowhere near. Measured on an arrangement of long and short rods at full wind: some pair was
+passing clean through another on **96.7% of frames**, six pairs at once at worst, and the longest
+tangle ran **14.7 seconds**. On the default set, where the rods are all much of a length, it never
+happened once, which is exactly why it survived — *don't test this piece on the default rods alone*.
+Two rods hanging in a row can only meet where they are at the same **depth**, and each is a straight
+line from its own tie point, so the sideways gap across their shared depth band is linear in depth
+and its smallest value is at one end of that band or the other: two evaluations find the contact
+exactly. The lever arm is the distance down each rod to where they actually touch, not to its centre
+— a knock near the tip turns a rod far more than the same knock at its throat.<br>**And the gap is
+SIGNED now**, which is the "stays tangled" half. Rod i is tied to the bar to the left of rod j and
+cannot get past it, but the test compared MAGNITUDES, so a crossed pair read as a comfortably
+separated one and nothing ever pushed it back.<br>**Every pair is tested, not just neighbours**: a
+long rod reaches past a short one entirely, so two rods with a stubby one between them meet at a
+depth their neighbour never reaches, and an adjacent-only loop has no constraint linking them.
+`touching` had to become a set of PAIRS rather than a flag per rod, or a rod resting on one neighbour
+would have muted its strike against another. Interpenetration is **0%** now on both sets. It also
+chimes *more*, which is the point: measured at full wind over 20s, the mixed set went from 210
+oscillators to 312 and the default set from 264 to 330 — those were strikes that should always have
+sounded and didn't, because the rods were passing through each other in silence. |
 | `chladni/index.html` | ✅ | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound<br>**Done**. Aug 2026 it was given **substances**, in
 two families that are a real inversion of each other and not a recolour: heavy grains (sand, salt)
 are thrown off the moving plate and pile on the **nodal lines**, while very fine powder (lycopodium,
