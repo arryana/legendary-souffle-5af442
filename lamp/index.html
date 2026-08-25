@@ -50,12 +50,36 @@
      wick + flame on top. Matching the photo's real proportions (848x1239)
      keeps it edge-to-edge, so the ambient glow only shows in the margins and
      never as a hard-edged box. */
+  /* The dock is fixed to the foot of the page and the lamp used to be centred in
+     the whole of it, so on a short screen the bottom of the photograph lay under
+     the controls. That cost only the base's shadow until now; it costs the NAIL
+     once there is one, and the nail is the one thing here you have to be able to
+     reach. --avail is the room the dock leaves, measured in JS; the 72vh is the
+     fallback for the first frame and for no script at all. */
   #lampBox{
     position:relative;
-    width:min(90vw, 480px, calc(72vh * 848 / 1239));
+    width:min(90vw, 480px, calc(var(--avail, 72vh) * 0.94 * 848 / 1239));
     aspect-ratio:848 / 1239;
   }
+  #stage{ height:var(--avail, 100%); bottom:auto; }
+  /* A three-inch phone turned sideways is 180px tall, and no arrangement fits a
+     photograph of a tall lamp into it -- centring in what the dock leaves would
+     give a lamp 44px wide. That one is allowed to SCROLL, which is the answer she
+     took for kaleidoscope and for storm where content genuinely does not fit: the
+     lamp is held to a size rather than shrunk to a sliver, and everything is
+     reachable. A Kindle in landscape is 476 tall and never reaches this. */
+  @media (max-height: 430px) and (orientation: landscape){
+    html,body{ height:auto; overflow:visible; }
+    #stage{ position:static; height:auto; padding:14px 0 124px; }
+    #lampBox{ width:min(90vw, 480px, 232px); }
+  }
   #lampBox canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; pointer-events:none; }
+  /* The nail is a thing in the room, between the visitor and the lamp, so it gets a
+     layer of its own above the flame -- not the flame's, which the compositor keeps
+     gently out of focus, and not the scene's, which is behind it. */
+  #lampBox{ touch-action:none; }
+  #lampBox.holding{ cursor:grabbing; }
+  #lampBox.overtool{ cursor:grab; }
   /* The flame layer is kept gently out of focus by the browser's compositor in
      one cheap pass, instead of blurring inside the animation loop every frame. */
   #flame{ filter: blur(1.2px); }
@@ -143,12 +167,16 @@
      taps. While something is playing it simply shows, next to the button.
      Not a caption on the piece: it is their file's name, not the site's words. */
   #musicBtn.playing ~ #musicName{ opacity:.5; }
-  /* The music button is pinned in the bottom-left corner and the piece's own
-     dock runs the width of the screen, so on a narrow one they land on top of
-     each other -- and the button wins, being the higher layer. Rather than
-     reshape the dock, the furniture gives way: the headphones sit just above
-     it. The offset is this dock's own measured height plus a little. */
-  @media (max-width: 379px){ #music{ bottom:119px; } }
+  /* The music button is pinned in the bottom-left corner and the piece's own dock
+     runs the width of the screen, so on a narrow one they can land on top of each
+     other. On this page the button was lifted clear of the whole dock -- and that
+     put it, on a 240px screen, exactly on the head of the NAIL, which is the one
+     thing here you have to be able to pick up. Measured, the only control it ever
+     actually touched was the mute box at 240, and only by a few pixels; from 320
+     up nothing overlaps at all. So the volume gives up a little length instead --
+     the one thing in that row with any to spare, which is the same trade chladni's
+     bottom row made -- and the headphones stay in their corner. */
+  @media (max-width: 319px){ #volumeRow input[type=range]{ width:64px; } }
 </style>
 <div id="music" title="play your own music">
   <button id="musicBtn" aria-label="play your own music">🎧</button>
@@ -176,6 +204,7 @@
   <div id="lampBox">
     <canvas id="scene"></canvas>
     <canvas id="flame"></canvas>
+    <canvas id="tool"></canvas>
   </div>
 </div>
 
@@ -202,6 +231,11 @@
   const ctx = canvas.getContext('2d');
   const flameCanvas = document.getElementById('flame');
   const fctx = flameCanvas.getContext('2d');
+  const toolCanvas = document.getElementById('tool');
+  const tctx = toolCanvas.getContext('2d');
+  // where the photograph lands inside the canvas, kept out here so the pointer can
+  // be put back into the photograph's own units
+  let photoScale = 0, photoDX = 0, photoDY = 0;
   const wickSlider = document.getElementById('wickSlider');
 
   let W = 0, H = 0, DPR = 1;
@@ -213,10 +247,21 @@
     canvas.height = H * DPR;
     flameCanvas.width = W * DPR;
     flameCanvas.height = H * DPR;
+    toolCanvas.width = W * DPR;
+    toolCanvas.height = H * DPR;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     fctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    tctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
-  window.addEventListener('resize', resize);
+  // the room the dock leaves, which is what the lamp is centred in
+  const dockEl = document.getElementById('dock');
+  function fitStage(){
+    const h = document.documentElement.clientHeight;
+    const d = dockEl.getBoundingClientRect().height;
+    document.documentElement.style.setProperty('--avail', Math.max(120, h - d) + 'px');
+  }
+  window.addEventListener('resize', () => { fitStage(); resize(); });
+  setTimeout(() => { fitStage(); resize(); }, 300);
 
   let wick = wickSlider.value / 100;
   wickSlider.addEventListener('input', () => { wick = wickSlider.value / 100; });
@@ -293,42 +338,273 @@
   document.body.addEventListener('pointerdown', ensureAudio, { once:true });
   function updateAudio(){
     if (!hissGain) return;
-    const target = muted ? 0 : (0.015 + wick*0.05) * volumeLevel;
-    hissGain.gain.setTargetAtTime(target, audioCtx.currentTime, 0.15);
-    hissFilter.frequency.setTargetAtTime(500 + wick*900, audioCtx.currentTime, 0.2);
+    const target = muted ? 0 : (0.015 + wick*0.05) * volumeLevel * flameLife;
+    // a starving flame is quieter AND lower: less gas, less roar
+    hissGain.gain.setTargetAtTime(target, audioCtx.currentTime, 0.06);
+    hissFilter.frequency.setTargetAtTime(500 + wick*900*flameLife, audioCtx.currentTime, 0.2);
   }
 
-  // ---------- NOT BUILT YET: fuel, and finding out how much is left ----------
-  // Agreed direction for a future build, written down so the physics is not
-  // re-derived wrongly. There is currently no fuel in this piece at all — no
-  // reservoir, no level, nothing depleting — so this is a new dimension rather
-  // than a tweak.
+  // ---------- fuel, and finding out how much is left ----------------------------
+  // Hers, and it is the whole of the interaction: "we used to have an old copper
+  // based lamp like that, and my father kept a ten penny nail on the shelf next to
+  // it for tapping." A nail lying beside a lamp needs no instructions -- it is a
+  // thing a curious person picks up, and a lamp is a thing they then tap. It also
+  // settles what the tap has to sound like: steel on copper, not a fingertip.
   //
-  // The intent: a bigger flame burns fuel faster, and you CANNOT see how much
-  // is left. That is true of most real lamps, and it is the point rather than a
-  // limitation — you find out by tapping the base with a small metal object,
-  // exactly as you would in life. The knowledge costs an action.
-  //
-  // THE DIRECTION OF THE PITCH IS THE EASY THING TO GET WRONG, because the two
-  // ways of sounding a part-filled vessel run opposite ways:
-  //   - BLOWN across the top: more liquid -> HIGHER pitch (shorter air column).
-  //   - STRUCK, which is this one: more liquid -> LOWER pitch. The liquid
-  //     mass-loads the walls and drags the frequency down.
-  // So: full lamp = low, dull note. Empty lamp = high, bright ring. Building it
-  // the other way round would match most people's bottle-blowing memory and be
-  // wrong, which matters more here than it would elsewhere.
-  //
-  // Sustain carries the same information and is the half people feel without
-  // being able to name it: oil damps the shell, so a full lamp dies quickly and
-  // an empty one rings on. Pitch and decay should move together.
-  //
-  // Optional, if it ever earns its place: WHERE you tap. Above the oil line it
-  // rings, below it knocks dully — so the level can be found by tapping down
-  // the side, the way you find it on a gas cylinder.
-  //
-  // The tapper should be a photographed object like candler's pins, not an
-  // emoji: it is a thing in the scene, not a control.
-  // -------------------------------------------------------------------------
+  // You cannot see how much oil is left, and that is the point rather than a
+  // limitation -- it is true of most real lamps, and the knowledge costs an action.
+  // A bigger flame burns it faster. Her call on the starting level: a different
+  // amount every visit, "the most fun for whomever is interacting" -- and it is
+  // also what a lamp found on a shelf actually is.
+  let fuel = 0.30 + Math.random()*0.62;
+  const BURN = 1/900;          // full to empty in 15 minutes at a full flame,
+                               // about an hour and a quarter at the lowest
+  const LOW  = 0.11;           // where the wick starts to starve
+  const CHAR_SECS = 11;        // the dry wick burning down to ash
+
+  // Her sequence, in her own words: it should sputter and flicker when the fuel is
+  // very low, then get shorter and weaker as it sputters more, then burn the wick
+  // down to ash, and go out.
+  let char = 0, burntOut = false;
+  // A starving wick does not flicker evenly. The flame drops away almost at once
+  // when the oil fails to reach the top and comes back more slowly when it does, so
+  // this channel falls fast and recovers slow -- which is what reads as sputtering
+  // rather than as flickering.
+  let sputV = 1, sputTarget = 1, sputTimer = 0;
+  function stepSputter(dt, starve){
+    if (starve <= 0){ sputV += (1-sputV)*Math.min(1, dt*0.006); return; }
+    sputTimer -= dt;
+    if (sputTimer <= 0){
+      const drop = Math.random() < (0.34 + starve*0.56);
+      sputTarget = drop ? Math.max(0.05, 1 - starve*(0.45 + Math.random()*0.5)) : 1;
+      sputTimer  = drop ? 60 + Math.random()*210 : 180 + Math.random()*640*(1-starve);
+    }
+    const rate = sputTarget < sputV ? 0.055 : 0.008;
+    sputV += (sputTarget - sputV) * Math.min(1, dt*rate);
+  }
+  let flameLife = 1;
+  function stepFuel(dt){
+    const sec = dt/1000;
+    if (!burntOut){
+      if (fuel > 0) fuel = Math.max(0, fuel - sec*BURN*(0.14 + 0.86*wick));
+      else { char = Math.min(1, char + sec/CHAR_SECS); if (char >= 1) burntOut = true; }
+    }
+    const starve = fuel > LOW ? 0 : 1 - fuel/LOW;
+    stepSputter(dt, starve);
+    flameLife = burntOut ? 0
+      : Math.max(0, sputV * (1 - starve*0.62) * (1 - char*0.85));
+  }
+
+  // The copper reservoir's own outline, measured off the photograph by hue: the
+  // half-width of the body at each height, about the axis the lamp stands on. It is
+  // what the nail's point meets, and what decides whether a tap landed above the
+  // oil or below it.
+  const BASE_CX = 429;
+  const BASE = [[878,58],[886,88],[894,110],[904,124],[916,129],[926,138],[936,153],
+                [956,154],[976,156],[992,153],[1008,145],[1024,132],[1040,136],
+                [1056,136],[1072,140],[1088,152],[1104,156],[1120,151],[1136,144],
+                [1152,134],[1164,113],[1174,64],[1179,0]];
+  function baseHalfW(y){
+    if (y <= BASE[0][0] || y >= BASE[BASE.length-1][0]) return 0;
+    for (let i=1;i<BASE.length;i++){
+      if (y <= BASE[i][0]){
+        const a=BASE[i-1], b=BASE[i];
+        return a[1] + (b[1]-a[1])*((y-a[0])/(b[0]-a[0]));
+      }
+    }
+    return 0;
+  }
+  // where the oil stands inside it, full to dry
+  const OIL_TOP = 930, OIL_BOT = 1168;
+  function oilY(){ return OIL_BOT - fuel*(OIL_BOT-OIL_TOP); }
+
+  // ---------- the sound of steel on copper ----------------------------------
+  let tickBuffer = null;
+  function tickBuf(){
+    if (tickBuffer) return tickBuffer;
+    const n = Math.floor(audioCtx.sampleRate*0.05);
+    tickBuffer = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+    const d = tickBuffer.getChannelData(0);
+    for (let i=0;i<n;i++) d[i] = (Math.random()*2-1)*Math.pow(1-i/n, 3);
+    return tickBuffer;
+  }
+  function tapSound(hard, aboveOil, f){
+    ensureAudio();
+    if (muted || !audioCtx) return;
+    const t = audioCtx.currentTime, dest = audioCtx.destination;
+    const vol = volumeLevel * hard;
+
+    // The first few hundredths of a second are what name the two materials to the
+    // ear, before any note has established -- so the contact gets its own pitchless
+    // tick. Without one a strike is a synthesiser rather than two objects meeting,
+    // which is the lesson the chimes' materials cost a pass to learn.
+    const nb = audioCtx.createBufferSource(); nb.buffer = tickBuf();
+    const nf = audioCtx.createBiquadFilter(); nf.type='highpass'; nf.frequency.value=2400;
+    const ng = audioCtx.createGain();
+    ng.gain.setValueAtTime(0.55*vol, t);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t+0.04);
+    nb.connect(nf).connect(ng).connect(dest); nb.start(t); nb.stop(t+0.06);
+
+    // The shell's own note. STRUCK, not blown, which is the easy thing to get
+    // backwards because the two run opposite ways: blown across the top, more
+    // liquid means a shorter air column and a HIGHER pitch; struck, the liquid
+    // mass-loads the walls and drags the frequency DOWN. So a full lamp is low and
+    // dull and an empty one rings high and long. Sustain carries the same
+    // information and is the half people feel without being able to name it, so
+    // pitch and decay move together.
+    let f0 = 330 + (1-f)*460;
+    let ring = 0.17 + (1-f)*1.45;
+    let level = 0.32;
+    // And below the oil line the wall is against the liquid rather than against
+    // air, so it barely rings at all -- a dull knock. That is what lets the level be
+    // found by tapping down the side, the way you find it on a gas cylinder.
+    if (!aboveOil){ f0 *= 0.72; ring = 0.085 + ring*0.05; level = 0.2; }
+
+    const MODE=[1,1.63,2.29,3.11], AMP=[1,0.42,0.24,0.13];   // a shell: inharmonic
+    for (let i=0;i<MODE.length;i++){
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type='sine'; o.frequency.value = f0*MODE[i];
+      const d = Math.max(0.05, ring/(1 + i*0.85));           // the high modes die first
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(level*AMP[i]*vol, t+0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+d);
+      o.connect(g).connect(dest); o.start(t); o.stop(t+d+0.06);
+    }
+  }
+
+  // ---------- the nail ----------------------------------------------------------
+  // A photographed object, like candler's pins, not an emoji: it is a thing in the
+  // scene, not a control. Her own nail, cut off its ground.
+  const nailImg = new Image();
+  let nailReady = false;
+  nailImg.onload = () => { nailReady = true; };
+  nailImg.src = 'lampnail.png';
+  const NAIL_LEN = 232;                                   // in the photograph's units
+  const NIMG = { hx:3, hy:95.2, tx:696, ty:18.7 };        // its head and its point
+  const NIMG_A = Math.atan2(NIMG.ty-NIMG.hy, NIMG.tx-NIMG.hx);
+  const NIMG_L = Math.hypot(NIMG.tx-NIMG.hx, NIMG.ty-NIMG.hy);
+  const HOME = { x:122, y:1118, a:-0.181 };               // lying on the shelf beside it
+  const nail = { x:HOME.x, y:HOME.y, a:HOME.a, held:false, hover:false,
+                 lift:0, recoil:0, armed:true };
+  let grabU=0, grabV=0, nailSpeed=0, lastPx=null, lastPy=null;
+
+  function nailTip(){
+    return { x: nail.x + Math.cos(nail.a)*NAIL_LEN/2,
+             y: nail.y + Math.sin(nail.a)*NAIL_LEN/2 };
+  }
+  function nailHit(px, py){
+    const dx=px-nail.x, dy=py-nail.y, c=Math.cos(-nail.a), sn=Math.sin(-nail.a);
+    const u = dx*c - dy*sn, v = dx*sn + dy*c;
+    // A nail is a thin thing and a thumb is about 9mm across, so the box it is
+    // caught by is held to 44 screen pixels across whatever the piece is scaled to.
+    // Nothing of it shows, and it can swallow nothing else: it is the only object
+    // on this page that answers a pointer at all.
+    const halfV = Math.max(13, 22/(photoScale||1));
+    return Math.abs(u) <= NAIL_LEN/2 + 8 && Math.abs(v) <= halfV;
+  }
+  let approach = -1;                 // which side of the lamp the point came from
+  function collide(){
+    const tp = nailTip();
+    const hw = baseHalfW(tp.y);
+    const off = tp.x - BASE_CX;
+    const pen = hw > 0 ? hw - Math.abs(off) : -999;
+    if (pen <= 0 && hw > 0) approach = off < 0 ? -1 : 1;
+    if (pen > 0){
+      // The point stops ON the surface rather than going into it, which is what
+      // makes it read as a tap instead of the nail sinking through the copper. It
+      // is put back on the side it CAME from, not the side it happens to be on: a
+      // quick drag can carry the point clean past the axis in one frame, and
+      // pushing it out by the shorter way then shot the nail out the far side.
+      nail.x += (BASE_CX + approach*hw) - tp.x;
+      if (nail.armed){
+        nail.armed = false; nail.recoil = 1;
+        tapSound(Math.min(1, 0.42 + nailSpeed*0.014), tp.y < oilY(), fuel);
+      }
+    } else if (!nail.armed && pen < -9){
+      nail.armed = true;                    // clear of it again: it can strike again
+    }
+  }
+  function stepNail(dt){
+    if (!nail.held){
+      const k = Math.min(1, dt*0.011);      // it goes back to where it lives
+      nail.x += (HOME.x-nail.x)*k; nail.y += (HOME.y-nail.y)*k;
+      nail.a += (HOME.a-nail.a)*k;
+      nail.lift += ((nail.hover?3:0) - nail.lift)*Math.min(1, dt*0.013);
+      if (Math.abs(nail.x-HOME.x) < 40) nail.armed = true;
+    }
+    nail.recoil *= Math.pow(0.86, dt/16.7);
+    nailSpeed   *= Math.pow(0.85, dt/16.7);
+  }
+  function drawNail(){
+    if (!nailReady || !photoScale) return;
+    tctx.clearRect(0,0,W,H);
+    const s = photoScale*(NAIL_LEN/NIMG_L);
+    const back = nail.recoil*7;
+    const cx = photoDX + (nail.x - Math.cos(nail.a)*back)*photoScale;
+    const cy = photoDY + (nail.y - Math.sin(nail.a)*back - nail.lift)*photoScale;
+    tctx.save();
+    tctx.translate(cx, cy);
+    tctx.rotate(nail.a - NIMG_A);
+    tctx.scale(s, s);
+    tctx.translate(-(NIMG.hx+NIMG.tx)/2, -(NIMG.hy+NIMG.ty)/2);
+    tctx.drawImage(nailImg, 0, 0);
+    tctx.restore();
+  }
+
+  // A thing that answers when it is touched -- which is the piece being alive, not
+  // an explanation of it.
+  const lampBox = document.getElementById('lampBox');
+  const FINE_PTR = matchMedia('(hover: hover) and (pointer: fine)');
+  function toPhoto(ev){
+    const r = canvas.getBoundingClientRect();
+    return { x: ((ev.clientX-r.left) - photoDX)/photoScale,
+             y: ((ev.clientY-r.top)  - photoDY)/photoScale };
+  }
+  lampBox.addEventListener('pointerdown', (ev) => {
+    if (!photoScale) return;
+    const p = toPhoto(ev);
+    if (!nailHit(p.x, p.y)) return;
+    nail.held = true; nail.lift = 3;
+    const dx=p.x-nail.x, dy=p.y-nail.y, c=Math.cos(-nail.a), sn=Math.sin(-nail.a);
+    grabU = dx*c - dy*sn; grabV = dx*sn + dy*c;
+    lastPx = p.x; lastPy = p.y; nailSpeed = 0;
+    lampBox.classList.add('holding');
+    lampBox.setPointerCapture(ev.pointerId);
+    ev.preventDefault();
+  });
+  lampBox.addEventListener('pointermove', (ev) => {
+    if (!photoScale) return;
+    const p = toPhoto(ev);
+    if (!nail.held){
+      if (FINE_PTR.matches){
+        nail.hover = nailHit(p.x, p.y);
+        lampBox.classList.toggle('overtool', nail.hover);
+      }
+      return;
+    }
+    // it keeps the orientation it was picked up in and leans a little with the hand
+    // carrying it -- a thing being carried, not a sprite being slid about
+    const mx = lastPx==null ? 0 : p.x-lastPx, my = lastPy==null ? 0 : p.y-lastPy;
+    nailSpeed = Math.hypot(mx, my);
+    nail.a += (HOME.a + Math.max(-0.14, Math.min(0.14, my*0.010)) - nail.a)*0.35;
+    const c=Math.cos(nail.a), sn=Math.sin(nail.a);
+    nail.x = p.x - (grabU*c - grabV*sn);
+    nail.y = p.y - (grabU*sn + grabV*c);
+    lastPx = p.x; lastPy = p.y;
+    collide();
+  });
+  function dropNail(ev){
+    if (!nail.held) return;
+    nail.held = false; nail.hover = false; lastPx = lastPy = null;
+    lampBox.classList.remove('holding','overtool');
+    if (ev && lampBox.hasPointerCapture && lampBox.hasPointerCapture(ev.pointerId))
+      lampBox.releasePointerCapture(ev.pointerId);
+  }
+  lampBox.addEventListener('pointerup', dropNail);
+  lampBox.addEventListener('pointercancel', dropNail);
+  lampBox.addEventListener('pointerleave', () => {
+    if (!nail.held){ nail.hover=false; lampBox.classList.remove('overtool'); }
+  });
 
   // ---------- rendering ----------
   // ---------- rendering: the base, collar, and glass are the actual
@@ -371,6 +647,29 @@
       }
     }
   }
+  // the feathered clone patch, rebuilt only when the piece changes size
+  let patchCanvas = null, patchW = 0, patchH = 0;
+  function erasePatch(w, h){
+    const cw = Math.max(2, Math.round(w)), ch = Math.max(2, Math.round(h));
+    if (patchCanvas && cw === patchW && ch === patchH) return patchCanvas;
+    const c = document.createElement('canvas');
+    c.width = cw; c.height = ch;
+    const x = c.getContext('2d');
+    const er = PHOTO_ERASE;
+    x.drawImage(lampPhoto, er.sx, er.sy, er.sw, er.sh, 0, 0, cw, ch);
+    x.globalCompositeOperation = 'destination-in';
+    x.save();
+    x.translate(cw/2, ch/2); x.scale(cw/ch, 1);
+    const g = x.createRadialGradient(0,0,0, 0,0, ch/2);
+    g.addColorStop(0,   'rgba(0,0,0,1)');
+    g.addColorStop(0.62,'rgba(0,0,0,1)');
+    g.addColorStop(0.86,'rgba(0,0,0,0.45)');
+    g.addColorStop(1,   'rgba(0,0,0,0)');
+    x.fillStyle = g; x.fillRect(-cw, -ch, cw*2, ch*2);
+    x.restore();
+    patchCanvas = c; patchW = cw; patchH = ch;
+    return c;
+  }
   let lampPhotoReady = false;
   lampPhoto.onload = () => { lampPhotoReady = true; };
   lampPhoto.src = 'wicklampblack.png';
@@ -396,6 +695,7 @@
     const scale = Math.min(W/PHOTO_W, H/PHOTO_H);
     const dw = PHOTO_W*scale, dh = PHOTO_H*scale;
     const dx = (W-dw)/2, dy = (H-dh)/2;
+    photoScale = scale; photoDX = dx; photoDY = dy;
     function toCanvas(px, py){ return { x: dx + px*scale, y: dy + py*scale }; }
 
     const centerX = dx + PHOTO_WICK_X*scale;
@@ -415,14 +715,15 @@
     // ~53px wide, burner collar ~140px wide, in the photo's own pixel
     // space) rather than the old illustration's much smaller canvas
     // scale, which is what made everything read as tiny.
-    const wickProtrusion = (7 + wick*30) * scale;
+    // a wick that has burnt to ash is shorter than the one that was there
+    const wickProtrusion = (7 + wick*30) * scale * (1 - 0.5*char);
     const wickBaseY = wickRimY;
     const wickTipY = wickBaseY - wickProtrusion;
     const wickHalfW_base = 12 * scale;
     const wickHalfW_top = wickHalfW_base * kf.hornX;
 
     // flame geometry, anchored to the wick's actual tip
-    const flameH = (40 + wick*95) * scale * (1 + turb.height.v*0.05) * kf.heightMult;
+    const flameH = (40 + wick*95) * scale * (1 + turb.height.v*0.05) * kf.heightMult * flameLife;
     const fBaseY = wickTipY;
     const fTipY = fBaseY - flameH;
     const idleAsymmetry = 3 * scale;
@@ -436,7 +737,7 @@
     // not the rim, so it doesn't read as centered too low.
     const ambientGlowY = fBaseY - flameH*0.4;
     const glow = ctx.createRadialGradient(centerX, ambientGlowY, 10*scale, centerX, ambientGlowY, (dh)*0.55 + wick*40*scale);
-    glow.addColorStop(0, `rgba(255,190,110,${0.30 + wick*0.22})`);
+    glow.addColorStop(0, `rgba(255,190,110,${(0.30 + wick*0.22) * flameLife})`);
     glow.addColorStop(1, 'rgba(255,190,110,0)');
     ctx.fillStyle = glow;
     ctx.fillRect(0,0,W,H);
@@ -444,12 +745,15 @@
     // the photograph itself
     ctx.drawImage(lampPhoto, 0, 0, PHOTO_W, PHOTO_H, dx, dy, dw, dh);
 
-    // erase the photo's own small static wick by cloning a clean patch
-    // of glass from directly above it — same column, so lighting and
-    // perspective match seamlessly
+    // Erase the photo's own small static wick by cloning a clean patch of glass
+    // from directly above it -- same column, so lighting and perspective match.
+    // Its EDGES are feathered to nothing, which they were not: as a hard-edged
+    // rectangle the seam was invisible under a lit flame's glow and perfectly plain
+    // the moment the lamp could burn out, which is the "correct but reads as
+    // broken" class. Built once and cached, not masked every frame.
     const er = PHOTO_ERASE;
-    ctx.drawImage(lampPhoto, er.sx, er.sy, er.sw, er.sh,
-                  dx+er.dx*scale, dy+er.dy*scale, er.dw*scale, er.dh*scale);
+    ctx.drawImage(erasePatch(er.dw*scale, er.dh*scale),
+                  dx+er.dx*scale, dy+er.dy*scale);
 
     // a soft warm highlight glowing on the glass right around the
     // flame, screen-blended so it brightens the photo rather than
@@ -461,7 +765,7 @@
     ctx.globalCompositeOperation = 'screen';
     const glowCenterY = fBaseY - flameH*0.45;
     const rimGlow = ctx.createRadialGradient(centerX, glowCenterY, 0, centerX, glowCenterY, 270*scale + wick*135*scale);
-    rimGlow.addColorStop(0, `rgba(255,200,130,${0.35+wick*0.25})`);
+    rimGlow.addColorStop(0, `rgba(255,200,130,${(0.35+wick*0.25) * flameLife})`);
     rimGlow.addColorStop(1, 'rgba(255,200,130,0)');
     ctx.fillStyle = rimGlow;
     ctx.fillRect(dx, dy, dw, dh);
@@ -499,6 +803,29 @@
       fctx.stroke();
     }
     fctx.restore();
+
+    // Her sequence again: burnt down to ash. A wick chars from the top, so the
+    // black eats DOWN it -- and the very tip goes to the pale grey of ash rather
+    // than staying black, which is what says burnt out rather than merely sooty.
+    if (char > 0.001){
+      fctx.save(); wickPath(); fctx.clip();
+      const cg = fctx.createLinearGradient(0, wickTipY, 0, wickBaseY);
+      cg.addColorStop(0, 'rgba(24,20,18,0.94)');
+      cg.addColorStop(Math.min(0.98, char), 'rgba(24,20,18,0.86)');
+      cg.addColorStop(Math.min(1, char+0.2), 'rgba(24,20,18,0)');
+      fctx.fillStyle = cg; fctx.fill();
+      if (char > 0.4){
+        const k = (char-0.4)/0.6;
+        const ag = fctx.createLinearGradient(0, wickTipY, 0, wickTipY + wickProtrusion*0.55);
+        ag.addColorStop(0, `rgba(196,190,181,${k*0.85})`);
+        ag.addColorStop(0.45, `rgba(150,143,134,${k*0.45})`);
+        ag.addColorStop(1, 'rgba(150,143,134,0)');
+        fctx.fillStyle = ag; fctx.fill();
+      }
+      fctx.restore();
+    }
+
+    if (flameLife <= 0.02) return;
 
     // flame — passes through the same four stages as the wick: horned,
     // flat with rounded edges, curved (domed), sharp and taller. The
@@ -548,11 +875,15 @@
     lastDt = Math.min(t - lastT, 50);
     lastT = t;
     stepFlameTurbulence(lastDt);
+    stepFuel(lastDt);
+    stepNail(lastDt);
     drawLamp();
+    drawNail();
     updateAudio();
     requestAnimationFrame(loop);
   }
 
+  fitStage();
   resize();
   requestAnimationFrame(loop);
 })();
