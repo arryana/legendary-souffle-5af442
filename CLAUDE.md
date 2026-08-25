@@ -380,7 +380,20 @@ free-free bar's own (1 : 2.756 : 5.404 : 8.933 : 13.34) and there were three of 
 fifth are most of what reads as *clang*. Measured on the rendered notes: wood the dullest strike and
 gone in **0.20s** with no upper partials at all; glass the brightest strike and the busiest, 5.6%;
 silver the longest ring at **2.72s** and the purest, 1.2%; brass in between and warmer, 4.0%, with a
-beat the others don't have.<br>**Measuring a sound out of this piece needs the simulation frozen
+beat the others don't have.<br>**Her verdict on all of that is in**, Aug 2026, and it covers the tuning,
+the per-material cuts and the strike together: ***"it sounds a great deal better."*** And then, asked what
+the difference was: ***"before it was, 'what's that bloody racket'. now it's 'oh, my computer is playing
+wind chimes!'"*** Keep that line, because it is the whole case for the tuning in one sentence and it
+answers her own original complaint — *"probably accurate, but not beautiful — the reason windchimes are
+nice is because they're musical."* An untuned set is not a worse wind chime, it is **not a wind chime**:
+the thing a listener recognises is the pentatonic, not the tubes. That is why the tuning was argued here
+as fidelity rather than as prettiness, and why the physics was left alone and only the lengths chosen. If
+anyone is ever tempted to space the tubes evenly again, this is the sound they would be going back to.
+Not a Done mark —
+she has heard it, not yet run it over the four machines — but the sound question this row was carrying
+open is closed. Worth noting how it surfaced: this file had said **"Unheard"** and she corrected it in
+passing, having listened days earlier and been pulled into other repairs before she could say so. The
+same class of drift as the swatch and the three stale cards, in the notes rather than in the site.<br>**Measuring a sound out of this piece needs the simulation frozen
 first** — `requestAnimationFrame` stubbed before the page script runs. An offline audio context's
 clock does not advance until it renders, so every strike the rods make while the harness is setting
 up lands at time zero and swamps the note under test. Three passes were wasted on that: it shows up
@@ -435,11 +448,31 @@ the longest cord, the step across each join is **1.2 to 5.7 where the rope's own
 its 95th percentile — the joins are quieter than the rope.<br>**The nylon cord was drawn pale cream and
 its own swatch has always been black.** The picker showed a black glossy cord, the piece drew a
 fibrous white string, and nobody had put the two side by side. The photograph settles it in the swatch's
-favour.<br>**The RODS stay drawn, and have to.** A rod's length is its note — the lengths are continuous
-and each material is cut to its own — so no set of photographed rods can stand in for them. Both her
-parts sheets give four fixed lengths per material at **17–25px across**, where a walnut rod wants **34**
-on a Retina screen; a photograph would have to be stretched to length *and* upscaled. This was measured
-on both sheets, so it doesn't need measuring again. The old dead `chime-rod-*.png` sprites are still on
+favour.<br>**The rods are drawn, and mostly have to be.** A rod's length is its note — the lengths are
+continuous and each material is cut to its own — so no set of photographed rods can stand in for them.
+Both her parts sheets give four fixed lengths per material at **17–25px across**, where a walnut rod
+wants **34** on a Retina screen; a photograph would have to be stretched to length *and* upscaled. This
+was measured on both sheets, so it doesn't need measuring again.<br>**WOOD is the exception, and it is
+hers**: *"the only thing that's not an improvement is the wood ones, the drawn wood doesn't hold up
+convincingly."* She is right, and the reason draws the line for anything like it later — **brass and
+silver are smooth cylinders, which shading does well; wood IS texture**, and a gradient with four grain
+strokes over it reads as orange plastic. Draw what is smooth; photograph what is textured.<br>The way
+round the resolution wall was not to use the parts sheets at all but **the hanger bar** — the same
+walnut, in the same photograph, under the same light. A bar is a flat slat with the grain running along
+it, lit from one edge, which is a wooden chime rod turned ninety degrees; turned that way its **126px
+cross-section becomes the rod's width**, against the 34 a Retina screen wants. Four things had to be
+done and each shows if it is skipped: the bar's lighting **along its own length** is divided out, or it
+bands across every rod; the **evenest 420px** of the bar is used rather than all of it, measured at
+0.92% residual wobble against 2.22% for the whole; the tile is **book-matched** — `[stretch | the same
+stretch reversed]` — which makes the mirror join and the wrap **exactly zero** with no cross-fade and
+doubles the repeat to 113px so the longest rod never shows a whole one; and **each rod carries its own
+phase into that tile** (`texPhase`), because without it every rod shows the same figure at the same
+height, which is the one thing that gives a tiled texture away — and rods really are cut from different
+places in a plank. Quantised to 9KB from 50, measured invisible: max 14/255, and the roughness across
+the grain at draw size 3.85 against 3.93.<br>**The wood swatch was re-cut from the same walnut** at the
+same time, framed like the other three. It had been a lighter wood, matching the drawn rod: swatch
+luminance 92 against the new rod's 72. Left alone that would have been the same fault as the cord
+swatch — the picker showing one thing and the piece another. 75 against 72 now. The old dead `chime-rod-*.png` sprites are still on
 disk, unreferenced, as warmler's unused textures are.<br>**Noticed while measuring and NOT fixed**: on a
 240x350 screen the dock's four rows swamp the chime entirely. It is identical before and after this
 change, so it is hers to find on the Jelly Star, not something this change introduced.<br>**And the chain
@@ -1209,10 +1242,13 @@ still twelve through. The eight that are left, and what state each is actually i
   the controls were not touched.** She has never heard it or run it on a machine.
 - `chimes` — tuned to real notes, each material cut to its own lengths, its own strike sound, a
   rod-length slider, and the tangle fixed. **And re-dressed in her own photographs** — the hanger,
-  its chains, the eyelets and all three cords. **Unheard.** Test it with the rods at DIFFERENT
+  its chains, the eyelets and all three cords. **She has HEARD it** — Aug 2026, *"it sounds a great
+  deal better"* — which is a verdict on the rebuilt sound and **not** a Done mark; she has still not
+  run it over the four machines. Test it with the rods at DIFFERENT
   lengths or the tangle it was reported for cannot appear at all. Two things to watch for that are
-  known and not repaired: on the 3in phone the dock swamps the piece entirely, and the rods are
-  still the one drawn thing on the page, so they will look flat beside everything around them.
+  known and not repaired: on the 3in phone the dock swamps the piece entirely. The **wood** rods
+  are her photographed walnut now, off her report; brass, silver and glass are still drawn, which
+  is deliberate — they are smooth and shading does them well.
 - `lamp` — **was a build and now is one.** Oil that burns down, her father's ten penny nail, the tap
   that finds the level, the sputter and the wick burning to ash, an oil can to fill it again, and a
   burn rate that follows the flame rather than the slider. Its ✅ was given for the wick and flame and
