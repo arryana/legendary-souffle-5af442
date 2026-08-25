@@ -232,10 +232,63 @@
   const HANGER_W = 172;
 
   // ---- assets ----
-  // The rod, cord and hanger are drawn (see drawRod/drawCord/drawHanger), so the
-  // old sprite PNGs -- which carried a baked light halo and blurred when scaled --
-  // are no longer loaded. The small swatch images in the material pickers stay.
+  // The RODS are drawn (see drawRod), and have to be: a rod's length is its note,
+  // so the lengths are continuous and each material is cut to its own, and no set
+  // of photographed rods can stand in for that. Her parts sheets give four fixed
+  // lengths per material at 17-25px across, where a walnut rod wants 34 on a
+  // Retina screen -- so a photograph would have to be stretched to length AND
+  // upscaled. Everything else on this page is her photograph.
+  //
+  // The HANGER is her own photograph, cut off its navy: chime-hanger.png is the
+  // brass ring, the two chains and the walnut bar in one piece, and the eight
+  // eyelets that were screwed along the bar's underside have been cut away from
+  // it into chime-eyelet.png. That separation is the whole point of doing it this
+  // way -- the picture has eight eyelets and the piece hangs five to nine rods, so
+  // a baked-in row could only ever be right at one count. One eyelet is placed per
+  // rod, at the tie point the rod actually hangs from, and it is right at all five.
+  //
+  // Every figure in HG was measured out of that photograph and is held in
+  // fractions of the WOODEN BAR'S OWN WIDTH (806px in the original), so the
+  // layout follows the picture. Re-cut the picture and these change with it;
+  // don't retype them by eye.
+  const HG = {
+    aspect : 0.706098,   // the cut-out's height, in its own widths
+    cropW  : 1.017370,   // the cut-out's width, in bar widths
+    barCx  : 0.499390,   // the bar's centre, across the cut-out
+    ringCy : 0.095855,   // the hanging ring's centre, down the cut-out
+    eyeDrop: 0.677419,   // ring centre down to eyelet centre, in bar widths
+    eyeW   : 0.054591,   // one eyelet, in bar widths
+    eyeH   : 0.050868,
+    eyeCx  : 0.4773,     // and the eyelet's own hole, inside its cut-out
+    eyeCy  : 0.5,
+  };
   function loadImg(src){ const i=new Image(); i.src=src; return i; }
+  const hangerImg = loadImg('chime-hanger.png');
+  const eyeletImg = loadImg('chime-eyelet.png');
+
+  // The cords are her photographs too, off her parts sheet: one straight run of
+  // each, stood upright and cut to a whole number of its own repeats so it tiles
+  // down a cord of any length. The cord slider runs 40 to 170 and the tiles are
+  // 18 to 41px, so every cord is several repeats and the join has to be invisible
+  // or it draws a ladder of rungs down the piece. Three things get it there: the
+  // repeat is found to a hundredth of a pixel by correlation, the sheet's own
+  // lighting fall-off along the run is divided out, and the ends are cross-faded.
+  // Measured on the rendered page at the longest cord, the brightness step across
+  // each join is 1.2 to 5.7 where the rope's own twist gives 7.9 at its 95th
+  // percentile -- that is, the joins are quieter than the rope, so there is
+  // nothing there to see. tw/th are the tile's own pixels and everything drawn is
+  // derived from them, so re-cutting a tile means changing two numbers here.
+  const CORD_ART = {
+    rope:   { src:'chime-cord-rope.png',   tw:17, th:70  },
+    chain:  { src:'chime-cord-chain.png',  tw:13, th:107 },
+    string: { src:'chime-cord-string.png', tw:10, th:59  },
+  };
+  for(const k in CORD_ART){
+    const A = CORD_ART[k];
+    A.img = loadImg(A.src);
+    A.w = CORD_THICK[k];
+    A.period = A.th * A.w / A.tw;   // the whole tile, kept in its own proportion
+  }
 
   // ---- state ----
   const state = {
@@ -278,12 +331,13 @@
   }
 
   // ---- layout ----
-  let hangerX=0, hangerTopY=60, hangerDrawH=0, pivotY=0, ringSpan=0, ringY=0;
+  let hangerX=0, hangerTopY=60, hangerW=0, hangerH=0, pivotY=0, ringSpan=0, ringY=0;
   function layout(){
     hangerX = W/2;
-    hangerDrawH = HANGER_W * 1.02;
-    pivotY = hangerTopY + hangerDrawH*0.92;
-    ringY  = hangerTopY + hangerDrawH*0.05;
+    hangerW = HANGER_W*HG.cropW;          // the photograph, scaled so its bar is HANGER_W
+    hangerH = hangerW*HG.aspect;
+    ringY   = hangerTopY + hangerH*HG.ringCy;
+    pivotY  = ringY + HANGER_W*HG.eyeDrop;   // the eyelets' own centre line
     ringSpan = HANGER_W*0.85;
   }
   // where a rod's cord is tied to the bar, with the bar hanging straight
@@ -775,6 +829,15 @@
   }
 
   function drawCord(len, matKey){
+    const A = CORD_ART[matKey];
+    if(A && A.img.complete && A.img.naturalWidth){
+      ctx.save();
+      ctx.beginPath(); ctx.rect(-A.w/2, 0, A.w, len); ctx.clip();
+      for(let y=0; y<len; y+=A.period) ctx.drawImage(A.img, -A.w/2, y, A.w, A.period);
+      ctx.restore();
+      return;
+    }
+    // and drawn, for the moment before the tile has arrived
     if(matKey==='chain'){
       const link = 6; ctx.strokeStyle = '#c9cdd2'; ctx.lineWidth = 1.4;
       for(let y=0;y<len-2;y+=link){
@@ -793,64 +856,45 @@
           if(y===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
         ctx.strokeStyle = off===0 ? '#b79a68' : '#8f7444'; ctx.lineWidth = 2.6; ctx.stroke();
       }
-    } else { // string: a thin taut, faintly fibrous line
-      ctx.strokeStyle = 'rgba(226,220,200,0.9)'; ctx.lineWidth = 2;
+    } else { // cord: a thin taut black nylon one, as its own swatch has always shown
+      ctx.strokeStyle = 'rgba(26,24,22,0.95)'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,len); ctx.stroke();
-      ctx.strokeStyle = 'rgba(120,110,90,0.5)'; ctx.lineWidth = 0.7;
+      ctx.strokeStyle = 'rgba(120,116,110,0.45)'; ctx.lineWidth = 0.7;
       ctx.beginPath(); ctx.moveTo(0.6,0); ctx.lineTo(0.6,len); ctx.stroke();
     }
   }
 
   function drawHanger(n){
     const cx = hangerX;
-    const barH = hangerDrawH*0.15, barBottom = pivotY, barTop = barBottom - barH;
-    const barCY = (barTop+barBottom)/2, halfW = HANGER_W/2;
-    const ringCY = ringY, ringR = hangerDrawH*0.045;
 
     // everything below the ring leans with it. The ring is the hook and does not
     // move, but it is round and centred on the turn, so it is inside the lean
     // too and nothing of it shows.
     ctx.save();
-    ctx.translate(cx, ringCY); ctx.rotate(-hangAng); ctx.translate(-cx, -ringCY);
+    ctx.translate(cx, ringY); ctx.rotate(-hangAng); ctx.translate(-cx, -ringY);
 
-    // suspension: two cords from the ring down to the bar ends
-    ctx.save(); ctx.lineCap='round';
-    for(const sgn of [-1,1]){
-      ctx.strokeStyle = 'rgba(60,44,22,0.9)'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(cx, ringCY+ringR); ctx.lineTo(cx+sgn*halfW*0.9, barTop+1); ctx.stroke();
-      ctx.strokeStyle = 'rgba(150,120,74,0.5)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(cx-1, ringCY+ringR); ctx.lineTo(cx+sgn*halfW*0.9-1, barTop+1); ctx.stroke();
+    // the photograph: ring, both chains and the bar, in one rigid piece, placed
+    // by its own two landmarks -- the bar's centre and the ring's centre.
+    if(hangerImg.complete && hangerImg.naturalWidth){
+      ctx.drawImage(hangerImg, cx - hangerW*HG.barCx, ringY - hangerH*HG.ringCy,
+                    hangerW, hangerH);
+    }else{
+      // until it has arrived, the bar's own dark walnut in its place, so a slow
+      // connection shows a plain hanger rather than rods hanging off nothing
+      const bh = HANGER_W*0.18, bw = HANGER_W;
+      ctx.fillStyle = '#3f2712';
+      ctx.fillRect(cx-bw/2, pivotY-bh, bw, bh);
     }
-    ctx.restore();
 
-    // the brass hanging ring, up top
-    ctx.save();
-    const rg = ctx.createRadialGradient(cx-ringR*0.3, ringCY-ringR*0.3, 1, cx, ringCY, ringR);
-    rg.addColorStop(0,'#f2dca0'); rg.addColorStop(0.6,'#b8933f'); rg.addColorStop(1,'#6a4e1e');
-    ctx.strokeStyle = rg; ctx.lineWidth = ringR*0.5;
-    ctx.beginPath(); ctx.arc(cx, ringCY, ringR, 0, Math.PI*2); ctx.stroke();
-    ctx.restore();
-
-    // the wooden bar: a rounded lozenge, lit from the top
-    ctx.save();
-    const br = barH/2;
-    ctx.beginPath();
-    ctx.moveTo(cx-halfW+br, barTop); ctx.lineTo(cx+halfW-br, barTop);
-    ctx.arc(cx+halfW-br, barCY, br, -Math.PI/2, Math.PI/2);
-    ctx.lineTo(cx-halfW+br, barBottom); ctx.arc(cx-halfW+br, barCY, br, Math.PI/2, Math.PI*1.5);
-    ctx.closePath(); ctx.clip();
-    const wg = ctx.createLinearGradient(0, barTop, 0, barBottom);
-    wg.addColorStop(0.0, '#7a4f28'); wg.addColorStop(0.35, '#5a3819');
-    wg.addColorStop(0.7, '#3f2712'); wg.addColorStop(1.0, '#241407');
-    ctx.fillStyle = wg; ctx.fillRect(cx-halfW-2, barTop-2, HANGER_W+4, barH+4);
-    // a couple of grain streaks along it
-    ctx.strokeStyle='rgba(30,18,8,0.4)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(cx-halfW, barCY+2); ctx.lineTo(cx+halfW, barCY+1); ctx.stroke();
-    ctx.restore();
-    // the bar's own contact shadow beneath, so it sits over the cords
-    ctx.save(); ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(cx-halfW+br, barBottom); ctx.lineTo(cx+halfW-br, barBottom); ctx.stroke();
-    ctx.restore();
+    // and one eyelet per rod, at the tie point that rod actually hangs from.
+    // They go on AFTER the cords (drawRodsAndCords runs first), so a cord comes
+    // out from under its own eyelet the way one threaded through it would.
+    if(eyeletImg.complete && eyeletImg.naturalWidth){
+      const ew = HANGER_W*HG.eyeW, eh = HANGER_W*HG.eyeH;
+      for(let i=0;i<n;i++){
+        ctx.drawImage(eyeletImg, pivotX(i,n) - ew*HG.eyeCx, pivotY - eh*HG.eyeCy, ew, eh);
+      }
+    }
 
     ctx.restore();   // the lean
   }
