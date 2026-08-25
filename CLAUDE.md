@@ -381,7 +381,15 @@ fifth are most of what reads as *clang*. Measured on the rendered notes: wood th
 gone in **0.20s** with no upper partials at all; glass the brightest strike and the busiest, 5.6%;
 silver the longest ring at **2.72s** and the purest, 1.2%; brass in between and warmer, 4.0%, with a
 beat the others don't have.<br>**Her verdict on all of that is in**, Aug 2026, and it covers the tuning,
-the per-material cuts and the strike together: ***"it sounds a great deal better."*** Not a Done mark —
+the per-material cuts and the strike together: ***"it sounds a great deal better."*** And then, asked what
+the difference was: ***"before it was, 'what's that bloody racket'. now it's 'oh, my computer is playing
+wind chimes!'"*** Keep that line, because it is the whole case for the tuning in one sentence and it
+answers her own original complaint — *"probably accurate, but not beautiful — the reason windchimes are
+nice is because they're musical."* An untuned set is not a worse wind chime, it is **not a wind chime**:
+the thing a listener recognises is the pentatonic, not the tubes. That is why the tuning was argued here
+as fidelity rather than as prettiness, and why the physics was left alone and only the lengths chosen. If
+anyone is ever tempted to space the tubes evenly again, this is the sound they would be going back to.
+Not a Done mark —
 she has heard it, not yet run it over the four machines — but the sound question this row was carrying
 open is closed. Worth noting how it surfaced: this file had said **"Unheard"** and she corrected it in
 passing, having listened days earlier and been pulled into other repairs before she could say so. The
