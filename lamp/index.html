@@ -129,6 +129,28 @@
     border:solid var(--brass); border-width:0 2px 2px 0;
     transform:rotate(45deg);
   }
+  /* Refilling it. Her ask, and it does two things at once: it takes away the dead
+     end a burnt-out lamp would otherwise be, and it lets the tap be compared --
+     tap, fill, tap again, and the note has plainly changed, which is the fastest
+     way anyone will work out what the tapping is for. It sits in the corner
+     opposite the music button rather than in the dock: the dock's height is what
+     the lamp is centred against, so a fourth row there would be paid for out of
+     the lamp itself, and this costs nothing. Drawn rather than an emoji, as
+     musebox's instruments are -- there is no oil can in Unicode, and the nearest
+     things (an oil DRUM, a pouring jug from 2021) are either the wrong object or
+     too new for a Kindle Fire. */
+  #fill{ position:fixed; right:18px; bottom:16px; z-index:60;
+    width:34px; height:34px; border-radius:50%; padding:0;
+    border:1px solid rgba(242,233,216,.25); background:rgba(20,24,34,.55);
+    color:#f2e9d8; cursor:pointer; opacity:.55;
+    display:grid; place-items:center;
+    transition:opacity .3s, color .3s, border-color .3s;
+    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
+  #fill:hover{ opacity:1; }
+  #fill:active{ color:#f0d69a; border-color:rgba(201,151,78,.6); }
+  #fill:focus-visible{ outline:1px solid rgba(242,233,216,.45); outline-offset:3px; }
+  #fill svg{ width:21px; height:21px; display:block; }
+
   .wickIcon{ display:block; background:currentColor; opacity:.55; }
   .barIcon{ width:15px; height:2.5px; border-radius:1.5px; }
   .pointIcon{
@@ -207,6 +229,16 @@
     <canvas id="tool"></canvas>
   </div>
 </div>
+
+<button type="button" id="fill" title="fill it" aria-label="fill it">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M3.2 13.4a1.8 1.8 0 0 1 1.8-1.8h7.6a1.8 1.8 0 0 1 1.8 1.8v3.4a1.8 1.8 0 0 1-1.8 1.8H5a1.8 1.8 0 0 1-1.8-1.8z"/>
+    <path d="M7.1 11.6V9.9a1.5 1.5 0 0 1 1.5-1.5h1.6"/>
+    <path d="M14.4 13.1 20.6 8"/>
+    <path d="M21.4 5.1c.85 1.15.85 2.05 0 2.05s-.85-.9 0-2.05z"/>
+  </svg>
+</button>
 
 <div id="dock">
   <div id="shapeRow">
@@ -382,10 +414,18 @@
     const rate = sputTarget < sputV ? 0.055 : 0.008;
     sputV += (sputTarget - sputV) * Math.min(1, dt*rate);
   }
-  let flameLife = 1;
+  let flameLife = 1, trimming = false;
   function stepFuel(dt){
     const sec = dt/1000;
-    if (!burntOut){
+    // Filling it also means trimming the burnt wick back and putting a light to
+    // it, which is what anybody would actually do with a lamp that had gone out --
+    // so the char eases away over about a second rather than snapping, and the
+    // flame comes up with it. It reads as the wick catching rather than as a
+    // state being reset.
+    if (trimming){
+      char = Math.max(0, char - sec*1.1);
+      if (char <= 0.001){ char = 0; trimming = false; }
+    } else if (!burntOut){
       if (fuel > 0) fuel = Math.max(0, fuel - sec*BURN*(0.14 + 0.86*wick));
       else { char = Math.min(1, char + sec/CHAR_SECS); if (char >= 1) burntOut = true; }
     }
@@ -417,6 +457,43 @@
   // where the oil stands inside it, full to dry
   const OIL_TOP = 930, OIL_BOT = 1168;
   function oilY(){ return OIL_BOT - fuel*(OIL_BOT-OIL_TOP); }
+
+  // A can holds what a can holds, so it goes in nearly full and not to an exact
+  // line -- which is also what keeps the level worth checking after a fill.
+  function refill(){
+    fuel = 0.86 + Math.random()*0.14;
+    burntOut = false; sputV = 1; sputTarget = 1; sputTimer = 0;
+    if (char > 0) trimming = true;
+    pourSound();
+  }
+
+  // Filling a vessel is the OTHER way round from striking it, and this is the one
+  // place on the page where the blown-across-the-top rule is the right one: the
+  // air column above the oil gets shorter as it fills, so the note the pour makes
+  // RISES. Struck, more oil means a lower note; filled, the gurgle climbs. Both
+  // are in here now and they are not the same rule.
+  function pourSound(){
+    ensureAudio();
+    if (muted || !audioCtx) return;
+    const t = audioCtx.currentTime, DUR = 1.15;
+    const n = Math.floor(audioCtx.sampleRate*DUR);
+    const buf = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<n;i++){
+      const k = i/n;
+      const env = Math.min(1, k*9) * Math.min(1, (1-k)*5);
+      d[i] = (Math.random()*2-1) * env;
+    }
+    const src = audioCtx.createBufferSource(); src.buffer = buf;
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.Q.value = 3.2;
+    bp.frequency.setValueAtTime(280, t);
+    bp.frequency.exponentialRampToValueAtTime(760, t+DUR);
+    const g = audioCtx.createGain();
+    g.gain.value = 0.16 * volumeLevel;
+    src.connect(bp).connect(g).connect(audioCtx.destination);
+    src.start(t); src.stop(t+DUR+0.05);
+  }
 
   // ---------- the sound of steel on copper ----------------------------------
   let tickBuffer = null;
@@ -471,6 +548,8 @@
       o.connect(g).connect(dest); o.start(t); o.stop(t+d+0.06);
     }
   }
+
+  document.getElementById('fill').addEventListener('click', refill);
 
   // ---------- the nail ----------------------------------------------------------
   // A photographed object, like candler's pins, not an emoji: it is a thing in the
