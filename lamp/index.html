@@ -389,8 +389,26 @@
   // amount every visit, "the most fun for whomever is interacting" -- and it is
   // also what a lamp found on a shelf actually is.
   let fuel = 0.30 + Math.random()*0.62;
-  const BURN = 1/900;          // full to empty in 15 minutes at a full flame,
-                               // about an hour and a quarter at the lowest
+  const BURN = 1/900;          // full to empty in 15 minutes at the biggest flame
+
+  /* What a lamp consumes is what its flame is burning, so the rate has to follow
+     the FLAME rather than the position of a slider. It didn't: it was linear in
+     the wick-height slider alone, which got the direction right and the amount
+     wrong, and left the SHAPE slider out of it entirely -- yet trimming the wick
+     to a point is a real change to the flame, from wide and low to narrow and
+     tall. Both figures below are read from the very keyframes the renderer draws
+     with, so the burn and the picture can never disagree.
+     A diffusion flame's output goes with how much of it there is, and this flame
+     is close to a body of revolution about the wick, so height x width squared is
+     the honest measure -- not height alone. That matters here: trimming to a point
+     takes the flame 42% taller and 28% narrower, which LOOKS like more flame and
+     is 26% less of it. Normalised to 1.0 at a full, flat wick. */
+  function burnRate(){
+    const kf = lerpFlameKeyframes(wickShape);
+    const h = (40 + wick*95) * kf.heightMult;
+    const w = 15 * kf.flameWMult;
+    return (h*w*w) / (135*15*15);
+  }
   const LOW  = 0.11;           // where the wick starts to starve
   const CHAR_SECS = 11;        // the dry wick burning down to ash
 
@@ -426,7 +444,7 @@
       char = Math.max(0, char - sec*1.1);
       if (char <= 0.001){ char = 0; trimming = false; }
     } else if (!burntOut){
-      if (fuel > 0) fuel = Math.max(0, fuel - sec*BURN*(0.14 + 0.86*wick));
+      if (fuel > 0) fuel = Math.max(0, fuel - sec*BURN*burnRate());
       else { char = Math.min(1, char + sec/CHAR_SECS); if (char >= 1) burntOut = true; }
     }
     const starve = fuel > LOW ? 0 : 1 - fuel/LOW;
