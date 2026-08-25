@@ -166,7 +166,22 @@ channel **falls fast and recovers slowly**, which is what reads as sputtering ra
 flickering — don't make it symmetric. Measured over the last 100 seconds the flame's brightness runs
 214, 190, 213, 204 … 151, 186, 161, 172, 141 … 77, 87, 73, 135 … 41, 15, 14, 8: dropping and catching,
 dropping and catching, with the baseline sinking all the way. Then a grey ash stub and no flame.
-**Reloading the page is a fresh lamp; nothing else relights it.**<br>Two things came out of being able
+**And there is an oil can in the corner opposite the music
+button** — her ask, and it does two things at once: it takes the dead end out of a burnt-out lamp,
+and it lets the tap be COMPARED, which is much the fastest way anybody will work out what the
+tapping is for. Measured through one cycle: fresh 648Hz, burnt dry 790Hz ringing long, and after a
+fill the same spot gives a dull **269Hz** knock because it is under the oil now. A can holds what a
+can holds, so it goes in **nearly** full and not to a line. Filling a lamp that has gone out means
+trimming the wick and putting a light to it, so the char eases away over about a second and the
+flame comes up with it — 45 the instant it is filled, 164 half a second later, 216 after two.
+**The pour is the one place on this page where the BLOWN rule is the right one**: the air column
+above the oil shortens as it fills, so the gurgle RISES, where a struck lamp goes lower with more
+oil. Both rules are in the piece and they are not the same rule. The can is in the corner rather
+than the dock because the dock's height is what the lamp is centred against, so a fourth row there
+would be paid for out of the lamp; measured, the can touches no control, not the music button, not
+the nail and not the lamp, at 1440x900, 390, 320, 240x350, a Kindle and a 3in phone sideways. Drawn,
+not an emoji — there is no oil can in Unicode and the nearest are an oil DRUM and a 2021 pouring
+jug.<br>Two things came out of being able
 to see the lamp UNLIT, which was never possible before. The photograph's own static wick is painted over
 with a patch of glass cloned from higher up the same column, and as a **hard-edged rectangle its seam**
 was invisible under a lit flame's glow and perfectly plain the moment the lamp could go out — the
