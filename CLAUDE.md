@@ -442,7 +442,19 @@ on a Retina screen; a photograph would have to be stretched to length *and* upsc
 on both sheets, so it doesn't need measuring again. The old dead `chime-rod-*.png` sprites are still on
 disk, unreferenced, as warmler's unused textures are.<br>**Noticed while measuring and NOT fixed**: on a
 240x350 screen the dock's four rows swamp the chime entirely. It is identical before and after this
-change, so it is hers to find on the Jelly Star, not something this change introduced.<br>**The card was
+change, so it is hers to find on the Jelly Star, not something this change introduced.<br>**And the chain
+it hangs BY**, her ask off the first look: *"the top ring is hanging from... nothing."* It was — the cut
+stopped at the ring's top and the hook chain above it was thrown away. It is back, cut from the run above
+the ring **in the same photograph**, so it is literally the same chain rather than a match for it. Only
+57px of it exists and one repeat is 35.30px, so there is exactly one period plus enough overlap to
+cross-fade; the repeat was found by minimising the wrap rather than by correlation, which is the more
+reliable objective when there is barely more than one period to look at. Step across the join **0.27x an
+ordinary row-to-row step**.<br>Two things about it are load-bearing. It is drawn **outside the lean**,
+because the ring is the pivot and does not move — so the chime swings beneath a chain that stays put,
+which is what a fixed pivot at the ring means and what it looks like. And it stops **inside the ring's top
+brass** rather than at the ring's centre: the ring's hole is transparent in the cut-out, so a straight run
+carried to the centre shows through it and reads as a chain passing BEHIND the ring instead of hooked on
+to it.<br>**The card was
 reshot** off the rebuilt piece — the old one predated even the DRAWN hanger, showing a curved dark bar
 with a knot at the top and hammered flat rods, none of which the piece has had for some time. Framed by
 measuring the chime's own painted extent in the shot rather than trusting a ratio, and **cropped** to

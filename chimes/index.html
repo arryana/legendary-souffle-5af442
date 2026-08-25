@@ -261,10 +261,17 @@
     eyeH   : 0.050868,
     eyeCx  : 0.4773,     // and the eyelet's own hole, inside its cut-out
     eyeCy  : 0.5,
-  };
+    chainW : 0.043424,   // the chain it hangs BY: one tile's width, in bar widths
+    chainP : 0.043797,   // and its repeat
+    chainCx: 0.003102,   // the chain hangs a hair right of the bar's centre
+    chainFt: 0.042,      // how far above the ring's centre the chain stops -- inside
+  };                     // the top brass, above the hole, so it reads as hooked on
   function loadImg(src){ const i=new Image(); i.src=src; return i; }
   const hangerImg = loadImg('chime-hanger.png');
   const eyeletImg = loadImg('chime-eyelet.png');
+  // and the chain it hangs by, cut from the run above the ring in the same
+  // photograph -- so it is literally the same chain -- to one repeat that tiles.
+  const chainImg  = loadImg('chime-chain.png');
 
   // The cords are her photographs too, off her parts sheet: one straight run of
   // each, stood upright and cut to a whole number of its own repeats so it tiles
@@ -866,6 +873,22 @@
 
   function drawHanger(n){
     const cx = hangerX;
+
+    // The chain it hangs BY, running up out of the top of the page. Drawn first,
+    // so the ring's own brass paints over its foot, and drawn OUTSIDE the lean:
+    // the ring is the pivot and does not move, so the chime swings beneath a
+    // chain that stays put. It stops inside the ring's top brass rather than at
+    // the ring's centre, or a straight run would show through the ring's hole
+    // and read as passing behind it instead of being hooked on to it.
+    if(chainImg.complete && chainImg.naturalWidth){
+      const cw = HANGER_W*HG.chainW, cp = HANGER_W*HG.chainP;
+      const x  = cx + HANGER_W*HG.chainCx - cw/2;
+      const foot = ringY - HANGER_W*HG.chainFt;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x, 0, cw, foot); ctx.clip();
+      for(let y=foot; y>-cp; y-=cp) ctx.drawImage(chainImg, x, y-cp, cw, cp);
+      ctx.restore();
+    }
 
     // everything below the ring leans with it. The ring is the hook and does not
     // move, but it is round and centred on the turn, so it is inside the lean
