@@ -529,7 +529,12 @@ follow. Measured: 1100x974 with a 960px picture on a desktop, 1100x1407 with a 3
 phone, and the disc goes from 55% of the picture's width to 88%. The table is never distorted — always
 the same scale as the width — and the wall is drawn at its own scale with its top few rows stretched
 to fill what is left above it, since stretching the whole gradient five times over would band it. A
-3in phone and a phone sideways scroll, the answer she took for kaleidoscope and storm.<br>**The card
+3in phone and a phone sideways scroll, the answer she took for kaleidoscope and storm.<br>**The table was toned down**, her call on a note of mine: it was the warmest and
+brightest thing in the frame and the disc is the subject, so it pulled the eye down and forward — the
+same fault she named herself on musebox's white rabbit. Fifteen per cent of the saturation and twelve
+of the lift come off the band below the table's front edge, and it is cooled a shade; the first two
+rows are ramped so the edge does not gain a line of its own. Baked into `museroom.jpg` rather than
+done per frame.<br>**The card
 was reshot** off the rebuilt piece and **cropped** to 440x640 rather than squeezed into it — squashing
 a taller frame into the card makes the disc oval again, which is the one thing the rebuild exists to
 avoid.<br>**The sound was not touched and neither were the controls**, her call: *"leave off the
