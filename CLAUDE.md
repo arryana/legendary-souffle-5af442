@@ -148,9 +148,18 @@ the seed threshold that grows the mask was at 58, which is inside the photograph
 REFLECTION, so the flood ran straight from the nail into it and the cut came out with a dark ghost
 attached. At 78 the reflection has no seed and the same flood gives a clean nail.<br>**A different
 amount of oil every visit**, her call — *"that would be the most fun for whomever is interacting"* —
-and it is also what a lamp found on a shelf actually is. Full to empty in **15 minutes** at a full
-flame, about an hour and a quarter at the lowest; a bigger flame burns it faster, which is the whole
-reason to check.<br>**The tap is steel on copper**: a hard pitchless contact tick first, because that is
+and it is also what a lamp found on a shelf actually is. **The burn follows the FLAME, not the slider** — her question, and the
+answer was no until she asked it. Consumption was linear in the wick-HEIGHT slider alone: right
+direction, wrong amount, and the shape slider left out of it entirely. Both figures are now read from
+the very keyframes the renderer draws with, so the burn and the picture can never disagree, and the
+measure is **height x width SQUARED** (a body of revolution about the wick) rather than height alone.
+That distinction earns its place, because **trimming to a point makes the flame look bigger and makes
+it smaller**: measured over twenty frames, a full flat wick draws 87x20px and 1157 lit pixels, a full
+pointed one 115x12px and 929 — 32% taller, 40% narrower, a fifth less flame. Full lamp to out,
+measured: **14.7 min** full and flat, **20.5** full and pointed, **36.0** low and flat, **54.1** low
+and pointed. The honest limit, since this is a proxy and not the mechanism: a real lamp's rate is set
+by how fast the wick draws fuel up and vaporises it, and this is tied to the flame instead — the
+self-consistent choice for a piece where the flame is what you can see and what you adjust.<br>**The tap is steel on copper**: a hard pitchless contact tick first, because that is
 what names two materials to the ear before any note has established, then the shell's own inharmonic
 note. **STRUCK, not blown**, which is the easy thing to get backwards — blown across the top, more
 liquid means a shorter air column and a HIGHER pitch; struck, the liquid mass-loads the walls and drags
