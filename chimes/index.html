@@ -331,6 +331,10 @@
         w2: 1.7+Math.random()*1.6,  p2: Math.random()*6.28,
         w3: 3.1+Math.random()*2.4,  p3: Math.random()*6.28,
         gustResp: 0.75+Math.random()*0.5,   // how much this rod catches the air
+        // and its own place in the plank: where along the wood texture this rod
+        // was cut from. Without it every rod shows the same figure at the same
+        // height, which is the one thing that gives a tiled texture away.
+        texPhase: prev ? prev.texPhase : Math.random(),
       });
     }
     state.rods = rods;
@@ -712,7 +716,7 @@
       // through each other in silence, and chimed with a plain gap between them.
       ctx.rotate(-r.angle);
       drawCord(state.cordLength, cordMat);
-      drawRod(state.cordLength, r.rodLength, rodMat);
+      drawRod(state.cordLength, r.rodLength, rodMat, r.texPhase);
       ctx.restore();
     }
   }
@@ -737,12 +741,29 @@
     silver: { edge:'#565c61', body:'#a7afb5', spec:'#ffffff', lip:'#6a7075', alpha:1,
               shape:'round', width:12 },
     wood:   { edge:'#3a2410', body:'#8a5a2c', spec:'#c79a5c', lip:'#4a2f16', alpha:1,
-              shape:'flat',  width:17, grain:true, hole:3.0 },
+              shape:'flat',  width:17, grain:true, hole:3.0, tex:'chime-rod-wood.png' },
     glass:  { edge:'#4f9f96', body:'#cdeee7', spec:'#ffffff', lip:'#8fc9c0', alpha:0.58,
               shape:'prism', width:8,  lenMul:1.16 },
   };
+  // Wood is the one rod that could not be DRAWN convincingly -- her report, and she
+  // is right: brass and silver are smooth cylinders, which shading does well, but
+  // wood IS texture, and a gradient with four grain strokes over it reads as orange
+  // plastic. It is her own walnut now, taken off the hanger bar in the same
+  // photograph. The bar is a flat slat with the grain running along it, lit from one
+  // edge -- exactly what a wooden chime rod is, turned ninety degrees. Turned that
+  // way its 126px cross-section becomes the rod's width, against the 34 a Retina
+  // screen wants, where the rods on her parts sheets are 17-25px and would have had
+  // to be blown up. Three things had to be done to it, and each is visible if it is
+  // skipped: the bar's lighting along its own length is divided out, or it bands
+  // across every rod; the evenest 420px of the bar is used rather than all of it,
+  // measured -- 0.92% residual wobble against 2.22% for the whole; and the tile is
+  // BOOK-MATCHED, [stretch | the same stretch reversed], which makes the mirror join
+  // and the wrap EXACTLY zero with no cross-fade and doubles the repeat to 113px, so
+  // the longest rod never shows a whole one. Matched wood really is cut that way, so
+  // the symmetry is honest as well as convenient.
+  for(const k in ROD_MATS){ if(ROD_MATS[k].tex) ROD_MATS[k].tex = loadImg(ROD_MATS[k].tex); }
 
-  function drawRod(topY, len0, matKey){
+  function drawRod(topY, len0, matKey, texPhase){
     const M = ROD_MATS[matKey];
     const W = M.width, half = W/2, len = len0*(M.lenMul||1);
     const y0 = topY, y1 = topY+len;
@@ -794,13 +815,19 @@
       gx.addColorStop(0.0, M.edge); gx.addColorStop(0.28, M.spec);
       gx.addColorStop(0.5, M.body); gx.addColorStop(1.0, M.edge);
     }
-    ctx.fillStyle = gx; ctx.fillRect(-half-1, y0-1, W+2, len+2);
+    const textured = M.tex && M.tex.complete && M.tex.naturalWidth;
+    if(textured){
+      const th = W * M.tex.naturalHeight / M.tex.naturalWidth;   // the tile, in its own proportion
+      for(let y=y0-th*(texPhase||0); y<y1; y+=th) ctx.drawImage(M.tex, -half, y, W, th);
+    }else{
+      ctx.fillStyle = gx; ctx.fillRect(-half-1, y0-1, W+2, len+2);
+    }
     // length shade
     const gy = ctx.createLinearGradient(0,y0,0,y1);
     gy.addColorStop(0,'rgba(255,255,255,0.10)'); gy.addColorStop(0.15,'rgba(255,255,255,0)');
     gy.addColorStop(0.9,'rgba(0,0,0,0)'); gy.addColorStop(1,'rgba(0,0,0,0.28)');
     ctx.fillStyle = gy; ctx.fillRect(-half-1, y0-1, W+2, len+2);
-    if(M.grain){
+    if(M.grain && !textured){
       ctx.strokeStyle = 'rgba(50,30,12,0.42)'; ctx.lineWidth = 0.8;
       for(let k=0;k<4;k++){ const gxp = -half+W*(0.22+k*0.19);
         ctx.beginPath(); ctx.moveTo(gxp, y0+2);
