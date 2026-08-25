@@ -142,12 +142,18 @@
 
   #frame{ position:relative; overflow:hidden; flex:none;
     --h: min(95vh, calc(96vw * 1.230469), 1260px);
-    height:var(--h); width:calc(var(--h) / 1.230469); }
+    height:var(--h); width:calc(var(--h) / 1.230469);
+    transition:width .78s cubic-bezier(.42,.02,.16,1); }
   /* Sizes here are fractions of the case's own height, so the lettering keeps its
      proportion to the furniture at every screen size. They cannot be written as
      "unit x px" -- --h is a length, and a length times a length is not a size, so
      that silently fell back to the browser's 16px default and the names collided. */
-  #case{ position:absolute; inset:0;
+  /* The case keeps its OWN width and stays centred, rather than filling the frame.
+     That is what lets the frame widen on a zoom without the photograph stretching
+     with it -- unzoomed the two are exactly the same width, so nothing moves. */
+  #case{ position:absolute; top:0; bottom:0;
+    left:50%; width:calc(var(--h) / 1.230469);
+    margin-left:calc(var(--h) / 1.230469 / -2);
     transform-origin:50% 50%;
     transition:transform .78s cubic-bezier(.42,.02,.16,1); }
   #case > img.wood{ width:100%; height:100%; display:block; }
@@ -207,7 +213,17 @@
   .piece:focus-visible{ outline:2px solid #b8903f; outline-offset:2px; }
 
   /* zoomed in: the shelf in focus stands forward, the rest steps back */
-  #case.zoomed .piece:not(.on){ opacity:.2; pointer-events:none; }
+  #case.zoomed .piece:not(.on){ opacity:.35; pointer-events:none; }
+  /* Her ask: the other shelves need to be MORE greyed out. Dimming the cards alone
+     left four brightly lit empty shelves behind them, which is the opposite of what
+     is wanted -- the wood is most of what the eye sees. So a near-black sheet is
+     laid over the whole case with a band cut out of it at the shelf in focus: wood,
+     brass and cards all go back together, and the lit shelf reads as the only one
+     the light is falling on. The band's edges are set in JS from the same
+     measurement table as everything else. */
+  #shelfveil{ position:absolute; inset:0; z-index:3; pointer-events:none;
+    opacity:0; transition:opacity .55s ease; }
+  #case.zoomed #shelfveil{ opacity:1; }
   /* Everything but the card in hand falls away. Not an effect for its own sake:
      with the furniture dark the card can be lifted well clear of it without the
      softening of the blown-up photograph behind it being the thing you notice. */
@@ -259,6 +275,7 @@
   <div id="frame">
     <div id="case">
       <img class="wood" src="shelves-navy.jpg" alt="A dark case of five open shelves">
+      <div id="shelfveil"></div>
       <div id="veil"></div>
       <button type="button" id="oval" aria-expanded="false" aria-controls="say-sagne"
               aria-label="what is this?">sagne</button>
@@ -313,7 +330,15 @@
     stand:12,
     // A card stands ON the board, not at the lip of it -- its foot goes back from
     // the front edge by this much, so a sliver of the lit top surface shows in
-    // front of it.
+    // front of it. This is a PROJECTED depth, not a real one, which is why it is
+    // per shelf ("seat" below, this being the fallback): the eye is a little above
+    // the top board, so how much of a board's top surface you can see grows all the
+    // way down the case. Measured off the photograph by luminance -- the lit top
+    // runs 0px on instrumenta, 4 on tactilia, 29 on systema and natura, 40 on
+    // phenomena. Her report, and she is right: with one constant, the top shelf's
+    // stands were seated 10px back from a front edge with nothing behind it, so
+    // they hung in the air. Each now sits about a third of its own board's visible
+    // depth back from the lip, which on the top shelf is the lip itself.
     seatBack:10,
     // ceil = underside of the shelf above; surf = the FRONT LIP of the board this
     // shelf's cards stand on; railY = the centre of the board's front edge, which
@@ -328,26 +353,26 @@
     // tactilia, which a shadow under the first board holds to the same 176; the
     // lower three stand at 202, 202 and 211.
     shelves:[
-      { name:'instrumenta', ceil:107, surf:282, railY:290.5, plateW:125.3,
+      { name:'instrumenta', ceil:107, surf:282, railY:290.5, plateW:125.3, seat:1,
         pieces:[['candler','candler/index.html','candler/candle-card.png'],
                 ['conometer','conometer/index.html','conometer/conometer-card.png'],
                 ['galileo','galileo/index.html','galileo/galileo-card.png'],
                 ['windower','windower/index.html','windower/windower-card.png'],
                 ['storm','storm/index.html','storm/storm-card.png']] },
-      { name:'tactilia', ceil:299, surf:497, railY:505.5, plateW:102.8,
+      { name:'tactilia', ceil:299, surf:497, railY:505.5, plateW:102.8, seat:2,
         pieces:[['warmler','warmler/index.html','warmler/warmler-card.png'],
                 ['roller','roller/index.html','roller/roller-card.png'],
                 ['kaleidoscope','kaleidoscope/index.html','kaleidoscope/kaleidoscope-card.png']] },
-      { name:'systema', ceil:514, surf:715, railY:724, plateW:107.3,
+      { name:'systema', ceil:514, surf:715, railY:724, plateW:107.3, seat:10,
         pieces:[['musebox','musebox/index.html','musebox/musebox-card.png'],
                 ['gyre','gyre/index.html','gyre/gyre-card.png'],
                 ['chimes','chimes/index.html','chimes/chimes-card.png']] },
-      { name:'natura', ceil:733, surf:934, railY:941.5, plateW:103.3,
+      { name:'natura', ceil:733, surf:934, railY:941.5, plateW:103.3, seat:10,
         pieces:[['birds','birds/index.html','birds/birds-card.png'],
                 ['fireflies','fireflies/index.html','fireflies/fireflies-card.png'],
                 ['moths','moths/index.html','moths/moths-card.png'],
                 ['ant','ant/index.html','ant/ant-card.png']] },
-      { name:'phenomena', ceil:949, surf:1159, railY:1166.5, plateW:126.1,
+      { name:'phenomena', ceil:949, surf:1159, railY:1166.5, plateW:126.1, seat:10,
         pieces:[['lamp','lamp/index.html','lamp/lamp-card.png'],
                 ['rain','rain/index.html','rain/rain-card.png'],
                 ['bowl','bowl/index.html','bowl/bowl-card.png'],
@@ -366,6 +391,7 @@
   function slotX(n,i){ return IMID + PITCH*(i-(n-1)/2); }
 
   var caseEl=document.getElementById('case'), frame=document.getElementById('frame');
+  var veilEl=document.getElementById('shelfveil');
   var ovalEl=document.getElementById('oval');
   var BY_SLUG={}, RECT={};
 
@@ -385,7 +411,8 @@
   GEO.shelves.forEach(function(sh,si){
     sh.pieces.forEach(function(p,i){
       var cx=slotX(sh.pieces.length,i);
-      var x=cx-GEO.card.w/2, y=sh.surf-GEO.seatBack-GEO.card.h-GEO.stand;
+      var seat=(sh.seat==null?GEO.seatBack:sh.seat);
+      var x=cx-GEO.card.w/2, y=sh.surf-seat-GEO.card.h-GEO.stand;
       var a=document.createElement('a');
       a.className='piece'; a.href=p[1]; a.setAttribute('aria-label',p[0]);
       a.style.left=pc(x,W); a.style.top=pc(y,H);
@@ -475,9 +502,51 @@
   // the frame, so a shelf of three comes closer than a shelf of five and the touch
   // targets are as large as that shelf allows.
   var FILL = 0.92;                         // leave a little air at each end
-  function shelfScale(n){
+  // And a shelf can only fill the WINDOW it is brought forward into. The case is a
+  // tall portrait box and a shelf is a wide landscape strip, so a shelf filling the
+  // case's own width used less than half the screen on a desktop -- 695px of 1440,
+  // which is what made the zoom look timid. Her report: it needs to be a lot bigger.
+  // So the window widens on a zoom and the case keeps its own proportion inside it;
+  // the scale is then multiplied by however much wider the window got. Nothing here
+  // touches a phone, which takes the tray instead of the zoom.
+  var ZOOM_FILL = 0.97;                    // of the page's width
+  function caseW(){ return caseEl.clientWidth || 1; }
+  function zoomWidth(n, art){
+    var span = PITCH*(n-1) + GEO.card.w;
+    var fh = frame.clientHeight || 1;
+    // Two honest ceilings, the same two the card zoom keeps: a picture is never
+    // enlarged past its own pixels, and the shelf zoom never grows so far that it
+    // starts doing the card zoom's job.
+    var maxCard = Math.min(art/(window.devicePixelRatio||1), fh*0.46);
+    var maxW = maxCard*span/(GEO.card.h*FILL);
+    return Math.max(caseW(), Math.min(window.innerWidth*ZOOM_FILL, maxW));
+  }
+  function shelfArt(sh){
+    var art = 1e9;
+    sh.pieces.forEach(function(p){
+      var im = BY_SLUG[p[0]].el.querySelector('img');
+      art = Math.min(art, im.naturalHeight || 640);
+    });
+    return (art && isFinite(art)) ? art : 640;
+  }
+  function shelfScale(n, fw){
     var span = PITCH*(n-1) + GEO.card.w;   // outer edge to outer edge of its cards
-    return W*FILL/span;
+    return (fw/caseW()) * W*FILL/span;
+  }
+  // The band of the sheet that is cut away, in the photograph's own units: from just
+  // under the board above down to just under the plate, so the engraved name is lit
+  // with the shelf it belongs to.
+  function veilFor(sh){
+    // The top edge falls on the BOARD above, not in the compartment: that board's
+    // own front face carries the plate of the shelf above, which hangs a little
+    // below its underside, and lighting it would put another shelf's name in the
+    // lit band. The fade is 7 units of the photograph -- about ten screen pixels at
+    // this zoom, so it reads as the edge of a board and not as a drawn line.
+    var top=(sh.ceil+5)/H*100, bot=(sh.railY+GEO.plateH/2+8)/H*100, r=7/H*100;
+    var V='rgba(5,8,14,.92)', C='rgba(5,8,14,0)';
+    return 'linear-gradient(to bottom,'+V+' 0%,'+V+' '+(top-r).toFixed(2)+'%,'+
+      C+' '+(top+r).toFixed(2)+'%,'+C+' '+(bot-r).toFixed(2)+'%,'+
+      V+' '+(bot+r).toFixed(2)+'%,'+V+' 100%)';
   }
   // Tap two is not "the shelf, only nearer". It is the card itself, brought up to
   // fill the frame. The case comes forward only far enough to carry the card into
@@ -624,7 +693,9 @@
     trayEl.classList.remove('holding'); trayHeld=null;
   }
   trayPlate.addEventListener('click', function(){ outOne(); });
-  addEventListener('resize', function(){ if(document.body.classList.contains('tray')) layTray(shelfIx); });
+  addEventListener('resize', function(){
+    if(document.body.classList.contains('tray')) layTray(shelfIx); else if(level>0) paint();
+  });
 
   function paint(){
     // A pointer gets the case brought forward; a thumb gets the tray.
@@ -632,6 +703,7 @@
     if(tray){
       if(level>0) openTray(shelfIx); else shutTray();
       caseEl.style.transform=''; caseEl.classList.remove('zoomed','on-card');
+      frame.style.width='';
       frame.classList.toggle('zoomed', level>0);
       return;
     }
@@ -649,14 +721,19 @@
       });
     }
     if(level>1) BY_SLUG[cardSlug].el.classList.add('picked');
-    if(level===0){ caseEl.style.transform=''; }
+    if(shelfIx!=null) veilEl.style.backgroundImage=veilFor(GEO.shelves[shelfIx]);
+    if(level===0){ caseEl.style.transform=''; frame.style.width=''; }
     else if(level===1){
       var sh=GEO.shelves[shelfIx];
       // the engraved name belongs to the shelf, so centre on the group that
       // includes it rather than on the empty compartment alone
       var mid=(sh.ceil + sh.railY + GEO.plateH/2)/2;
-      caseEl.style.transform=transform(IMID, mid, shelfScale(sh.pieces.length));
+      var fw=zoomWidth(sh.pieces.length, shelfArt(sh));
+      frame.style.width=fw.toFixed(1)+'px';
+      caseEl.style.transform=transform(IMID, mid, shelfScale(sh.pieces.length, fw));
     } else {
+      // a card is portrait, so the window comes back down to the case's own width
+      frame.style.width='';
       var r=RECT[cardSlug];
       caseEl.style.transform=transform(r.cx,r.cy,CARD_CASE);
       BY_SLUG[cardSlug].el.style.transform='scale('+cardLift(cardSlug).toFixed(4)+')';
