@@ -1125,23 +1125,30 @@ is a fault class none of the pieces tested so far could expose. Budget it for wa
 repairing, **don't propose reordering the shelf to get a number up, and don't propose a shortcut
 through natura**. The slowness is the test.
 
-**What she expects from the nine still to run** (Mon 24 Aug, her own read — recorded because a
-session that only counts ✅s will guess this wrong, as one did):
-- `musebox`, `chimes` — **unguessable until she hears them.** Both were rebuilt by ear this month and
-  sound is the one thing no measurement here settles.
-- `lamp` — **may not be a test at all but a build.** The tap-the-base-for-fuel idea in its row is
-  still unbuilt, and she may want it made before she calls the piece run.
-- `pendulum` — **she doubts it, and the doubt is well founded.** Its ✅ was given for precession,
-  swing and pin ring verified by measurement, and the **real-world-time checkbox came after that**, so
-  the mark predates the feature. She expects hiccups. A Done mark records what was true when it was
-  given; it does not follow the piece forward.
-- `rain` — *"as done as i can make it without an animating software"*, so likely quick, and any
-  remaining wish there is a tooling problem rather than a fault.
-- `birds`, `fireflies`, `moths`, `ant` — **the big lift**, as above.
+**Tue 25 Aug was a day of repairs and builds and she ran NOTHING on the machines**, so the count is
+still twelve through. The eight that are left, and what state each is actually in:
 
-The general point, which cost a wrong guess: **"marked done and untouched today" does not mean
-"quick".** Two of the four pieces that fitted that description are the ones she expects most work
-from.
+- `musebox` — **rebuilt.** Her second set of Gemini pictures (four images, one object each, on plain
+  black) replaced the whole look: the disc now stands on a table against the navy wall, the notes sit
+  in eight of the photograph's own engraved rings, and the picture takes the shape of the screen. Her
+  verdict on the look is in — *"to my eye, yes. yes it is."* — and the card is reshot. **The sound and
+  the controls were not touched.** She has never heard it or run it on a machine.
+- `chimes` — tuned to real notes, each material cut to its own lengths, its own strike sound, a
+  rod-length slider, and the tangle fixed. **Unheard.** Test it with the rods at DIFFERENT lengths or
+  the tangle it was reported for cannot appear at all.
+- `lamp` — **was a build and now is one.** Oil that burns down, her father's ten penny nail, the tap
+  that finds the level, the sputter and the wick burning to ash, an oil can to fill it again, and a
+  burn rate that follows the flame rather than the slider. Its ✅ was given for the wick and flame and
+  predates every bit of that.
+- `pendulum` — her two reports are fixed: the full-diameter line is now a short trail behind the
+  weight, and the pins are the right way round (a fallen one was the brightest thing on the plate).
+  Its ✅ predates the real-time checkbox as well.
+- `birds`, `fireflies`, `moths`, `ant` — **untouched, and the big lift**, as above.
+
+The general point, which cost a wrong guess once and is now demonstrated twice over: **"marked done"
+does not mean "current".** A Done mark records what was true when it was given and does not follow
+the piece forward — lamp's predates its whole fuel system, pendulum's predates the real-time
+checkbox. Both still carry ✅, correctly, because only she takes a mark back.
 
 ### Three faults turned out to be systemic, so all sixteen untested pieces were swept for them
 
