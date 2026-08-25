@@ -552,7 +552,27 @@ on her bench may not have; the way in, if it is ever wanted, is conic where it e
 fill where it doesn't.<br>**Still open, and hers**: whether the sector now reads as sand or still as a
 dial. The geometry is honest — that ground really has been worked — so this is a question about the
 look, not a fault to fix. Her word on the change was ***"it's better"*** — which is an improvement
-banked and not a verdict, so **don't revert it and don't treat it as settled either**. |
+banked and not a verdict, so **don't revert it and don't treat it as settled either**.<br>**"The line
+moves AHEAD of the pendulum swing."** Her report on the speed-slider setting, Aug 2026. Measured, it
+never does — the bob sits on that line to within **0.07° over 658 frames**. What runs ahead is the
+**ratio**: the slider turns the plane without touching the swing, so at its default the plane turns
+**1.87° per swing where in life it turns 0.009°**, and a rigid full-diameter line at constant
+brightness is what made that read as a hand sweeping a dial. There is no way round the ratio — speed
+the swing up too and it is a blur long before the turn is watchable; a real one is about one turn per
+25,000 swings, which is why the honest setting is the clock face. So the LINE went instead, her call:
+**a short trail behind the weight**, which is ground it has just crossed and so can never reach ahead
+of it. Held to a fixed **length**, not a fixed time — the bob is nearly stationary at the ends of its
+swing, which is exactly where the pins are and where the swing's direction most needs reading.<br>**And
+the pins were the wrong way round**, which is what actually made the piece unreadable. A **fallen** pin
+was drawn as a saturated brass bead at full opacity — the brightest thing on the plate after the bob —
+and a **standing** one as a stroke at alpha 0.26. So a ring of bright beads sat over exactly the ground
+the swing had already crossed and read as *the pins are still here*, the plain opposite of what the sand
+beneath was saying. Nothing was wrong in the model. On a real ring it is the brass tops of the upright
+pins that catch the light and the knocked ones that lie dark on the floor, and that is what it draws
+now — **brightness and shape both**, an upright being a short stub with its head close in and a fallen
+one a long shaft pushed well out with a dull head at the end. Her sentence is the general rule and
+belongs beside *reads as broken*: ***"i get that it has to be true, and that's important, but if it's
+incomprehensible to look at that doesn't teach anything."*** |
 | `storm/index.html` | ✅ | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo)<br>**Done**, and the piece that finishes instrumenta. Fifth through her four-device test, Aug 2026,
 and four things came out of it.<br>**The needle lied whenever it had nothing to say.** Untranslated,
 `#baro-needle-g` sits at x=0 in its own SVG — off the left-hand end of the printed scale, past
