@@ -1261,6 +1261,32 @@ pointer crosses it, a thing that answers when touched — that's the piece being
 the shelf already does it. That is not an explanation. The test is whether it *tells* or
 merely *responds*.
 
+**A reference sheet, teacher's notes or an aims list has been proposed and REFUSED — Aug
+2026 — and the reasoning is written here so it is not proposed again.** It came up because
+the site is meant, when it is finished, for Montessori and similar teaching, language-free
+and international. From that a session (this one) reasoned that a guide choosing materials
+cannot tell by looking which four pieces read the visitor's real weather, and offered a
+one-page sheet listing them. **Being off-page is not a loophole**: a sheet gets forwarded,
+quoted and pasted into a resource list, and then the first thing anybody ever reads about
+sagne is the answer to its own question. It is a tooltip at a different URL.
+
+Her answer, and it settles it: ***"it also -refreshes-, so the changes become obvious. the
+whole point of this site is patience and curiosity being rewarded. why would i sell it out
+there."*** Someone who stays with `windower` for twenty minutes watches the sky change. The
+liveness discloses itself — it just costs the one thing the site is asking for. And of all
+possible audiences, a Montessori guide is the one trained to sit with a material before
+presenting it, so the site is aimed at precisely the people who will do the patient thing.
+
+Two things she pointed out on the way, both correct, both worth keeping because they are
+what makes the refusal safe rather than merely principled. **The URLs are a hint**: the two
+pieces hardest to name by sight carry their own names in the address (`/chladni/`,
+`/galileo/`), `/conometer/` is a portmanteau that gives the game away, and her coinages
+carry a grammar — the *-er* in `windower`, `warmler`, `roller`, `candler` says "a thing that
+does this" and the stem says what. **And the flag is already the disclosure**: it is on all
+seven location-aware pieces, and pressing it opens a box asking where you are, which says
+plainly that the piece cares. The fetch-trouble marks count for less, since they only show
+when something has broken.
+
 ## Guardrails
 
 - Keep each change **small and self-contained** — one idea at a time.
