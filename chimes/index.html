@@ -185,9 +185,28 @@
     return BASE_MIDI + PENTATONIC[deg] + 12*oct;
   }
   const midiToHz = m => 440*Math.pow(2,(m-69)/12);
-  // the length whose fundamental IS that note -- the cut a maker would make
+  /* The cut a maker would make -- and it depends on the MATERIAL, which is the
+     other half of this. A tube's pitch is set by its length and by what it is
+     made of, so a glass tube tuned to a given note is a different length from a
+     brass one. Cutting every material to the same lengths left only brass on real
+     notes: measured, wood came out 30 cents sharp, silver 30 flat and glass 48
+     sharp -- a hair off a quarter-tone, in tune with itself but not with the
+     world. Each material gets its own cuts now.
+     They cannot all reach the same bottom note, and that is honest too: within a
+     length a chime is allowed to be, glass and wood simply cannot go as low as
+     brass, so each set starts at the lowest note its own material can carry. Big
+     brass sets are deep and glass ones are tinkly for exactly this reason. */
+  const matPitch = () => (MATERIAL[state.rodMaterial] || MATERIAL.brass).pitch;
+  function lengthForNote(midi, p){ return Math.sqrt(PITCH_K*p/midiToHz(midi)); }
+  function baseStepFor(p){
+    for(let step=0; step<60; step++){
+      if(lengthForNote(scaleMidi(step), p) <= ROD_LEN_MAX) return step;
+    }
+    return 0;
+  }
   function lengthForStep(step){
-    const L=Math.sqrt(PITCH_K/midiToHz(scaleMidi(step)));
+    const p=matPitch();
+    const L=lengthForNote(scaleMidi(baseStepFor(p)+step), p);
     return Math.max(ROD_LEN_MIN, Math.min(ROD_LEN_MAX, L));
   }
   // and the nearest cut to a length asked for by hand, so a rod set on the
@@ -798,22 +817,25 @@
 
   // ---- UI ----
   // material pickers: a small trigger swatch that opens a wordless popup list, same pattern as warmler's finish picker
-  function wireMatPicker(stateKey, swatchFile, triggerBtn, triggerImg, overlay, list){
+  function wireMatPicker(stateKey, swatchFile, triggerBtn, triggerImg, overlay, list, onPick){
     function apply(key){
       state[stateKey] = key;
       triggerImg.src = swatchFile(key);
       list.querySelectorAll('.matOption').forEach(o => o.classList.toggle('selected', o.dataset.key === key));
     }
-    apply(state[stateKey]);
+    apply(state[stateKey]);          // the first apply is setup, not a choice
     triggerBtn.addEventListener('click', () => overlay.classList.add('open'));
     overlay.addEventListener('click', (e) => { if(e.target === overlay) overlay.classList.remove('open'); });
     list.querySelectorAll('.matOption').forEach(opt => {
-      opt.addEventListener('click', () => { apply(opt.dataset.key); overlay.classList.remove('open'); });
+      opt.addEventListener('click', () => { apply(opt.dataset.key); overlay.classList.remove('open'); if(onPick) onPick(); });
     });
   }
   wireMatPicker('rodMaterial', k => `chime-swatch-rod-${k}.png`,
     document.getElementById('rodMatTrigger'), document.getElementById('rodMatTriggerImg'),
-    document.getElementById('rodMatOverlay'), document.getElementById('rodMatList'));
+    document.getElementById('rodMatOverlay'), document.getElementById('rodMatList'),
+    // a set in another material is cut to different lengths for the same notes,
+    // so changing the material re-cuts the tubes rather than transposing them
+    () => rebuildRods(false));
   wireMatPicker('cordMaterial', k => `chime-swatch-cord-${k}.png`,
     document.getElementById('cordMatTrigger'), document.getElementById('cordMatTriggerImg'),
     document.getElementById('cordMatOverlay'), document.getElementById('cordMatList'));

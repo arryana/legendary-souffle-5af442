@@ -282,7 +282,18 @@ neighbours widening from 3.7 semitones to 8.1. The physics is untouched — pitc
 and the lengths drawn are still the lengths that make those pitches — but the lengths are **chosen**
 now: C3 D3 E3 G3 A3 C4 D4 for seven, every rod **0 cents** off, at every count from five to nine. The
 per-rod popup snaps to the same cuts, so a rod set by hand is a note and not a quarter-tone between
-two.<br>**And a rod-length slider beside the chain one**, her ask. With a tuned set it is a
+two.<br>**And each material is cut to its own lengths**, which was her follow-up question — *is that
+true for every instrument of the chimes?* It wasn't. Cutting all four to the same lengths left the
+INTERVALS perfect everywhere (2,2,3,2,3,2 semitones in every material, so none of them ever sounded
+sour) but only brass on real notes: wood came out 30 cents sharp, silver 30 flat and **glass 48
+sharp**, a hair off a quarter-tone — in tune with itself and not with the world. A tube's pitch is
+set by its length *and* by what it is made of, so a glass tube tuned to a note is a different length
+from a brass one, and they are cut accordingly now: **every material 0 cents on every rod**. They
+cannot all reach the same bottom note within a length a chime is allowed to be, and that is honest
+too — brass and silver make C3, wood starts at E3 and glass at A3, which is why big brass sets are
+deep and glass ones tinkly. Changing the rod material re-cuts the tubes rather than transposing them,
+and the four sets come out at similar lengths (179–120, 158–106, 176–114, 171–111) so nothing jumps
+on screen.<br>**And a rod-length slider beside the chain one**, her ask. With a tuned set it is a
 **transpose**: the whole chime moves along the scale and stays in tune with itself, which is what a
 smaller or larger set of the same design actually is. Short rods also hang higher and swing quicker,
 so the meetings get busier as well as brighter — one control, both effects, which is exactly how she
