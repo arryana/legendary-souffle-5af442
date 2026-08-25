@@ -45,11 +45,9 @@
   }
   .disc-wrap{ position:relative; }
   /* The disc stands on a table against a wall -- her walnut and the same dark navy
-     the case is on -- rather than floating on flat dark, so the canvas takes the
-     scene's proportions instead of being square. */
-  canvas{ width:min(94vw, 960px, calc((100vh - 210px) * 1100 / 800));
-    aspect-ratio:1100 / 800; height:auto;
-    display:block; touch-action:none; cursor:pointer; }
+     the case is on. The picture's SHAPE follows the screen rather than being fixed:
+     see layout() below. Its size is set in JS, so nothing is declared here. */
+  canvas{ display:block; touch-action:none; cursor:pointer; max-width:100%; }
   .stopbox{
     position:absolute; right:5%; bottom:8%; width:28px; height:28px; padding:0;
     border:1.5px solid rgba(201,151,78,.55); border-radius:4px; cursor:pointer;
@@ -172,10 +170,33 @@ const N_RINGS=NOTES.length;
    (a smooth gradient, so the stretch cannot be seen) and its table left at the
    same scale as the width. */
 const ROOM_W=699, ROOM_H=360, ROOM_TABLE=261;
-const RS=1100/ROOM_W;                       // the room, scaled to the canvas
-const TABLE_Y=800-(ROOM_H-ROOM_TABLE)*RS;   // where the table's front edge lands
-const DISC_R=300;
-const CX=550, CY=TABLE_Y+14-DISC_R;         // standing ON the table, not above it
+/* The PICTURE takes the shape of the room the page has, rather than being one
+   fixed rectangle. On a desktop that is a wide scene with the disc sitting in it;
+   on a portrait phone it is a tall one with the disc filling the width, which is
+   what the old square disc did well and a fixed landscape picture did badly.
+   The canvas keeps a constant WIDTH in its own units so every measurement below
+   stays put, and only its height and the disc's radius follow the screen. */
+const CW=1100;
+let CH=800, TABLE_Y=645, DISC_R=300, CX=550, CY=359;
+function layout(){
+  const dock=document.querySelector('.controls');
+  const dockH=dock?dock.getBoundingClientRect().height:120;
+  const availW=Math.min(window.innerWidth*0.94, 960);
+  const availH=Math.max(260, window.innerHeight - dockH - 118);
+  const ar=Math.max(0.55, Math.min(1.5, availH/availW));
+  CH=Math.round(CW*ar);
+  const k=CW/ROOM_W;                          // the room, scaled to the width
+  const band=(ROOM_H-ROOM_TABLE)*k;           // the table, never distorted
+  TABLE_Y=CH-band;
+  // as big as the shorter of the width and the room above the table allows
+  DISC_R=Math.min(CW*0.44, (TABLE_Y)*0.47);
+  CX=CW/2; CY=TABLE_Y+DISC_R*0.047-DISC_R;    // standing ON the table, not above it
+  cv.width=CW; cv.height=CH;
+  const drawW=Math.min(availW, availH*CW/CH);
+  cv.style.width=Math.round(drawW)+'px';
+  cv.style.height=Math.round(drawW*CH/CW)+'px';
+}
+addEventListener('resize', layout);
 
 /* The eight notes sit on eight of the disc's OWN engraved circles. Measured on the
    photograph (760px across, the disc filling it to a radius of 378), the engraving
@@ -454,6 +475,8 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 
+layout();
+
 function draw(now){
   ctx.clearRect(0,0,cv.width,cv.height);
 
@@ -461,8 +484,14 @@ function draw(now){
   // gradient, so nothing shows -- and its table is left at the same scale as the
   // width, so the wood is not distorted.
   if(roomOK){
-    ctx.drawImage(room, 0,0,ROOM_W,ROOM_TABLE,        0,0,        1100,TABLE_Y);
-    ctx.drawImage(room, 0,ROOM_TABLE,ROOM_W,ROOM_H-ROOM_TABLE, 0,TABLE_Y, 1100,800-TABLE_Y);
+    const k=CW/ROOM_W, wallH=ROOM_TABLE*k;
+    // On a tall picture the wall is drawn at its own scale with its top few rows
+    // stretched to fill whatever is left above it -- they are nearly a flat colour,
+    // so that cannot be seen, where stretching the whole wall five times over
+    // would band the gradient.
+    if(TABLE_Y>wallH) ctx.drawImage(room, 0,0,ROOM_W,6, 0,0, CW, TABLE_Y-wallH+2);
+    ctx.drawImage(room, 0,0,ROOM_W,ROOM_TABLE, 0,Math.max(0,TABLE_Y-wallH), CW, Math.min(TABLE_Y,wallH));
+    ctx.drawImage(room, 0,ROOM_TABLE,ROOM_W,ROOM_H-ROOM_TABLE, 0,TABLE_Y, CW, CH-TABLE_Y);
   }
 
   // its shadow: one on the wall behind it, thrown down and right by the light
