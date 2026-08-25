@@ -677,6 +677,40 @@ pointer a card opens on the first click instead, and the shelf zoom stays reacha
 name plates. If you change the picture, the zoom transforms recompute themselves from the
 measurement table; nothing there is hand-typed.
 
+**The zoom fills the page, not the case.** Aug 2026, hers off the desktop — *"it needs to be
+a **lot** bigger, and the other shelves need to be more greyed out."* The case is a tall
+portrait box and a shelf is a wide landscape strip, so a shelf brought forward inside the
+case's own outline could never use more than the case's width: 695px of a 1440 screen,
+less than half of it. **The window widens on a zoom and the case keeps its own proportion
+inside it** — `#case` is centred at its own width rather than filling `#frame`, which is
+why widening the frame no longer stretches the photograph, and unzoomed the two are exactly
+the same width so nothing moves. Measured at 1440x900: the cards spanned **639px and now
+span 1285**, a card 102px tall against 205. Two ceilings hold it honest, the same two the
+card zoom already keeps — never past the card art's own pixels, and never so far that the
+shelf zoom starts doing the card zoom's job. **On a Retina Mac the first of those binds**
+and a three-card shelf comes to 1112px rather than 1397, the card exactly 1:1 with its own
+photograph; that is correct, not a shortfall.
+
+**And the other four shelves go back as furniture, not as cards.** Dimming the off-shelf
+cards alone (which is all it did) left four brightly lit empty shelves behind them — the
+wood is most of what the eye sees. A near-black sheet is laid over the whole case with a
+band cut out at the shelf in focus, so wood, brass and cards go back together. **The band's
+top edge falls on the BOARD above, not in the compartment**: that board's front face carries
+the plate of the shelf above, which hangs a little below its underside, so a band starting
+at `ceil` alone put another shelf's name in the lit strip.
+
+**A card stands on the board it can be SEEN to stand on.** Also hers, and the diagnosis is
+hers: *"the top shelf looks as if the stands are hovering… the eye view only makes sense if
+one is looking down on the shelf."* The eye is a little above the top board, so how much of
+a board's lit top surface is visible grows all the way down the case — measured off the
+photograph by luminance, **0px on instrumenta, 4 on tactilia, 29 on systema and natura, 40
+on phenomena**. `seatBack` is a *projected* depth, so one constant of 10 put the top shelf's
+stands 10px above a front edge with nothing behind it. It is **per shelf** now (`seat:` in
+the table, `seatBack` the fallback), about a third of that shelf's own visible depth, which
+on the top shelf is the lip itself. Un-zoomed, a pixel diff at 1440x900 shows exactly two
+bands changed — the instrumenta cards and the tactilia cards — and a phone and a Kindle take
+the tray rather than the zoom and are untouched.
+
 **On a 3-inch screen the case's plates are unreadable — and it does not matter, which is a
 correction to a measurement.** At 240x427 nothing is below the fold (the whole cabinet is on
 screen with room above and below) but everything scales off the screen's WIDTH, so the engraved
