@@ -977,10 +977,10 @@ document.addEventListener('focusout', () => setTimeout(setVisibleHeight, 60));
      nothing on the page shifts. Each slider grows only as far as half the gap to
      its nearest neighbour, so no two ever overlap and steal each other's taps. */
   @media (pointer: coarse){
-  input[type=range]#pitchSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 16.5px 16.5px; padding:15px 0 15px; margin-top:-13px; margin-bottom:-13px; }
-  input[type=range]#volumeSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 16.5px 16.5px; padding:15px 0 15px; margin-top:-13px; margin-bottom:-13px; }
-  input[type=range]#densitySlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 16.5px 16.5px; padding:15px 0 15px; margin-top:-13px; margin-bottom:-13px; }
-  input[type=range]#hueSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 16.5px 16.5px; padding:15px 0 15px; margin-top:-13px; margin-bottom:-13px; }
+  input[type=range]#pitchSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 2.5px 2.5px 3.5px 3.5px; padding:1px 0 2px; margin-top:-14px; margin-bottom:-15px; }
+  input[type=range]#volumeSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 3.5px 3.5px 8.5px 8.5px; padding:2px 0 7px; margin-top:-15px; margin-bottom:-20px; }
+  input[type=range]#densitySlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 2.5px 2.5px; padding:15px 0 1px; margin-top:-28px; margin-bottom:-14px; }
+  input[type=range]#hueSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 2.5px 2.5px; padding:15px 0 1px; margin-top:-28px; margin-bottom:-14px; }
   }
 </style>
 <!-- /touch-targets -->

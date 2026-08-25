@@ -133,6 +133,10 @@
     <span style="font-size:13px;opacity:.75;" aria-hidden="true">🧵</span>
     <input type="range" id="cordLenSlider" min="40" max="170" step="1" value="95" aria-label="hanging length">
   </div>
+  <div class="group">
+    <span style="font-size:13px;opacity:.75;" aria-hidden="true">📏</span>
+    <input type="range" id="rodLenSlider" min="0" max="7" step="1" value="0" aria-label="rod length">
+  </div>
   <div class="group" id="windGroup">
     <span style="font-size:13px;opacity:.75;" aria-hidden="true">🌀</span>
     <input type="range" id="windSlider" min="0" max="100" step="1" value="35" aria-label="wind strength">
@@ -156,6 +160,46 @@
   const WIND_MAX = 250;
   const PITCH_K = 4200000;
   const ROD_LEN_MIN = 70, ROD_LEN_MAX = 180;
+
+  /* ---------- the set is TUNED ----------
+     Wind chimes are pleasant because they are musical, and they are musical
+     because somebody cut each tube to a length that gives a wanted note. That is
+     the whole craft: a maker picks a scale — nearly always a pentatonic, because
+     then no two tubes that happen to strike together can sound wrong — and cuts
+     to it. Evenly spaced tubes with whatever pitches fall out is the thing that
+     is NOT real.
+     This set was evenly spaced. Measured, the default seven landed on C3 -16
+     cents, E3 -44, G#3 -27, C4 +47, F#4 -4, C5 +49 and A5 -46 — not one on a
+     note, two of them within a cent of a quarter-tone, which is the most
+     dissonant place a pitch can sit, and the gaps between neighbours widening
+     from 3.7 semitones to 8.1. Accurate and not beautiful, which is exactly what
+     she said.
+     The physics is untouched: pitch still goes as 1/L^2 and the lengths on screen
+     are still the lengths that make those pitches. What changed is that the
+     lengths are now CHOSEN, the way a maker chooses them. */
+  const PENTATONIC = [0,2,4,7,9];      // major pentatonic, in semitones
+  const BASE_MIDI = 48;                // C3, the longest tube of an untransposed set
+  function scaleMidi(step){
+    const n=PENTATONIC.length;
+    const oct=Math.floor(step/n), deg=((step%n)+n)%n;
+    return BASE_MIDI + PENTATONIC[deg] + 12*oct;
+  }
+  const midiToHz = m => 440*Math.pow(2,(m-69)/12);
+  // the length whose fundamental IS that note -- the cut a maker would make
+  function lengthForStep(step){
+    const L=Math.sqrt(PITCH_K/midiToHz(scaleMidi(step)));
+    return Math.max(ROD_LEN_MIN, Math.min(ROD_LEN_MAX, L));
+  }
+  // and the nearest cut to a length asked for by hand, so a rod set on the
+  // popup is still a note rather than a quarter-tone between two
+  function snapToScale(len){
+    let best=null, bestD=Infinity;
+    for(let step=-4; step<=24; step++){
+      const L=lengthForStep(step), d=Math.abs(L-len);
+      if(d<bestD){ bestD=d; best=L; }
+    }
+    return best===null? len : best;
+  }
   const ROD_THICK = 12;
   const COLLIDE_DIST = ROD_THICK + 2;   // centres this close and the rods are touching
   const SEPARATE = 3;                   // and this much further apart before they can meet again
@@ -181,12 +225,15 @@
     count: 7,
     wind: 0.35,
     cordLength: 95, // shared by every rod, so the tops all hang level
+    tune: 0,        // where the set sits on the scale: 0 is the lowest cut
     rods: [],
   };
 
+  // left = long/low, right = short/high, like a real set -- but stepping UP THE
+  // SCALE rather than evenly down the ruler. state.tune shifts the whole set
+  // along the same scale, so it transposes instead of going out of tune.
   function defaultRodLength(i, n){
-    const t = n>1 ? i/(n-1) : 0.5;
-    return ROD_LEN_MAX - t*(ROD_LEN_MAX-ROD_LEN_MIN); // left = long/low, right = short/high, like a real set
+    return lengthForStep(state.tune + i);
   }
 
   function rebuildRods(preserve){
@@ -784,6 +831,19 @@
   const cordLenSlider = document.getElementById('cordLenSlider');
   cordLenSlider.addEventListener('input', ()=>{ state.cordLength = +cordLenSlider.value; });
 
+  /* Her ask: a length slider for the rods as well as for the chains, because
+     length changes the tone and how often they meet, not just how they look.
+     With the set tuned, moving every rod along the scale together is a
+     TRANSPOSE -- the whole chime goes up or down and stays in tune with itself,
+     which is what a smaller or larger set of the same design actually is. Short
+     rods also hang higher and swing quicker, so the meetings get busier as well
+     as brighter: one control, both effects, exactly as she described. */
+  const rodLenSlider = document.getElementById('rodLenSlider');
+  rodLenSlider.addEventListener('input', ()=>{
+    state.tune = +rodLenSlider.value;
+    rebuildRods(false);          // every rod re-cut to its new note
+  });
+
   // ---------- optional: swap the wind slider over to somewhere's real wind speed.
   // opt-in only -- never asks for location on its own, only when the flag is used.
   let liveWind=null, windLat=null, windLon=null;
@@ -911,7 +971,9 @@
   lenPopupSlider.addEventListener('input', ()=>{
     if(popupOpenIdx<0) return;
     const r = state.rods[popupOpenIdx];
-    r.rodLength = +lenPopupSlider.value;
+    // snapped to the nearest cut on the scale, so a rod set by hand is a note
+    // and not a quarter-tone between two of them
+    r.rodLength = snapToScale(+lenPopupSlider.value);
   });
   lenPopup.addEventListener('click', e=> e.stopPropagation());
   canvas.addEventListener('click', (e)=>{
@@ -1072,9 +1134,10 @@
      nothing on the page shifts. Each slider grows only as far as half the gap to
      its nearest neighbour, so no two ever overlap and steal each other's taps. */
   @media (pointer: coarse){
-  input[type=range]#countSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 16.5px 16.5px; padding:15px 0 15px; margin-top:-13px; margin-bottom:-13px; }
-  input[type=range]#cordLenSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 11.5px 11.5px 15.5px 15.5px; padding:10px 0 14px; margin-top:-8px; margin-bottom:-12px; }
-  input[type=range]#windSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 16.5px 16.5px; padding:15px 0 15px; margin-top:-13px; margin-bottom:-13px; }
+  input[type=range]#countSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 11.5px 11.5px; padding:15px 0 10px; margin-top:-28px; margin-bottom:-23px; }
+  input[type=range]#cordLenSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 6.5px 6.5px 4.5px 4.5px; padding:5px 0 3px; margin-top:-13px; margin-bottom:-15px; }
+  input[type=range]#rodLenSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 11.5px 11.5px 11.5px 11.5px; padding:10px 0 10px; margin-top:-8px; margin-bottom:-8px; }
+  input[type=range]#windSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 4.5px 4.5px 16.5px 16.5px; padding:3px 0 15px; margin-top:-16px; margin-bottom:-28px; }
   }
 </style>
 <!-- /touch-targets -->
