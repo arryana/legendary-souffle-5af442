@@ -25,8 +25,8 @@ MARK_B = '<!-- /shelf-tags -->'
 # The plates are their own pictures now rather than crops of the case, and each
 # one was cut to the length of its own word -- so a tag keeps the plate's height
 # and takes whatever width that plate's proportion gives it.
-PLATE_H = 26                     # every plate is this tall in the case's own scale
-TAG_H = 22                       # how tall a plate is drawn on a piece page
+PLATE_H = 22                     # every plate is this tall in the case's own scale
+TAG_H = 19                       # how tall a plate is drawn on a piece page
 
 # pages that already keep something in the top right corner, and how far down it
 # has to move to leave the disc its own space. Empty since roller's instruction
