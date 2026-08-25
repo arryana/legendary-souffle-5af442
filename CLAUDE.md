@@ -82,7 +82,7 @@ of anything, so a number would be inventing a ranking she doesn't mean. The test
 apply to every piece is the one further down this file: *does it behave like the real
 thing?* That is a yes or a no.
 
-**13 of the 20 are done.**
+**14 of the 20 are done.**
 
 | File | On landing page? | Done? | What it is |
 |------|:---:|:---:|------------|
@@ -144,7 +144,12 @@ worked out, it's fine on all four machines."* The edge issues were the two alrea
 site-wide sweeps — the music button sitting on the finish trigger at 390px, and the `<button>`
 face showing behind `#finishTrigger`'s cut-out — so this is the first piece to pass on the
 strength of work done before she ever opened it, rather than on repairs found by opening it. |
-| `rain/index.html` | ✅ |  | Rain on glass |
+| `rain/index.html` | ✅ | ✅ | Rain on glass<br>**Done** — her call, Mon 24 Aug: *"as done as i can make it"*, and earlier the same
+afternoon, *"as done as i can make it without an animating software"*. Read that qualifier as part of
+the mark. It is not *"there is nothing more to want here"*; it is *"what is left wants a tool I
+haven't got"*. So **don't propose rebuilding it** to chase the remainder, and don't read the tick as
+an invitation to polish. **Through her four-device test** the same afternoon — *"i have tested it on
+every machine"* — so it carries both marks. |
 | `ant/index.html` | ✅ |  | Ants |
 | `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Fourth piece
 through her four-device test, Aug 2026. **`windower-frame.png`'s centre pane was cut out of a light
@@ -265,7 +270,49 @@ at all: see the shelf plates' cards above, which every page on the site was fetc
 drawing the general lesson, since it took a report to find it — these pages had been swept for layout
 faults several times and **nobody had ever measured what one of them FETCHES**. A sweep that only
 looks at where things land cannot see 6MB queued in front of the piece. |
-| `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material) — **awaiting her ears**, which is the only test that counts here.<br>Two things went in Aug 2026 after she watched it. The **hanger sways** — the whole set hangs off one ring, so it is a slow heavy pendulum of its own, its weight mostly the rods well below the bar, and the rods then hang from a *moving* support and are swung by it. What drives the sway is drag, and **drag goes as the square of the wind**, which is her own observation in one line: at a light air the lean is a tenth of a pixel and the bar looks nailed up; at full wind it is 3° (about 8px at the bar, twice that at the rod tips). There is no threshold in the code — the v-squared law is the whole of it, so don't add one.<br>Underneath that, a real fault: **the swing is solved in the convention `x = tie point + sin(angle)·length`, and canvas rotates the other way.** Every rod had been drawn with `rotate(+angle)`, so the contact test was watching the mirror image of the scene on the glass — measured at full wind, the two frames disagreed about who was touching on **43% of pair-frames**, rods passed clean through each other in silence, and it chimed with a plain gap showing. Now 0%. If you ever change how a rod is drawn or hit-tested, the minus sign in `ctx.rotate(-r.angle)` is load-bearing and so are the matching signs in `rodMidWorld` and `hitTestRod`.<br>**And it tangled, and stayed tangled** — her report, with a photograph of two long
+| `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material).<br>**The set is TUNED now**, Aug 2026, and this was the answer to her *"probably accurate, but not
+beautiful — the reason windchimes are nice is because they're musical"*. She is right and it is a
+**fidelity** point, not a compromise: the whole craft of a chime maker is cutting each tube to a
+length that gives a wanted note, nearly always from a pentatonic, precisely so that no two tubes that
+happen to strike together can sound wrong. Evenly spaced tubes with whatever pitches fall out is the
+thing that is not real — and that is what this was. Measured, the default seven landed on C3 −16
+cents, E3 −44, G#3 −27, C4 **+47**, F#4 −4, C5 **+49** and A5 −46: not one on a note, two within a
+cent of a **quarter-tone** (the most dissonant place a pitch can sit), and the gaps between
+neighbours widening from 3.7 semitones to 8.1. The physics is untouched — pitch still goes as 1/L²
+and the lengths drawn are still the lengths that make those pitches — but the lengths are **chosen**
+now: C3 D3 E3 G3 A3 C4 D4 for seven, every rod **0 cents** off, at every count from five to nine. The
+per-rod popup snaps to the same cuts, so a rod set by hand is a note and not a quarter-tone between
+two.<br>**And each material is cut to its own lengths**, which was her follow-up question — *is that
+true for every instrument of the chimes?* It wasn't. Cutting all four to the same lengths left the
+INTERVALS perfect everywhere (2,2,3,2,3,2 semitones in every material, so none of them ever sounded
+sour) but only brass on real notes: wood came out 30 cents sharp, silver 30 flat and **glass 48
+sharp**, a hair off a quarter-tone — in tune with itself and not with the world. A tube's pitch is
+set by its length *and* by what it is made of, so a glass tube tuned to a note is a different length
+from a brass one, and they are cut accordingly now: **every material 0 cents on every rod**. They
+cannot all reach the same bottom note within a length a chime is allowed to be, and that is honest
+too — brass and silver make C3, wood starts at E3 and glass at A3, which is why big brass sets are
+deep and glass ones tinkly. Changing the rod material re-cuts the tubes rather than transposing them,
+and the four sets come out at similar lengths (179–120, 158–106, 176–114, 171–111) so nothing jumps
+on screen.<br>**And a rod-length slider beside the chain one**, her ask. With a tuned set it is a
+**transpose**: the whole chime moves along the scale and stays in tune with itself, which is what a
+smaller or larger set of the same design actually is. Short rods also hang higher and swing quicker,
+so the meetings get busier as well as brighter — one control, both effects, which is exactly how she
+described wanting it.<br>**And each material sounds like its own substance**, her third point. Two reasons it
+didn't. A material is named in the first few HUNDREDTHS of a second — the contact noise of the strike
+itself, before any note has established — and **only wood had one**; the metals and the glass began
+with no transient at all, which is a synthesiser rather than an object being hit. And brass and
+silver differed only in pitch and ring, making them one instrument at two heights: what separates
+metals is how fast the HIGH modes die against the fundamental, how many there are, and the slow
+warble a real tube gives from its two bending modes being slightly split. The mode ratios are the
+free-free bar's own (1 : 2.756 : 5.404 : 8.933 : 13.34) and there were three of them — the fourth and
+fifth are most of what reads as *clang*. Measured on the rendered notes: wood the dullest strike and
+gone in **0.20s** with no upper partials at all; glass the brightest strike and the busiest, 5.6%;
+silver the longest ring at **2.72s** and the purest, 1.2%; brass in between and warmer, 4.0%, with a
+beat the others don't have.<br>**Measuring a sound out of this piece needs the simulation frozen
+first** — `requestAnimationFrame` stubbed before the page script runs. An offline audio context's
+clock does not advance until it renders, so every strike the rods make while the harness is setting
+up lands at time zero and swamps the note under test. Three passes were wasted on that: it shows up
+as every material decaying in the same ~1.9s, which is the pile-up's tail and not the material's.<br>Two things went in Aug 2026 after she watched it. The **hanger sways** — the whole set hangs off one ring, so it is a slow heavy pendulum of its own, its weight mostly the rods well below the bar, and the rods then hang from a *moving* support and are swung by it. What drives the sway is drag, and **drag goes as the square of the wind**, which is her own observation in one line: at a light air the lean is a tenth of a pixel and the bar looks nailed up; at full wind it is 3° (about 8px at the bar, twice that at the rod tips). There is no threshold in the code — the v-squared law is the whole of it, so don't add one.<br>Underneath that, a real fault: **the swing is solved in the convention `x = tie point + sin(angle)·length`, and canvas rotates the other way.** Every rod had been drawn with `rotate(+angle)`, so the contact test was watching the mirror image of the scene on the glass — measured at full wind, the two frames disagreed about who was touching on **43% of pair-frames**, rods passed clean through each other in silence, and it chimed with a plain gap showing. Now 0%. If you ever change how a rod is drawn or hit-tested, the minus sign in `ctx.rotate(-r.angle)` is load-bearing and so are the matching signs in `rodMidWorld` and `hitTestRod`.<br>**And it tangled, and stayed tangled** — her report, with a photograph of two long
 rods lying across each other. Two faults in one, both in the contact test.<br>**A rod was a POINT, not a
 body.** The test compared the two rods' CENTRES, and when rods differ in length their centres hang at
 quite different depths — so two rods can be lying right across one another while their centre points
@@ -889,21 +936,21 @@ finished until she has run it on all four. Her words: *"I intend to finish every
 same standard."*
 
 **Through as of Mon 24 Aug 2026: candler, conometer, galileo, windower, storm, warmler, chladni,
-bowl, roller, kaleidoscope, gyre** — her call on all eleven; every fault they turned up is fixed and live, and
+bowl, roller, kaleidoscope, gyre, rain** — her call on all twelve; every fault they turned up is fixed and live, and
 the details are in each one's row above. The case itself was worked on the same day: light on the wall behind it, the
 white cut line off all five plates, darker arrows in the two discs.
 
-**Eleven through, nine to go**, by shelf: **instrumenta 5/5**, **tactilia 3/3**, systema 1/3
-(`gyre`, straight after its two changes — *"gyre works on everything too"*), phenomena 2/5 (`bowl`
-and `chladni`), natura 0/4. The nine left are `musebox`, `chimes`, `lamp`, `rain`, `pendulum`,
-`birds`, `fireflies`, `moths`, `ant`. `chladni` and `bowl` cost one repair each on the afternoon of
+**Twelve through, eight to go**, by shelf: **instrumenta 5/5**, **tactilia 3/3**, phenomena 3/5
+(`bowl`, `chladni`, `rain`), systema 1/3 (`gyre`, straight after its two changes — *"gyre works on
+everything too"*), natura 0/4. The eight left are `musebox`, `chimes`, `lamp`, `pendulum`, `birds`,
+`fireflies`, `moths`, `ant`. `chladni` and `bowl` cost one repair each on the afternoon of
 the 24th — the microphone tickbox onto the sound line, and bowl not loading at all on the 3in phone.
 Bowl's is the one to remember: it was **two** faults, and the larger belonged to every page on the
 site rather than to bowl.
 
 **Her order from here**: **instrumenta and tactilia are both finished** as of Mon 24 Aug — `storm`
-closed the first, and `warmler`, `roller` and `kaleidoscope` the second. `bowl` and `chladni` are
-through off **phenomena**, which leaves `lamp`, `rain` and `pendulum` there. In **systema**, `gyre` is through and
+closed the first, and `warmler`, `roller` and `kaleidoscope` the second. `bowl`, `chladni` and `rain` are
+through off **phenomena**, which leaves `lamp` and `pendulum` there. In **systema**, `gyre` is through and
 **`musebox` and `chimes` are repaired and waiting on her devices** — the last two pieces of the day's
 work she has not yet run. Chimes needs its rods set to DIFFERENT LENGTHS or the tangle it was
 reported for cannot appear at all. Then **natura**, which she expects to cost the most in repairs and

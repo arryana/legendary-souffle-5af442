@@ -133,6 +133,10 @@
     <span style="font-size:13px;opacity:.75;" aria-hidden="true">🧵</span>
     <input type="range" id="cordLenSlider" min="40" max="170" step="1" value="95" aria-label="hanging length">
   </div>
+  <div class="group">
+    <span style="font-size:13px;opacity:.75;" aria-hidden="true">📏</span>
+    <input type="range" id="rodLenSlider" min="0" max="7" step="1" value="0" aria-label="rod length">
+  </div>
   <div class="group" id="windGroup">
     <span style="font-size:13px;opacity:.75;" aria-hidden="true">🌀</span>
     <input type="range" id="windSlider" min="0" max="100" step="1" value="35" aria-label="wind strength">
@@ -156,6 +160,65 @@
   const WIND_MAX = 250;
   const PITCH_K = 4200000;
   const ROD_LEN_MIN = 70, ROD_LEN_MAX = 180;
+
+  /* ---------- the set is TUNED ----------
+     Wind chimes are pleasant because they are musical, and they are musical
+     because somebody cut each tube to a length that gives a wanted note. That is
+     the whole craft: a maker picks a scale — nearly always a pentatonic, because
+     then no two tubes that happen to strike together can sound wrong — and cuts
+     to it. Evenly spaced tubes with whatever pitches fall out is the thing that
+     is NOT real.
+     This set was evenly spaced. Measured, the default seven landed on C3 -16
+     cents, E3 -44, G#3 -27, C4 +47, F#4 -4, C5 +49 and A5 -46 — not one on a
+     note, two of them within a cent of a quarter-tone, which is the most
+     dissonant place a pitch can sit, and the gaps between neighbours widening
+     from 3.7 semitones to 8.1. Accurate and not beautiful, which is exactly what
+     she said.
+     The physics is untouched: pitch still goes as 1/L^2 and the lengths on screen
+     are still the lengths that make those pitches. What changed is that the
+     lengths are now CHOSEN, the way a maker chooses them. */
+  const PENTATONIC = [0,2,4,7,9];      // major pentatonic, in semitones
+  const BASE_MIDI = 48;                // C3, the longest tube of an untransposed set
+  function scaleMidi(step){
+    const n=PENTATONIC.length;
+    const oct=Math.floor(step/n), deg=((step%n)+n)%n;
+    return BASE_MIDI + PENTATONIC[deg] + 12*oct;
+  }
+  const midiToHz = m => 440*Math.pow(2,(m-69)/12);
+  /* The cut a maker would make -- and it depends on the MATERIAL, which is the
+     other half of this. A tube's pitch is set by its length and by what it is
+     made of, so a glass tube tuned to a given note is a different length from a
+     brass one. Cutting every material to the same lengths left only brass on real
+     notes: measured, wood came out 30 cents sharp, silver 30 flat and glass 48
+     sharp -- a hair off a quarter-tone, in tune with itself but not with the
+     world. Each material gets its own cuts now.
+     They cannot all reach the same bottom note, and that is honest too: within a
+     length a chime is allowed to be, glass and wood simply cannot go as low as
+     brass, so each set starts at the lowest note its own material can carry. Big
+     brass sets are deep and glass ones are tinkly for exactly this reason. */
+  const matPitch = () => (MATERIAL[state.rodMaterial] || MATERIAL.brass).pitch;
+  function lengthForNote(midi, p){ return Math.sqrt(PITCH_K*p/midiToHz(midi)); }
+  function baseStepFor(p){
+    for(let step=0; step<60; step++){
+      if(lengthForNote(scaleMidi(step), p) <= ROD_LEN_MAX) return step;
+    }
+    return 0;
+  }
+  function lengthForStep(step){
+    const p=matPitch();
+    const L=lengthForNote(scaleMidi(baseStepFor(p)+step), p);
+    return Math.max(ROD_LEN_MIN, Math.min(ROD_LEN_MAX, L));
+  }
+  // and the nearest cut to a length asked for by hand, so a rod set on the
+  // popup is still a note rather than a quarter-tone between two
+  function snapToScale(len){
+    let best=null, bestD=Infinity;
+    for(let step=-4; step<=24; step++){
+      const L=lengthForStep(step), d=Math.abs(L-len);
+      if(d<bestD){ bestD=d; best=L; }
+    }
+    return best===null? len : best;
+  }
   const ROD_THICK = 12;
   const COLLIDE_DIST = ROD_THICK + 2;   // centres this close and the rods are touching
   const SEPARATE = 3;                   // and this much further apart before they can meet again
@@ -181,12 +244,15 @@
     count: 7,
     wind: 0.35,
     cordLength: 95, // shared by every rod, so the tops all hang level
+    tune: 0,        // where the set sits on the scale: 0 is the lowest cut
     rods: [],
   };
 
+  // left = long/low, right = short/high, like a real set -- but stepping UP THE
+  // SCALE rather than evenly down the ruler. state.tune shifts the whole set
+  // along the same scale, so it transposes instead of going out of tune.
   function defaultRodLength(i, n){
-    const t = n>1 ? i/(n-1) : 0.5;
-    return ROD_LEN_MAX - t*(ROD_LEN_MAX-ROD_LEN_MIN); // left = long/low, right = short/high, like a real set
+    return lengthForStep(state.tune + i);
   }
 
   function rebuildRods(preserve){
@@ -295,7 +361,9 @@
   // brightness and the length of the ring, not where the overtones sit. Only the
   // glass voice had this right; silver used an invented 3.0 and brass a bandpass
   // at 2.1, which is why they sounded like something other than a chime.
-  const PARTIALS = [1, 2.756, 5.404];
+  // a free-free bar's own bending modes. The fourth and fifth are most of what
+  // reads as 'clang' in a struck metal tube, and there were only three.
+  const PARTIALS = [1, 2.756, 5.404, 8.933, 13.34];
 
   // Pitch follows the material's own speed of sound, sqrt(E/rho), so the same rod
   // cut from different stock rings at a different note. Against brass (E 100GPa,
@@ -303,11 +371,46 @@
   // glass is very nearly a fifth. Before this, choosing a material changed the
   // timbre but not one note of the pitch, which is the piece quietly lying about
   // what picking a material means.
+  /* ---------- telling one substance from another ----------
+     Her report: they're not quite immediately recognisable as the sound of the
+     substance they're made of. Two reasons, and neither was the pitch.
+     FIRST, a material is recognised in the first few HUNDREDTHS of a second --
+     the contact noise of the strike itself, before any note has established.
+     Metal on metal is a bright short click, glass a very sharp high tick, wood a
+     dull low knock. Only wood had one of these at all; the metals and the glass
+     started with no transient whatsoever, which is the sound of a synthesiser and
+     not of an object being hit.
+     SECOND, brass and silver differed only in pitch and ring length, which makes
+     them the same instrument at two heights rather than two substances. What
+     actually separates metals is how fast the HIGH modes die relative to the
+     fundamental (`damp` below) and how many of them there are to begin with -- a
+     purer metal rings longer and cleaner, an alloy is warmer and busier -- plus
+     the slow warble a real tube gives, its two bending modes being very slightly
+     split so they beat against each other.
+     The mode ratios are the free-free bar's own, 1 : 2.756 : 5.404 : 8.933 :
+     13.34; there were three of them and the fourth and fifth are most of what
+     reads as 'clang' in metal. Everything below is either one of those numbers or
+     a decay rate, so the differences are the materials' and not a preset's. */
   const MATERIAL = {
-    brass:  { pitch: 1.00, ring: 3.4,  level: 1.00, attack: 0.004, amps: [1, 0.38, 0.13], noise: 0    },
-    silver: { pitch: 0.78, ring: 2.8,  level: 0.95, attack: 0.004, amps: [1, 0.30, 0.09], noise: 0    },
-    glass:  { pitch: 1.54, ring: 1.5,  level: 0.85, attack: 0.002, amps: [1, 0.52, 0.24], noise: 0    },
-    wood:   { pitch: 1.21, ring: 0.30, level: 0.80, attack: 0.001, amps: [1, 0.16, 0.04], noise: 0.45 },
+    // an alloy: warm, busy, long, with an audible beat
+    brass:  { pitch: 1.00, ring: 4.2,  level: 1.00, attack: 0.004, damp: 0.50, beat: 0.7,
+              amps: [1, 0.40, 0.16, 0.06, 0.02],
+              hit: { hz: 2600, q: 0.9, level: 0.10, dur: 0.018 } },
+    // a purer metal: brighter, cleaner, the longest ring of the four
+    silver: { pitch: 0.78, ring: 5.0,  level: 0.95, attack: 0.004, damp: 0.45, beat: 0.35,
+              amps: [1, 0.26, 0.08, 0.02, 0.006],
+              hit: { hz: 4200, q: 0.8, level: 0.07, dur: 0.010 } },
+    // glass rings well -- it was cut off at 1.5s, shorter than either metal, which
+    // is the one thing a wine glass tells you is wrong. Bright, with the sparkle
+    // dying faster than the note under it: the ting, then the hum.
+    glass:  { pitch: 1.54, ring: 3.0,  level: 0.85, attack: 0.001, damp: 0.78, beat: 0,
+              amps: [1, 0.55, 0.30, 0.14, 0.05],
+              hit: { hz: 7200, q: 1.3, level: 0.13, dur: 0.006 } },
+    // wood is mostly the sound of the hit: the high modes are gone before you
+    // hear them and there is almost nothing left to ring
+    wood:   { pitch: 1.21, ring: 0.30, level: 0.80, attack: 0.001, damp: 1.40, beat: 0,
+              amps: [1, 0.16, 0.04, 0, 0],
+              hit: { hz: 340,  q: 0.7, level: 0.50, dur: 0.055 } },
   };
 
   function strike(freq, velocity, material){
@@ -330,8 +433,11 @@
       o.frequency.value = freq * PARTIALS[i];
       const g = audioCtx.createGain();
       // Higher modes shed energy faster, which is why a struck bar settles onto
-      // its fundamental as it dies away instead of just getting quieter.
-      const ring = M.ring / Math.sqrt(PARTIALS[i]);
+      // its fundamental as it dies away instead of just getting quieter. HOW
+      // much faster is the material: wood loses them before you hear them, a
+      // pure metal holds on to them. That exponent is most of what separates one
+      // substance from another once the strike itself has passed.
+      const ring = M.ring / Math.pow(PARTIALS[i], M.damp);
       // Every voice used to open with setValueAtTime(1) — gain from nothing to
       // full inside one sample. Measured, that mattered less than it looks: the
       // partials all start at zero crossings, so only wood's noise burst really
@@ -344,24 +450,49 @@
       o.connect(g); g.connect(out);
       o.start(t); o.stop(t + M.attack + ring + 0.02);
       last = Math.max(last, M.attack + ring + 0.02);
+
+      // A real tube is never perfectly round, so its two bending modes in the two
+      // perpendicular planes sit a whisker apart and beat against each other --
+      // the slow shimmer you hear in a metal chime and never in a wooden one. Only
+      // on the fundamental, where it is audible; higher up it is lost in the decay.
+      if(M.beat && i === 0){
+        const o2 = audioCtx.createOscillator();
+        o2.type = 'sine';
+        o2.frequency.value = freq * PARTIALS[i] + M.beat;
+        const g2 = audioCtx.createGain();
+        g2.gain.setValueAtTime(0, t);
+        g2.gain.linearRampToValueAtTime(amp * 0.55, t + M.attack);
+        g2.gain.exponentialRampToValueAtTime(0.0001, t + M.attack + ring);
+        o2.connect(g2); g2.connect(out);
+        o2.start(t); o2.stop(t + M.attack + ring + 0.02);
+      }
     });
 
-    if(M.noise > 0){
-      // wood is mostly the sound of the hit itself rather than a ring after it
-      const len = Math.max(1, Math.round(audioCtx.sampleRate * 0.18));
+    /* The strike itself. This is the part a listener names the substance from,
+       and it happens before any note has established: metal on metal is a bright
+       short click, glass a very sharp high tick, wood a dull low knock. Only wood
+       had one; the metals and the glass began with no contact noise at all, which
+       is what a synthesiser sounds like rather than an object being hit.
+       Its pitch is the MATERIAL's, not the rod's -- two brass tubes of different
+       lengths make the same click where they touch -- so this is a fixed
+       frequency and not a multiple of the note. */
+    if(M.hit && M.hit.level > 0){
+      const H = M.hit;
+      const len = Math.max(1, Math.round(audioCtx.sampleRate * (H.dur * 3.2)));
       const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
       const data = buf.getChannelData(0);
       for(let i=0;i<len;i++) data[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 2);
       const noise = audioCtx.createBufferSource(); noise.buffer = buf;
       const filt = audioCtx.createBiquadFilter();
-      filt.type = 'bandpass'; filt.frequency.value = freq*1.6; filt.Q.value = 1.1;
+      filt.type = H.hz > 1500 ? 'bandpass' : 'lowpass';
+      filt.frequency.value = H.hz; filt.Q.value = H.q;
       const gn = audioCtx.createGain();
       gn.gain.setValueAtTime(0, t);
-      gn.gain.linearRampToValueAtTime(M.noise, t + 0.001);
-      gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      gn.gain.linearRampToValueAtTime(H.level, t + 0.0008);
+      gn.gain.exponentialRampToValueAtTime(0.0001, t + H.dur * 3);
       noise.connect(filt); filt.connect(gn); gn.connect(out);
       noise.start(t);
-      last = Math.max(last, 0.2);
+      last = Math.max(last, H.dur * 3.2);
     }
 
     setTimeout(()=>{ out.disconnect(); voices--; }, (last + 0.15)*1000);
@@ -751,22 +882,25 @@
 
   // ---- UI ----
   // material pickers: a small trigger swatch that opens a wordless popup list, same pattern as warmler's finish picker
-  function wireMatPicker(stateKey, swatchFile, triggerBtn, triggerImg, overlay, list){
+  function wireMatPicker(stateKey, swatchFile, triggerBtn, triggerImg, overlay, list, onPick){
     function apply(key){
       state[stateKey] = key;
       triggerImg.src = swatchFile(key);
       list.querySelectorAll('.matOption').forEach(o => o.classList.toggle('selected', o.dataset.key === key));
     }
-    apply(state[stateKey]);
+    apply(state[stateKey]);          // the first apply is setup, not a choice
     triggerBtn.addEventListener('click', () => overlay.classList.add('open'));
     overlay.addEventListener('click', (e) => { if(e.target === overlay) overlay.classList.remove('open'); });
     list.querySelectorAll('.matOption').forEach(opt => {
-      opt.addEventListener('click', () => { apply(opt.dataset.key); overlay.classList.remove('open'); });
+      opt.addEventListener('click', () => { apply(opt.dataset.key); overlay.classList.remove('open'); if(onPick) onPick(); });
     });
   }
   wireMatPicker('rodMaterial', k => `chime-swatch-rod-${k}.png`,
     document.getElementById('rodMatTrigger'), document.getElementById('rodMatTriggerImg'),
-    document.getElementById('rodMatOverlay'), document.getElementById('rodMatList'));
+    document.getElementById('rodMatOverlay'), document.getElementById('rodMatList'),
+    // a set in another material is cut to different lengths for the same notes,
+    // so changing the material re-cuts the tubes rather than transposing them
+    () => rebuildRods(false));
   wireMatPicker('cordMaterial', k => `chime-swatch-cord-${k}.png`,
     document.getElementById('cordMatTrigger'), document.getElementById('cordMatTriggerImg'),
     document.getElementById('cordMatOverlay'), document.getElementById('cordMatList'));
@@ -783,6 +917,19 @@
   });
   const cordLenSlider = document.getElementById('cordLenSlider');
   cordLenSlider.addEventListener('input', ()=>{ state.cordLength = +cordLenSlider.value; });
+
+  /* Her ask: a length slider for the rods as well as for the chains, because
+     length changes the tone and how often they meet, not just how they look.
+     With the set tuned, moving every rod along the scale together is a
+     TRANSPOSE -- the whole chime goes up or down and stays in tune with itself,
+     which is what a smaller or larger set of the same design actually is. Short
+     rods also hang higher and swing quicker, so the meetings get busier as well
+     as brighter: one control, both effects, exactly as she described. */
+  const rodLenSlider = document.getElementById('rodLenSlider');
+  rodLenSlider.addEventListener('input', ()=>{
+    state.tune = +rodLenSlider.value;
+    rebuildRods(false);          // every rod re-cut to its new note
+  });
 
   // ---------- optional: swap the wind slider over to somewhere's real wind speed.
   // opt-in only -- never asks for location on its own, only when the flag is used.
@@ -911,7 +1058,9 @@
   lenPopupSlider.addEventListener('input', ()=>{
     if(popupOpenIdx<0) return;
     const r = state.rods[popupOpenIdx];
-    r.rodLength = +lenPopupSlider.value;
+    // snapped to the nearest cut on the scale, so a rod set by hand is a note
+    // and not a quarter-tone between two of them
+    r.rodLength = snapToScale(+lenPopupSlider.value);
   });
   lenPopup.addEventListener('click', e=> e.stopPropagation());
   canvas.addEventListener('click', (e)=>{
@@ -988,23 +1137,23 @@
 <div id="plates">
   <div class="row">
     <span class="pieces"><a href="../candler/"><img loading="lazy" decoding="async" data-src="../candler/candle-card.png" alt="candler"></a><a href="../conometer/"><img loading="lazy" decoding="async" data-src="../conometer/conometer-card.png" alt="conometer"></a><a href="../galileo/"><img loading="lazy" decoding="async" data-src="../galileo/galileo-card.png" alt="galileo"></a><a href="../windower/"><img loading="lazy" decoding="async" data-src="../windower/windower-card.png" alt="windower"></a><a href="../storm/"><img loading="lazy" decoding="async" data-src="../storm/storm-card.png" alt="storm"></a></span>
-    <a class="tag" href="../index.html#instrumenta" style="background:url(../shelfplate-instrumenta.png) center/100% 100%; width:111.5px">instrumenta</a>
+    <a class="tag" href="../index.html#instrumenta" style="background:url(../shelfplate-instrumenta.png) center/100% 100%; width:108.2px">instrumenta</a>
   </div>
   <div class="row">
     <span class="pieces"><a href="../warmler/"><img loading="lazy" decoding="async" data-src="../warmler/warmler-card.png" alt="warmler"></a><a href="../roller/"><img loading="lazy" decoding="async" data-src="../roller/roller-card.png" alt="roller"></a><a href="../kaleidoscope/"><img loading="lazy" decoding="async" data-src="../kaleidoscope/kaleidoscope-card.png" alt="kaleidoscope"></a></span>
-    <a class="tag" href="../index.html#tactilia" style="background:url(../shelfplate-tactilia.png) center/100% 100%; width:88.0px">tactilia</a>
+    <a class="tag" href="../index.html#tactilia" style="background:url(../shelfplate-tactilia.png) center/100% 100%; width:88.8px">tactilia</a>
   </div>
   <div class="row" data-here="1">
     <span class="pieces"><a href="../musebox/"><img loading="lazy" decoding="async" data-src="../musebox/musebox-card.png" alt="musebox"></a><a href="../gyre/"><img loading="lazy" decoding="async" data-src="../gyre/gyre-card.png" alt="gyre"></a><a class="here" href="../chimes/"><img loading="lazy" decoding="async" data-src="../chimes/chimes-card.png" alt="chimes"></a></span>
-    <a class="tag" href="../index.html#systema" style="background:url(../shelfplate-systema.png) center/100% 100%; width:93.2px">systema</a>
+    <a class="tag" href="../index.html#systema" style="background:url(../shelfplate-systema.png) center/100% 100%; width:92.7px">systema</a>
   </div>
   <div class="row">
     <span class="pieces"><a href="../birds/"><img loading="lazy" decoding="async" data-src="../birds/birds-card.png" alt="birds"></a><a href="../fireflies/"><img loading="lazy" decoding="async" data-src="../fireflies/fireflies-card.png" alt="fireflies"></a><a href="../moths/"><img loading="lazy" decoding="async" data-src="../moths/moths-card.png" alt="moths"></a><a href="../ant/"><img loading="lazy" decoding="async" data-src="../ant/ant-card.png" alt="ant"></a></span>
-    <a class="tag" href="../index.html#natura" style="background:url(../shelfplate-natura.png) center/100% 100%; width:84.5px">natura</a>
+    <a class="tag" href="../index.html#natura" style="background:url(../shelfplate-natura.png) center/100% 100%; width:89.2px">natura</a>
   </div>
   <div class="row">
     <span class="pieces"><a href="../lamp/"><img loading="lazy" decoding="async" data-src="../lamp/lamp-card.png" alt="lamp"></a><a href="../rain/"><img loading="lazy" decoding="async" data-src="../rain/rain-card.png" alt="rain"></a><a href="../bowl/"><img loading="lazy" decoding="async" data-src="../bowl/bowl-card.png" alt="bowl"></a><a href="../pendulum/"><img loading="lazy" decoding="async" data-src="../pendulum/pendulum-card.png" alt="pendulum"></a><a href="../chladni/"><img loading="lazy" decoding="async" data-src="../chladni/chladni-card.png" alt="chladni"></a></span>
-    <a class="tag" href="../index.html#phenomena" style="background:url(../shelfplate-phenomena.png) center/100% 100%; width:109.3px">phenomena</a>
+    <a class="tag" href="../index.html#phenomena" style="background:url(../shelfplate-phenomena.png) center/100% 100%; width:108.9px">phenomena</a>
   </div>
 </div>
 <script>
@@ -1072,9 +1221,10 @@
      nothing on the page shifts. Each slider grows only as far as half the gap to
      its nearest neighbour, so no two ever overlap and steal each other's taps. */
   @media (pointer: coarse){
-  input[type=range]#countSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 16.5px 16.5px; padding:15px 0 15px; margin-top:-13px; margin-bottom:-13px; }
-  input[type=range]#cordLenSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 11.5px 11.5px 15.5px 15.5px; padding:10px 0 14px; margin-top:-8px; margin-bottom:-12px; }
-  input[type=range]#windSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 16.5px 16.5px; padding:15px 0 15px; margin-top:-13px; margin-bottom:-13px; }
+  input[type=range]#countSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 11.5px 11.5px; padding:15px 0 10px; margin-top:-28px; margin-bottom:-23px; }
+  input[type=range]#cordLenSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 6.5px 6.5px 4.5px 4.5px; padding:5px 0 3px; margin-top:-13px; margin-bottom:-15px; }
+  input[type=range]#rodLenSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 11.5px 11.5px 11.5px 11.5px; padding:10px 0 10px; margin-top:-8px; margin-bottom:-8px; }
+  input[type=range]#windSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 4.5px 4.5px 16.5px 16.5px; padding:3px 0 15px; margin-top:-16px; margin-bottom:-28px; }
   }
 </style>
 <!-- /touch-targets -->
