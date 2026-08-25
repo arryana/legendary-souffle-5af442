@@ -1186,6 +1186,30 @@ proof.
 
 ## The standard: does it behave like the real thing?
 
+**Why it has to be true.** Hers, Aug 2026, and it is the reason the rest of this section exists:
+***"tell me a kid won't look at a pine cone differently -after- they'd seen it be a slider for
+humidity on their phone?"***
+
+A pinecone on a forest floor is scenery. A pinecone someone has watched open and close with the
+weather is an instrument, and every pinecone after that one is a hygrometer. And **the real
+pinecone cannot teach this** — it takes hours, so nobody has ever learned it by watching. That is
+not a substitute for the real thing; it is the real thing made legible, permanently, in the
+visitor's own eyes.
+
+About **eleven of the twenty** pieces are in that class: a real behaviour, present and all around,
+invisible only because it runs too slowly or too rarely or too quietly to be attended to. A day
+per turn of the pendulum, days for the storm glass's crystals, hours for a wick to burn down, a
+whole afternoon for the sun to cross a window, a plate and a bow and a room for Chladni figures,
+tubes cut and hung before a chime's tuning can be heard at all. The smaller half of the shelf is
+sensorial twiddle and is honestly labelled as such — warmler is not trying to teach anyone what
+warm brass feels like.
+
+So the fidelity is **load-bearing rather than fussy**. If the pinecone opened at the wrong
+humidity, or the plane turned at the solar rate instead of the sidereal one, a visitor would walk
+away with a **false instrument installed** — and would carry it into every real pinecone and every
+real sky afterwards. Getting it right is the whole permission to change how someone sees. That is
+what every measured figure in the rows above is protecting.
+
 This is the actual spec for every piece on this site, not a nice-to-have. The whole premise the
 owner is offering a visitor is **touch this, see what happens — and trust that what happens is
 what would happen in the real world.** A pin that doesn't land where a dropped pin would land, or
