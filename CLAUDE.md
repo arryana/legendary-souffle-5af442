@@ -500,9 +500,47 @@ width and meet the corner music button, and applying it wider merely made a page
 the page underneath instead, and below 280 the tray drops to six columns. **A small-screen arrangement
 is no longer owed**: scrolling is the answer she took, not a placeholder for one. |
 | `moths/index.html` | ✅ |  | **Moths** losing their bearings on a hanging bulb. Not attraction — a moth holds a course by keeping a distant light at a fixed angle, and a near one wraps that course into a spiral. Three sliders: dusk→dark, bulb, how many. Colour is a readout of depth (dark in front of the glass, pale behind), from her own three-shade cut<br>Built Aug 2026 from her brief, then put right by her own watching of it — she found that the moths crowded the bulb and stayed (an absorbing state: all five reached it and none ever left), that moths in front of the lower glass came out grey rather than black, that they all flew alike, and that they never tilted or wavered. In **natura**, which is therefore a shelf of four |
-| `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune<br>**She is unconvinced it is finished** — not the behaviour but the look: *"you did a lovely job
-building it, but i'm not sure it's -beautiful-"*, and she may bring pictures from Gemini to rebuild
-it from. That is open, and nothing here settles it.<br>Aug 2026 it got **four voices** at her ask, the
+| `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune<br>**The look question is SETTLED**, Aug 2026. She had said *"you did a lovely job
+building it, but i'm not sure it's -beautiful-"* and thought she might bring pictures from Gemini to
+rebuild it from. She did, it was rebuilt on them, and her verdict on the result is ***"to my eye, yes.
+yes it is."*** That closes the only thing this row was carrying open. **It is not a Done mark** — she
+has not run it on the four machines yet, and that is hers to give separately.<br>**The rebuild, and
+the hour it cost first.** Her first sheet was the assembled instrument photographed standing at an
+ANGLE, so its outline is an ellipse, with pins already set in the disc and a hand across it. An hour
+went on trying to repair that — fitting ellipses, cleaning the pins out in polar coordinates, cloning
+a stray button off the walnut — and the result was, her words, *"weirdly oval"* and *"sad and fucked
+up"*. Then she asked for **clear worded instructions for Gemini instead**, they took five minutes, and
+the next set worked first time with no surgery at all. **That is the lesson and it belongs at the top
+of this row: when a supplied picture is wrong for the job, say so and specify the right one. Do not
+repair it.** The instructions that worked asked for four separate images, each with ONE object in it,
+dead face-on, on plain pure black, nothing else in the frame — and for the disc, explicitly no pins
+and no hand. The one test to apply to what comes back is: *is it face-on and perfectly round?* If it
+is tilted, it is no good.<br>**Four assets, each of one thing**: `musedisc.jpg` (face-on, round, no
+pins — kept as a JPEG and clipped to its circle when drawn, because as a PNG with an alpha cut it came
+to 1.3MB, which is bowl's lesson about page weight), `museroom.jpg` (the empty room, walnut and the
+same navy the case stands on), `musehand.png` (pivot found by locating its two rubies) and
+`musepin.png` (one brass head from above). **The eight notes sit on eight of the disc's OWN engraved
+circles** — measured, the engraving runs 117, 145, 176, 208, 240, 277, 309, 337 of a 378px radius,
+exactly eight between the hub and the rim. Held as fractions of the radius, and `cellAt` finds the
+NEAREST ring rather than dividing by a constant gap: real engraving is not evenly spaced and should
+not be forced to be.<br>**The picture takes the shape of the screen**, her ask. The canvas keeps a
+constant width in its own units so every measurement stays put; only its height and the disc's radius
+follow. Measured: 1100x974 with a 960px picture on a desktop, 1100x1407 with a 358px picture on a 390
+phone, and the disc goes from 55% of the picture's width to 88%. The table is never distorted — always
+the same scale as the width — and the wall is drawn at its own scale with its top few rows stretched
+to fill what is left above it, since stretching the whole gradient five times over would band it. A
+3in phone and a phone sideways scroll, the answer she took for kaleidoscope and storm.<br>**The table was toned down**, her call on a note of mine: it was the warmest and
+brightest thing in the frame and the disc is the subject, so it pulled the eye down and forward — the
+same fault she named herself on musebox's white rabbit. Fifteen per cent of the saturation and twelve
+of the lift come off the band below the table's front edge, and it is cooled a shade; the first two
+rows are ramped so the edge does not gain a line of its own. Baked into `museroom.jpg` rather than
+done per frame.<br>**The card
+was reshot** off the rebuilt piece and **cropped** to 440x640 rather than squeezed into it — squashing
+a taller frame into the card makes the disc oval again, which is the one thing the rebuild exists to
+avoid.<br>**The sound was not touched and neither were the controls**, her call: *"leave off the
+controls, as while they're decorative, they're not standard with all the other pieces."* Gemini's
+sheets carried an icon strip, a second kind of marker and an extra square button; all of it is the
+generator embellishing rather than a decision, and none of it came across.<br>Aug 2026 it got **four voices** at her ask, the
 chime she already liked plus **piano, guitar and a Native American flute**, each built from how the
 real instrument makes its sound rather than from a preset. A struck string is stiff, so the piano's
 partials are stretched by n·√(1+Bn²) — that stretch is most of what makes a piano sound like a piano
