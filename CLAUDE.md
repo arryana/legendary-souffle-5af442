@@ -458,7 +458,11 @@ to it.<br>**The card was
 reshot** off the rebuilt piece — the old one predated even the DRAWN hanger, showing a curved dark bar
 with a knot at the top and hammered flat rods, none of which the piece has had for some time. Framed by
 measuring the chime's own painted extent in the shot rather than trusting a ratio, and **cropped** to
-440x640 rather than squeezed into it, which is musebox's lesson. |
+440x640 rather than squeezed into it, which is musebox's lesson. **Reshot again** once the hanging chain
+went in, at her ask, so the card shows what the piece shows. Note the framing had to change with it: the
+window is sized off the piece's HEIGHT now rather than its width — with the chain running off the top,
+a width-driven window comes out far too short to hold the rods — and the top edge is placed 12% of the
+card above the ring, which is what leaves a length of chain going out of frame. |
 | `chladni/index.html` | ✅ | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound<br>**Done**. Aug 2026 it was given **substances**, in
 two families that are a real inversion of each other and not a recolour: heavy grains (sand, salt)
 are thrown off the moving plate and pile on the **nodal lines**, while very fine powder (lycopodium,
