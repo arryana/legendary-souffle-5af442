@@ -403,7 +403,43 @@ depth their neighbour never reaches, and an adjacent-only loop has no constraint
 would have muted its strike against another. Interpenetration is **0%** now on both sets. It also
 chimes *more*, which is the point: measured at full wind over 20s, the mixed set went from 210
 oscillators to 312 and the default set from 264 to 330 — those were strikes that should always have
-sounded and didn't, because the rods were passing through each other in silence. |
+sounded and didn't, because the rods were passing through each other in silence.<br>**The hanger and
+the cords are her own photographs now**, Aug 2026 — `chimerealhanger.jpg` and `chimehopefulsprite.jpg`
+in her `daidle` Drive folder. What had been there was a brown gradient lozenge on two drawn strokes
+with a stroked circle for a ring; it is a walnut bar on real chains off a real brass ring, and the
+cords below it are real jute rope, real silver chain and a real black nylon cord.<br>**The hanger is cut
+into TWO pieces and that is the whole trick.** The photograph carries **eight** eyelets screwed along
+the bar's underside and the piece hangs **five to nine** rods, so a baked-in row could only ever be
+right at one count. The eyelets are cut away into `chime-eyelet.png` and one is placed per rod, at the
+tie point that rod actually hangs from — right at every count, and better than the picture, since an
+eyelet is now always exactly where a cord leaves the bar. They hang clear below the wood, so lifting
+them needed no repair to the bar; the cut is at y=635 of the original and not 637, because the eyelets'
+stems reach two pixels into that line and left eight dark nicks along the bottom edge.<br>Every figure
+in `HG` was **measured off the photograph** and is held in fractions of the bar's own width, so the
+layout follows the picture rather than being typed. **The photograph's own proportions are shorter than
+the drawn hanger was** — ring to eyelets 152px against 117 — and that is a real physical change, not a
+cosmetic one: a shorter hanging assembly sways quicker, and a quicker-moving support throws the rods
+harder. Measured at full wind over 20s, **636 oscillators to 684** on the default set and **696 to 828**
+transposed. The **lean is unchanged**, which is what the physics says should happen — the balance point
+is set by drag against gravity and not by the length — and it holds: **±4.23° before and ±4.29° after**,
+over ~2,400 frames each. Measure the lean off the BAR's own top edge fitted across many columns; a
+single-column probe catches the suspension chains instead and reports 18°.<br>**The cords are tiled, and
+the tile is the whole problem.** The cord slider runs 40 to 170 against tiles of 18 to 41px, so every
+cord is several repeats and a join that shows draws a ladder of rungs down the piece. Three things get
+it invisible: the repeat is found to a hundredth of a pixel by correlation, the sheet's own lighting
+fall-off along the run is divided out, and the ends are cross-faded. Measured on the rendered page at
+the longest cord, the step across each join is **1.2 to 5.7 where the rope's own twist gives 7.9** at
+its 95th percentile — the joins are quieter than the rope.<br>**The nylon cord was drawn pale cream and
+its own swatch has always been black.** The picker showed a black glossy cord, the piece drew a
+fibrous white string, and nobody had put the two side by side. The photograph settles it in the swatch's
+favour.<br>**The RODS stay drawn, and have to.** A rod's length is its note — the lengths are continuous
+and each material is cut to its own — so no set of photographed rods can stand in for them. Both her
+parts sheets give four fixed lengths per material at **17–25px across**, where a walnut rod wants **34**
+on a Retina screen; a photograph would have to be stretched to length *and* upscaled. This was measured
+on both sheets, so it doesn't need measuring again. The old dead `chime-rod-*.png` sprites are still on
+disk, unreferenced, as warmler's unused textures are.<br>**Noticed while measuring and NOT fixed**: on a
+240x350 screen the dock's four rows swamp the chime entirely. It is identical before and after this
+change, so it is hers to find on the Jelly Star, not something this change introduced. |
 | `chladni/index.html` | ✅ | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound<br>**Done**. Aug 2026 it was given **substances**, in
 two families that are a real inversion of each other and not a recolour: heavy grains (sand, salt)
 are thrown off the moving plate and pile on the **nodal lines**, while very fine powder (lycopodium,
@@ -1134,8 +1170,11 @@ still twelve through. The eight that are left, and what state each is actually i
   verdict on the look is in — *"to my eye, yes. yes it is."* — and the card is reshot. **The sound and
   the controls were not touched.** She has never heard it or run it on a machine.
 - `chimes` — tuned to real notes, each material cut to its own lengths, its own strike sound, a
-  rod-length slider, and the tangle fixed. **Unheard.** Test it with the rods at DIFFERENT lengths or
-  the tangle it was reported for cannot appear at all.
+  rod-length slider, and the tangle fixed. **And re-dressed in her own photographs** — the hanger,
+  its chains, the eyelets and all three cords. **Unheard.** Test it with the rods at DIFFERENT
+  lengths or the tangle it was reported for cannot appear at all. Two things to watch for that are
+  known and not repaired: on the 3in phone the dock swamps the piece entirely, and the rods are
+  still the one drawn thing on the page, so they will look flat beside everything around them.
 - `lamp` — **was a build and now is one.** Oil that burns down, her father's ten penny nail, the tap
   that finds the level, the sputter and the wick burning to ash, an oil can to fill it again, and a
   burn rate that follows the flame rather than the slider. Its ✅ was given for the wick and flame and
