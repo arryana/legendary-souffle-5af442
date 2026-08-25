@@ -44,7 +44,12 @@
     padding:64px 16px 32px;
   }
   .disc-wrap{ position:relative; }
-  canvas{ width:min(78vmin,600px); height:min(78vmin,600px); display:block; touch-action:none; cursor:pointer; }
+  /* The disc stands on a table against a wall -- her walnut and the same dark navy
+     the case is on -- rather than floating on flat dark, so the canvas takes the
+     scene's proportions instead of being square. */
+  canvas{ width:min(94vw, 960px, calc((100vh - 210px) * 1100 / 800));
+    aspect-ratio:1100 / 800; height:auto;
+    display:block; touch-action:none; cursor:pointer; }
   .stopbox{
     position:absolute; right:5%; bottom:8%; width:28px; height:28px; padding:0;
     border:1.5px solid rgba(201,151,78,.55); border-radius:4px; cursor:pointer;
@@ -109,7 +114,7 @@
 <a id="backlink" href="../index.html" aria-label="sagne"><img src="../shelfdisk.png" alt=""><i>&#8592;</i></a>
 <div id="wrap">
   <div class="disc-wrap">
-    <canvas id="cv" width="600" height="600"></canvas>
+    <canvas id="cv" width="1100" height="800"></canvas>
     <button class="stopbox" id="stopbox" aria-label="stop the disc"></button>
   </div>
   <div class="controls">
@@ -152,15 +157,49 @@
 
 <script>
 const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
-const CX=300, CY=300, N_STEPS=16, stepAngle=2*Math.PI/N_STEPS;
+const N_STEPS=16, stepAngle=2*Math.PI/N_STEPS;
 // C major pentatonic — no wrong notes
 const NOTES=[261.63,293.66,329.63,392.00,440.00,523.25,587.33,659.25];
-const N_RINGS=NOTES.length, rMax=250, rMin=95, spacing=(rMax-rMin)/(N_RINGS-1);
-const ringRadius=i=>rMax-i*spacing;
+const N_RINGS=NOTES.length;
+
+/* Four photographs, each of one thing on its own: the disc face-on, the empty
+   room, the hand, and a single brass pin head. Nothing has to be cut out of a
+   picture of an assembled instrument, which is what made the first attempt at this
+   go wrong -- a disc photographed standing at an angle is an ellipse, and trying
+   to spin an ellipse is what she saw as "weirdly oval".
+   The scene: the room is 712x362 with the table's front edge at y=262. It is drawn
+   to the canvas's width, its wall stretched to fill the height above the table
+   (a smooth gradient, so the stretch cannot be seen) and its table left at the
+   same scale as the width. */
+const ROOM_W=699, ROOM_H=360, ROOM_TABLE=261;
+const RS=1100/ROOM_W;                       // the room, scaled to the canvas
+const TABLE_Y=800-(ROOM_H-ROOM_TABLE)*RS;   // where the table's front edge lands
+const DISC_R=300;
+const CX=550, CY=TABLE_Y+14-DISC_R;         // standing ON the table, not above it
+
+/* The eight notes sit on eight of the disc's OWN engraved circles. Measured on the
+   photograph (760px across, the disc filling it to a radius of 378), the engraving
+   runs 117, 145, 176, 208, 240, 277, 309, 337 -- exactly eight of them between the
+   hub and the rim, so nothing is laid over the top of the engraving. Held as
+   fractions of the disc's radius, so changing the photograph changes only this
+   list. Ring 0 is the outermost, and carries the lowest note. */
+const RING_F=[337,309,277,240,208,176,145,117].map(r=>r/378);
+const ringRadius=i=>DISC_R*RING_F[i];
+const rMax=ringRadius(0), rMin=ringRadius(N_RINGS-1);
 const pluckAng=-Math.PI/2;
 let pins=Array.from({length:N_RINGS},()=>new Array(N_STEPS).fill(false));
 [[0,0],[2,2],[3,4],[4,6],[5,8],[4,10],[3,12],[2,14]].forEach(([r,s])=>pins[r][s]=true);
 let rotation=0, stepsPerSec=3.2, lastStep=-1, flashes=[];
+
+const room=new Image(), disc=new Image(), hand=new Image(), pin=new Image();
+let roomOK=false, discOK=false, handOK=false, pinOK=false;
+room.onload=()=>{roomOK=true;}; room.src='museroom.jpg';
+disc.onload=()=>{discOK=true;}; disc.src='musedisc.jpg';
+hand.onload=()=>{handOK=true;}; hand.src='musehand.png';
+pin .onload=()=>{pinOK=true;};  pin .src='musepin.png';
+// the hand's pivot, found by locating its two rubies: the lower, ring-mounted one
+// is what sits on the disc's centre, and the tip is the far end
+const HAND_PX=29.1, HAND_PY=300.7, HAND_LEN=297.7;
 
 // remembers one pattern on this device only — no accounts, nothing sent anywhere.
 // if a saved one exists, it replaces the default pattern above before the disc
@@ -416,52 +455,93 @@ function frame(now){
 }
 
 function draw(now){
-  ctx.clearRect(0,0,600,600);
-  ctx.save(); ctx.translate(CX,CY);
-  const grd=ctx.createRadialGradient(0,-40,20,0,0,rMax+18);
-  grd.addColorStop(0,'#b9903f'); grd.addColorStop(0.6,'#8a6a2c'); grd.addColorStop(1,'#4d3a18');
-  ctx.beginPath(); ctx.arc(0,0,rMax+18,0,2*Math.PI); ctx.fillStyle=grd; ctx.fill();
-  ctx.lineWidth=6; ctx.strokeStyle='rgba(25,17,6,0.7)'; ctx.stroke();
+  ctx.clearRect(0,0,cv.width,cv.height);
 
-  ctx.save(); ctx.rotate(rotation);
+  // the room. Its wall is stretched to fill the height above the table -- a smooth
+  // gradient, so nothing shows -- and its table is left at the same scale as the
+  // width, so the wood is not distorted.
+  if(roomOK){
+    ctx.drawImage(room, 0,0,ROOM_W,ROOM_TABLE,        0,0,        1100,TABLE_Y);
+    ctx.drawImage(room, 0,ROOM_TABLE,ROOM_W,ROOM_H-ROOM_TABLE, 0,TABLE_Y, 1100,800-TABLE_Y);
+  }
+
+  // its shadow: one on the wall behind it, thrown down and right by the light
+  // coming from the upper left, and one pooled where it bears on the table
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(CX+26, CY+16, DISC_R*0.99, DISC_R*0.99, 0, 0, 7);
+  ctx.fillStyle='rgba(4,7,14,0.42)'; ctx.filter='blur(0px)'; ctx.fill();
+  const gsh=ctx.createRadialGradient(CX, TABLE_Y+16, DISC_R*0.12, CX, TABLE_Y+16, DISC_R*0.95);
+  gsh.addColorStop(0,'rgba(10,5,2,0.62)'); gsh.addColorStop(1,'rgba(10,5,2,0)');
+  ctx.beginPath(); ctx.ellipse(CX, TABLE_Y+16, DISC_R*0.95, DISC_R*0.13, 0, 0, 7);
+  ctx.fillStyle=gsh; ctx.fill();
+  ctx.restore();
+
+  // the disc, turning under a fixed hand. Kept as a JPEG and clipped to its circle
+  // rather than carried as a 1.3MB PNG with an alpha cut.
+  ctx.save();
+  ctx.translate(CX,CY);
+  ctx.beginPath(); ctx.arc(0,0,DISC_R,0,7); ctx.clip();
+  if(discOK){
+    ctx.save(); ctx.rotate(rotation);
+    ctx.drawImage(disc, -DISC_R, -DISC_R, DISC_R*2, DISC_R*2);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  ctx.save(); ctx.translate(CX,CY);
+
+  // the pins, turning with the disc. Her own photographed pin head, one per note.
+  const PIN_D=DISC_R*0.075;
+  ctx.save();
   for(let i=0;i<N_RINGS;i++){
     const R=ringRadius(i);
-    ctx.beginPath(); ctx.arc(0,0,R,0,2*Math.PI); ctx.strokeStyle='rgba(40,28,12,0.35)'; ctx.lineWidth=1; ctx.stroke();
     for(let s=0;s<N_STEPS;s++){
-      const a=s*stepAngle, x=R*Math.cos(a), y=R*Math.sin(a);
+      const a=s*stepAngle+rotation, x=R*Math.cos(a), y=R*Math.sin(a);
       if(pins[i][s]){
-        const pg=ctx.createRadialGradient(x-2,y-2,1,x,y,8);
-        pg.addColorStop(0,'#fff2c8'); pg.addColorStop(0.5,'#e8c473'); pg.addColorStop(1,'#7a5a24');
-        ctx.beginPath(); ctx.arc(x,y,7,0,2*Math.PI); ctx.fillStyle=pg; ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x+PIN_D*0.16, y+PIN_D*0.22, PIN_D*0.60, PIN_D*0.42, 0, 0, 7);
+        ctx.fillStyle='rgba(16,10,3,0.45)'; ctx.fill();
+        if(pinOK) ctx.drawImage(pin, x-PIN_D/2, y-PIN_D/2, PIN_D, PIN_D);
       } else {
-        ctx.beginPath(); ctx.arc(x,y,2.2,0,2*Math.PI); ctx.fillStyle='rgba(28,18,7,0.42)'; ctx.fill();
+        // the empty seats, so the disc reads as something a pin can go INTO
+        ctx.beginPath(); ctx.arc(x,y,PIN_D*0.10,0,7);
+        ctx.fillStyle='rgba(26,16,5,0.36)'; ctx.fill();
       }
     }
   }
   if(frozen && hover){
     // show exactly which pin will be set/cleared before it's committed, since the
     // disc is paused (not moving) for the whole press — aim, then let go
-    const R=ringRadius(hover.ring), a=hover.step*stepAngle, x=R*Math.cos(a), y=R*Math.sin(a);
+    const R=ringRadius(hover.ring), a=hover.step*stepAngle+rotation;
+    const x=R*Math.cos(a), y=R*Math.sin(a);
     const willRemove=pins[hover.ring][hover.step];
-    ctx.beginPath(); ctx.arc(x,y,11,0,2*Math.PI);
-    ctx.strokeStyle=willRemove?'rgba(255,120,90,0.85)':'rgba(255,244,205,0.9)';
+    ctx.beginPath(); ctx.arc(x,y,PIN_D*0.95,0,7);
+    ctx.strokeStyle=willRemove?'rgba(255,120,90,0.9)':'rgba(255,244,205,0.92)';
     ctx.lineWidth=2; ctx.stroke();
   }
   ctx.restore();
 
-  // fixed comb at the top
-  ctx.beginPath(); ctx.moveTo(0,-(rMin-12)); ctx.lineTo(0,-(rMax+12));
-  ctx.strokeStyle='rgba(255,240,210,0.14)'; ctx.lineWidth=2; ctx.stroke();
+  // where a pin speaks: a warm bloom on its own ring, at the hand
   for(let i=0;i<N_RINGS;i++){
-    const R=ringRadius(i), x=R*Math.cos(pluckAng), y=R*Math.sin(pluckAng);
     let fl=0;
     for(const f of flashes) if(f.ring===i){ const age=(now-f.t)/1000; if(age<0.35) fl=Math.max(fl,1-age/0.35); }
-    if(fl>0){ ctx.beginPath(); ctx.arc(x,y,7+9*fl,0,2*Math.PI); ctx.fillStyle=`rgba(255,235,180,${0.2*fl})`; ctx.fill(); }
-    ctx.beginPath(); ctx.arc(x,y,3.2,0,2*Math.PI);
-    ctx.fillStyle= fl>0?`rgba(255,244,205,${0.45+0.55*fl})`:'rgba(220,200,150,0.5)'; ctx.fill();
+    if(fl<=0) continue;
+    const R=ringRadius(i), x=R*Math.cos(pluckAng), y=R*Math.sin(pluckAng);
+    const bg=ctx.createRadialGradient(x,y,0,x,y,PIN_D*2.4);
+    bg.addColorStop(0,`rgba(255,238,190,${0.55*fl})`); bg.addColorStop(1,'rgba(255,238,190,0)');
+    ctx.beginPath(); ctx.arc(x,y,PIN_D*2.4,0,7); ctx.fillStyle=bg; ctx.fill();
   }
-  ctx.beginPath(); ctx.arc(0,0,rMin-24,0,2*Math.PI); ctx.fillStyle='#3a2c12'; ctx.fill();
-  ctx.beginPath(); ctx.arc(0,0,6,0,2*Math.PI); ctx.fillStyle='#20180a'; ctx.fill();
+
+  // the hand: fixed, and everything passes under it
+  if(handOK){
+    const k=(DISC_R*0.94)/HAND_LEN;
+    ctx.save();
+    ctx.rotate(pluckAng + Math.PI/2);       // the cut-out already points along -y
+    ctx.shadowColor='rgba(8,5,2,0.5)'; ctx.shadowBlur=8; ctx.shadowOffsetX=4; ctx.shadowOffsetY=6;
+    ctx.scale(k,k);
+    ctx.drawImage(hand, -HAND_PX, -HAND_PY);
+    ctx.restore();
+  }
+
   ctx.restore();
   flashes=flashes.filter(f=>(now-f.t)/1000<0.4);
 }
@@ -476,9 +556,13 @@ function cellAt(e){
   const x=(e.clientX-rect.left)*(cv.width/rect.width)-CX;
   const y=(e.clientY-rect.top)*(cv.height/rect.height)-CY;
   const r=Math.hypot(x,y), ang=Math.atan2(y,x);
-  const ring=Math.round((rMax-r)/spacing);
-  if(ring<0||ring>=N_RINGS) return null;
-  if(Math.abs(ringRadius(ring)-r)>spacing*0.6) return null;
+  // the engraved rings are the photograph's own and are not evenly spaced, so the
+  // nearest one is found rather than worked out from a constant gap
+  let ring=-1, best=1e9;
+  for(let i=0;i<N_RINGS;i++){ const dd=Math.abs(ringRadius(i)-r); if(dd<best){ best=dd; ring=i; } }
+  if(ring<0) return null;
+  const near=Math.abs(ringRadius(Math.min(N_RINGS-1,ring+1))-ringRadius(Math.max(0,ring-1)))/2 || 30;
+  if(best>near*0.62) return null;
   const step=((Math.round(norm(ang-rotation)/stepAngle)%N_STEPS)+N_STEPS)%N_STEPS;
   return {ring, step};
 }
