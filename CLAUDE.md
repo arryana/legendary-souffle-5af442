@@ -380,7 +380,12 @@ free-free bar's own (1 : 2.756 : 5.404 : 8.933 : 13.34) and there were three of 
 fifth are most of what reads as *clang*. Measured on the rendered notes: wood the dullest strike and
 gone in **0.20s** with no upper partials at all; glass the brightest strike and the busiest, 5.6%;
 silver the longest ring at **2.72s** and the purest, 1.2%; brass in between and warmer, 4.0%, with a
-beat the others don't have.<br>**Measuring a sound out of this piece needs the simulation frozen
+beat the others don't have.<br>**Her verdict on all of that is in**, Aug 2026, and it covers the tuning,
+the per-material cuts and the strike together: ***"it sounds a great deal better."*** Not a Done mark —
+she has heard it, not yet run it over the four machines — but the sound question this row was carrying
+open is closed. Worth noting how it surfaced: this file had said **"Unheard"** and she corrected it in
+passing, having listened days earlier and been pulled into other repairs before she could say so. The
+same class of drift as the swatch and the three stale cards, in the notes rather than in the site.<br>**Measuring a sound out of this piece needs the simulation frozen
 first** — `requestAnimationFrame` stubbed before the page script runs. An offline audio context's
 clock does not advance until it renders, so every strike the rods make while the harness is setting
 up lands at time zero and swamps the note under test. Three passes were wasted on that: it shows up
@@ -1209,7 +1214,9 @@ still twelve through. The eight that are left, and what state each is actually i
   the controls were not touched.** She has never heard it or run it on a machine.
 - `chimes` — tuned to real notes, each material cut to its own lengths, its own strike sound, a
   rod-length slider, and the tangle fixed. **And re-dressed in her own photographs** — the hanger,
-  its chains, the eyelets and all three cords. **Unheard.** Test it with the rods at DIFFERENT
+  its chains, the eyelets and all three cords. **She has HEARD it** — Aug 2026, *"it sounds a great
+  deal better"* — which is a verdict on the rebuilt sound and **not** a Done mark; she has still not
+  run it over the four machines. Test it with the rods at DIFFERENT
   lengths or the tangle it was reported for cannot appear at all. Two things to watch for that are
   known and not repaired: on the 3in phone the dock swamps the piece entirely, and the rods are
   still the one drawn thing on the page, so they will look flat beside everything around them.
