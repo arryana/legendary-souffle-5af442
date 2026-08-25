@@ -148,9 +148,18 @@ the seed threshold that grows the mask was at 58, which is inside the photograph
 REFLECTION, so the flood ran straight from the nail into it and the cut came out with a dark ghost
 attached. At 78 the reflection has no seed and the same flood gives a clean nail.<br>**A different
 amount of oil every visit**, her call — *"that would be the most fun for whomever is interacting"* —
-and it is also what a lamp found on a shelf actually is. Full to empty in **15 minutes** at a full
-flame, about an hour and a quarter at the lowest; a bigger flame burns it faster, which is the whole
-reason to check.<br>**The tap is steel on copper**: a hard pitchless contact tick first, because that is
+and it is also what a lamp found on a shelf actually is. **The burn follows the FLAME, not the slider** — her question, and the
+answer was no until she asked it. Consumption was linear in the wick-HEIGHT slider alone: right
+direction, wrong amount, and the shape slider left out of it entirely. Both figures are now read from
+the very keyframes the renderer draws with, so the burn and the picture can never disagree, and the
+measure is **height x width SQUARED** (a body of revolution about the wick) rather than height alone.
+That distinction earns its place, because **trimming to a point makes the flame look bigger and makes
+it smaller**: measured over twenty frames, a full flat wick draws 87x20px and 1157 lit pixels, a full
+pointed one 115x12px and 929 — 32% taller, 40% narrower, a fifth less flame. Full lamp to out,
+measured: **14.7 min** full and flat, **20.5** full and pointed, **36.0** low and flat, **54.1** low
+and pointed. The honest limit, since this is a proxy and not the mechanism: a real lamp's rate is set
+by how fast the wick draws fuel up and vaporises it, and this is tied to the flame instead — the
+self-consistent choice for a piece where the flame is what you can see and what you adjust.<br>**The tap is steel on copper**: a hard pitchless contact tick first, because that is
 what names two materials to the ear before any note has established, then the shell's own inharmonic
 note. **STRUCK, not blown**, which is the easy thing to get backwards — blown across the top, more
 liquid means a shorter air column and a HIGHER pitch; struck, the liquid mass-loads the walls and drags
@@ -166,7 +175,22 @@ channel **falls fast and recovers slowly**, which is what reads as sputtering ra
 flickering — don't make it symmetric. Measured over the last 100 seconds the flame's brightness runs
 214, 190, 213, 204 … 151, 186, 161, 172, 141 … 77, 87, 73, 135 … 41, 15, 14, 8: dropping and catching,
 dropping and catching, with the baseline sinking all the way. Then a grey ash stub and no flame.
-**Reloading the page is a fresh lamp; nothing else relights it.**<br>Two things came out of being able
+**And there is an oil can in the corner opposite the music
+button** — her ask, and it does two things at once: it takes the dead end out of a burnt-out lamp,
+and it lets the tap be COMPARED, which is much the fastest way anybody will work out what the
+tapping is for. Measured through one cycle: fresh 648Hz, burnt dry 790Hz ringing long, and after a
+fill the same spot gives a dull **269Hz** knock because it is under the oil now. A can holds what a
+can holds, so it goes in **nearly** full and not to a line. Filling a lamp that has gone out means
+trimming the wick and putting a light to it, so the char eases away over about a second and the
+flame comes up with it — 45 the instant it is filled, 164 half a second later, 216 after two.
+**The pour is the one place on this page where the BLOWN rule is the right one**: the air column
+above the oil shortens as it fills, so the gurgle RISES, where a struck lamp goes lower with more
+oil. Both rules are in the piece and they are not the same rule. The can is in the corner rather
+than the dock because the dock's height is what the lamp is centred against, so a fourth row there
+would be paid for out of the lamp; measured, the can touches no control, not the music button, not
+the nail and not the lamp, at 1440x900, 390, 320, 240x350, a Kindle and a 3in phone sideways. Drawn,
+not an emoji — there is no oil can in Unicode and the nearest are an oil DRUM and a 2021 pouring
+jug.<br>Two things came out of being able
 to see the lamp UNLIT, which was never possible before. The photograph's own static wick is painted over
 with a patch of glass cloned from higher up the same column, and as a **hard-edged rectangle its seam**
 was invisible under a lit flame's glow and perfectly plain the moment the lamp could go out — the
