@@ -137,16 +137,52 @@ shaded edge coming back up off the tray. The outline is the same dark at **half*
 it reads as a drawn line round the stone and turns the body polygon's facets into corners. The
 `bean` numbers in the GLASS table are now unused and kept only so the table still reads one row per
 colour. The pebble and the disc are untouched. |
-| `lamp/index.html` | ✅ | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. A fuel level you find by *tapping* the base is designed but not built; the note in the file records which way the pitch must go<br>**Done** as it stands — the tap-for-fuel idea is recorded as a future build, not a gap in it.<br>**And
-there should be a nail.** Aug 2026, hers, and it turns the tap from a gesture into an object: *"we used
-to have an old copper based lamp like that, and my father kept a ten penny nail on the shelf next to it
-for tapping."* So the fuel level is not found by tapping the lamp with nothing in particular — it is
-found with **a ten penny nail lying beside it**, which is how her family actually did it. That is the
-whole interaction and it needs no instructions: a nail resting on the shelf is a thing a curious person
-picks up, and a lamp is a thing they then tap. It also settles what the tap should sound like — steel on
-copper, not a finger — and gives the piece a second object to draw, which nothing else on the shelf has.
-Note the lamp in the piece is copper-based, which is what she had. **This is a build, not a repair**, and
-she may want it made before she calls the piece run — see her read on the remaining pieces below. |
+| `lamp/index.html` | ✅ | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. **The fuel is built** (Aug 2026): it burns down, you cannot see how much is left, and you find out by tapping the copper base with a ten penny nail lying beside it<br>**Done** was given for the wick and flame; the nail and the fuel came after, so the mark predates them and she has not run the piece since.<br>**The
+nail is hers.** *"we used to have an old copper based lamp like that, and my father kept a ten penny
+nail on the shelf next to it for tapping."* So the level is not found by tapping the lamp with nothing
+in particular — it is found with **a nail lying beside it**, which is how her family actually did it.
+That is the whole interaction and it needs no instructions: a nail resting on the shelf is a thing a
+curious person picks up, and a lamp is a thing they then tap. Her own photograph (`lampnail.jpg` in her
+`daidle` Drive folder), cut off its ground to `lamp/lampnail.png`. **Cutting it took one wrong pass**:
+the seed threshold that grows the mask was at 58, which is inside the photograph's own mirror
+REFLECTION, so the flood ran straight from the nail into it and the cut came out with a dark ghost
+attached. At 78 the reflection has no seed and the same flood gives a clean nail.<br>**A different
+amount of oil every visit**, her call — *"that would be the most fun for whomever is interacting"* —
+and it is also what a lamp found on a shelf actually is. Full to empty in **15 minutes** at a full
+flame, about an hour and a quarter at the lowest; a bigger flame burns it faster, which is the whole
+reason to check.<br>**The tap is steel on copper**: a hard pitchless contact tick first, because that is
+what names two materials to the ear before any note has established, then the shell's own inharmonic
+note. **STRUCK, not blown**, which is the easy thing to get backwards — blown across the top, more
+liquid means a shorter air column and a HIGHER pitch; struck, the liquid mass-loads the walls and drags
+it DOWN. Measured on the running page as it burned: **587Hz ringing 0.98s** at the start, 649 at 1.18s
+two minutes later, **791 at 1.62s** nearly dry.<br>**And WHERE you tap earns its place**, which the old
+note in the file had parked as optional. Below the oil line the wall is against the liquid and barely
+rings — measured, **423Hz dead in 0.13s** against 587Hz for 0.98s higher up the same side. Four minutes
+in the two taps came out **identical**, which is the oil having fallen past the lower one. The level
+really can be found by running the nail down the side, the way you find it on a gas cylinder.<br>**The
+end is her sequence, in her own words**: *"it should sputter and flicker when the fuel is very low. then
+get shorter and weaker as it sputters more, then burn the wick down to ash, and go out."* The sputter
+channel **falls fast and recovers slowly**, which is what reads as sputtering rather than as
+flickering — don't make it symmetric. Measured over the last 100 seconds the flame's brightness runs
+214, 190, 213, 204 … 151, 186, 161, 172, 141 … 77, 87, 73, 135 … 41, 15, 14, 8: dropping and catching,
+dropping and catching, with the baseline sinking all the way. Then a grey ash stub and no flame.
+**Reloading the page is a fresh lamp; nothing else relights it.**<br>Two things came out of being able
+to see the lamp UNLIT, which was never possible before. The photograph's own static wick is painted over
+with a patch of glass cloned from higher up the same column, and as a **hard-edged rectangle its seam**
+was invisible under a lit flame's glow and perfectly plain the moment the lamp could go out — the
+*correct but reads as broken* class exactly. Feathered now, built once and cached rather than masked
+every frame. And **the lamp is centred in the room the dock leaves** rather than in the whole page: it
+used to run under the controls on a short screen, which cost only the base's shadow until there was a
+nail down there to pick up. The nail clears the dock by 24px on a 240x350 phone, 59 on an ordinary one,
+87 on a Kindle, 97 on a desktop; a 3in phone turned sideways is 180px tall and **scrolls**, which is the
+answer she took for kaleidoscope and storm. The desktop lamp is a little larger as a result (443 -> 480
+across), since it is no longer sized to leave room it never needed.<br>**The music button was lifted
+clear of the whole dock on narrow screens, and that put it at 240px exactly on the nail's head.**
+Measured, the only control it ever actually touched was the mute box at 240 and only by a few pixels;
+from 320 up nothing overlapped at all. So the volume gives up a little length instead — the same trade
+chladni's bottom row made — and the headphones stay in their corner. Worth remembering as the general
+point: *the furniture gives way* can be paid for by the dock as well as by the button, and lifting the
+button is not free once a piece has something of its own in that corner. |
 | `warmler/index.html` | ✅ | ✅ | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked)<br>**Done** — through her four-device test Aug 2026 with nothing to repair: *"i honestly can't
 find any fault with warmler. it's a simple twiddle toy, and now that we have the edge issues
 worked out, it's fine on all four machines."* The edge issues were the two already fixed in the
@@ -516,7 +552,27 @@ on her bench may not have; the way in, if it is ever wanted, is conic where it e
 fill where it doesn't.<br>**Still open, and hers**: whether the sector now reads as sand or still as a
 dial. The geometry is honest — that ground really has been worked — so this is a question about the
 look, not a fault to fix. Her word on the change was ***"it's better"*** — which is an improvement
-banked and not a verdict, so **don't revert it and don't treat it as settled either**. |
+banked and not a verdict, so **don't revert it and don't treat it as settled either**.<br>**"The line
+moves AHEAD of the pendulum swing."** Her report on the speed-slider setting, Aug 2026. Measured, it
+never does — the bob sits on that line to within **0.07° over 658 frames**. What runs ahead is the
+**ratio**: the slider turns the plane without touching the swing, so at its default the plane turns
+**1.87° per swing where in life it turns 0.009°**, and a rigid full-diameter line at constant
+brightness is what made that read as a hand sweeping a dial. There is no way round the ratio — speed
+the swing up too and it is a blur long before the turn is watchable; a real one is about one turn per
+25,000 swings, which is why the honest setting is the clock face. So the LINE went instead, her call:
+**a short trail behind the weight**, which is ground it has just crossed and so can never reach ahead
+of it. Held to a fixed **length**, not a fixed time — the bob is nearly stationary at the ends of its
+swing, which is exactly where the pins are and where the swing's direction most needs reading.<br>**And
+the pins were the wrong way round**, which is what actually made the piece unreadable. A **fallen** pin
+was drawn as a saturated brass bead at full opacity — the brightest thing on the plate after the bob —
+and a **standing** one as a stroke at alpha 0.26. So a ring of bright beads sat over exactly the ground
+the swing had already crossed and read as *the pins are still here*, the plain opposite of what the sand
+beneath was saying. Nothing was wrong in the model. On a real ring it is the brass tops of the upright
+pins that catch the light and the knocked ones that lie dark on the floor, and that is what it draws
+now — **brightness and shape both**, an upright being a short stub with its head close in and a fallen
+one a long shaft pushed well out with a dull head at the end. Her sentence is the general rule and
+belongs beside *reads as broken*: ***"i get that it has to be true, and that's important, but if it's
+incomprehensible to look at that doesn't teach anything."*** |
 | `storm/index.html` | ✅ | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo)<br>**Done**, and the piece that finishes instrumenta. Fifth through her four-device test, Aug 2026,
 and four things came out of it.<br>**The needle lied whenever it had nothing to say.** Untranslated,
 `#baro-needle-g` sits at x=0 in its own SVG — off the left-hand end of the printed scale, past

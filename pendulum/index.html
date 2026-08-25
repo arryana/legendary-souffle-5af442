@@ -409,6 +409,39 @@
   function speedMultiplier(){ return Math.pow(10, speedAmt*2.9); }
 
   // ---------- pendulum ----------
+  /* The trail is held to a fixed LENGTH rather than a fixed time. The bob is
+     nearly stationary at each end of its swing and fastest through the middle, so
+     a time-based trail would be a dot at the turning points and a streak across
+     the centre -- and the turning points are where the pins are, which is where
+     the direction of the swing most needs to be readable. Points closer together
+     than a fortieth of the amplitude are merged, which caps it at about thirty
+     segments however slowly the bob is moving. */
+  const TRAIL_FRAC = 0.34;      // of the swing's amplitude
+  let trail = [];
+  function clearTrail(){ trail.length = 0; }
+  function drawTrail(bx, by, amp){
+    const last = trail[trail.length-1];
+    if (!last || Math.hypot(bx-last.x, by-last.y) >= amp*0.012) trail.push({x:bx, y:by});
+    else { last.x = bx; last.y = by; }
+    let run = 0, cut = 0;
+    for (let i=trail.length-1; i>0; i--){
+      run += Math.hypot(trail[i].x-trail[i-1].x, trail[i].y-trail[i-1].y);
+      if (run >= amp*TRAIL_FRAC){ cut = i-1; break; }
+    }
+    if (cut > 0) trail.splice(0, cut);
+    if (trail.length < 2) return;
+    ctx.lineCap = 'round';
+    for (let i=1; i<trail.length; i++){
+      const k = i/(trail.length-1);
+      ctx.strokeStyle = 'rgba(233,217,168,'+(0.34*k*k).toFixed(3)+')';
+      ctx.lineWidth = 0.6 + 2.0*k;
+      ctx.beginPath();
+      ctx.moveTo(trail[i-1].x, trail[i-1].y);
+      ctx.lineTo(trail[i].x, trail[i].y);
+      ctx.stroke();
+    }
+  }
+
   const SWING_PERIOD=3.4;      // seconds, the ordinary back-and-forth
   const DAY=86400;             // seconds -- the solar day, for clock things
   /* What the plane of a Foucault pendulum turns against is the FIXED STARS, not
@@ -430,6 +463,7 @@
     DPR=Math.min(window.devicePixelRatio||1,2);
     W=window.innerWidth; H=window.innerHeight;
     canvas.width=W*DPR; canvas.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    clearTrail();                 // it is measured against the amplitude, which just changed
     // size against whichever dimension is actually tight — on a narrow phone
     // that's width, and the old min(W,H) sizing left the circle stranded small
     // with a lot of dead space above it once the dock's own height was spent
@@ -510,24 +544,33 @@
       const x1=x0+Math.cos(dirA)*(len+push), y1=y0+Math.sin(dirA)*(len+push);
       const perpA=dirA+Math.PI/2;
 
-      // standing: a small crossbar at the tip — a T seen edge-on. fallen: that
-      // same crossbar collapses into a round brass head, pushed further out
-      // along the same line — a lollipop knocked away from the ring, not
-      // swept sideways around it.
-      ctx.strokeStyle=`rgba(233,217,168,${((p.major?0.42:0.26)*(1-fall*0.2)).toFixed(2)})`;
+      /* THE BRIGHT ONE IS THE PIN THAT IS STILL STANDING, and it has to be that
+         way round. It was the other way about: a fallen pin got a saturated brass
+         bead at full opacity, the brightest thing on the plate after the bob, and
+         a standing one got a stroke at alpha 0.26. So a ring of bright beads sat
+         over exactly the ground the swing had already crossed, and it read as
+         "the pins are still here" -- the plain opposite of what the plate was
+         saying, with the sand beneath it saying the truth. Nothing was wrong
+         underneath; it was unreadable, which on this piece is its own fault. Her
+         words: it can be true and still teach nothing if you cannot look at it.
+         On a real ring it is the brass tops of the upright pins that catch the
+         light and the knocked ones that lie dark on the floor.
+         The shape carries it as well as the brightness -- an upright is a short
+         stub with its head close in, a fallen one is a long shaft pushed well out
+         with a dull head at the end. */
+      const lit = 1 - fall*0.72;
+      ctx.strokeStyle=`rgba(233,217,168,${((p.major?0.5:0.34)*lit).toFixed(3)})`;
       ctx.lineWidth=p.major?2:1.4;
       ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
 
-      if(fall<0.999){
-        const cl=(p.major?6:4.5)*(1-fall);
-        const px=Math.cos(perpA)*cl, py=Math.sin(perpA)*cl;
-        ctx.beginPath(); ctx.moveTo(x1-px,y1-py); ctx.lineTo(x1+px,y1+py); ctx.stroke();
-      }
+      const r=p.major?3.6:2.6;
+      const bg=ctx.createRadialGradient(x1-r*0.3,y1-r*0.35,0.3,x1,y1,r);
+      bg.addColorStop(0,'#f3d489'); bg.addColorStop(0.6,'#c99a3f'); bg.addColorStop(1,'#8a6420');
+      ctx.beginPath(); ctx.arc(x1,y1,r,0,7); ctx.fillStyle=bg; ctx.fill();
       if(fall>0.001){
-        const r=(p.major?3.6:2.6)*fall;
-        const bg=ctx.createRadialGradient(x1-r*0.3,y1-r*0.35,0.3,x1,y1,r);
-        bg.addColorStop(0,'#f3d489'); bg.addColorStop(0.6,'#c99a3f'); bg.addColorStop(1,'#8a6420');
-        ctx.beginPath(); ctx.arc(x1,y1,r,0,7); ctx.fillStyle=bg; ctx.fill();
+        // put out: the same head, gone dark on the floor
+        ctx.beginPath(); ctx.arc(x1,y1,r,0,7);
+        ctx.fillStyle=`rgba(12,10,8,${(fall*0.74).toFixed(3)})`; ctx.fill();
       }
     }
   }
@@ -654,7 +697,7 @@
       }
     }
     planeAngle=total; posSweepAngle=total; negSweepAngle=total+Math.PI;
-    prevSwingFrac=1; prevRising=false; sandPrev=null;
+    prevSwingFrac=1; prevRising=false; sandPrev=null; clearTrail();
     sweepSand(from, total);
   }
 
@@ -695,8 +738,6 @@
     }
     updatePins(t, swingFrac);
 
-    // the swing plane itself, faint, always visible even when the bob passes
-    // near the pivot — this is what actually makes the rotation legible
     const amp=floorR*0.72;
 
     const bx=Math.cos(planeAngle)*amp*swingFrac, by=Math.sin(planeAngle)*amp*swingFrac;
@@ -731,11 +772,18 @@
     ctx.save();
     ctx.translate(cx,cy);
     drawPins(t);
-    ctx.strokeStyle='rgba(233,217,168,.22)'; ctx.lineWidth=1.2;
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(planeAngle)*amp, Math.sin(planeAngle)*amp);
-    ctx.lineTo(-Math.cos(planeAngle)*amp, -Math.sin(planeAngle)*amp);
-    ctx.stroke();
+    /* The swing plane used to be drawn here as a full diameter at constant
+       brightness, edge to edge -- and a line of fixed length sweeping round a
+       circle is the visual language of a clock hand, which is how she read it in
+       both modes: "the line moves AHEAD of the pendulum swing". Measured, it never
+       does: the bob sits on that line to within 0.07 degrees over 658 frames. What
+       runs ahead is the RATIO. The speed slider turns the plane without touching
+       the swing, so at its default the plane turns 1.87 degrees per swing where in
+       life it turns 0.009 -- and a rigid pointer is what made that legible as a
+       hand rather than as a pendulum. Her call: a short trail behind the weight
+       instead. It is ground the bob has just crossed, so it can never reach ahead
+       of it, and it carries the precession's own curve for free. */
+    drawTrail(bx, by, amp);
 
     // thread from the (implied, off the top of the frame) pivot
     ctx.strokeStyle='rgba(20,17,14,.5)'; ctx.lineWidth=1;
