@@ -206,7 +206,10 @@ Measured, the only control it ever actually touched was the mute box at 240 and 
 from 320 up nothing overlapped at all. So the volume gives up a little length instead — the same trade
 chladni's bottom row made — and the headphones stay in their corner. Worth remembering as the general
 point: *the furniture gives way* can be paid for by the dock as well as by the button, and lifting the
-button is not free once a piece has something of its own in that corner. |
+button is not free once a piece has something of its own in that corner.<br>**The card was reshot**
+Aug 2026: the old one predated the whole fuel system, so it showed a lamp with **no nail beside it** —
+and the nail is now how anybody finds out the lamp has a level at all. Framed by measuring the lamp's
+own painted extent and the nail's, so both are in shot and the oil can's corner button is not. |
 | `warmler/index.html` | ✅ | ✅ | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked)<br>**Done** — through her four-device test Aug 2026 with nothing to repair: *"i honestly can't
 find any fault with warmler. it's a simple twiddle toy, and now that we have the edge issues
 worked out, it's fine on all four machines."* The edge issues were the two already fixed in the
@@ -674,7 +677,20 @@ pins that catch the light and the knocked ones that lie dark on the floor, and t
 now — **brightness and shape both**, an upright being a short stub with its head close in and a fallen
 one a long shaft pushed well out with a dull head at the end. Her sentence is the general rule and
 belongs beside *reads as broken*: ***"i get that it has to be true, and that's important, but if it's
-incomprehensible to look at that doesn't teach anything."*** |
+incomprehensible to look at that doesn't teach anything."***<br>**The card was reshot**, and it was
+worth doing because the old one was **a picture of the two faults she had just had fixed** — the
+full-diameter line and the swept sand reading as a pie chart, with a slider left in the frame as well.
+Anyone browsing the case was being shown the broken one.<br>**The honest trouble with a truthful
+pendulum card, written down because it will come up again**: at the 40x53 the shelf's plate rows use,
+the old card read clearly and the new one nearly vanished — the old was legible BECAUSE of the bug, a
+flat-filled bright sector at full opacity, where the real rosette is thin lines kept faint on purpose
+by the dwell curve. Running it longer barely helps: doubling the sand (60s to 120s of the ∞ trace)
+doubled the lit pixels and changed almost nothing at thumbnail size. What did work was **cropping so
+the plate fills the card edge to edge** rather than sitting at 79% of its width, which puts the rim
+band — the brightest part, by the dwell curve — at the frame's own edges. Shot with ∞ ticked and the
+speed at 100 for about two minutes, which is what gives a full rosette with pins still standing as
+well as knocked. It is a quieter card than gyre's, and that is correct: it is a quieter piece, and the
+loud version was the lie. |
 | `storm/index.html` | ✅ | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo)<br>**Done**, and the piece that finishes instrumenta. Fifth through her four-device test, Aug 2026,
 and four things came out of it.<br>**The needle lied whenever it had nothing to say.** Untranslated,
 `#baro-needle-g` sits at x=0 in its own SVG — off the left-hand end of the printed scale, past
