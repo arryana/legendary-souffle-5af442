@@ -439,7 +439,11 @@ on a Retina screen; a photograph would have to be stretched to length *and* upsc
 on both sheets, so it doesn't need measuring again. The old dead `chime-rod-*.png` sprites are still on
 disk, unreferenced, as warmler's unused textures are.<br>**Noticed while measuring and NOT fixed**: on a
 240x350 screen the dock's four rows swamp the chime entirely. It is identical before and after this
-change, so it is hers to find on the Jelly Star, not something this change introduced. |
+change, so it is hers to find on the Jelly Star, not something this change introduced.<br>**The card was
+reshot** off the rebuilt piece — the old one predated even the DRAWN hanger, showing a curved dark bar
+with a knot at the top and hammered flat rods, none of which the piece has had for some time. Framed by
+measuring the chime's own painted extent in the shot rather than trusting a ratio, and **cropped** to
+440x640 rather than squeezed into it, which is musebox's lesson. |
 | `chladni/index.html` | ✅ | ✅ | A **Chladni plate** — sand on metal, forming standing-wave patterns in response to sound<br>**Done**. Aug 2026 it was given **substances**, in
 two families that are a real inversion of each other and not a recolour: heavy grains (sand, salt)
 are thrown off the moving plate and pile on the **nodal lines**, while very fine powder (lycopodium,
