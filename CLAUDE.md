@@ -137,7 +137,16 @@ shaded edge coming back up off the tray. The outline is the same dark at **half*
 it reads as a drawn line round the stone and turns the body polygon's facets into corners. The
 `bean` numbers in the GLASS table are now unused and kept only so the table still reads one row per
 colour. The pebble and the disc are untouched. |
-| `lamp/index.html` | ✅ | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. A fuel level you find by *tapping* the base is designed but not built; the note in the file records which way the pitch must go<br>**Done** as it stands — the tap-for-fuel idea is recorded as a future build, not a gap in it. |
+| `lamp/index.html` | ✅ | ✅ | An oil lamp — trim the wick's shape and height, and the flame follows. A fuel level you find by *tapping* the base is designed but not built; the note in the file records which way the pitch must go<br>**Done** as it stands — the tap-for-fuel idea is recorded as a future build, not a gap in it.<br>**And
+there should be a nail.** Aug 2026, hers, and it turns the tap from a gesture into an object: *"we used
+to have an old copper based lamp like that, and my father kept a ten penny nail on the shelf next to it
+for tapping."* So the fuel level is not found by tapping the lamp with nothing in particular — it is
+found with **a ten penny nail lying beside it**, which is how her family actually did it. That is the
+whole interaction and it needs no instructions: a nail resting on the shelf is a thing a curious person
+picks up, and a lamp is a thing they then tap. It also settles what the tap should sound like — steel on
+copper, not a finger — and gives the piece a second object to draw, which nothing else on the shelf has.
+Note the lamp in the piece is copper-based, which is what she had. **This is a build, not a repair**, and
+she may want it made before she calls the piece run — see her read on the remaining pieces below. |
 | `warmler/index.html` | ✅ | ✅ | A warming plate with selectable metal **finishes** (brass, copper, aged brass/copper, gold, silver, diamond-plate). `warmler-picker-concept.html` is a finish-picker concept (not linked)<br>**Done** — through her four-device test Aug 2026 with nothing to repair: *"i honestly can't
 find any fault with warmler. it's a simple twiddle toy, and now that we have the edge issues
 worked out, it's fine on all four machines."* The edge issues were the two already fixed in the
