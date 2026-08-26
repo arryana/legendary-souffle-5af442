@@ -1012,6 +1012,26 @@ neighbour**, so no two ever overlap and steal each other's taps; the widths come
 measuring the real page at 390px, not from guessing. `chladni`'s notch slider is skipped —
 its photographs already make it 46px.
 
+**The generator is NOT idempotent unless you keep it that way, and getting this wrong is silent
+and destructive.** Aug 2026 it was re-run and every page came out worse: the block from the last
+run is *in the page*, and its negative margins are part of the computed style, so measuring on top
+of them compounds them — padding stays 15px but `margin-top` goes −28 to −43 on a second run, −58
+on a third, dragging every slider up the page. It also inflates the measured height, so a slider
+already grown past the 40px cut-off is skipped and freezes at whatever it happened to be. The tool
+now **removes its own `<style>` before measuring**, so a run starts from the page's own layout and
+running twice gives the same answer as running once. The tell that it had happened at least once
+already: the page's own slider margin recovers as **+2px** on every piece from a clean measurement,
+and the blocks that were live recovered as **−13**.
+
+**And re-running it now moves the painted line by 1–2px on pieces whose blocks were made the old
+way.** That is the tool being right and the old blocks being wrong, but it is still a visible change
+to signed-off work — so Aug 2026 the corrected blocks were applied to the **eight pieces she had not
+yet tested** (`musebox`, `chimes`, `lamp`, `pendulum`, `birds`, `fireflies`, `moths`, `ant`) and the
+twelve she had passed were deliberately left alone. Anyone re-running the tool will see those twelve
+change; that is expected, and it is her call whether to take it. Measured before and after on all
+four small screens: **dock heights are identical**, so the negative margins really do give the space
+back and nothing was swamped.
+
 Two things in there cost a pass each and will cost another if forgotten:
 
 - **`border-radius` is measured off the outer box**, so padding eats the rounding off the
@@ -1026,6 +1046,12 @@ Two things in there cost a pass each and will cost another if forgotten:
 Verified by screenshotting every slider against a pristine copy of the site: **16 of 19 are
 identical to the pixel**, and the other three differ by at most 5/255 in the dither of a
 faint gradient. Nothing moved, nothing overlaps, and the desktop is byte-identical.
+
+**What the corrected run actually fixed**, Aug 2026, measured at 390px under `(pointer: coarse)`:
+`ant`'s seven sliders were **3, 7, 9, 14, 18, 18 and 23px** and are now 26–33; `fireflies`' five
+were **3, 4, 5, 19, 20** and are now 21–30 (its wind slider had no rule at all); `birds`' two were
+18 and are now 30. `moths` measured 44–45px before and after — it is the one that was given room
+first, and it shows.
 
 **`kaleidoscope` and `moths` had to be given room first** — their sliders sat 14px and 11px
 apart, which leaves nothing to grow into. Both had space going spare on a phone, so the gaps
