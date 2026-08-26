@@ -585,12 +585,23 @@
   // The brass hand. On a real barometer you set it against the needle and come
   // back later to read the gap, so it has to stay where it was put — including
   // between visits.
-  let setHpa = parseFloat(localStorage.getItem('sagne-storm-sethand'));
+  /* STORAGE CAN THROW, rather than merely be empty. A private window, or any
+     browser set to block site data, makes `localStorage` raise on the very first
+     read -- and read unguarded at the top of a script that takes the WHOLE PIECE
+     down with it. Found Aug 2026 by loading every piece with its props taken
+     away: with site data blocked, musebox, lamp, roller and storm all came up
+     BLANK, and two of those were pieces she had already signed off. candler had
+     guarded its own read all along, which is what a right answer looks like.
+     Everything goes through these two now. Losing the setting is nothing; losing
+     the piece is everything. */
+  const readStore = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+  const writeStore = (k,v) => { try{ localStorage.setItem(k,v); }catch(e){} };
+  let setHpa = parseFloat(readStore('sagne-storm-sethand'));
   if(!isFinite(setHpa)) setHpa = 29.9*INHG;
   function drawSet(){ elSetG.setAttribute('transform', 'translate(' + baroX(setHpa).toFixed(1) + ',0)'); }
   function placeSet(hpa){
     setHpa = Math.max(BARO_LO, Math.min(BARO_HI, hpa));
-    try{ localStorage.setItem('sagne-storm-sethand', String(setHpa)); }catch(e){}
+    writeStore('sagne-storm-sethand', String(setHpa));
     drawSet();
   }
   drawSet();

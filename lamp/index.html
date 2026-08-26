@@ -302,23 +302,34 @@
   const wickShapeSlider = document.getElementById('wickShapeSlider');
   wickShapeSlider.addEventListener('input', () => { wickShape = wickShapeSlider.value / 100; });
 
+  /* STORAGE CAN THROW, rather than merely be empty. A private window, or any
+     browser set to block site data, makes `localStorage` raise on the very first
+     read -- and read unguarded at the top of a script that takes the WHOLE PIECE
+     down with it. Found Aug 2026 by loading every piece with its props taken
+     away: with site data blocked, musebox, lamp, roller and storm all came up
+     BLANK, and two of those were pieces she had already signed off. candler had
+     guarded its own read all along, which is what a right answer looks like.
+     Everything goes through these two now. Losing the setting is nothing; losing
+     the piece is everything. */
+  const readStore = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+  const writeStore = (k,v) => { try{ localStorage.setItem(k,v); }catch(e){} };
   // no-sound and volume are shared site-wide — same localStorage keys
   // the rest of the site uses, so the setting carries over between pages
   const muteCheckbox = document.getElementById('muteCheckbox');
-  let muted = localStorage.getItem('sagne-muted') === 'true';
+  let muted = readStore('sagne-muted') === 'true';
   muteCheckbox.checked = muted;
   muteCheckbox.addEventListener('change', () => {
     muted = muteCheckbox.checked;
-    localStorage.setItem('sagne-muted', muted ? 'true' : 'false');
+    writeStore('sagne-muted', muted ? 'true' : 'false');
   });
 
   const volumeSlider = document.getElementById('volumeSlider');
-  let volumeLevel = parseFloat(localStorage.getItem('sagne-volume'));
+  let volumeLevel = parseFloat(readStore('sagne-volume'));
   if (isNaN(volumeLevel)) volumeLevel = 0.7;
   volumeSlider.value = Math.round(volumeLevel * 100);
   volumeSlider.addEventListener('input', () => {
     volumeLevel = volumeSlider.value / 100;
-    localStorage.setItem('sagne-volume', volumeLevel);
+    writeStore('sagne-volume', volumeLevel);
   });
 
   // ---------- organic, non-repeating flicker (same turbulence approach
