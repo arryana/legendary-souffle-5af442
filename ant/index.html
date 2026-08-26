@@ -126,6 +126,20 @@
     #stage{ position:relative; inset:auto; padding:14px 0 6px; }
     #dock{ position:relative; bottom:auto; }
   }
+  /* Her report off the Jelly Star. At 240 a slider row wants 149px against the
+     211px the dock has, so nothing could share a line and all eight rows stacked:
+     315px of a 350px screen, with the scene drawn full size behind it. Same shape
+     as chimes'. The rows give up slider length so they pair two to a line, and the
+     ground is then fitted to the band that is actually left -- under the two brass
+     discs, above the dock -- keeping its own 4:3 so the scene is never stretched.
+     Above 320 none of this applies. */
+  @media (max-width: 320px){
+    #dock{ padding:10px 12px 14px; gap:6px; }
+    .dockRow{ gap:8px 14px; }
+    .sliderRow{ gap:6px; }
+    #dock input[type=range]{ width:58px; }
+    #dock .iconBtn{ width:26px; height:26px; }
+  }
 </style>
 <style>
   /* The way back is the brass disc off the shelf's plinth, with an arrow cut into
@@ -162,7 +176,11 @@
      each other -- and the button wins, being the higher layer. Rather than
      reshape the dock, the furniture gives way: the headphones sit just above
      it. The offset is this dock's own measured height plus a little. */
-  @media (max-width: 280px){ #music{ bottom:323px; } }
+  /* lifted clear of the dock -- and this figure is the DOCK'S OWN HEIGHT plus a
+     gap, so it has to move when the dock does. It was 323px, for a dock that was
+     323px tall; with the dock down to 136 that put the headphones 7px off the TOP
+     of a 350px screen, over the back disc. Measured: 136px at 240, 280 and 320. */
+  @media (max-width: 320px){ #music{ bottom:146px; } }
 </style>
 <div id="music" title="play your own music">
   <button id="musicBtn" aria-label="play your own music">🎧</button>
@@ -222,6 +240,7 @@
   const canvas = document.getElementById('scene');
   const ctx = canvas.getContext('2d');
   const groundWrap = document.getElementById('groundWrap');
+  const stage = document.getElementById('stage'), dock = document.getElementById('dock');
   const countSlider = document.getElementById('countSlider');
   const speedSlider = document.getElementById('speedSlider');
   const lightSlider = document.getElementById('lightSlider');
@@ -259,8 +278,28 @@
 
 
   let W = 0, H = 0, DPR = 1;
+  // The ground was centred in the whole SCREEN while the dock sat fixed across the
+  // bottom of it, so on a short screen the scene simply ran underneath the dock --
+  // 315px of dock over a 350px screen on the Jelly Star, and still 12px of overlap
+  // on an ordinary 390 phone. The dock's height changes with the width (measured:
+  // 136 at 240, 282 at 360, 216 at 390, 172 at 430), so no fixed padding can be
+  // right; it is measured and applied here instead, as lamp does. The stage is
+  // then padded to the band that is actually free -- under the two brass discs,
+  // above the dock -- and the ground centres in THAT and is capped to it.
+  function fitStage(){
+    const dockH = dock ? dock.getBoundingClientRect().height : 0;
+    const TOP = 56;                       // the brass discs end at 56
+    stage.style.boxSizing = 'border-box';
+    stage.style.paddingTop = TOP + 'px';
+    stage.style.paddingBottom = dockH + 'px';
+    // only ever TIGHTEN: the sheet's own 56vh stays the ceiling, so a screen with
+    // room to spare -- a desktop, a Kindle -- is identical to the pixel
+    const band = Math.max(80, window.innerHeight - TOP - dockH - 8);
+    groundWrap.style.maxHeight = Math.min(window.innerHeight*0.56, band) + 'px';
+  }
   function resize(){
     DPR = Math.min(window.devicePixelRatio || 1, 2);
+    fitStage();
     const rect = groundWrap.getBoundingClientRect();
     W = rect.width; H = rect.height;
     canvas.width = W * DPR;

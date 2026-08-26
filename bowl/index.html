@@ -583,8 +583,18 @@
     if(sinkers.length>MAX_STONES) sinkers.shift();
   }
   // settled stones can be picked up and moved; dragging one takes priority
-  // over dropping a new one when the pointer starts on top of it
+  // over dropping a new one when the pointer starts on top of it.
+  //
+  // And a TAP takes one out again. Her question off the machines -- "how are the
+  // stones removed? a second click on them?" -- and then her answer: yes. A stone
+  // dropped in could not come out at all before; the only thing that ever removed
+  // one was the tenth pushing the first off the end. Tap to lift out, drag to
+  // move: two gestures that cannot be confused for one another, and neither needs
+  // explaining. The water is left rocking where it was, because a stone taken out
+  // of water disturbs it exactly as much as one put in.
   let draggingStone=null, dragDX=0, dragDY=0;
+  const ripples=[];
+  let tapStone=null, tapX=0, tapY=0, tapMoved=false;
   function hitTestSinker(x,y){
     for(let i=sinkers.length-1;i>=0;i--){
       const s=sinkers[i];
@@ -599,6 +609,7 @@
     const hit=hitTestSinker(x,y);
     if(hit){
       draggingStone=hit; dragDX=hit.x-x; dragDY=hit.y-y;
+      tapStone=hit; tapX=x; tapY=y; tapMoved=false;
       canvas.setPointerCapture(e.pointerId);
       return;
     }
@@ -607,13 +618,25 @@
   canvas.addEventListener('pointermove', e=>{
     if(!draggingStone) return;
     const rect=canvas.getBoundingClientRect();
+    // a hand is never perfectly still, so a few pixels is still a tap
+    if(tapStone && Math.hypot(e.clientX-rect.left-tapX, e.clientY-rect.top-tapY) > 6) tapMoved=true;
     let x=e.clientX-rect.left+dragDX, y=e.clientY-rect.top+dragDY;
     const dx=x-cx, dy=y-cy, d=Math.hypot(dx,dy)||0.001, maxR=waterR*0.92;
     if(d>maxR){ x=cx+dx/d*maxR; y=cy+dy/d*maxR; }
     draggingStone.x=x; draggingStone.y=y;
   });
-  canvas.addEventListener('pointerup', e=>{ draggingStone=null; });
-  canvas.addEventListener('pointercancel', ()=>{ draggingStone=null; });
+  canvas.addEventListener('pointerup', e=>{
+    if(tapStone && !tapMoved){
+      const i=sinkers.indexOf(tapStone);
+      if(i>=0){
+        sinkers.splice(i,1);
+        ripples.push({ x:tapStone.x, y:tapStone.y, dispW:tapStone.dispW,
+                       spawnT: performance.now()*0.001 });
+      }
+    }
+    tapStone=null; draggingStone=null;
+  });
+  canvas.addEventListener('pointercancel', ()=>{ tapStone=null; draggingStone=null; });
   function drawSplash(s,t){
     const age=t-s.spawnT;
     if(age>SPLASH_DURATION || age<0) return;
@@ -700,6 +723,10 @@
     for(const s of sinkers) drawSinker(s,t);
     drawSheen();
     for(const s of sinkers) drawSplash(s,t);
+    for(let i=ripples.length-1;i>=0;i--){
+      if(t-ripples[i].spawnT > SPLASH_DURATION) ripples.splice(i,1);
+      else drawSplash(ripples[i], t);
+    }
     for(const o of objs) drawObj(o);
 
     requestAnimationFrame(tick);

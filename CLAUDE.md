@@ -265,8 +265,21 @@ stylesheet: a media query adds no specificity and `#dock{position:fixed}` is dec
 placed earlier it silently loses.<br>**Known and NOT repaired, because it is hers**: on a 240x350
 screen the dock is **315px of 350**, so the scene gets 35px and the music button — lifted by an
 existing rule to clear a dock that no longer fits — ends up 7px off the top. Measured identical
-before and after this sweep, so nothing here caused it. It is the same call chimes' row carries:
-a dock that swamps the piece on the smallest screen is a design decision, not a repair. |
+before and after this sweep, so nothing here caused it. **Repaired Aug 2026 on her say-so** — *"you might as well fix ants
+too"* — and it was the same two faults chimes had. At 240 a slider row wants 149px against the 211 the
+dock has, so nothing could share a line and all eight rows stacked. The rows give up slider length
+(120px to 58) and the object buttons a little size, and they pair two to a line: **315px to 136px**,
+measured, and the same 136 at 240, 280 and 320. Above 320 nothing applies.<br>Underneath that, the
+ground was centred in the whole SCREEN while the dock sat fixed across the bottom of it, so the scene
+simply ran underneath — and still overlapped by 12px on an ordinary 390 phone. **The dock's height
+changes with the width** (136 at 240, 282 at 360, 216 at 390, 172 at 430), so no fixed padding can be
+right: it is measured and applied in `fitStage()`, as lamp does. The stage is padded to the band that
+is actually free — under the two brass discs, above the dock — and the ground centres in that and is
+capped to it. The cap only ever TIGHTENS, so a desktop keeps the sheet's own 56vh and is identical.
+Measured clear at 240, 280, 320, 390, 600 and 1200.<br>And the `#music` rule that lifted the
+headphones clear of the dock was still carrying **323px, the height of the dock it was written for** —
+with the dock at 136 that put them 7px off the TOP of the screen, over the back disc. It is 146 now,
+which is the dock's height plus a gap; **if the dock's height changes again, change this with it.** |
 | `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Fourth piece
 through her four-device test, Aug 2026. **`windower-frame.png`'s centre pane was cut out of a light
 background** and kept a 3px white halo all the way round it — the same family of fault as the shelf plates,
@@ -402,7 +415,13 @@ went.<br>**Her question, and the answer**: *"how are the stones removed? a secon
 each tile in the chooser carries its own **⊘** and a column of quantity dots; that is where things come
 out. It was not discoverable because at 60px the ⊘ was too small to read, which the bigger tiles go
 some way to fixing. Whether a second tap on the object itself should ALSO lift it out is a design call
-and hers; it was put to her, not decided. |
+and hers; it was put to her, and her answer came back: **yes.** A **tap** lifts a stone out;
+a **drag** still moves it. The two gestures cannot be confused for one another and neither needs
+explaining, which is the whole point. Six pixels of travel is the line between them, because a hand is
+never perfectly still. The water is left rocking where the stone came out — the same splash ring a
+dropped one makes, since a stone taken OUT of water disturbs it exactly as much as one put in. Before
+this, nothing removed a stone at all: the only thing that ever did was the tenth pushing the first off
+the end of the list. |
 | `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material).<br>**The set is TUNED now**, Aug 2026, and this was the answer to her *"probably accurate, but not
 beautiful — the reason windchimes are nice is because they're musical"*. She is right and it is a
 **fidelity** point, not a compromise: the whole craft of a chime maker is cutting each tube to a
