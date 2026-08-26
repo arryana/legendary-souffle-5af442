@@ -244,7 +244,15 @@ afternoon, *"as done as i can make it without an animating software"*. Read that
 the mark. It is not *"there is nothing more to want here"*; it is *"what is left wants a tool I
 haven't got"*. So **don't propose rebuilding it** to chase the remainder, and don't read the tick as
 an invitation to polish. **Through her four-device test** the same afternoon — *"i have tested it on
-every machine"* — so it carries both marks. |
+every machine"* — so it carries both marks.<br>**More area on the Jelly Star**, her ask off a later
+pass. The pane was held to `70vw` with 22px of dark down either side and the dock carried a desktop's
+padding. Below 320 the stage is padded to the band that is actually free — under the two brass discs,
+above the dock — so the pane centres in THAT rather than in the whole screen, and can then take nearly
+the full width without its top corners sliding under the discs, which is conometer's half-on rule.
+Measured at 240x350: **168x211 to 206x210, 22% more glass**; 390 and up are identical. While there:
+the headphones sat on the tilt slider, 15x31px of it covered, and the button cannot lift above this
+dock without landing on the pane — so the dock gives way and reserves the corner instead, which is
+fireflies' move, with the slider giving up the length it costs. |
 | `ant/index.html` | ✅ |  | Ants<br>Swept Aug 2026 before her device testing, and two things were repaired. Its **seven
 sliders were 3, 7, 9, 14, 18, 18 and 23px** under a thumb — the worst on the site — because the
 touch-target generator had been compounding its own output; with that fixed they are 26–33.
@@ -382,7 +390,19 @@ Star** — *"bowl works fine now"* — so the simulation held. The other half of
 at all: see the shelf plates' cards above, which every page on the site was fetching on load. Worth
 drawing the general lesson, since it took a report to find it — these pages had been swept for layout
 faults several times and **nobody had ever measured what one of them FETCHES**. A sweep that only
-looks at where things land cannot see 6MB queued in front of the piece. |
+looks at where things land cannot see 6MB queued in front of the piece.<br>**The object menu grew**,
+her ask off the machines: *"the menu could pop up larger on both the jelly star and the kindle."* It
+was a fixed 4x64 grid that dropped to 3x60 on a narrow screen and never grew for a wide one — so a
+Kindle showed a laptop's tiles with a third of the room going spare. Measured: **66px at 240 (was 60),
+72 at 390 (was 64), 92 on a Kindle (was 64, so +44%)**, and a desktop is untouched. Sizes are explicit
+rather than fractional on purpose — a Fire tablet's browser is the oldest of her four and
+`aspect-ratio` is not to be relied on there — and the rules sit at the END of the sheet, because a
+media query adds no specificity and the base `.pickerOption` is declared below where they first
+went.<br>**Her question, and the answer**: *"how are the stones removed? a second click on them?"* No —
+each tile in the chooser carries its own **⊘** and a column of quantity dots; that is where things come
+out. It was not discoverable because at 60px the ⊘ was too small to read, which the bigger tiles go
+some way to fixing. Whether a second tap on the object itself should ALSO lift it out is a design call
+and hers; it was put to her, not decided. |
 | `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material).<br>**The set is TUNED now**, Aug 2026, and this was the answer to her *"probably accurate, but not
 beautiful — the reason windchimes are nice is because they're musical"*. She is right and it is a
 **fidelity** point, not a compromise: the whole craft of a chime maker is cutting each tube to a
