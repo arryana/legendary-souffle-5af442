@@ -493,7 +493,20 @@ luminance 92 against the new rod's 72. Left alone that would have been the same 
 swatch — the picker showing one thing and the piece another. 75 against 72 now. The old dead `chime-rod-*.png` sprites are still on
 disk, unreferenced, as warmler's unused textures are.<br>**Noticed while measuring and NOT fixed**: on a
 240x350 screen the dock's four rows swamp the chime entirely. It is identical before and after this
-change, so it is hers to find on the Jelly Star, not something this change introduced.<br>**And the chain
+change, so it is hers to find on the Jelly Star — **and she found it**: *"chimes menu overruns the
+chimes"*. Two things were wrong and both had to go. At 240px a dock row is 158px wide against 208px of
+room, so nothing could share a line and all six pieces stacked — **212px of a 350px screen**. Below 320
+the rows give up slider length (110px to 58) and pair up: swatches+count, cord+rod, wind. **132px, three
+lines.** Above 320 nothing applies and the dock is identical.<br>Underneath that, the real fault: the
+chime is drawn in its own units off `HANGER_W`, so it was drawn **full size behind the dock**. `SCALE`
+now stands between those units and the screen exactly as **gyre's board** does — everything on the page
+is written in units and never learns the screen exists, and the only two places the screen comes in (a
+click on the canvas, and where the length popup is put) divide and multiply by it. It never zooms IN:
+measured, **1440, 1200, 600 and 390 are all scale 1.000**, and 320 is 0.928, 240 is 0.390. `hangerTopY`
+is held in SCREEN pixels (`TOP_GAP/SCALE`), or a zoomed-out chime hangs under the two brass discs —
+gyre's own lesson. And sideways on a 3in phone the dock is 174px of 180, so that one **scrolls**, as
+kaleidoscope, storm and ant do; the rule sits at the END of the stylesheet because a media query adds no
+specificity and `#dock{position:fixed}` is declared above it.<br>**And the chain
 it hangs BY**, her ask off the first look: *"the top ring is hanging from... nothing."* It was — the cut
 stopped at the ring's top and the hook chain above it was thrown away. It is back, cut from the run above
 the ring **in the same photograph**, so it is literally the same chain rather than a match for it. Only
@@ -1304,7 +1317,8 @@ still twelve through. The eight that are left, and what state each is actually i
   deal better"* — which is a verdict on the rebuilt sound and **not** a Done mark; she has still not
   run it over the four machines. Test it with the rods at DIFFERENT
   lengths or the tangle it was reported for cannot appear at all. Two things to watch for that are
-  known and not repaired: on the 3in phone the dock swamps the piece entirely. The **wood** rods
+  known and not repaired: on the 3in phone the dock swamps the piece entirely — **repaired Aug 2026
+  off her report**, see the row above. The **wood** rods
   are her photographed walnut now, off her report; brass, silver and glass are still drawn, which
   is deliberate — they are smooth and shading does them well.
 - `lamp` — **was a build and now is one.** Oil that burns down, her father's ten penny nail, the tap

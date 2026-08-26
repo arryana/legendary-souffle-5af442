@@ -84,6 +84,29 @@
   .matOption:hover{ border-color:rgba(232,195,131,.6); }
   .matOption.selected{ border-color:#e8c383; }
   .matOption img{ width:100%; height:44px; object-fit:cover; display:block; }
+  /* Her report off the Jelly Star: "chimes menu overruns the chimes". At 240px
+     the dock's rows are 158px wide against 208px of room, so nothing can share a
+     line and all six pieces stack -- 212px of a 350px screen, with the chime drawn
+     full size behind it. Below 320 the rows give up slider length so they pair up:
+     [both swatches + the count], [cord + rod], [wind]. Three lines instead of six.
+     58px is the width at which two groups clear 208 with 2px to spare -- measured,
+     not guessed, so if the padding or the gap changes, re-measure it. Above 320
+     nothing here applies and the dock is pixel-identical. */
+  @media (max-width: 320px){
+    #dock input[type=range]{ width:58px; }
+    .group{ padding:5px 6px; gap:4px; }
+  }
+  /* And turned sideways on a 3in phone the dock is 174px of 180 -- there is no
+     arrangement that fits, so this one scrolls, the answer she took for
+     kaleidoscope, storm and ant. Both qualifiers are load-bearing: the same phone
+     is 350px tall upright, where the three-line dock already fits, and a Kindle in
+     landscape is 476 and never reaches this. It must sit at the END of the sheet:
+     a media query adds no specificity and #dock{position:fixed} is declared above. */
+  @media (max-height: 430px) and (orientation: landscape){
+    html,body{ height:auto; overflow:visible; }
+    #dock{ position:relative; bottom:auto; }
+    canvas{ position:relative; height:300px; }
+  }
 </style>
 <style>
   /* The way back is the brass disc off the shelf's plinth, with an arrow cut into
@@ -342,7 +365,7 @@
   }
 
   // ---- layout ----
-  let hangerX=0, hangerTopY=60, hangerW=0, hangerH=0, pivotY=0, ringSpan=0, ringY=0;
+  let hangerX=0, hangerTopY=60, hangerW=0, hangerH=0, pivotY=0, ringSpan=0, ringY=0, SCALE=1;
   function layout(){
     hangerX = W/2;
     hangerW = HANGER_W*HG.cropW;          // the photograph, scaled so its bar is HANGER_W
@@ -383,11 +406,32 @@
     return (-u*sn + d*c)*hangAcc + (-u*c - d*sn)*hangVel*hangVel;
   }
 
+  // The chime is drawn in its own units, off HANGER_W, so on a small screen it was
+  // drawn FULL SIZE behind the dock -- her report off the Jelly Star, "chimes menu
+  // overruns the chimes". SCALE now stands between those units and the screen,
+  // exactly as gyre's board does: everything else on this page is written in units
+  // and never learns the screen exists, and the two places the screen does come in
+  // (a click on the canvas, and where the length popup is put) divide and multiply
+  // by it. It never zooms IN, so a desktop is pixel-identical, measured.
+  const FIT_W = 200;    // the widest the chime gets, in its own units
+  const FIT_H = 405;    // and how far the default set hangs below the top of the hanger
+  const TOP_GAP = 60;   // screen px kept clear above it -- the value the page always used,
+                        // so at SCALE 1 the desktop is identical to the pixel; the discs end at 56
+  const dockEl = document.getElementById('dock');
   function resize(){
     DPR = Math.min(window.devicePixelRatio||1, 2);
-    W = window.innerWidth; H = window.innerHeight;
-    canvas.width = W*DPR; canvas.height = H*DPR;
-    ctx.setTransform(DPR,0,0,DPR,0,0);
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const dockH = dockEl ? dockEl.getBoundingClientRect().height : 0;
+    // when the page is allowed to scroll the dock is below the fold, so the room
+    // is not vh minus the dock -- the chime is given a readable size and you
+    // scroll to the controls, which is what storm's landscape rule does too
+    const scrolls = window.matchMedia('(max-height: 430px) and (orientation: landscape)').matches;
+    const room = scrolls ? Math.max(vh, 250) : Math.max(150, vh - dockH);
+    SCALE = Math.min(1, (room - TOP_GAP)/FIT_H, vw/FIT_W);
+    W = vw/SCALE; H = vh/SCALE;
+    canvas.width = Math.round(vw*DPR); canvas.height = Math.round(vh*DPR);
+    ctx.setTransform(DPR*SCALE,0,0,DPR*SCALE,0,0);
+    hangerTopY = TOP_GAP/SCALE;    // held in SCREEN px, or a zoomed-out chime hangs under the discs
     layout();
   }
   window.addEventListener('resize', resize);
@@ -1131,8 +1175,9 @@
     const n = state.rods.length;
     const mid = rodMidWorld(popupOpenIdx, n);
     const popupW = lenPopup.offsetWidth || 150, popupH = lenPopup.offsetHeight || 70;
-    let left = mid.x - popupW/2;
-    let top = mid.y - popupH - 16;
+    // mid is in the piece's own units; the popup is a DOM element in screen pixels
+    let left = mid.x*SCALE - popupW/2;
+    let top = mid.y*SCALE - popupH - 16;
     left = Math.max(8, Math.min(left, window.innerWidth - popupW - 8));
     top = Math.max(8, top);
     lenPopup.style.left = `${left}px`;
@@ -1158,7 +1203,7 @@
   });
   lenPopup.addEventListener('click', e=> e.stopPropagation());
   canvas.addEventListener('click', (e)=>{
-    const hit = hitTestRod(e.clientX, e.clientY, state.rods.length);
+    const hit = hitTestRod(e.clientX/SCALE, e.clientY/SCALE, state.rods.length);
     if(hit>=0){
       openPopupForRod(hit);
       e.stopPropagation();
