@@ -113,6 +113,19 @@
   .iconBtn.active{
     opacity:1; border-color:var(--brass); background:rgba(201,151,78,0.18);
   }
+  /* A 3-inch phone turned sideways is 180px tall and this dock alone is 282 --
+     there is no arrangement that fits, so this one is allowed to SCROLL, which
+     is the answer she took for kaleidoscope and for storm. Measured before it,
+     three sliders (count, speed and light) sat ABOVE the top of the screen, on a
+     page that could not scroll to them at all. Both qualifiers are load-bearing:
+     the same phone is 350px tall upright, where everything already fits and a
+     scroll would be a page scrolling that did not need to; and a Kindle in
+     landscape is 476 tall and never reaches this. */
+  @media (max-height: 430px) and (orientation: landscape){
+    html,body{ height:auto; overflow:visible; }
+    #stage{ position:relative; inset:auto; padding:14px 0 6px; }
+    #dock{ position:relative; bottom:auto; }
+  }
 </style>
 <style>
   /* The way back is the brass disc off the shelf's plinth, with an arrow cut into

@@ -222,7 +222,20 @@ the mark. It is not *"there is nothing more to want here"*; it is *"what is left
 haven't got"*. So **don't propose rebuilding it** to chase the remainder, and don't read the tick as
 an invitation to polish. **Through her four-device test** the same afternoon — *"i have tested it on
 every machine"* — so it carries both marks. |
-| `ant/index.html` | ✅ |  | Ants |
+| `ant/index.html` | ✅ |  | Ants<br>Swept Aug 2026 before her device testing, and two things were repaired. Its **seven
+sliders were 3, 7, 9, 14, 18, 18 and 23px** under a thumb — the worst on the site — because the
+touch-target generator had been compounding its own output; with that fixed they are 26–33.
+And **turned sideways on a 3in phone it lost the top of its own dock**: 180px of screen against a
+282px dock, with count, speed and light sitting ABOVE the top edge on a page that could not scroll
+to them. It scrolls there now, which is the answer she took for kaleidoscope and storm; both
+qualifiers on the rule are load-bearing (the same phone is 350px tall upright, where it all fits,
+and a Kindle in landscape is 476 and never reaches it). The rule has to sit at the END of the
+stylesheet: a media query adds no specificity and `#dock{position:fixed}` is declared later, so
+placed earlier it silently loses.<br>**Known and NOT repaired, because it is hers**: on a 240x350
+screen the dock is **315px of 350**, so the scene gets 35px and the music button — lifted by an
+existing rule to clear a dock that no longer fits — ends up 7px off the top. Measured identical
+before and after this sweep, so nothing here caused it. It is the same call chimes' row carries:
+a dock that swamps the piece on the smallest screen is a design decision, not a repair. |
 | `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Fourth piece
 through her four-device test, Aug 2026. **`windower-frame.png`'s centre pane was cut out of a light
 background** and kept a 3px white halo all the way round it — the same family of fault as the shelf plates,
@@ -325,7 +338,12 @@ plainly the small one, plainly still a gear. Worth remembering as a general poin
 picture of what a thing is, not a scale drawing of it, and this site's usual instinct for fidelity is
 the wrong instinct in a picker. The tap target is the slot and does not shrink with the drawing
 either way, so the little ones are as easy to pick as the big ones. |
-| `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
+| `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them<br>Swept Aug 2026. Its two sliders were **18px** under a thumb and are now 30. And below 300px the
+headphones sat on the crow slider — measured, **23x30px of it at 240 and 3x30 at 280, clear from
+300 up** — so the button lifts above the dock there, by the dock's own measured height (84px at
+every width; change this with it if that changes). Otherwise clean: nothing below the fold at any
+size, no console errors, and it fetches **one** background, picked by the time of day, not all four
+— so its 6.7MB folder is only 3.0MB on the wire. |
 | `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**.<br>Aug 2026, found by measuring for a 3-inch phone: the dock is one row that never wrapped and wants **369px** laid out end to end, so on anything narrower the LAST thing in it — the flower, which is the whole object chooser — was pushed clean off the right edge, and with the page unable to scroll there was no way to reach it. It cleared a 390px phone by 22px, which is exactly why it looked perfect everywhere anyone had looked. Behind that sat a second fault: the chooser popup is a fixed 326px grid and hung 43px off **both** edges of a 240px screen, so fixing the button alone would only have revealed half the flowers. Below 379px the dock now wraps to two lines and the popup drops to three slightly smaller tiles; above it, nothing applies and the dock is pixel-identical at 390, 600 and 1200. The wrapped row is **right-aligned, not centred** — the music button is pinned in the bottom-left corner and a centred second row lands straight on top of it.<br>**It did not load on the Jelly Star** — her report, Aug 2026, and it was true in the
 strongest sense. The ten bowl photographs are 1408x768 and about 1.5MB apiece, **15.7MB**
 of them, and *nothing was drawn until every one had arrived*: the first `resize()` and the
@@ -544,7 +562,21 @@ the mic stops taking one, which is where the desktop has always put it. On a 3in
 joined row wanted 229px against the 226 it had, three pixels short, and wrapped straight back
 to two lines, so below 320 the volume gives up a little length — the one thing in that row with
 any to spare. Desktop unchanged. |
-| `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
+| `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about<br>**It was fetching all seven sky photographs on load — 7.6MB — which is bowl's fault at half bowl's
+size**, and the general lesson bowl's row records: a sweep that only looks at where things land
+cannot see megabytes queued in front of the piece. Only the stage the darkness slider is sitting on
+is asked for now, and its neighbour for the cross-fade; the rest come in behind the running piece
+**one at a time**, nearest-first, because seven at once is worse on the machine already struggling.
+Moving the slider to a stage that has not arrived asks for it at once, and until it lands the
+nearest stage that HAS arrived is shown — never the flat stand-in. Measured on a simulated Jelly
+Star (240x350, CPU 6x slower, 1.6Mbps): the real sky is up at **11.4s having fetched 2.1MB, against
+30.4s and 3.1MB in flight before**; the other five follow at 21.8, 26.8, 32.0, 37.5 and 43.0s. Only
+cross-fade when BOTH stages are really present, or it dissolves between two skies that aren't
+neighbours.<br>Its five sliders were **3, 4, 5, 19 and 20px** under a thumb — the wind one had no
+rule at all — and are now 21–30. Still small and not repaired: its two tickboxes at 14px and its
+location flag at 25x18, where galileo's was grown to 22x15 under `(pointer: coarse)`.<br>**And it is
+one of the two that slow down on a Kindle-speed processor**: 60fps normally, 58 at 4x slower, **43
+at 6x**. moths is the other, and worse. Neither freezes; both read as less smooth. |
 | `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
 after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
 and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
