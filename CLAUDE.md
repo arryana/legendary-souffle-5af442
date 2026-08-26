@@ -668,11 +668,54 @@ nearest stage that HAS arrived is shown — never the flat stand-in. Measured on
 Star (240x350, CPU 6x slower, 1.6Mbps): the real sky is up at **11.4s having fetched 2.1MB, against
 30.4s and 3.1MB in flight before**; the other five follow at 21.8, 26.8, 32.0, 37.5 and 43.0s. Only
 cross-fade when BOTH stages are really present, or it dissolves between two skies that aren't
-neighbours.<br>Its five sliders were **3, 4, 5, 19 and 20px** under a thumb — the wind one had no
+neighbours.<br>**THE SEVEN SKIES WERE TWO DIFFERENT PLACES**, her catch, Aug 2026: *"it should be the
+same picture across all of them, just at varying stages of night."* She was right and it is
+measurable — on the land alone, stages **0–3 agreed with each other at 0.99 and with 5–6 at 0.13**,
+with stage 4 matching neither properly. So dragging the slider past about two thirds made the trees
+pick themselves up and move: not night falling on a place, a cut to somewhere else. And it was not a
+clean progression either — brightness ran 59, 58, 33, **41**, 23, 23, 15, so **stage 3 was brighter
+than stage 2** and pushing toward darkness made it lighter at one point.<br>**Rebuilt from four
+photographs of ONE field**, two of them hers shot to order the same afternoon (`fireflyfix1.jpg`,
+`fireflyfix2.jpg` in her `daidle` folder). The brief that worked is musebox's lesson applied — *don't
+repair a wrong picture, specify the right one* — and rather than ask for seven consistent frames
+(which is what failed at nine for chimes) she was sent the three good existing frames as a
+**reference** and asked for the same view at full night. Then, unprompted, the deep-twilight one as
+well, which is the moment that cannot be derived: the glow still on the horizon while the first stars
+are already up. **Verify a frame like this by searching for the best alignment of the treeline** —
+fireflyfix1 came back at 0px across and 0px down, fireflyfix2 at 2px, against 0.13 for the wrong
+field. Do it at FULL resolution: a coarse 480x300 comparison reported 8px of shift that was not
+there.<br>The seven stages are eased blends between the nearest two anchors, then graded so the ground
+falls at **every** step: 39.5, 30.1, 23.1, 18.2, 14.2, 10.5, 7.0. **The grade is a gamma and not a
+multiply, deliberately** — a multiply dims the stars as much as the sky, where a gamma deepens shadows
+and mid-tones and leaves bright points alone, which is what a darkening sky really does to a star
+field: the stars do not dim, they emerge.<br>**And they are JPEGs now**, because a night photograph is
+exactly what JPEG is for: **6.92MB to 0.70MB**, on the piece that was the slowest of the eight to
+appear. Measured on the simulated Jelly Star it now shows in **2.1s having fetched 0.37MB, against
+10.8s and 1.13MB**. Banding is the risk in a dark gradient and was checked — the longest run of one
+identical value across a sky row is 12px of 963. The old PNGs are deleted (two of them were the wrong
+field) and are in the history if ever wanted.<br>Its five sliders were **3, 4, 5, 19 and 20px** under a thumb — the wind one had no
 rule at all — and are now 21–30. Still small and not repaired: its two tickboxes at 14px and its
 location flag at 25x18, where galileo's was grown to 22x15 under `(pointer: coarse)`.<br>**And it is
 one of the two that slow down on a Kindle-speed processor**: 60fps normally, 58 at 4x slower, **43
-at 6x**. moths is the other, and worse. Neither freezes; both read as less smooth. |
+at 6x**. moths is the other, and worse. **THAT IS NO LONGER TRUE OF FIREFLIES, and the reason is worth
+keeping** — Aug 2026, found by leaving it running rather than by looking at it. **The sky was being
+composed from scratch on every frame to produce a picture that had not changed.** `drawSkyPhoto` drew
+a full-size photograph scaled to the screen sixty times a second, and whenever the darkness slider sat
+BETWEEN two of the seven stages it drew a **second** one over the top with an alpha — while `dark`
+only ever changes when a hand moves the slider. Measured at 6x slower with nothing placed: squarely on
+a stage **44–50fps**, anywhere between two **24–27**. Half the frame rate, and "between two" is nearly
+the whole slider — **including its default of 66**, so every visitor landed on the slow path without
+touching a thing. It is composed into its own canvas and blitted now: **59.6–60.1fps at every position
+on the slider**, and still 58.5 with forty-five fireflies placed. The scaling and the blend happen once
+per slider move instead of once per frame.<br>**This also settles the 43-versus-25 puzzle in the
+paragraph above.** Both figures were honest and they were taken at different slider positions — one
+landing on a stage, one between two. If a frame-rate figure is ever recorded for this piece again, say
+where the slider was.<br>Two things about the cache are load-bearing. The key covers the screen size,
+the DPR, the blend fraction **and which photograph is standing in** — the backfill swaps stages in as
+they arrive, and without `base.src` in the key a stand-in sky would stick after the real one landed.
+And it is drawn at `W*DPR` with the same `setTransform` the main canvas uses, or a Retina screen gets a
+soft sky. Verified pixel-identical to the old drawing at darkness 0, 25, 66 and 90: **0.000% of sky
+pixels differ by more than 2/255, worst 0**. Neither freezes; both read as less smooth. |
 | `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
 after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
 and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her

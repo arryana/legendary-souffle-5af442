@@ -352,7 +352,7 @@
   const skyAsked=new Array(SKY_STAGE_COUNT).fill(false);
   function askSky(i){
     if(i<0 || i>=SKY_STAGE_COUNT) return null;
-    if(!skyAsked[i]){ skyAsked[i]=true; skyStages[i].src=`firefly-sky-${i}.png`; }
+    if(!skyAsked[i]){ skyAsked[i]=true; skyStages[i].src=`firefly-sky-${i}.jpg`; }
     return skyStages[i];
   }
   const skyReady=im=>!!(im && im.complete && im.naturalWidth);
@@ -386,35 +386,81 @@
   // start the queue only once the page itself has settled, so it never competes
   // with the piece's own first paint
   window.addEventListener('load', ()=> setTimeout(backfillSkies, 1200));
-  // each of the 5 photos has its own native resolution (the dusk shot is a full
-  // 1408x768 photo, the other 4 are cells cropped from a smaller contact sheet) —
-  // cover-fit is computed per image, from its own naturalWidth/Height, rather than
-  // one shared size assumed for all of them. Using one frame's dimensions for every
-  // frame was the bug behind the "doubled" look: the smaller photos were scaled
-  // wrong, so crossfading against a correctly-scaled neighbour showed as a ghosted
-  // double exposure instead of a clean dissolve.
+  /* THE SEVEN STAGES ARE ONE FIELD NOW. The set they replace was two different
+     places: stages 0-3 were one meadow and 5-6 were another, with 4 matching
+     neither, so dragging the slider past about two thirds made the trees pick
+     themselves up and move. Measured on the land alone, 0-3 agreed with each
+     other at 0.99 and with 5-6 at 0.13. It was not a clean progression either --
+     stage 3 was BRIGHTER than stage 2, so pushing toward darkness made it lighter
+     at one point.
+     Rebuilt Aug 2026 from four photographs of a single field, two of them hers
+     shot to order: dusk, later dusk, deep twilight with the first stars, and full
+     night with the Milky Way up. Registered to the pixel (the night frames sit
+     within 2px of the dusk one, which is corrected here), then the seven stages
+     composed by easing between the nearest two and graded to a ground brightness
+     that falls every step: 39.5, 30.1, 23.1, 18.2, 14.2, 10.5, 7.0.
+     The grade is a GAMMA and not a multiply, deliberately -- a multiply dims the
+     stars as much as the sky, where a gamma deepens the shadows and mid-tones and
+     leaves the bright points alone, which is what a darkening sky actually does to
+     a star field.
+     They are JPEGs rather than PNGs: a night photograph is exactly what JPEG is
+     for, and the seven came down from 6.92MB to 0.70MB. Checked for banding, which
+     is the risk in a dark gradient -- the longest run of one identical value across
+     a sky row is 12px of 963.
+     Cover-fit is still computed per image from its own naturalWidth/Height rather
+     than one shared size, which is what fixed the old "doubled" look. */
   function coverFitFor(img){
     const scale=Math.max(W/img.naturalWidth, H/img.naturalHeight);
     const dw=img.naturalWidth*scale, dh=img.naturalHeight*scale;
     return {ox:(W-dw)/2, oy:(H-dh)/2, dw, dh};
   }
+  /* THE SKY IS COMPOSED ONCE AND KEPT, and it is worth knowing why because the
+     cost was hiding in plain sight. This used to draw a full-size photograph,
+     scaled to the screen, on EVERY frame -- and whenever the darkness slider sat
+     between two stages it drew a SECOND one over the top with an alpha. `dark`
+     only ever changes when a hand moves the slider, so both of those were being
+     redone sixty times a second to produce a picture that had not altered.
+     Measured on a processor six times slower, nothing placed: squarely on a stage
+     it ran at 44-50fps, and anywhere between two it ran at 24-27. Half the frame
+     rate, and "between two" is nearly the whole slider -- including its DEFAULT of
+     66, so every visitor landed on the slow path without touching anything. That
+     is also why the figure in this file said 43fps and a later measurement said
+     25: both were right, and they were taken at different slider positions.
+     Composed into its own canvas and blitted, the scaling and the blend happen
+     once per slider move instead of once per frame. Note the key covers the
+     screen size, both stages, the blend, AND which photograph is standing in --
+     the backfill swaps those in as they arrive, and a stale sky would stick. */
+  let skyCache=null, skyCacheKey='';
   function drawSkyPhoto(){
     const pos=dark*(SKY_STAGE_COUNT-1), i0=Math.floor(pos), frac=pos-i0;
     const i1=Math.min(SKY_STAGE_COUNT-1,i0+1);
     const a=askSky(i0), b=askSky(i1);
     const base = skyReady(a) ? a : nearestReadySky(i0);
-    if(base){
-      const fa=coverFitFor(base);
-      ctx.drawImage(base,fa.ox,fa.oy,fa.dw,fa.dh);
-    } else { ctx.fillStyle='#0a0e18'; ctx.fillRect(0,0,W,H); }
     // only cross-fade when BOTH stages are really here: fading the next one over
     // a stand-in would dissolve between two skies that aren't neighbours
-    if(frac>0.001 && skyReady(a) && skyReady(b)){
-      const fb=coverFitFor(b);
-      ctx.save(); ctx.globalAlpha=frac;
-      ctx.drawImage(b,fb.ox,fb.oy,fb.dw,fb.dh);
-      ctx.restore();
+    const blending = frac>0.001 && skyReady(a) && skyReady(b);
+    const key = W+'x'+H+'|'+DPR+'|'+(base?base.src:'-')+'|'
+              + (blending ? i1+'@'+frac.toFixed(3)+'|'+b.src : '-');
+    if(key!==skyCacheKey){
+      if(!skyCache) skyCache=document.createElement('canvas');
+      const pw=Math.max(1,Math.round(W*DPR)), ph=Math.max(1,Math.round(H*DPR));
+      if(skyCache.width!==pw||skyCache.height!==ph){ skyCache.width=pw; skyCache.height=ph; }
+      const g=skyCache.getContext('2d');
+      g.setTransform(DPR,0,0,DPR,0,0);
+      g.clearRect(0,0,W,H);
+      if(base){
+        const fa=coverFitFor(base);
+        g.drawImage(base,fa.ox,fa.oy,fa.dw,fa.dh);
+      } else { g.fillStyle='#0a0e18'; g.fillRect(0,0,W,H); }
+      if(blending){
+        const fb=coverFitFor(b);
+        g.save(); g.globalAlpha=frac;
+        g.drawImage(b,fb.ox,fb.oy,fb.dw,fb.dh);
+        g.restore();
+      }
+      skyCacheKey=key;
     }
+    ctx.drawImage(skyCache,0,0,W,H);
   }
 
   let blades=[];
