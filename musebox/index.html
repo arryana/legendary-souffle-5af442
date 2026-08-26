@@ -382,25 +382,64 @@ function piano(freq){
 // real hole in the spectrum and a good part of why one plucked note is enough to
 // recognise a guitar. p is 0.22 here, an ordinary picking position a little way
 // in from the bridge. The nail leaving the string is the click on the front.
+//
+// THAT WAS NOT ENOUGH, and her report says why: "the guitar sounds like the piano,
+// not a guitar." It was -- the two were built the same way, a stack of sines
+// fading smoothly out, and the only thing telling them apart was which partials
+// were loud. Three things separate a pluck from a strike, and all three were
+// missing.
+//
+// 1. A PLUCKED STRING DOES NOT FADE SMOOTHLY. It vibrates in two planes at once
+//    and they bleed into the bridge at different rates, so the sound drops fast
+//    and then hangs on: a quick fall to a fraction of its level, then a long quiet
+//    tail. One smooth exponential over 2.2s -- which is what this was -- is a
+//    piano's shape exactly. This is the single biggest cue and it goes in first.
+// 2. A GUITAR IS A BOX. There was no box: no air resonance in the belly, no
+//    soundboard. Two gentle peaks and a little taken off the top turn a bare
+//    string into an instrument rather than a wire.
+// 3. THE BRIGHTNESS SHOULD COLLAPSE. On a pluck the high partials are gone in a
+//    fraction of a second while the fundamental rings on; they were fading at
+//    much the same rate here, which reads as sustained -- piano again.
+function guitarBody(){
+  // the belly's air resonance and the top plate, then a little off the top
+  const air=actx.createBiquadFilter(); air.type='peaking';
+  air.frequency.value=100; air.Q.value=1.1; air.gain.value=4.5;
+  const top=actx.createBiquadFilter(); top.type='peaking';
+  top.frequency.value=204; top.Q.value=1.4; top.gain.value=3.0;
+  const wood=actx.createBiquadFilter(); wood.type='highshelf';
+  wood.frequency.value=3200; wood.gain.value=-5;
+  air.connect(top); top.connect(wood); wood.connect(inNode);
+  return air;
+}
 function guitar(freq){
   if(!actx) return;
   const t=actx.currentTime, p=0.22;
+  const body=guitarBody();
   const base=2.2*Math.pow(261.63/freq,0.35);
+  const fast=0.10+0.16*Math.pow(261.63/freq,0.3);   // how long the quick fall lasts
   for(let n=1;n<=14;n++){
     const f=freq*n;
     if(f>11000) break;
-    const amp=0.9*Math.abs(Math.sin(n*Math.PI*p))/(n*n);
+    // 0.62 rather than 0.9: the body's own peaks add level, and without this a
+    // single note reached 1.11 where it used to reach 0.67 -- into the limiter
+    // on its own, which is the one thing musebox's waveshaper exists to avoid.
+    const amp=0.62*Math.abs(Math.sin(n*Math.PI*p))/(n*n);
     if(amp<0.0015) continue;
-    const d=base/Math.pow(n,0.42);
+    // how far the quick fall takes it: the higher the partial the more it loses
+    const knee=Math.max(0.02, 0.34/Math.pow(n,0.55));
+    // and the tail, steeper in n than it was, so the brightness really does go
+    const tail=base/Math.pow(n,0.85);
     const o=actx.createOscillator(); o.type='sine';
     o.frequency.value=f*(1+(Math.random()-0.5)*0.0015);
     const g=actx.createGain();
     g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(amp,t+0.005);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+d);
-    o.connect(g); g.connect(inNode); o.start(t); o.stop(t+d+0.05);
+    g.gain.linearRampToValueAtTime(amp,t+0.003);
+    g.gain.exponentialRampToValueAtTime(amp*knee,t+0.003+fast);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.003+fast+tail);
+    o.connect(g); g.connect(body); o.start(t); o.stop(t+0.003+fast+tail+0.05);
   }
-  noiseBurst(t,0.045,0.018,'highpass',3000);
+  // the nail leaving the string: short and woody rather than long and hissy
+  noiseBurst(t,0.05,0.012,'bandpass',2200,1.0);
 }
 
 // NATIVE AMERICAN FLUTE. A fipple flute: a duct throws a ribbon of air across a
@@ -421,9 +460,29 @@ function flute(freq){
   const vib=actx.createOscillator(); vib.type='sine';
   vib.frequency.value=4.6+Math.random()*0.5;
   vib.start(t); vib.stop(end+0.05);
-  [[1,0.46],[2,0.11],[3,0.04]].forEach(([n,a])=>{
+  // A slow waver in LOUDNESS, not only in pitch. A player's breath moves both, and
+  // an amplitude that sits perfectly flat is most of what reads as a horn.
+  const breathe=actx.createOscillator(); breathe.type='sine';
+  breathe.frequency.value=0.9+Math.random()*0.5;
+  const breatheG=actx.createGain(); breatheG.gain.value=0.055;
+  breathe.connect(breatheG); breathe.start(t); breathe.stop(end+0.05);
+  // HER REPORT: "the flute is okay, but sounds more like a horn than a flute."
+  // The second partial was at 0.11 against 0.46 -- a quarter of the fundamental,
+  // which is squarely horn. A duct blowing across an edge is very nearly a pure
+  // tone: the second is a tenth of the first here now, and the third a trace.
+  // 0.44 and not 0.5: a near-pure tone sums much more coherently than a complex
+  // one does, so eight flutes on one step rode the limiter's ceiling for 1649
+  // samples where the old busier flute rode it for 994. At 0.44 it is 865 --
+  // under the sound it replaces -- and one note peaks at 0.505, beside the
+  // piano's 0.547.
+  [[1,0.44],[2,0.044],[3,0.0105]].forEach(([n,a])=>{
     const o=actx.createOscillator(); o.type='sine';
-    o.frequency.value=freq*n*(1+(Math.random()-0.5)*0.002);
+    // an air column is not perfectly harmonic, so each partial sits a hair off
+    const f=freq*n*(1+(Math.random()-0.5)*0.002);
+    // the jet takes a moment to come up to speed, so the note arrives a little
+    // flat and settles -- about 22 cents over the first breath of it
+    o.frequency.setValueAtTime(f*0.987,t);
+    o.frequency.linearRampToValueAtTime(f,t+0.075);
     // the waver is a fraction of the pitch, so it has to grow with the partial
     const vg=actx.createGain();
     vg.gain.setValueAtTime(0,t);
@@ -435,7 +494,11 @@ function flute(freq){
     g.gain.linearRampToValueAtTime(a,t+A);
     g.gain.setValueAtTime(a,t+A+S);
     g.gain.exponentialRampToValueAtTime(0.0001,end);
-    o.connect(g); g.connect(inNode); o.start(t); o.stop(end+0.05);
+    // the waver MULTIPLIES the note rather than being added to it: added, the
+    // offset kept the gain off zero and the note could never actually end
+    const wav=actx.createGain(); wav.gain.value=1;
+    breatheG.connect(wav.gain);
+    o.connect(wav); wav.connect(g); g.connect(inNode); o.start(t); o.stop(end+0.05);
   });
   // breath, for the whole note: band-passed around the pitch so it reads as air
   // moving through this flute rather than as hiss laid over the top of it
@@ -444,12 +507,15 @@ function flute(freq){
   const nd=nb.getChannelData(0);
   for(let i=0;i<len;i++) nd[i]=Math.random()*2-1;
   const ns=actx.createBufferSource(); ns.buffer=nb;
+  // and it must be AIR, not a pitched partial. It sat at 2.1x the note with a
+  // tight Q -- which put it right on the second harmonic and so reinforced the
+  // very thing that made this sound like a horn. Higher and much broader now.
   const bp=actx.createBiquadFilter(); bp.type='bandpass';
-  bp.frequency.value=freq*2.1; bp.Q.value=0.9;
+  bp.frequency.value=freq*6.2; bp.Q.value=0.8;
   const ng=actx.createGain();
   ng.gain.setValueAtTime(0,t);
-  ng.gain.linearRampToValueAtTime(0.055,t+A*0.8);
-  ng.gain.setValueAtTime(0.055,t+A+S);
+  ng.gain.linearRampToValueAtTime(0.042,t+A*0.8);
+  ng.gain.setValueAtTime(0.042,t+A+S);
   ng.gain.exponentialRampToValueAtTime(0.0001,end);
   ns.connect(bp); bp.connect(ng); ng.connect(inNode); ns.start(t); ns.stop(end+0.05);
   // the chiff: the jet catching the edge before the column has settled

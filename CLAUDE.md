@@ -761,7 +761,39 @@ at the pluck's own nodes (p=0.22, an ordinary picking position). A fipple flute 
 fundamental, a soft second and almost nothing above, and the half that matters is **breath running
 the whole length of the note** rather than only its start — that is what makes a flute sound blown
 instead of struck — with a slow attack, a chiff at the front, and vibrato arriving only after the
-note has settled, the way a player's does.<br>The icons are **drawn, not emoji**, deliberately: the
+note has settled, the way a player's does.<br>**Two of the four were wrong and she caught both**, Aug
+2026: *"the guitar sounds like the piano, not a guitar. the flute is okay, but sounds more like a horn
+than a flute."* Both were right, and the guitar one is measurable to the point of being embarrassing —
+**its harmonic profile was very nearly the piano's**: second partial 0.323 against the piano's 0.344,
+third 0.122 against 0.175. Built from the same parts in the same way, the only thing separating them
+was which partials were loud, and they were barely separated on that either. What actually tells a
+pluck from a strike is three things, and this had none of them. **A plucked string does not fade
+smoothly** — it vibrates in two planes that bleed into the bridge at different rates, so it drops fast
+and then hangs on, where one smooth exponential over 2.2s is a piano's shape exactly. **A guitar is a
+box**, and there was no box at all: no air resonance in the belly, no soundboard. **And the brightness
+should collapse** — the high partials go in a fraction of a second while the fundamental rings on, and
+they were fading at much the same rate, which reads as sustained. Measured after: second **0.211**,
+third **0.067**, and the note's whole tail 1.29s against the piano's 1.57.<br>The flute's fault was
+one number. Its second partial sat at **0.236** of the fundamental, a quarter of it, which is squarely
+a horn; a duct blowing across an edge is very nearly a pure tone. **0.100** now, third 0.085 -> 0.025.
+Two things underneath that are worth keeping. **The breath was doing the harmonics' job**: band-passed
+at 2.1x the note with a tight Q it sat right on the second harmonic and reinforced the very thing that
+made it a horn — it is at 6.2x and much broader now, so it is air rather than a pitched partial. And
+the note got **a slow waver in loudness** as well as in pitch, since an amplitude that sits perfectly
+flat is most of what reads as blown-by-a-machine; it **multiplies** the note rather than being added to
+it, because added, the waver's own offset kept the gain off zero and the note could never actually
+end (measured, its tail ran from 0.78s to 1.04 and would have gone on).<br>**Levels were re-checked
+against the waveshaper, not just by ear.** The guitar's body peaks alone took a single note from 0.67
+to **1.11** — into the limiter on its own, which is the one thing that shaper exists to avoid — so the
+string's amplitude came down to 0.62 and a note now peaks at 0.641. The flute is the opposite trap: a
+near-pure tone sums far more coherently than a complex one, so eight of them on one step rode the
+ceiling for **1649 samples** where the old busier flute rode it for 994. At a fundamental of 0.44 it
+is **865**, under the sound it replaces. Peaks stay at exactly 1.0 with nothing over on all four
+voices.<br>**Measuring these needs the functions pulled out of the file at test time** rather than
+re-typed into a harness, or the harness and the page drift apart and the figures stop meaning
+anything; and an `OfflineAudioContext`'s clock does not advance until it renders, so everything
+scheduled at `currentTime` lands at zero together — which is what makes the eight-note pile-up easy to
+measure and single notes easy to get wrong.<br>The icons are **drawn, not emoji**, deliberately: the
 only flute emoji arrived in 2022 and a Kindle Fire would show an empty box where it should be.<br>**The
 rabbit is grey.** Her call — white was the brightest thing on the page, brighter than the disc or the
 brass, so the eye went to the tempo control before the music box. **It was greyed with a CSS filter and
@@ -1388,8 +1420,11 @@ still twelve through. The eight that are left, and what state each is actually i
 - `musebox` — **rebuilt.** Her second set of Gemini pictures (four images, one object each, on plain
   black) replaced the whole look: the disc now stands on a table against the navy wall, the notes sit
   in eight of the photograph's own engraved rings, and the picture takes the shape of the screen. Her
-  verdict on the look is in — *"to my eye, yes. yes it is."* — and the card is reshot. **The sound and
-  the controls were not touched.** She has never heard it or run it on a machine.
+  verdict on the look is in — *"to my eye, yes. yes it is."* — and the card is reshot. **She has now
+  heard it on the tablet**, and two of the four voices were wrong: the guitar sounded like the piano
+  (it very nearly was one, measured) and the flute like a horn. Both rebuilt Aug 2026, see the row
+  above. The white rabbit she reported on the same pass is a drawn hare now. She has not run the
+  piece over the four machines.
 - `chimes` — tuned to real notes, each material cut to its own lengths, its own strike sound, a
   rod-length slider, and the tangle fixed. **And re-dressed in her own photographs** — the hanger,
   its chains, the eyelets and all three cords. **She has HEARD it** — Aug 2026, *"it sounds a great
