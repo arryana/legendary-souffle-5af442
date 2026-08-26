@@ -239,7 +239,18 @@
 
   // no-sound preference is site-wide — stored under one shared key so
   // every sagnity reads and respects the same setting
-  let muted = localStorage.getItem('sagne-muted') === 'true';
+  /* STORAGE CAN THROW, rather than merely be empty. A private window, or any
+     browser set to block site data, makes `localStorage` raise on the very first
+     read -- and read unguarded at the top of a script that takes the WHOLE PIECE
+     down with it. Found Aug 2026 by loading every piece with its props taken
+     away: with site data blocked, musebox, lamp, roller and storm all came up
+     BLANK, and two of those were pieces she had already signed off. candler had
+     guarded its own read all along, which is what a right answer looks like.
+     Everything goes through these two now. Losing the setting is nothing; losing
+     the piece is everything. */
+  const readStore = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+  const writeStore = (k,v) => { try{ localStorage.setItem(k,v); }catch(e){} };
+  let muted = readStore('sagne-muted') === 'true';
   function updateMuteIcon(){
     muteBtn.textContent = muted ? '🔇' : '🔊';
     muteBtn.setAttribute('aria-pressed', muted ? 'true' : 'false');
@@ -248,7 +259,7 @@
   function setMuted(v){
     muted = v;
     updateMuteIcon();
-    localStorage.setItem('sagne-muted', muted ? 'true' : 'false');
+    writeStore('sagne-muted', muted ? 'true' : 'false');
     // rumbleGain/audioCtx don't exist until ensureAudio() has run at least once
     if (rumbleGain && audioCtx) {
       rumbleGain.gain.setTargetAtTime(muted ? 0 : rumbleGain.gain.value, audioCtx.currentTime, 0.05);
@@ -271,12 +282,12 @@
   // roll-sound volume — shared site-wide the same way mute is, so the
   // level carries over between sagnities rather than resetting each time
   const volumeSlider = document.getElementById('volumeSlider');
-  let volumeLevel = parseFloat(localStorage.getItem('sagne-volume'));
+  let volumeLevel = parseFloat(readStore('sagne-volume'));
   if (isNaN(volumeLevel)) volumeLevel = 0.7;
   volumeSlider.value = Math.round(volumeLevel * 100);
   volumeSlider.addEventListener('input', () => {
     volumeLevel = volumeSlider.value / 100;
-    localStorage.setItem('sagne-volume', volumeLevel);
+    writeStore('sagne-volume', volumeLevel);
   });
 
   let W = 0, H = 0, DPR = 1;
@@ -493,7 +504,7 @@
     black:  { glass:['#9aa2a8','#3c4248','#14181c'], edge:'rgba(8,10,12,0.6)',     tint:[ 34, 40, 46], stone:0.52, bean:0.44 },
   };
   const GLASS_ORDER = ['white','teal','amber','cobalt','black'];
-  let glassColor = localStorage.getItem('sagne-roller-glass');
+  let glassColor = readStore('sagne-roller-glass');
   if (!GLASS[glassColor]) glassColor = 'teal';
 
   const hexToRgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
@@ -575,7 +586,7 @@
     b.style.background = 'radial-gradient(circle at 34% 30%, ' + g[0] + ', ' + g[1] + ' 55%, ' + g[2] + ')';
     b.addEventListener('click', () => {
       glassColor = name;
-      localStorage.setItem('sagne-roller-glass', name);
+      writeStore('sagne-roller-glass', name);
       colorRow.querySelectorAll('.colBtn').forEach((x) => x.classList.toggle('active', x.dataset.color === name));
     });
     colorRow.appendChild(b);

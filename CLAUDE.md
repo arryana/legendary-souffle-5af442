@@ -1574,6 +1574,25 @@ musebox's save and clear 22x18, bowl's two pickers 29x21, roller's colour button
 measure 25–33px, but those are already grown as far as their neighbours allow by the `touch-targets`
 pass, so they are at their limit rather than neglected.
 
+### Blocked storage took four pieces down, two of them signed off
+
+Aug 2026, found by loading every piece with its props taken away rather than by anyone hitting
+it — the check roller's Kindle failure should have prompted and didn't. **`localStorage` does not
+merely come back empty when a browser refuses it: it THROWS.** A private window does it, and so
+does any browser set to block site data — a Fire tablet's Silk is exactly the sort that might.
+Read unguarded at the top of a script, that one refusal takes the **whole piece** down: with site
+data blocked, **`musebox`, `lamp`, `roller` and `storm` all came up blank**, and `roller` and
+`storm` are both pieces she has passed on all four machines. `candler` had wrapped its own read in
+a try/catch all along and survived, which is what the right answer looks like.
+
+Every read and write now goes through a `readStore`/`writeStore` pair in each of the four. Verified
+both ways: blocked, all four draw with no errors; working, every setting is still written and still
+survives a reload (`sagne-muted`, `sagne-volume`, `sagne-musebox-voice`, `sagne-roller-glass`,
+`sagne-storm-sethand`). **Losing the setting is nothing; losing the piece is everything** — and the
+general point is the one bowl's row already makes about page weight: *these pages had been swept
+for layout faults many times and nobody had ever asked what happens when something they lean on
+says no.*
+
 **Still open, both small:** `conometer` leaves a 6px sliver of disc proud of the picture on an
 ordinary 390px phone (none of her four devices shows it, so it was left); and candler's "flashing
 line" — the back disc, before it was pinned, sat in the flow inside the area the flame repaints, so
