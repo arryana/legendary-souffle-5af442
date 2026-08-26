@@ -39,6 +39,24 @@
   #tiltRow{ display:flex; align-items:center; gap:12px; }
   input[type=range]{ -webkit-appearance:none; appearance:none; width:180px; height:3px; border-radius:3px; background:rgba(242,233,216,.25); outline:none; }
   input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--brass); cursor:pointer; box-shadow:0 0 6px rgba(201,151,78,.6); }
+  /* Her ask off the Jelly Star: "rain could use a little more area". The pane was
+     held to 70vw with 22px of dark down either side, and the dock was carrying a
+     desktop's padding. Below 320 the stage is padded to the band actually free --
+     under the two brass discs, above the dock -- so the pane centres in THAT and
+     not in the whole screen, and it can then take nearly the full width without
+     its top corners sliding under the discs, which is conometer's half-on rule.
+     Measured at 240x350: 168x211 before. Above 320 nothing here applies. */
+  @media (max-width: 320px){
+    #stage{ box-sizing:border-box; padding:60px 0 52px; }
+    #paneWrap{ width:min(86vw,460px); height:min(118vw,620px); max-height:calc(100vh - 140px); }
+    /* and the headphones sat on the tilt slider down here -- measured, 15x31px of
+       it covered at 240 before any of this. The button cannot lift above the dock
+       without landing on the pane, so the dock gives way instead and reserves the
+       corner, which is what fireflies does. The slider gives up the length that
+       costs; it is the one thing in the row with any to spare. */
+    #dock{ padding:8px 12px 12px 76px; }
+    #dock input[type=range]{ width:96px; }
+  }
 </style>
 <style>
   /* The way back is the brass disc off the shelf's plinth, with an arrow cut into

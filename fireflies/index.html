@@ -339,9 +339,53 @@
   // cropped or aligned to our horizon — cover-fit fills the frame and the bottom is simply
   // covered up.
   const SKY_STAGE_COUNT=7;
-  const skyStages=Array.from({length:SKY_STAGE_COUNT}, (_,i)=>{
-    const img=new Image(); img.src=`firefly-sky-${i}.png`; return img;
-  });
+  // The seven photographs are 7.6MB, and asking for all of them on load put the
+  // whole set in front of the piece -- bowl's fault at half bowl's size, and the
+  // general lesson bowl's row records: a sweep that only looks at where things
+  // land cannot see megabytes queued ahead of the piece. Only the stage the
+  // darkness is actually sitting on is asked for at first, and its neighbour for
+  // the cross-fade; the rest come in behind the running piece ONE AT A TIME,
+  // nearest-to-here first, because seven at once is worse on the machine that is
+  // already struggling. Moving the slider to a stage that has not arrived asks
+  // for it at once and takes it the moment it lands.
+  const skyStages=Array.from({length:SKY_STAGE_COUNT}, ()=> new Image());
+  const skyAsked=new Array(SKY_STAGE_COUNT).fill(false);
+  function askSky(i){
+    if(i<0 || i>=SKY_STAGE_COUNT) return null;
+    if(!skyAsked[i]){ skyAsked[i]=true; skyStages[i].src=`firefly-sky-${i}.png`; }
+    return skyStages[i];
+  }
+  const skyReady=im=>!!(im && im.complete && im.naturalWidth);
+  // the nearest stage that HAS arrived, so a slider move never drops to a flat
+  // colour -- it shows the closest sky it has until the right one lands
+  function nearestReadySky(i){
+    for(let d=0; d<SKY_STAGE_COUNT; d++){
+      for(const j of (d? [i-d, i+d] : [i])){
+        if(j>=0 && j<SKY_STAGE_COUNT && skyReady(skyStages[j])) return skyStages[j];
+      }
+    }
+    return null;
+  }
+  let skyBackfilling=false;
+  function backfillSkies(){
+    if(skyBackfilling) return;
+    const here=Math.round(dark*(SKY_STAGE_COUNT-1));
+    let next=-1, best=Infinity;
+    for(let i=0;i<SKY_STAGE_COUNT;i++){
+      if(skyAsked[i]) continue;
+      const d=Math.abs(i-here);
+      if(d<best){ best=d; next=i; }
+    }
+    if(next<0) return;                       // they are all in
+    skyBackfilling=true;
+    const img=askSky(next);
+    const done=()=>{ skyBackfilling=false; setTimeout(backfillSkies, 150); };
+    img.addEventListener('load', done, {once:true});
+    img.addEventListener('error', done, {once:true});
+  }
+  // start the queue only once the page itself has settled, so it never competes
+  // with the piece's own first paint
+  window.addEventListener('load', ()=> setTimeout(backfillSkies, 1200));
   // each of the 5 photos has its own native resolution (the dusk shot is a full
   // 1408x768 photo, the other 4 are cells cropped from a smaller contact sheet) —
   // cover-fit is computed per image, from its own naturalWidth/Height, rather than
@@ -356,12 +400,16 @@
   }
   function drawSkyPhoto(){
     const pos=dark*(SKY_STAGE_COUNT-1), i0=Math.floor(pos), frac=pos-i0;
-    const a=skyStages[i0], b=skyStages[Math.min(SKY_STAGE_COUNT-1,i0+1)];
-    if(a.complete && a.naturalWidth){
-      const fa=coverFitFor(a);
-      ctx.drawImage(a,fa.ox,fa.oy,fa.dw,fa.dh);
+    const i1=Math.min(SKY_STAGE_COUNT-1,i0+1);
+    const a=askSky(i0), b=askSky(i1);
+    const base = skyReady(a) ? a : nearestReadySky(i0);
+    if(base){
+      const fa=coverFitFor(base);
+      ctx.drawImage(base,fa.ox,fa.oy,fa.dw,fa.dh);
     } else { ctx.fillStyle='#0a0e18'; ctx.fillRect(0,0,W,H); }
-    if(frac>0.001 && b.complete && b.naturalWidth){
+    // only cross-fade when BOTH stages are really here: fading the next one over
+    // a stand-in would dissolve between two skies that aren't neighbours
+    if(frac>0.001 && skyReady(a) && skyReady(b)){
       const fb=coverFitFor(b);
       ctx.save(); ctx.globalAlpha=frac;
       ctx.drawImage(b,fb.ox,fb.oy,fb.dw,fb.dh);
@@ -921,10 +969,11 @@
      nothing on the page shifts. Each slider grows only as far as half the gap to
      its nearest neighbour, so no two ever overlap and steal each other's taps. */
   @media (pointer: coarse){
-  input[type=range]#tempSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 3.5px 3.5px; padding:15px 0 2px; margin-top:-28px; margin-bottom:-11px; }
-  input[type=range]#humiditySlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 3.5px 3.5px 1.5px 1.5px; padding:2px 0 0px; margin-top:-7px; margin-bottom:-9px; }
-  input[type=range]#darkSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 1.5px 1.5px 2.5px 2.5px; padding:0px 0 1px; margin-top:-9px; margin-bottom:-8px; }
-  input[type=range]#volumeSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 2.5px 2.5px 16.5px 16.5px; padding:1px 0 15px; margin-top:-11px; margin-bottom:-28px; }
+  input[type=range]#tempSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 12.5px 12.5px; padding:15px 0 11px; margin-top:-13px; margin-bottom:-9px; }
+  input[type=range]#humiditySlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 8.5px 8.5px 12.5px 12.5px; padding:7px 0 11px; margin-top:-5px; margin-bottom:-9px; }
+  input[type=range]#windSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 12.5px 12.5px 12.5px 12.5px; padding:11px 0 11px; margin-top:-9px; margin-bottom:-9px; }
+  input[type=range]#darkSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 12.5px 12.5px 10.5px 10.5px; padding:11px 0 9px; margin-top:-9px; margin-bottom:-7px; }
+  input[type=range]#volumeSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 13.5px 13.5px 16.5px 16.5px; padding:12px 0 15px; margin-top:-10px; margin-bottom:-13px; }
   }
 </style>
 <!-- /touch-targets -->

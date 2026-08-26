@@ -66,6 +66,12 @@
      taps. While something is playing it simply shows, next to the button.
      Not a caption on the piece: it is their file's name, not the site's words. */
   #musicBtn.playing ~ #musicName{ opacity:.5; }
+  /* the furniture gives way, not the piece. Below 300px the dock's rows run far
+     enough left that the headphones sit on the crow slider -- measured, 23x30px
+     of it at 240 and 3x30 at 280, clear from 300 up. So the button lifts to just
+     above the dock, by the dock's own measured height (84px at every width) plus
+     a gap. If that height ever changes, change this with it. */
+  @media (max-width: 299px){ #music{ bottom:94px; } }
 </style>
 <div id="music" title="play your own music">
   <button id="musicBtn" aria-label="play your own music">🎧</button>
@@ -709,8 +715,8 @@
      nothing on the page shifts. Each slider grows only as far as half the gap to
      its nearest neighbour, so no two ever overlap and steal each other's taps. */
   @media (pointer: coarse){
-  input[type=range]#sparrowSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 1.5px 1.5px; padding:15px 0 0px; margin-top:-28px; margin-bottom:-10px; }
-  input[type=range]#crowSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 1.5px 1.5px 16.5px 16.5px; padding:0px 0 15px; margin-top:-10px; margin-bottom:-28px; }
+  input[type=range]#sparrowSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 16.5px 16.5px 13.5px 13.5px; padding:15px 0 12px; margin-top:-13px; margin-bottom:-10px; }
+  input[type=range]#crowSlider{ box-sizing:content-box; background-origin:content-box; background-clip:content-box; border-radius:1.5px 1.5px 1.5px 1.5px / 13.5px 13.5px 16.5px 16.5px; padding:12px 0 15px; margin-top:-10px; margin-bottom:-13px; }
   }
 </style>
 <!-- /touch-targets -->

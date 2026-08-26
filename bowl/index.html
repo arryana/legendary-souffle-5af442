@@ -79,11 +79,7 @@
      smaller tiles; above 379px nothing here applies and it is the same 4x64
      grid it always was. */
   .pickerPopup{ box-sizing:border-box; max-width:calc(100vw - 12px); }
-  @media (max-width: 379px){
-    .pickerPopup{ padding:12px; }
-    .pickerList{ grid-template-columns:repeat(3, 60px); }
-    .pickerOption{ width:60px; height:60px; }
-  }
+
   .pickerOption{ position:relative; width:64px; height:64px; border-radius:10px; border:2px solid transparent;
     background:#0f0d0a; padding:0; cursor:pointer; overflow:hidden; opacity:.4;
     transition:opacity .2s ease, border-color .2s ease; }
@@ -100,6 +96,28 @@
     background:transparent; border:1.3px solid rgba(232,195,131,.65); position:relative; }
   .qtyClear::after{ content:''; position:absolute; left:1px; right:1px; top:50%; height:1.3px;
     background:rgba(232,195,131,.85); transform:translateY(-50%) rotate(-45deg); }
+  /* Her ask off the machines, Aug 2026: "the menu could pop up larger on both the
+     jelly star and the kindle". It was a fixed 4x64 grid that dropped to 3x60 on a
+     narrow screen and never grew for a wide one -- so a Kindle showed a laptop's
+     tiles with a third of the room going spare. The tile size follows the width
+     it is given now. Sizes are explicit rather than fractional on purpose: a Fire
+     tablet's browser is the oldest of her four and `aspect-ratio` is not a thing
+     to rely on there. A desktop (1024 and up) is left exactly as it was. */
+  @media (max-width: 379px){
+    .pickerPopup{ padding:8px; }
+    .pickerList{ grid-template-columns:repeat(3, 66px); gap:6px; }
+    .pickerOption{ width:66px; height:66px; }
+  }
+  @media (min-width: 380px) and (max-width: 519px){
+    .pickerList{ grid-template-columns:repeat(4, 72px); gap:12px; }
+    .pickerOption{ width:72px; height:72px; }
+  }
+  @media (min-width: 520px) and (max-width: 1023px){
+    .pickerList{ grid-template-columns:repeat(4, 92px); gap:12px; }
+    .pickerOption{ width:92px; height:92px; }
+  }
+  /* and nothing is ever out of reach on a short screen */
+  .pickerPopup{ max-height:calc(100vh - 20px); overflow-y:auto; }
 </style>
 <style>
   /* The way back is the brass disc off the shelf's plinth, with an arrow cut into

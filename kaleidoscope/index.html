@@ -48,6 +48,25 @@
 
   #scopeWrap{ width:min(50vh,400px); aspect-ratio:1/1; cursor:grab; touch-action:none; }
   #scopeWrap:active{ cursor:grabbing; }
+  /* The grab knob stands 13% PROUD of the scope's own box (see #scopeRing below),
+     so it sat outside the only element that carries the turn: hovering the knob
+     gave no hand and pressing it started nothing at all. Her report off the
+     machines -- "the knob itself has no hand option and no turn cue, which seems
+     to defeat the point of there being a knob". This reaches the grab out over the
+     whole grip ring, the knob included; events on a pseudo-element target its
+     host, so the pointerdown already on #scopeWrap picks them up unchanged, and
+     ringAngle measures from the same centre either way. */
+  #scopeWrap::before{ content:''; position:absolute; inset:-13%; border-radius:50%;
+    cursor:grab; touch-action:none; }
+  #scopeWrap:active::before{ cursor:grabbing; }
+  /* and the ring answers when the pointer is over it. Not a hint -- nothing is
+     explained and nothing appears; it is the piece being alive, which is the one
+     thing the no-nudging rule does allow. A mouse only: a finger has no hover, and
+     on a touch screen the ring is simply turned. */
+  @media (pointer: fine){
+    #scopeRing{ transition:filter .25s ease; }
+    #scopeWrap:hover #scopeRing{ filter:brightness(1.16); }
+  }
   /* the turning ring is drawn, not a flat gradient: a lit brass bevel that stays
      put (ringBase) and the fine milling that turns over it (ringMill inside
      scopeRing). Gemini was never going to make this well -- a knurled bezel is

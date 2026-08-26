@@ -105,7 +105,14 @@ snooze — last in the row once the timer is on — hangs 11px off the right-han
 scrollbar is hidden. **She then re-ran the whole page on all four machines and passed it**: everything she
 found is fixed and re-checked on the devices themselves, not in a screenshot. candler is the first piece
 through that test, and the standard for the ones that follow. |
-| `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does."<br>Three
+| `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does."<br>**It did not tilt AT ALL on the Kindle** — her report, Aug 2026, and the cause was a missing
+fallback rather than anything about tilt. The gate offers two ways in, the phone button and the
+desktop one. Pressing the phone button turned device orientation on and **assumed it worked**, with
+`return` before the pointer path was ever wired — so on a machine whose browser never fires
+`deviceorientation` the tray had **no control whatever** and the only way out was reloading. A Kindle
+Fire has an accelerometer and still may not fire it. It now waits 1.4s for a usable reading and, if
+none comes, takes the listener off and uses the pointer instead. Measured on a browser that never
+fires the event: **0 pixels moved under a finger drag before, 5293 after**.<br>Three
 things Aug 2026, all hers, all after she had it in front of her.<br>**The speed slider was not a speed
 slider.** It multiplied how hard tilt pushed and nothing else — not friction, not the wall bounce — so
 once anything was moving it careered about at much the same rate wherever the slider sat. Measured
@@ -115,7 +122,18 @@ asked for a speed slider so things could slide slower and it was reasonable to t
 one. What actually makes a thing slide slowly is the surface, so below the middle the tray now gets
 draggier as well as gentler — the same friction raised to a higher power, which is what a shorter
 settling distance is. Re-measured: pebble **73px/s** at 20, disc **48**, bean **63**, and the peaks
-down by more. **At 100 the exponent is exactly 1 and nothing changes at all** — from the middle of
+down by more.<br>**And it still read as not working, which took a second report to find**: *"the speed
+slider doesn't appear to change much. maybe it hesitates before it starts? but it doesn't roll slower
+in a noticeable way."* Both halves of that are one cause. Below the middle the PUSH was being reduced
+as well as the drag raised — and a gentler shove still has to overcome the same stiction, so the
+bottom of the range did not travel slowly, it **failed to set off**: measured under a gentle held
+tilt, at slider 20 the pebble had moved **3px after 300ms, 9px after 600ms and 81px after three
+seconds**, never reaching the wall at all. And from 60 upward everything looked much the same
+(330, 338 and 360px at 300ms for 60, 100 and 220). A cliff, then a plateau. The push is left alone
+below the middle now and the whole change lives in the friction, which does not bite until something
+is already moving: at slider 20 it sets off at once (13px by 300ms, against 18 at slider 100) and
+then crawls. **Peak speed across the slider is 220, 413, 600, 1378px/s at 20, 60, 100 and 220** —
+monotonic and a 6.3x spread, against 56, 410, 564, 982 before. **At 100 the exponent is exactly 1 and nothing changes at all** — from the middle of
 the slider upward the feel she already approved is identical, measured, which is the point of doing
 it this way round rather than retuning the physics. The bottom of the range went from 20 to 10.<br>**The
 dock spreads on a desktop.** Four groups stacked in a column 180px wide under a 640px tray on a
@@ -164,7 +182,12 @@ what names two materials to the ear before any note has established, then the sh
 note. **STRUCK, not blown**, which is the easy thing to get backwards — blown across the top, more
 liquid means a shorter air column and a HIGHER pitch; struck, the liquid mass-loads the walls and drags
 it DOWN. Measured on the running page as it burned: **587Hz ringing 0.98s** at the start, 649 at 1.18s
-two minutes later, **791 at 1.62s** nearly dry.<br>**And WHERE you tap earns its place**, which the old
+two minutes later, **791 at 1.62s** nearly dry.<br>**The tap only worked on the LEFT of the base** — her report off the machines, Aug 2026. The nail's
+facing was fixed: its point always faced right, so carried round to the far side of the lamp the point
+faced *away* from the copper and the tip never met it. It turns in the hand now, to face whichever side
+it is brought in from. The 40-unit hysteresis is load-bearing — flipping on the axis itself spins the
+nail every time the hand crosses the middle of the lamp, which is most of the way to it. Measured, four
+approaches (left and right, high and low): **two of four tapped before, four of four after**.<br>**And WHERE you tap earns its place**, which the old
 note in the file had parked as optional. Below the oil line the wall is against the liquid and barely
 rings — measured, **423Hz dead in 0.13s** against 587Hz for 0.98s higher up the same side. Four minutes
 in the two taps came out **identical**, which is the oil having fallen past the lower one. The level
@@ -221,8 +244,29 @@ afternoon, *"as done as i can make it without an animating software"*. Read that
 the mark. It is not *"there is nothing more to want here"*; it is *"what is left wants a tool I
 haven't got"*. So **don't propose rebuilding it** to chase the remainder, and don't read the tick as
 an invitation to polish. **Through her four-device test** the same afternoon — *"i have tested it on
-every machine"* — so it carries both marks. |
-| `ant/index.html` | ✅ |  | Ants |
+every machine"* — so it carries both marks.<br>**More area on the Jelly Star**, her ask off a later
+pass. The pane was held to `70vw` with 22px of dark down either side and the dock carried a desktop's
+padding. Below 320 the stage is padded to the band that is actually free — under the two brass discs,
+above the dock — so the pane centres in THAT rather than in the whole screen, and can then take nearly
+the full width without its top corners sliding under the discs, which is conometer's half-on rule.
+Measured at 240x350: **168x211 to 206x210, 22% more glass**; 390 and up are identical. While there:
+the headphones sat on the tilt slider, 15x31px of it covered, and the button cannot lift above this
+dock without landing on the pane — so the dock gives way and reserves the corner instead, which is
+fireflies' move, with the slider giving up the length it costs. |
+| `ant/index.html` | ✅ |  | Ants<br>Swept Aug 2026 before her device testing, and two things were repaired. Its **seven
+sliders were 3, 7, 9, 14, 18, 18 and 23px** under a thumb — the worst on the site — because the
+touch-target generator had been compounding its own output; with that fixed they are 26–33.
+And **turned sideways on a 3in phone it lost the top of its own dock**: 180px of screen against a
+282px dock, with count, speed and light sitting ABOVE the top edge on a page that could not scroll
+to them. It scrolls there now, which is the answer she took for kaleidoscope and storm; both
+qualifiers on the rule are load-bearing (the same phone is 350px tall upright, where it all fits,
+and a Kindle in landscape is 476 and never reaches it). The rule has to sit at the END of the
+stylesheet: a media query adds no specificity and `#dock{position:fixed}` is declared later, so
+placed earlier it silently loses.<br>**Known and NOT repaired, because it is hers**: on a 240x350
+screen the dock is **315px of 350**, so the scene gets 35px and the music button — lifted by an
+existing rule to clear a dock that no longer fits — ends up 7px off the top. Measured identical
+before and after this sweep, so nothing here caused it. It is the same call chimes' row carries:
+a dock that swamps the piece on the smallest screen is a design decision, not a repair. |
 | `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Fourth piece
 through her four-device test, Aug 2026. **`windower-frame.png`'s centre pane was cut out of a light
 background** and kept a 3px white halo all the way round it — the same family of fault as the shelf plates,
@@ -325,7 +369,12 @@ plainly the small one, plainly still a gear. Worth remembering as a general poin
 picture of what a thing is, not a scale drawing of it, and this site's usual instinct for fidelity is
 the wrong instinct in a picker. The tap target is the slot and does not shrink with the drawing
 either way, so the little ones are as easy to pick as the big ones. |
-| `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them |
+| `birds/index.html` | ✅ |  | **Birds** perched on wires strung between two poles against a sunset-sky photo; the wires sag realistically and dip under whichever bird is sitting on them<br>Swept Aug 2026. Its two sliders were **18px** under a thumb and are now 30. And below 300px the
+headphones sat on the crow slider — measured, **23x30px of it at 240 and 3x30 at 280, clear from
+300 up** — so the button lifts above the dock there, by the dock's own measured height (84px at
+every width; change this with it if that changes). Otherwise clean: nothing below the fold at any
+size, no console errors, and it fetches **one** background, picked by the time of day, not all four
+— so its 6.7MB folder is only 3.0MB on the wire. |
 | `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**.<br>Aug 2026, found by measuring for a 3-inch phone: the dock is one row that never wrapped and wants **369px** laid out end to end, so on anything narrower the LAST thing in it — the flower, which is the whole object chooser — was pushed clean off the right edge, and with the page unable to scroll there was no way to reach it. It cleared a 390px phone by 22px, which is exactly why it looked perfect everywhere anyone had looked. Behind that sat a second fault: the chooser popup is a fixed 326px grid and hung 43px off **both** edges of a 240px screen, so fixing the button alone would only have revealed half the flowers. Below 379px the dock now wraps to two lines and the popup drops to three slightly smaller tiles; above it, nothing applies and the dock is pixel-identical at 390, 600 and 1200. The wrapped row is **right-aligned, not centred** — the music button is pinned in the bottom-left corner and a centred second row lands straight on top of it.<br>**It did not load on the Jelly Star** — her report, Aug 2026, and it was true in the
 strongest sense. The ten bowl photographs are 1408x768 and about 1.5MB apiece, **15.7MB**
 of them, and *nothing was drawn until every one had arrived*: the first `resize()` and the
@@ -341,7 +390,19 @@ Star** — *"bowl works fine now"* — so the simulation held. The other half of
 at all: see the shelf plates' cards above, which every page on the site was fetching on load. Worth
 drawing the general lesson, since it took a report to find it — these pages had been swept for layout
 faults several times and **nobody had ever measured what one of them FETCHES**. A sweep that only
-looks at where things land cannot see 6MB queued in front of the piece. |
+looks at where things land cannot see 6MB queued in front of the piece.<br>**The object menu grew**,
+her ask off the machines: *"the menu could pop up larger on both the jelly star and the kindle."* It
+was a fixed 4x64 grid that dropped to 3x60 on a narrow screen and never grew for a wide one — so a
+Kindle showed a laptop's tiles with a third of the room going spare. Measured: **66px at 240 (was 60),
+72 at 390 (was 64), 92 on a Kindle (was 64, so +44%)**, and a desktop is untouched. Sizes are explicit
+rather than fractional on purpose — a Fire tablet's browser is the oldest of her four and
+`aspect-ratio` is not to be relied on there — and the rules sit at the END of the sheet, because a
+media query adds no specificity and the base `.pickerOption` is declared below where they first
+went.<br>**Her question, and the answer**: *"how are the stones removed? a second click on them?"* No —
+each tile in the chooser carries its own **⊘** and a column of quantity dots; that is where things come
+out. It was not discoverable because at 60px the ⊘ was too small to read, which the bigger tiles go
+some way to fixing. Whether a second tap on the object itself should ALSO lift it out is a design call
+and hers; it was put to her, not decided. |
 | `chimes/index.html` | ✅ |  | **Wind chimes** you build yourself — pick the rod material and the cord/chain, then hang them. Uses warmler's swatch-picker pattern<br>Sound was rebuilt Aug 2026 (struck on impact, real bar overtones, pitch by material).<br>**The set is TUNED now**, Aug 2026, and this was the answer to her *"probably accurate, but not
 beautiful — the reason windchimes are nice is because they're musical"*. She is right and it is a
 **fidelity** point, not a compromise: the whole craft of a chime maker is cutting each tube to a
@@ -475,7 +536,20 @@ luminance 92 against the new rod's 72. Left alone that would have been the same 
 swatch — the picker showing one thing and the piece another. 75 against 72 now. The old dead `chime-rod-*.png` sprites are still on
 disk, unreferenced, as warmler's unused textures are.<br>**Noticed while measuring and NOT fixed**: on a
 240x350 screen the dock's four rows swamp the chime entirely. It is identical before and after this
-change, so it is hers to find on the Jelly Star, not something this change introduced.<br>**And the chain
+change, so it is hers to find on the Jelly Star — **and she found it**: *"chimes menu overruns the
+chimes"*. Two things were wrong and both had to go. At 240px a dock row is 158px wide against 208px of
+room, so nothing could share a line and all six pieces stacked — **212px of a 350px screen**. Below 320
+the rows give up slider length (110px to 58) and pair up: swatches+count, cord+rod, wind. **132px, three
+lines.** Above 320 nothing applies and the dock is identical.<br>Underneath that, the real fault: the
+chime is drawn in its own units off `HANGER_W`, so it was drawn **full size behind the dock**. `SCALE`
+now stands between those units and the screen exactly as **gyre's board** does — everything on the page
+is written in units and never learns the screen exists, and the only two places the screen comes in (a
+click on the canvas, and where the length popup is put) divide and multiply by it. It never zooms IN:
+measured, **1440, 1200, 600 and 390 are all scale 1.000**, and 320 is 0.928, 240 is 0.390. `hangerTopY`
+is held in SCREEN pixels (`TOP_GAP/SCALE`), or a zoomed-out chime hangs under the two brass discs —
+gyre's own lesson. And sideways on a 3in phone the dock is 174px of 180, so that one **scrolls**, as
+kaleidoscope, storm and ant do; the rule sits at the END of the stylesheet because a media query adds no
+specificity and `#dock{position:fixed}` is declared above it.<br>**And the chain
 it hangs BY**, her ask off the first look: *"the top ring is hanging from... nothing."* It was — the cut
 stopped at the ring's top and the hook chain above it was thrown away. It is back, cut from the run above
 the ring **in the same photograph**, so it is literally the same chain rather than a match for it. Only
@@ -544,7 +618,21 @@ the mic stops taking one, which is where the desktop has always put it. On a 3in
 joined row wanted 229px against the 226 it had, three pixels short, and wrapped straight back
 to two lines, so below 320 the volume gives up a little length — the one thing in that row with
 any to spare. Desktop unchanged. |
-| `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about |
+| `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies in the grass; real dusk-to-night sky, with bats about<br>**It was fetching all seven sky photographs on load — 7.6MB — which is bowl's fault at half bowl's
+size**, and the general lesson bowl's row records: a sweep that only looks at where things land
+cannot see megabytes queued in front of the piece. Only the stage the darkness slider is sitting on
+is asked for now, and its neighbour for the cross-fade; the rest come in behind the running piece
+**one at a time**, nearest-first, because seven at once is worse on the machine already struggling.
+Moving the slider to a stage that has not arrived asks for it at once, and until it lands the
+nearest stage that HAS arrived is shown — never the flat stand-in. Measured on a simulated Jelly
+Star (240x350, CPU 6x slower, 1.6Mbps): the real sky is up at **11.4s having fetched 2.1MB, against
+30.4s and 3.1MB in flight before**; the other five follow at 21.8, 26.8, 32.0, 37.5 and 43.0s. Only
+cross-fade when BOTH stages are really present, or it dissolves between two skies that aren't
+neighbours.<br>Its five sliders were **3, 4, 5, 19 and 20px** under a thumb — the wind one had no
+rule at all — and are now 21–30. Still small and not repaired: its two tickboxes at 14px and its
+location flag at 25x18, where galileo's was grown to 22x15 under `(pointer: coarse)`.<br>**And it is
+one of the two that slow down on a Kindle-speed processor**: 60fps normally, 58 at 4x slower, **43
+at 6x**. moths is the other, and worse. Neither freezes; both read as less smooth. |
 | `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
 after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
 and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
@@ -561,7 +649,17 @@ could have made that better or worse. It reads the ANGLE swept about the ring's 
 unwrapped across the ±π seam (without that it would snap a whole turn every lap) and ignored inside
 a tenth of the radius (near the middle a hand that has barely moved has swept a huge angle, and it
 would spin off a twitch). Verified 1:1 at every 30° of a full circle and back again, on desktop and
-on touch.<br>**The card was still the old look** — flat gold stripes and a sparse pattern, from
+on touch.<br>**And the knob was decorative** — her report, Aug 2026: *"the ring is turnable, but the
+knob itself has no hand option and no turn cue, which seems to defeat the point of there being a
+knob."* The grip layer stands **13% proud** of the scope's own box so the knob can overhang the edge,
+and it carries `pointer-events:none` — so the knob sat outside the only element that carries the turn.
+Measured at 110% of the radius: the pointer landed on the page wrapper with `cursor:auto`, and a drag
+begun **on the knob turned the ring not at all**. A pseudo-element on `#scopeWrap` reaches the grab out
+over the whole grip ring; events on a pseudo-element target its host, so the existing `pointerdown`
+picks them up unchanged and `ringAngle` measures from the same centre. Now: `cursor:grab` on the knob,
+and a drag from it turns the ring. The ring also **brightens while the pointer is over it**, under
+`(pointer: fine)` only — a finger has no hover. That is not a hint: nothing is explained and nothing
+appears, it is the piece answering, which is the one thing the no-nudging rule does allow.<br>**The card was still the old look** — flat gold stripes and a sparse pattern, from
 before the ring was redrawn as brass-bound wood with a grab knob and the objects re-cropped. Reshot
 Aug 2026 with a spread of pieces on the tray at warm and cool hues, the tray and controls hidden so
 only the scope is in frame, and the brass scaled to the card's full width by **measuring** the ring's
@@ -647,7 +745,14 @@ instead of struck — with a slow attack, a chiff at the front, and vibrato arri
 note has settled, the way a player's does.<br>The icons are **drawn, not emoji**, deliberately: the
 only flute emoji arrived in 2022 and a Kindle Fire would show an empty box where it should be.<br>**The
 rabbit is grey.** Her call — white was the brightest thing on the page, brighter than the disc or the
-brass, so the eye went to the tempo control before the music box.<br>**And it was clipping.** Eight
+brass, so the eye went to the tempo control before the music box. **It was greyed with a CSS filter and
+that did not hold**: her report off the Windows tablet, *"the rabbit is still white"*. Windows draws
+emoji as colour glyphs and will not put a filter over one, so the fix worked on the machine it was
+written on and nowhere else. **The tortoise and the hare are drawn now**, in the same stroke and the
+same `currentColor` as the four instruments beside them — which is the very reason those were drawn.
+The general rule, and it is stronger than the site's usual emoji-over-text preference: **if an emoji's
+COLOUR matters, it cannot be an emoji.** A filter over a colour glyph is a fix that only works where it
+was written.<br>**And it was clipping.** Eight
 rings can be pinned on one step, and eight notes together measured nearly **three times full scale**,
 1.2% of samples squared off flat — a buzz over the note, and present long before the new voices. A
 `DynamicsCompressorNode` is the obvious answer and is the WRONG tool: ~6ms of lookahead and gain
@@ -1012,6 +1117,26 @@ neighbour**, so no two ever overlap and steal each other's taps; the widths come
 measuring the real page at 390px, not from guessing. `chladni`'s notch slider is skipped —
 its photographs already make it 46px.
 
+**The generator is NOT idempotent unless you keep it that way, and getting this wrong is silent
+and destructive.** Aug 2026 it was re-run and every page came out worse: the block from the last
+run is *in the page*, and its negative margins are part of the computed style, so measuring on top
+of them compounds them — padding stays 15px but `margin-top` goes −28 to −43 on a second run, −58
+on a third, dragging every slider up the page. It also inflates the measured height, so a slider
+already grown past the 40px cut-off is skipped and freezes at whatever it happened to be. The tool
+now **removes its own `<style>` before measuring**, so a run starts from the page's own layout and
+running twice gives the same answer as running once. The tell that it had happened at least once
+already: the page's own slider margin recovers as **+2px** on every piece from a clean measurement,
+and the blocks that were live recovered as **−13**.
+
+**And re-running it now moves the painted line by 1–2px on pieces whose blocks were made the old
+way.** That is the tool being right and the old blocks being wrong, but it is still a visible change
+to signed-off work — so Aug 2026 the corrected blocks were applied to the **eight pieces she had not
+yet tested** (`musebox`, `chimes`, `lamp`, `pendulum`, `birds`, `fireflies`, `moths`, `ant`) and the
+twelve she had passed were deliberately left alone. Anyone re-running the tool will see those twelve
+change; that is expected, and it is her call whether to take it. Measured before and after on all
+four small screens: **dock heights are identical**, so the negative margins really do give the space
+back and nothing was swamped.
+
 Two things in there cost a pass each and will cost another if forgotten:
 
 - **`border-radius` is measured off the outer box**, so padding eats the rounding off the
@@ -1026,6 +1151,12 @@ Two things in there cost a pass each and will cost another if forgotten:
 Verified by screenshotting every slider against a pristine copy of the site: **16 of 19 are
 identical to the pixel**, and the other three differ by at most 5/255 in the dither of a
 faint gradient. Nothing moved, nothing overlaps, and the desktop is byte-identical.
+
+**What the corrected run actually fixed**, Aug 2026, measured at 390px under `(pointer: coarse)`:
+`ant`'s seven sliders were **3, 7, 9, 14, 18, 18 and 23px** and are now 26–33; `fireflies`' five
+were **3, 4, 5, 19, 20** and are now 21–30 (its wind slider had no rule at all); `birds`' two were
+18 and are now 30. `moths` measured 44–45px before and after — it is the one that was given room
+first, and it shows.
 
 **`kaleidoscope` and `moths` had to be given room first** — their sliders sat 14px and 11px
 apart, which leaves nothing to grow into. Both had space going spare on a phone, so the gaps
@@ -1246,7 +1377,8 @@ still twelve through. The eight that are left, and what state each is actually i
   deal better"* — which is a verdict on the rebuilt sound and **not** a Done mark; she has still not
   run it over the four machines. Test it with the rods at DIFFERENT
   lengths or the tangle it was reported for cannot appear at all. Two things to watch for that are
-  known and not repaired: on the 3in phone the dock swamps the piece entirely. The **wood** rods
+  known and not repaired: on the 3in phone the dock swamps the piece entirely — **repaired Aug 2026
+  off her report**, see the row above. The **wood** rods
   are her photographed walnut now, off her report; brass, silver and glass are still drawn, which
   is deliberate — they are smooth and shading does them well.
 - `lamp` — **was a build and now is one.** Oil that burns down, her father's ten penny nail, the tap
