@@ -614,6 +614,17 @@
     speedMult = speedSlider.value / 100;
   });
   const effFriction = (f) => Math.pow(f, 1 / Math.max(0.10, Math.min(1, speedMult)));
+  // ...and BELOW the middle the push is left alone. Reducing the shove as well as
+  // raising the drag is what she felt on the machines: "maybe it hesitates before
+  // it starts? but it doesn't roll slower in a noticeable way." Both halves of that
+  // are the same cause. A gentler shove still has to overcome the same stiction, so
+  // the low end read as a thing that would not set off; and because it then had a
+  // short run before the wall, what travel there was looked much like any other
+  // setting. Friction does not bite until something is already moving, so putting
+  // the whole of the change there slows the TRAVEL without touching how readily it
+  // breaks away. Above 100 nothing here applies -- the push still scales, the
+  // friction still doesn't, and that half is the feel she approved, untouched.
+  const pushMult = () => Math.max(1, speedMult);
 
   // tap/click the tray itself to recentre the object at rest, and
   // recalibrate — covers picking the phone back up and repropping it at
@@ -674,8 +685,8 @@
       const perp = -tiltX * hy + tiltY * hx;
       const tiltMag = Math.hypot(tiltX, tiltY);
       const slideAmt = Math.max(0, Math.min(1, (tiltMag - 0.35) / 0.4));
-      obj.vx += (tangent * hx - perp * slideAmt * hy) * GRAVITY * speedMult;
-      obj.vy += (tangent * hy + perp * slideAmt * hx) * GRAVITY * speedMult;
+      obj.vx += (tangent * hx - perp * slideAmt * hy) * GRAVITY * pushMult();
+      obj.vy += (tangent * hy + perp * slideAmt * hx) * GRAVITY * pushMult();
     } else {
       // not yet rolling fast enough to have a heading of its own — tilt just gets
       // it moving, the same as a standing start for any object. Resting against a
@@ -691,8 +702,8 @@
       if (nearLeft && tx < 0) tx = 0;
       if (nearBottom && ty > 0) ty = 0;
       if (nearTop && ty < 0) ty = 0;
-      obj.vx += tx * GRAVITY * speedMult;
-      obj.vy += ty * GRAVITY * speedMult;
+      obj.vx += tx * GRAVITY * pushMult();
+      obj.vy += ty * GRAVITY * pushMult();
     }
 
     const speed = Math.hypot(obj.vx, obj.vy);

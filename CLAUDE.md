@@ -122,7 +122,18 @@ asked for a speed slider so things could slide slower and it was reasonable to t
 one. What actually makes a thing slide slowly is the surface, so below the middle the tray now gets
 draggier as well as gentler — the same friction raised to a higher power, which is what a shorter
 settling distance is. Re-measured: pebble **73px/s** at 20, disc **48**, bean **63**, and the peaks
-down by more. **At 100 the exponent is exactly 1 and nothing changes at all** — from the middle of
+down by more.<br>**And it still read as not working, which took a second report to find**: *"the speed
+slider doesn't appear to change much. maybe it hesitates before it starts? but it doesn't roll slower
+in a noticeable way."* Both halves of that are one cause. Below the middle the PUSH was being reduced
+as well as the drag raised — and a gentler shove still has to overcome the same stiction, so the
+bottom of the range did not travel slowly, it **failed to set off**: measured under a gentle held
+tilt, at slider 20 the pebble had moved **3px after 300ms, 9px after 600ms and 81px after three
+seconds**, never reaching the wall at all. And from 60 upward everything looked much the same
+(330, 338 and 360px at 300ms for 60, 100 and 220). A cliff, then a plateau. The push is left alone
+below the middle now and the whole change lives in the friction, which does not bite until something
+is already moving: at slider 20 it sets off at once (13px by 300ms, against 18 at slider 100) and
+then crawls. **Peak speed across the slider is 220, 413, 600, 1378px/s at 20, 60, 100 and 220** —
+monotonic and a 6.3x spread, against 56, 410, 564, 982 before. **At 100 the exponent is exactly 1 and nothing changes at all** — from the middle of
 the slider upward the feel she already approved is identical, measured, which is the point of doing
 it this way round rather than retuning the physics. The bottom of the range went from 20 to 10.<br>**The
 dock spreads on a desktop.** Four groups stacked in a column 180px wide under a 640px tray on a
