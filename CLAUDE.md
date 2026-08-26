@@ -748,7 +748,21 @@ rows are ramped so the edge does not gain a line of its own. Baked into `museroo
 done per frame.<br>**The card
 was reshot** off the rebuilt piece and **cropped** to 440x640 rather than squeezed into it — squashing
 a taller frame into the card makes the disc oval again, which is the one thing the rebuild exists to
-avoid.<br>**The sound was not touched and neither were the controls**, her call: *"leave off the
+avoid. **Reframed Aug 2026** — hers: *"it's weirdly low, i don't mind there being more wood visible to
+center it better."* Measured, the disc's centre sat **60% down the card** with the table a bare 8% strip
+along the bottom; it is **50%** now and the disc is **exactly the size it was** (386px against 387), so
+the whole change is where it sits. **What centring a circle in a 440x640 frame costs is table**, and
+there is only as much table as the piece draws — the room photograph gives a band of 99 rows however
+tall the canvas is, so the wood is stretched 1.53x and the wall above by the same trick the piece
+itself uses when its wall runs taller than the photograph. **The front edge of the table then has to
+fall into shadow**, and this is the part to remember: at full brightness the new wood was the brightest
+thing on the card and pulled the eye down and forward — *the exact fault she had fixed on this piece
+once already*, in the note above about toning the table down, reappearing the moment the table got
+bigger. It falls to 66% at the very front, which is also what the near edge of a table lit from behind
+actually does. **And a tune is pinned on it**: the disc's own default is only eight pins and reads
+sparse at the size a shelf card is, so the shot seeds sixteen through `localStorage` — as the old card
+had. **Stop the disc before the shutter** (`#stopbox`), or a note struck as the shot is taken leaves
+its flash smeared across the card.<br>**The sound was not touched and neither were the controls**, her call: *"leave off the
 controls, as while they're decorative, they're not standard with all the other pieces."* Gemini's
 sheets carried an icon strip, a second kind of marker and an extra square button; all of it is the
 generator embellishing rather than a decision, and none of it came across.<br>Aug 2026 it got **four voices** at her ask, the
