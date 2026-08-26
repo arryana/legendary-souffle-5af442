@@ -352,7 +352,7 @@
   const skyAsked=new Array(SKY_STAGE_COUNT).fill(false);
   function askSky(i){
     if(i<0 || i>=SKY_STAGE_COUNT) return null;
-    if(!skyAsked[i]){ skyAsked[i]=true; skyStages[i].src=`firefly-sky-${i}.png`; }
+    if(!skyAsked[i]){ skyAsked[i]=true; skyStages[i].src=`firefly-sky-${i}.jpg`; }
     return skyStages[i];
   }
   const skyReady=im=>!!(im && im.complete && im.naturalWidth);
@@ -386,13 +386,29 @@
   // start the queue only once the page itself has settled, so it never competes
   // with the piece's own first paint
   window.addEventListener('load', ()=> setTimeout(backfillSkies, 1200));
-  // each of the 5 photos has its own native resolution (the dusk shot is a full
-  // 1408x768 photo, the other 4 are cells cropped from a smaller contact sheet) —
-  // cover-fit is computed per image, from its own naturalWidth/Height, rather than
-  // one shared size assumed for all of them. Using one frame's dimensions for every
-  // frame was the bug behind the "doubled" look: the smaller photos were scaled
-  // wrong, so crossfading against a correctly-scaled neighbour showed as a ghosted
-  // double exposure instead of a clean dissolve.
+  /* THE SEVEN STAGES ARE ONE FIELD NOW. The set they replace was two different
+     places: stages 0-3 were one meadow and 5-6 were another, with 4 matching
+     neither, so dragging the slider past about two thirds made the trees pick
+     themselves up and move. Measured on the land alone, 0-3 agreed with each
+     other at 0.99 and with 5-6 at 0.13. It was not a clean progression either --
+     stage 3 was BRIGHTER than stage 2, so pushing toward darkness made it lighter
+     at one point.
+     Rebuilt Aug 2026 from four photographs of a single field, two of them hers
+     shot to order: dusk, later dusk, deep twilight with the first stars, and full
+     night with the Milky Way up. Registered to the pixel (the night frames sit
+     within 2px of the dusk one, which is corrected here), then the seven stages
+     composed by easing between the nearest two and graded to a ground brightness
+     that falls every step: 39.5, 30.1, 23.1, 18.2, 14.2, 10.5, 7.0.
+     The grade is a GAMMA and not a multiply, deliberately -- a multiply dims the
+     stars as much as the sky, where a gamma deepens the shadows and mid-tones and
+     leaves the bright points alone, which is what a darkening sky actually does to
+     a star field.
+     They are JPEGs rather than PNGs: a night photograph is exactly what JPEG is
+     for, and the seven came down from 6.92MB to 0.70MB. Checked for banding, which
+     is the risk in a dark gradient -- the longest run of one identical value across
+     a sky row is 12px of 963.
+     Cover-fit is still computed per image from its own naturalWidth/Height rather
+     than one shared size, which is what fixed the old "doubled" look. */
   function coverFitFor(img){
     const scale=Math.max(W/img.naturalWidth, H/img.naturalHeight);
     const dw=img.naturalWidth*scale, dh=img.naturalHeight*scale;
