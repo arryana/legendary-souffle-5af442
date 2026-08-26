@@ -629,7 +629,17 @@ could have made that better or worse. It reads the ANGLE swept about the ring's 
 unwrapped across the ±π seam (without that it would snap a whole turn every lap) and ignored inside
 a tenth of the radius (near the middle a hand that has barely moved has swept a huge angle, and it
 would spin off a twitch). Verified 1:1 at every 30° of a full circle and back again, on desktop and
-on touch.<br>**The card was still the old look** — flat gold stripes and a sparse pattern, from
+on touch.<br>**And the knob was decorative** — her report, Aug 2026: *"the ring is turnable, but the
+knob itself has no hand option and no turn cue, which seems to defeat the point of there being a
+knob."* The grip layer stands **13% proud** of the scope's own box so the knob can overhang the edge,
+and it carries `pointer-events:none` — so the knob sat outside the only element that carries the turn.
+Measured at 110% of the radius: the pointer landed on the page wrapper with `cursor:auto`, and a drag
+begun **on the knob turned the ring not at all**. A pseudo-element on `#scopeWrap` reaches the grab out
+over the whole grip ring; events on a pseudo-element target its host, so the existing `pointerdown`
+picks them up unchanged and `ringAngle` measures from the same centre. Now: `cursor:grab` on the knob,
+and a drag from it turns the ring. The ring also **brightens while the pointer is over it**, under
+`(pointer: fine)` only — a finger has no hover. That is not a hint: nothing is explained and nothing
+appears, it is the piece answering, which is the one thing the no-nudging rule does allow.<br>**The card was still the old look** — flat gold stripes and a sparse pattern, from
 before the ring was redrawn as brass-bound wood with a grab knob and the objects re-cropped. Reshot
 Aug 2026 with a spread of pieces on the tray at warm and cool hues, the tray and controls hidden so
 only the scope is in frame, and the brass scaled to the card's full width by **measuring** the ring's
