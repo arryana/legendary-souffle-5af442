@@ -672,7 +672,25 @@ neighbours.<br>Its five sliders were **3, 4, 5, 19 and 20px** under a thumb — 
 rule at all — and are now 21–30. Still small and not repaired: its two tickboxes at 14px and its
 location flag at 25x18, where galileo's was grown to 22x15 under `(pointer: coarse)`.<br>**And it is
 one of the two that slow down on a Kindle-speed processor**: 60fps normally, 58 at 4x slower, **43
-at 6x**. moths is the other, and worse. Neither freezes; both read as less smooth. |
+at 6x**. moths is the other, and worse. **THAT IS NO LONGER TRUE OF FIREFLIES, and the reason is worth
+keeping** — Aug 2026, found by leaving it running rather than by looking at it. **The sky was being
+composed from scratch on every frame to produce a picture that had not changed.** `drawSkyPhoto` drew
+a full-size photograph scaled to the screen sixty times a second, and whenever the darkness slider sat
+BETWEEN two of the seven stages it drew a **second** one over the top with an alpha — while `dark`
+only ever changes when a hand moves the slider. Measured at 6x slower with nothing placed: squarely on
+a stage **44–50fps**, anywhere between two **24–27**. Half the frame rate, and "between two" is nearly
+the whole slider — **including its default of 66**, so every visitor landed on the slow path without
+touching a thing. It is composed into its own canvas and blitted now: **59.6–60.1fps at every position
+on the slider**, and still 58.5 with forty-five fireflies placed. The scaling and the blend happen once
+per slider move instead of once per frame.<br>**This also settles the 43-versus-25 puzzle in the
+paragraph above.** Both figures were honest and they were taken at different slider positions — one
+landing on a stage, one between two. If a frame-rate figure is ever recorded for this piece again, say
+where the slider was.<br>Two things about the cache are load-bearing. The key covers the screen size,
+the DPR, the blend fraction **and which photograph is standing in** — the backfill swaps stages in as
+they arrive, and without `base.src` in the key a stand-in sky would stick after the real one landed.
+And it is drawn at `W*DPR` with the same `setTransform` the main canvas uses, or a Retina screen gets a
+soft sky. Verified pixel-identical to the old drawing at darkness 0, 25, 66 and 90: **0.000% of sky
+pixels differ by more than 2/255, worst 0**. Neither freezes; both read as less smooth. |
 | `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
 after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
 and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
