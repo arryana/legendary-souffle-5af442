@@ -668,7 +668,32 @@ nearest stage that HAS arrived is shown — never the flat stand-in. Measured on
 Star (240x350, CPU 6x slower, 1.6Mbps): the real sky is up at **11.4s having fetched 2.1MB, against
 30.4s and 3.1MB in flight before**; the other five follow at 21.8, 26.8, 32.0, 37.5 and 43.0s. Only
 cross-fade when BOTH stages are really present, or it dissolves between two skies that aren't
-neighbours.<br>Its five sliders were **3, 4, 5, 19 and 20px** under a thumb — the wind one had no
+neighbours.<br>**THE SEVEN SKIES WERE TWO DIFFERENT PLACES**, her catch, Aug 2026: *"it should be the
+same picture across all of them, just at varying stages of night."* She was right and it is
+measurable — on the land alone, stages **0–3 agreed with each other at 0.99 and with 5–6 at 0.13**,
+with stage 4 matching neither properly. So dragging the slider past about two thirds made the trees
+pick themselves up and move: not night falling on a place, a cut to somewhere else. And it was not a
+clean progression either — brightness ran 59, 58, 33, **41**, 23, 23, 15, so **stage 3 was brighter
+than stage 2** and pushing toward darkness made it lighter at one point.<br>**Rebuilt from four
+photographs of ONE field**, two of them hers shot to order the same afternoon (`fireflyfix1.jpg`,
+`fireflyfix2.jpg` in her `daidle` folder). The brief that worked is musebox's lesson applied — *don't
+repair a wrong picture, specify the right one* — and rather than ask for seven consistent frames
+(which is what failed at nine for chimes) she was sent the three good existing frames as a
+**reference** and asked for the same view at full night. Then, unprompted, the deep-twilight one as
+well, which is the moment that cannot be derived: the glow still on the horizon while the first stars
+are already up. **Verify a frame like this by searching for the best alignment of the treeline** —
+fireflyfix1 came back at 0px across and 0px down, fireflyfix2 at 2px, against 0.13 for the wrong
+field. Do it at FULL resolution: a coarse 480x300 comparison reported 8px of shift that was not
+there.<br>The seven stages are eased blends between the nearest two anchors, then graded so the ground
+falls at **every** step: 39.5, 30.1, 23.1, 18.2, 14.2, 10.5, 7.0. **The grade is a gamma and not a
+multiply, deliberately** — a multiply dims the stars as much as the sky, where a gamma deepens shadows
+and mid-tones and leaves bright points alone, which is what a darkening sky really does to a star
+field: the stars do not dim, they emerge.<br>**And they are JPEGs now**, because a night photograph is
+exactly what JPEG is for: **6.92MB to 0.70MB**, on the piece that was the slowest of the eight to
+appear. Measured on the simulated Jelly Star it now shows in **2.1s having fetched 0.37MB, against
+10.8s and 1.13MB**. Banding is the risk in a dark gradient and was checked — the longest run of one
+identical value across a sky row is 12px of 963. The old PNGs are deleted (two of them were the wrong
+field) and are in the history if ever wanted.<br>Its five sliders were **3, 4, 5, 19 and 20px** under a thumb — the wind one had no
 rule at all — and are now 21–30. Still small and not repaired: its two tickboxes at 14px and its
 location flag at 25x18, where galileo's was grown to 22x15 under `(pointer: coarse)`.<br>**And it is
 one of the two that slow down on a Kindle-speed processor**: 60fps normally, 58 at 4x slower, **43
