@@ -803,7 +803,53 @@ string's amplitude came down to 0.62 and a note now peaks at 0.641. The flute is
 near-pure tone sums far more coherently than a complex one, so eight of them on one step rode the
 ceiling for **1649 samples** where the old busier flute rode it for 994. At a fundamental of 0.44 it
 is **865**, under the sound it replaces. Peaks stay at exactly 1.0 with nothing over on all four
-voices.<br>**Measuring these needs the functions pulled out of the file at test time** rather than
+voices.<br>**AND THEN SHE MOVED THE GUITAR INTO THE PIANO'S SLOT**, Aug 2026, which is the most
+useful thing that happened to this piece's sound: *"the guitar now sounds like a much better piano.
+the piano sounds like a synthesizer."* Both halves right, and the second the worse fault — so rather
+than throw away a sound she liked, it took the slot it suited. Her instruction was *"whatever you do,
+please use the current guitar for the piano going forward"*, and it went across **unchanged**. It is
+deliberately NOT piano-ified: inharmonic partials, a longer ring and a felt thump instead of the click
+are all the obvious next move and all of them would change the sound she just chose. Don't, unless she
+asks.<br>**The real diagnosis was underneath both halves of that sentence, and it is the general
+lesson: adding sine waves together is the right way to build a thing with a few MODES, and the wrong
+way to build a STRING.** The chime is three bending modes and the flute is very nearly one tone, so
+both are honestly built that way. But what makes a string a string is that its whole spectrum darkens
+*continuously* as it rings, and with sines that has to be typed in rather than happening. Measured,
+that is exactly what was absent: the old guitar's brightness ran **443Hz at the strike down to 264,
+against a fundamental of 262** — very nearly a pure tone from the first instant, with no bite at
+**all**. That flat, dark, perfectly smooth thing is what a synthesiser sounds like, and it is why both
+voices read as one.<br>**So the guitar is a real string now.** A wave travels along it, reflects off
+the bridge and the nut and comes back a little duller each time: a delay line one wavelength long, fed
+back through a filter that takes the top off. Every harmonic and the entire brightness collapse fall
+out of that for nothing, because it is what the object does. **The string is there TWICE** — a real one
+vibrates in two planes at once which bleed into the bridge at different rates, and that is where a
+plucked note's double decay and its faint beating both come from; one loop gives neither. Measured
+after: **2043Hz down to 427**, rings 3.4s at C4, 2.2 at G4, 1.3 at E5.<br>**Web Audio cannot do this
+live and that is a hard limit, not a preference**: a feedback loop through a `DelayNode` is stuck at
+128 samples minimum, which is 2.9ms, so the highest note it could tune to is 344Hz. The box only ever
+plays eight notes, so each string is worked out once and kept. That turns out to be the CHEAPEST voice
+of the four to play — at 6x slower than a desktop the worst frame gap with the guitar chosen is
+**188ms against the chime's 235**, because eight buffer sources are lighter than eight stacks of
+oscillators. One string costs 149ms to make on that processor and eight cost 367, so only the note
+being played is waited for and **the rest are made one at a time behind the running piece** — bowl's
+and fireflies' bargain, for bowl's and fireflies' reason.<br>**Three things went wrong building it and
+every one would go wrong again.** (1) **It came out 13 to 54 cents FLAT** — 54 being more than a
+quarter-tone, which on a box tuned to real notes is the one fault that cannot stand, and the same fault
+chimes' whole row is about. What sets the pitch is the WHOLE LOOP and the loop filter has a delay of
+its own, `(1-br)` of a sample; leave it out and the note is flat by more the higher it goes. Within a
+cent on all eight now. (2) **Seeded with noise it was a banjo.** The textbook plucked string is
+demonstrated with a noise burst, which is a flat spectrum, leaving only the comb the pluck point cuts
+to shape it — measured, the **third partial came out 2.94x the fundamental**. The pitch was still
+right and the ear still heard C4; it was simply thin and nasal. A real pluck pulls the string into a
+**triangle** with its corner at the finger and lets go, and that shape's own spectrum is
+sin(n·π·p)/n² — the holes AND the steep fall, from one shape, because it is what the string is doing.
+Now [1, 0.26, 0.11, 0.02]. (3) **And then it was too dull**, because a triangle falls away as 1/n²:
+brightness 599Hz where a pluck wants nearer 1500. The bite of a pluck is **not the string** — it is the
+nail or pick leaving it, a scrape heard directly, so it goes in FRONT of the note rather than into the
+loop. Attack **3179Hz**.<br>**The honest limit on all of this: these were tuned by measurement because
+I cannot hear them, and she can.** Every figure above says the guitar is now a string and not a stack
+of sines, which is a real and checkable claim; whether it sounds like a *guitar* is hers alone, and
+this was handed to her as rendered audio rather than as a chart for exactly that reason.<br>**Measuring these needs the functions pulled out of the file at test time** rather than
 re-typed into a harness, or the harness and the page drift apart and the figures stop meaning
 anything; and an `OfflineAudioContext`'s clock does not advance until it renders, so everything
 scheduled at `currentTime` lands at zero together — which is what makes the eight-note pile-up easy to

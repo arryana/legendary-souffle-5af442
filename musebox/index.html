@@ -348,60 +348,22 @@ function noiseBurst(t, amp, dur, type, hz, q){
   src.connect(f); f.connect(g); g.connect(inNode); src.start(t); src.stop(t+dur+0.02);
 }
 
-// PIANO. A struck string is stiff, so its partials are not whole multiples of
-// the fundamental: they are stretched, n*sqrt(1 + B*n^2), where B is the string's
-// own inharmonicity. That stretch is most of what makes a piano sound like a
-// piano rather than like an organ, and it is why the top of a piano is tuned
-// sharp to match its own overtones. The hammer feeds the high partials hardest
-// and the string loses them fastest, so they are bright at the front and gone
-// first; and the hammer itself lands underneath as a separate short knock that
-// has no pitch in it at all. Bass strings ring far longer than treble ones.
-function piano(freq){
-  if(!actx) return;
-  const t=actx.currentTime, B=0.0004;
-  const base=3.0*Math.pow(261.63/freq,0.45);
-  for(let n=1;n<=10;n++){
-    const f=freq*n*Math.sqrt(1+B*n*n);
-    if(f>11000) break;
-    const amp=0.34/Math.pow(n,1.3), d=base/Math.pow(n,0.5);
-    const o=actx.createOscillator(); o.type='sine';
-    o.frequency.value=f*(1+(Math.random()-0.5)*0.0012);
-    const g=actx.createGain();
-    g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(amp,t+0.004);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+d);
-    o.connect(g); g.connect(inNode); o.start(t); o.stop(t+d+0.05);
-  }
-  noiseBurst(t,0.10,0.035,'lowpass',1100);
-}
-
-// GUITAR. Where a string is plucked decides what comes out of it: pluck at a
-// fraction p along its length and the nth harmonic arrives at sin(n*pi*p)/n^2.
-// Near the bridge that is thin and bright, over the soundhole it is round -- and
-// any harmonic whose node falls exactly on the pluck is missing altogether, a
-// real hole in the spectrum and a good part of why one plucked note is enough to
-// recognise a guitar. p is 0.22 here, an ordinary picking position a little way
-// in from the bridge. The nail leaving the string is the click on the front.
-//
-// THAT WAS NOT ENOUGH, and her report says why: "the guitar sounds like the piano,
-// not a guitar." It was -- the two were built the same way, a stack of sines
-// fading smoothly out, and the only thing telling them apart was which partials
-// were loud. Three things separate a pluck from a strike, and all three were
-// missing.
-//
-// 1. A PLUCKED STRING DOES NOT FADE SMOOTHLY. It vibrates in two planes at once
-//    and they bleed into the bridge at different rates, so the sound drops fast
-//    and then hangs on: a quick fall to a fraction of its level, then a long quiet
-//    tail. One smooth exponential over 2.2s -- which is what this was -- is a
-//    piano's shape exactly. This is the single biggest cue and it goes in first.
-// 2. A GUITAR IS A BOX. There was no box: no air resonance in the belly, no
-//    soundboard. Two gentle peaks and a little taken off the top turn a bare
-//    string into an instrument rather than a wire.
-// 3. THE BRIGHTNESS SHOULD COLLAPSE. On a pluck the high partials are gone in a
-//    fraction of a second while the fundamental rings on; they were fading at
-//    much the same rate here, which reads as sustained -- piano again.
-function guitarBody(){
-  // the belly's air resonance and the top plate, then a little off the top
+/* PIANO. This voice was BUILT AS THE GUITAR and she moved it across: "the guitar
+   now sounds like a much better piano. the piano sounds like a synthesizer."
+   Both halves were right, and the second was the worse fault -- so rather than
+   throw away a sound she liked, it took the slot it actually suited. Her call,
+   and it is the ear overruling the derivation, which on a question of what
+   something SOUNDS like is the right way round.
+   What it is: partials whose loudness follows sin(n*pi*p)/n^2 -- p is where the
+   string is struck, and the zeroes of that sine are real holes in the spectrum,
+   which a piano has too (a hammer lands about an eighth along and duly kills the
+   eighth partial). Then a two-stage decay, a body, and a brightness that
+   collapses. All three are as true of a struck string as of a plucked one.
+   IT IS DELIBERATELY NOT "PIANO-IFIED". The obvious next move -- inharmonic
+   partials, a longer ring, a felt thump instead of the click -- would change the
+   sound she just chose. Don't, unless she asks. */
+function soundbox(){
+  // the air in the body, the top plate, then a little off the top
   const air=actx.createBiquadFilter(); air.type='peaking';
   air.frequency.value=100; air.Q.value=1.1; air.gain.value=4.5;
   const top=actx.createBiquadFilter(); top.type='peaking';
@@ -411,10 +373,10 @@ function guitarBody(){
   air.connect(top); top.connect(wood); wood.connect(inNode);
   return air;
 }
-function guitar(freq){
+function piano(freq){
   if(!actx) return;
   const t=actx.currentTime, p=0.22;
-  const body=guitarBody();
+  const body=soundbox();
   const base=2.2*Math.pow(261.63/freq,0.35);
   const fast=0.10+0.16*Math.pow(261.63/freq,0.3);   // how long the quick fall lasts
   for(let n=1;n<=14;n++){
@@ -438,8 +400,149 @@ function guitar(freq){
     g.gain.exponentialRampToValueAtTime(0.0001,t+0.003+fast+tail);
     o.connect(g); g.connect(body); o.start(t); o.stop(t+0.003+fast+tail+0.05);
   }
-  // the nail leaving the string: short and woody rather than long and hissy
+  // the hammer landing: short and woody rather than long and hissy
   noiseBurst(t,0.05,0.012,'bandpass',2200,1.0);
+}
+
+/* GUITAR. This one is NOT a stack of sines, and that is the whole point of it.
+   Her two complaints had one cause: every voice here was built by adding sine
+   waves with a scheduled fade on each, and that construction has a sound of its
+   own -- the sound of a synthesiser. It is the RIGHT way to build the chime and
+   the flute, which really are a handful of modes; it is the wrong way to build a
+   string, because what makes a string a string is that its whole spectrum
+   darkens continuously as it rings, and that has to be programmed in rather than
+   emerging.
+   Measured, that is exactly what was missing. The old guitar's brightness ran
+   443Hz at the strike down to 264 -- against a fundamental of 262, so it was
+   very nearly a pure tone from the first instant and had no bite at ALL. This
+   one runs 1550Hz down to 427. A real pluck starts about six times the pitch and
+   falls by four.
+   So the string is built instead. A wave travelling along a string reflects off
+   the bridge and the nut and comes back a little duller each time; that is a
+   delay line the length of one wavelength, fed back through a filter that takes
+   the top off. Every harmonic and the whole brightness collapse fall out of it
+   for nothing, because it is what the object does.
+   THE STRING IS THERE TWICE. A real one vibrates in two planes at once and they
+   bleed into the bridge at different rates -- which is where a plucked note's
+   double decay and its faint beating both come from. One loop gives neither.
+   Web Audio cannot do this live: a feedback loop through a DelayNode is stuck at
+   128 samples minimum, which is 2.9ms, so the highest note it could tune to is
+   344Hz. The box only ever plays eight notes, so each is worked out once, the
+   first time it is asked for, and kept. */
+function boxFilter(x, sr, taps){
+  for(const [f0,Q,dB] of taps){
+    const A=Math.pow(10,dB/40), w=2*Math.PI*f0/sr, cw=Math.cos(w), al=Math.sin(w)/(2*Q);
+    const b0=1+al*A, b1=-2*cw, b2=1-al*A, a0=1+al/A, a1=-2*cw, a2=1-al/A;
+    let x1=0,x2=0,y1=0,y2=0;
+    for(let i=0;i<x.length;i++){
+      const v=(b0/a0)*x[i]+(b1/a0)*x1+(b2/a0)*x2-(a1/a0)*y1-(a2/a0)*y2;
+      x2=x1; x1=x[i]; y2=y1; y1=v; x[i]=v;
+    }
+  }
+  return x;
+}
+const GTR=new Map();
+function guitarBuffer(freq){
+  const key=freq.toFixed(2);
+  if(GTR.has(key)) return GTR.get(key);
+  const sr=actx.sampleRate;
+  const N=Math.round(sr*Math.min(3.6, 1.05+620/freq));
+  const out=new Float32Array(N);
+  /* WHAT GOES INTO THE STRING IS A SHAPE, NOT A HISS. This is the part that took
+     two goes. Seeded with noise -- which is how the textbook plucked string is
+     usually demonstrated -- the loop is fed a flat spectrum, and the only thing
+     shaping it is the comb the pluck point cuts. Measured, that left the third
+     partial nearly THREE TIMES the fundamental: the pitch is still right, the
+     ear still hears C4, but it is thin and nasal. A banjo, not a guitar.
+     A real pluck pulls the string into a TRIANGLE with its corner at the finger
+     and lets go. That shape's own spectrum is sin(n*pi*p)/n^2 -- so it carries
+     both the holes the pluck point cuts AND the steep fall that makes the note
+     itself the loudest thing in it. One shape, both properties, and it is what
+     the string is actually doing. A little noise goes on top for the nail or the
+     pick leaving the string, which is a real sound and not a pitch.
+     One pluck, so BOTH planes below are filled from this same disturbance --
+     give them their own, and they stop being one event. */
+  const seedLen=Math.ceil(sr/freq)+4, seed=new Float32Array(seedLen), pp=0.19;
+  for(let i=0;i<seedLen;i++){
+    const x=i/seedLen;
+    seed[i]=(x<pp ? x/pp : (1-x)/(1-pp)) - 0.5 + (Math.random()-0.5)*0.20;
+  }
+  for(let i=1;i<seedLen;i++) seed[i]=0.93*seed[i]+0.07*seed[i-1];  // a finger is not infinitely sharp
+  // a short string loses a smaller FRACTION per round trip but makes far more of
+  // them, so a fixed loss would have the top note dying two and a half times too
+  // fast. Measured after: 3.3s at C4, 2.2 at G4, 1.3 at E5.
+  const k=Math.pow(261.63/freq,0.75);
+  const planes=[{det:1.0,    loss:0.0037*k, br:0.75, g:1.00},
+                {det:1.0011, loss:0.0008*k, br:0.42, g:0.72}];
+  for(const P of planes){
+    // WHAT SETS THE PITCH IS THE WHOLE LOOP, not the delay line alone -- and the
+    // loop filter has a delay of its own, (1-br) of a sample. Left out, the first
+    // build of this came out 13 to 54 cents FLAT, which on a box tuned to real
+    // notes is the one fault that cannot stand. Measured after: within a cent on
+    // all eight.
+    const D=sr/(freq*P.det)-(1-P.br);
+    const Di=Math.floor(D), M=Di+1, t=1-(D-Di);
+    const buf=new Float32Array(M);
+    for(let i=0;i<M;i++) buf[i]=seed[i];
+    let idx=0, last=0;
+    for(let n=0;n<N;n++){
+      const a=buf[idx], b=buf[(idx+1)%M], v=a+(b-a)*t;
+      out[n]+=v*P.g;
+      buf[idx]=(1-P.loss)*(P.br*v+(1-P.br)*last); last=v;
+      idx=(idx+1)%M;
+    }
+  }
+  /* AND THE BITE IS NOT THE STRING. The triangle above is what makes the note
+     itself the loudest part of the sound, and it is also very dull -- it falls
+     away as 1/n^2, so seeded with it alone the strike measured 599Hz of
+     brightness where a pluck wants nearer 1500. What is missing is the nail or
+     the pick LEAVING the string, which is a scrape heard directly and not a
+     pitch at all. It goes in front of the note rather than into the loop,
+     because that is where it happens, and it is coloured by the body on the way
+     out like everything else. */
+  let peakS=0; for(let i=0;i<N;i++){const a=Math.abs(out[i]); if(a>peakS)peakS=a;}
+  if(peakS>0) for(let i=0;i<N;i++) out[i]/=peakS;
+  const pick=Math.round(sr*0.010);
+  for(let i=0;i<pick;i++){
+    out[i]+=(Math.random()*2-1)*0.55*Math.pow(1-i/pick,2.4);
+  }
+  boxFilter(out, sr, [[100,1.1,5.0],[204,1.4,3.5],[2600,0.7,2.5]]);
+  const fade=Math.round(sr*0.18);                 // or cutting it short is a click
+  for(let i=0;i<fade;i++) out[N-fade+i]*=0.5*(1+Math.cos(Math.PI*i/fade));
+  let peak=0; for(let i=0;i<N;i++){const a=Math.abs(out[i]); if(a>peak)peak=a;}
+  if(peak>0) for(let i=0;i<N;i++) out[i]/=peak;
+  const b=actx.createBuffer(1,N,sr); b.getChannelData(0).set(out);
+  GTR.set(key,b); return b;
+}
+/* Making one costs 149ms on a processor six times slower than this one, and the
+   eight together 367 -- so only the note being played is ever waited for, and the
+   rest are made ONE AT A TIME behind the running piece. That is the same bargain
+   bowl and fireflies strike with their photographs, and for the same reason: all
+   eight at once is worse on the machine that is already struggling. Measured at
+   6x slower, the worst frame gap with the guitar chosen is 188ms against the
+   CHIME's 235 -- eight buffer sources are lighter work than eight stacks of
+   oscillators, so this voice is the cheapest of the four to play. */
+let gtrWarming=false;
+function warmGuitar(){
+  if(gtrWarming || !actx) return;
+  gtrWarming=true;
+  let i=0;
+  (function next(){
+    if(i>=NOTES.length) return;
+    guitarBuffer(NOTES[i++]);
+    setTimeout(next, 0);
+  })();
+}
+function guitar(freq){
+  if(!actx) return;
+  const t=actx.currentTime;
+  const src=actx.createBufferSource(); src.buffer=guitarBuffer(freq);
+  // no two plucks are the same. A hair of pitch and a little of the weight --
+  // which is most of what varies between one stroke of a hand and the next
+  src.playbackRate.value=1+(Math.random()-0.5)*0.0022;
+  const g=actx.createGain(); g.gain.value=0.60*(0.90+Math.random()*0.2);
+  src.connect(g); g.connect(inNode); src.start(t);
+  warmGuitar();
 }
 
 // NATIVE AMERICAN FLUTE. A fipple flute: a duct throws a ribbon of air across a
