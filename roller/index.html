@@ -302,8 +302,16 @@
   const CALIBRATION_MS = 500;
 
   function useDeviceTilt(){
-    window.addEventListener('deviceorientation', (e) => {
+    // A device that HAS an accelerometer can still never fire this -- her report
+    // off the Kindle: "roller flatly does not tilt". Pressing the phone button used
+    // to turn orientation on and simply assume it worked, with no way back, so on a
+    // machine whose browser stays silent the tray had no control at all and the only
+    // way out was reloading. If nothing usable has arrived by the time a hand could
+    // have tilted it, the listener comes off and the pointer takes over instead.
+    let heard = false;
+    const onOrient = (e) => {
       if (e.beta === null || e.gamma === null) return;
+      heard = true;
       // "flat" isn't one fixed angle — a phone propped on a table for a
       // countdown might sit at 20 degrees or 70 depending on the case or
       // the table, and everyone holds a phone slightly differently even
@@ -329,7 +337,13 @@
       }
       rawTiltX = Math.max(-1, Math.min(1, (e.gamma - baseGamma) / 22));
       rawTiltY = Math.max(-1, Math.min(1, (e.beta - baseBeta) / 22));
-    });
+    };
+    window.addEventListener('deviceorientation', onOrient);
+    setTimeout(() => {
+      if (heard) return;
+      window.removeEventListener('deviceorientation', onOrient);
+      useMouseTilt();
+    }, 1400);
   }
 
   function useMouseTilt(){

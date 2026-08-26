@@ -105,7 +105,14 @@ snooze — last in the row once the timer is on — hangs 11px off the right-han
 scrollbar is hidden. **She then re-ran the whole page on all four machines and passed it**: everything she
 found is fixed and re-checked on the devices themselves, not in a screenshot. candler is the first piece
 through that test, and the standard for the ones that follow. |
-| `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does."<br>Three
+| `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a small object around (sea-glass pebble, disc, or jellybean stone); tilt-controlled like `galileo`/`windower`'s location search but via device orientation or mouse<br>**Done**, pending her own testing of the bean's weave and the spin off a wall. Deliberately unscored: "there's other things like it, but none really do what it does."<br>**It did not tilt AT ALL on the Kindle** — her report, Aug 2026, and the cause was a missing
+fallback rather than anything about tilt. The gate offers two ways in, the phone button and the
+desktop one. Pressing the phone button turned device orientation on and **assumed it worked**, with
+`return` before the pointer path was ever wired — so on a machine whose browser never fires
+`deviceorientation` the tray had **no control whatever** and the only way out was reloading. A Kindle
+Fire has an accelerometer and still may not fire it. It now waits 1.4s for a usable reading and, if
+none comes, takes the listener off and uses the pointer instead. Measured on a browser that never
+fires the event: **0 pixels moved under a finger drag before, 5293 after**.<br>Three
 things Aug 2026, all hers, all after she had it in front of her.<br>**The speed slider was not a speed
 slider.** It multiplied how hard tilt pushed and nothing else — not friction, not the wall bounce — so
 once anything was moving it careered about at much the same rate wherever the slider sat. Measured
@@ -164,7 +171,12 @@ what names two materials to the ear before any note has established, then the sh
 note. **STRUCK, not blown**, which is the easy thing to get backwards — blown across the top, more
 liquid means a shorter air column and a HIGHER pitch; struck, the liquid mass-loads the walls and drags
 it DOWN. Measured on the running page as it burned: **587Hz ringing 0.98s** at the start, 649 at 1.18s
-two minutes later, **791 at 1.62s** nearly dry.<br>**And WHERE you tap earns its place**, which the old
+two minutes later, **791 at 1.62s** nearly dry.<br>**The tap only worked on the LEFT of the base** — her report off the machines, Aug 2026. The nail's
+facing was fixed: its point always faced right, so carried round to the far side of the lamp the point
+faced *away* from the copper and the tip never met it. It turns in the hand now, to face whichever side
+it is brought in from. The 40-unit hysteresis is load-bearing — flipping on the axis itself spins the
+nail every time the hand crosses the middle of the lamp, which is most of the way to it. Measured, four
+approaches (left and right, high and low): **two of four tapped before, four of four after**.<br>**And WHERE you tap earns its place**, which the old
 note in the file had parked as optional. Below the oil line the wall is against the liquid and barely
 rings — measured, **423Hz dead in 0.13s** against 587Hz for 0.98s higher up the same side. Four minutes
 in the two taps came out **identical**, which is the oil having fallen past the lower one. The level
@@ -692,7 +704,14 @@ instead of struck — with a slow attack, a chiff at the front, and vibrato arri
 note has settled, the way a player's does.<br>The icons are **drawn, not emoji**, deliberately: the
 only flute emoji arrived in 2022 and a Kindle Fire would show an empty box where it should be.<br>**The
 rabbit is grey.** Her call — white was the brightest thing on the page, brighter than the disc or the
-brass, so the eye went to the tempo control before the music box.<br>**And it was clipping.** Eight
+brass, so the eye went to the tempo control before the music box. **It was greyed with a CSS filter and
+that did not hold**: her report off the Windows tablet, *"the rabbit is still white"*. Windows draws
+emoji as colour glyphs and will not put a filter over one, so the fix worked on the machine it was
+written on and nowhere else. **The tortoise and the hare are drawn now**, in the same stroke and the
+same `currentColor` as the four instruments beside them — which is the very reason those were drawn.
+The general rule, and it is stronger than the site's usual emoji-over-text preference: **if an emoji's
+COLOUR matters, it cannot be an emoji.** A filter over a colour glyph is a fix that only works where it
+was written.<br>**And it was clipping.** Eight
 rings can be pinned on one step, and eight notes together measured nearly **three times full scale**,
 1.2% of samples squared off flat — a buzz over the note, and present long before the new voices. A
 `DynamicsCompressorNode` is the obvious answer and is the WRONG tool: ~6ms of lookahead and gain
