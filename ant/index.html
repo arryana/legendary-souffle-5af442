@@ -103,6 +103,17 @@
     width:14px; height:14px; border-radius:50%; border:none;
     background:var(--brass); cursor:pointer;
   }
+  /* THE THREE OBJECTS ARE DRAWN, NOT EMOJI, and there were two reasons.
+     🪨 and 🪵 both arrived in 2020, and the oldest machine this is tested on is a
+     Kindle Fire -- the newest emoji it is actually PROVEN to render is 2017 (bowl's
+     🥣 and candler's 🧘, both of which passed on it), so these two were three years
+     past anything demonstrated and would have come up as empty boxes if they were
+     missing. And the `color:var(--brass)` below never reached any of the three
+     anyway: a colour emoji is a bitmap the font hands over whole, so it takes no
+     colour from CSS -- which is musebox's white rabbit again. 🍃 renders everywhere
+     and was drawn along with them, because two brass outlines beside one green
+     emoji is worse than either. */
+  .iconBtn svg{ width:17px; height:17px; display:block; }
   .iconBtn{
     width:30px; height:30px; border-radius:50%;
     border:1px solid rgba(242,233,216,.3); background:transparent;
@@ -139,6 +150,7 @@
     .sliderRow{ gap:6px; }
     #dock input[type=range]{ width:58px; }
     #dock .iconBtn{ width:26px; height:26px; }
+    #dock .iconBtn svg{ width:15px; height:15px; }
   }
 </style>
 <style>
@@ -221,15 +233,15 @@
   <div class="dockRow">
     <div class="sliderRow"><span title="food">🍭</span><input type="checkbox" id="foodCheck" checked aria-label="food"></div>
     <div class="sliderRow">
-      <button type="button" id="pebbleBtn" class="iconBtn" title="pebble" aria-label="pebble">🪨</button>
+      <button type="button" id="pebbleBtn" class="iconBtn" title="pebble" aria-label="pebble"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.6 13.4c-.5-3.7 2.4-6.9 6.6-7.1 4.2-.2 7.8 2.6 8.2 6.1.4 3.4-2.6 5.9-6.6 6.1-4.3.2-7.7-1.6-8.2-5.1z"/><path d="M8 10.9c1.7-1.2 4-1.7 6-1.3"/></svg></button>
       <input type="range" id="pebbleSizeSlider" min="0" max="100" value="50" aria-label="pebble size">
     </div>
     <div class="sliderRow">
-      <button type="button" id="leafBtn" class="iconBtn" title="leaf" aria-label="leaf">🍃</button>
+      <button type="button" id="leafBtn" class="iconBtn" title="leaf" aria-label="leaf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 19.5C4.5 11.7 10.4 5 19.5 4.5c.4 8.8-5.5 15-15 15z"/><path d="M4.5 19.5 13.6 10.4"/><path d="M9.2 14.7 11.5 11"/></svg></button>
       <input type="range" id="leafSizeSlider" min="0" max="100" value="50" aria-label="leaf size">
     </div>
     <div class="sliderRow">
-      <button type="button" id="twigBtn" class="iconBtn" title="twig" aria-label="twig">🪵</button>
+      <button type="button" id="twigBtn" class="iconBtn" title="twig" aria-label="twig"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20 19 5"/><path d="M12.6 11.4 17.2 9.6"/><path d="M9.8 14.2 6.4 11.9"/></svg></button>
       <input type="range" id="twigSizeSlider" min="0" max="100" value="50" aria-label="twig size">
     </div>
   </div>
@@ -565,6 +577,38 @@
   }
   countSlider.addEventListener('input', syncAntCount);
 
+  /* THE EDGE OF THE TRAY IS A WALL, AND A WALL IS SOMETHING YOU TURN AWAY FROM.
+     Every move used to be clamped -- Math.max(4, Math.min(W-4, ...)) -- which pins
+     an ant against the border and leaves its heading still pointing into it, so it
+     grinds along the edge until its run timer happens to run out. At a walking pace
+     an ant seldom reaches a wall and this never showed. Wound up, they get there ten
+     times sooner and STAY: measured at full speed, 41.4% of all the movement on the
+     page was happening within a whisker of an edge against 24% at the middle of the
+     slider, and movement out in the open collapsed from 13,030 pixels to 6,965.
+     That is what made the speed slider get WORSE above halfway -- ground covered in
+     five seconds ran 1.33, 3.09, 4.46, 4.00, 3.62 per cent across the range, rising
+     to the middle and then falling. The ants were not slower up there; they were
+     stuck to the sides.
+     Turning away is also just what an ant does at the edge of a tray. */
+  function moveWithin(a, nx, ny){
+    let turned = false;
+    if (nx < 4){ nx = 4; a.heading = Math.PI - a.heading; turned = true; }
+    else if (nx > W-4){ nx = W-4; a.heading = Math.PI - a.heading; turned = true; }
+    if (ny < 4){ ny = 4; a.heading = -a.heading; turned = true; }
+    else if (ny > H-4){ ny = H-4; a.heading = -a.heading; turned = true; }
+    a.x = nx; a.y = ny;
+    if (turned){
+      // a shade of randomness, or an ant in a corner ping-pongs along one line
+      a.heading += (Math.random()*2-1)*0.35;
+      // and it commits to the new direction, rather than turning back into the
+      // wall the moment the old run resumes
+      a.straightTimer = 40 + Math.random()*80;
+      // whatever it was in the middle of crossing, it isn't any more
+      a.climbing = null; a.onTwig = null;
+    }
+    return turned;
+  }
+
   function stepAnt(a, dt){
     const speed = 1.3 * speedMult * dt;
     a.wobble += dt*0.15;
@@ -579,8 +623,7 @@
       if (Math.hypot(dx,dy) < 4){ a.onTwig = null; }
       else {
         a.heading = Math.atan2(dy,dx);
-        a.x = Math.max(4, Math.min(W-4, a.x + Math.cos(a.heading)*speed));
-        a.y = Math.max(4, Math.min(H-4, a.y + Math.sin(a.heading)*speed));
+        moveWithin(a, a.x + Math.cos(a.heading)*speed, a.y + Math.sin(a.heading)*speed);
         a.walkPhase += speed;
       }
       return;
@@ -591,13 +634,10 @@
       // than around — hold the heading it started with (a real ant doesn't
       // change its mind partway up) and ignore the search/trail/collision
       // logic below entirely until it's clear of the far side
-      let cx = a.x + Math.cos(a.heading)*speed;
-      let cy = a.y + Math.sin(a.heading)*speed;
-      cx = Math.max(4, Math.min(W-4, cx));
-      cy = Math.max(4, Math.min(H-4, cy));
-      a.x = cx; a.y = cy;
+      moveWithin(a, a.x + Math.cos(a.heading)*speed, a.y + Math.sin(a.heading)*speed);
       a.walkPhase += speed;
-      if (Math.hypot(a.climbing.x-a.x, a.climbing.y-a.y) > a.climbing.r*1.05) a.climbing = null;
+      // the turn above may already have ended the climb, hence the guard
+      if (a.climbing && Math.hypot(a.climbing.x-a.x, a.climbing.y-a.y) > a.climbing.r*1.05) a.climbing = null;
       return;
     }
 
@@ -692,9 +732,7 @@
       nx = a.x + Math.cos(a.heading)*speed;
       ny = a.y + Math.sin(a.heading)*speed;
     }
-    nx = Math.max(4, Math.min(W-4, nx));
-    ny = Math.max(4, Math.min(H-4, ny));
-    a.x = nx; a.y = ny;
+    moveWithin(a, nx, ny);
     a.walkPhase += speed;
   }
 

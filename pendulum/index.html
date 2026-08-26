@@ -45,10 +45,22 @@
     user-select:none; transition:color .35s ease, text-shadow .35s ease; flex:0 0 auto; }
   #eternityToggle.active, #realToggle.active{ color:#e9d9a8; text-shadow:0 0 9px rgba(233,217,168,.75); }
   #eternityToggle:focus-visible, #realToggle:focus-visible{ outline:1px solid rgba(233,217,168,.6); outline-offset:4px; }
-  /* the clock face is a wide glyph next to the slim infinity sign — sized down
-     so the two sit at the same visual weight */
-  #realToggle{ font-size:16px; filter:saturate(.55); }
-  #realToggle.active{ filter:none; }
+  /* THE CLOCK IS DRAWN, NOT AN EMOJI, and that is the whole of why. It used to be
+     the 🕰 glyph, told apart ticked from unticked by `color` and by
+     `filter:saturate()`. A colour emoji is a little bitmap the font hands over
+     whole: it ignores `color` on EVERY platform, and Windows ignores `filter` on
+     it too -- which is exactly how musebox's white rabbit stayed white on the
+     tablet. So the only thing left saying whether this was on or off was a faint
+     glow, on a control that carries state. The ∞ beside it is a plain text glyph
+     and dimmed properly all along, so the two halves of one control behaved
+     differently.
+     Drawn in currentColor, the rules above do what they always meant to. The glow
+     is a drop-shadow rather than a text-shadow, since there is no text now -- but
+     the colour is the cue and the glow is only the flourish, which is the way
+     round it should be. */
+  #realToggle svg{ width:19px; height:19px; display:block; }
+  #realToggle{ transition:color .35s ease, filter .35s ease; }
+  #realToggle.active{ filter:drop-shadow(0 0 5px rgba(233,217,168,.75)); }
   /* with the plane handed over to the real clock there is nothing left for the
      speed slider to scale, so it stands down rather than sitting there dead */
   input[type=range]:disabled{ opacity:.26; }
@@ -135,7 +147,7 @@
 <div id="dock">
   <canvas id="globeWrap" width="164" height="164" aria-label="latitude" role="slider" tabindex="0"></canvas>
   <input type="range" id="speedSlider" min="0" max="100" value="80" aria-label="time speed">
-  <div id="realToggle" role="checkbox" tabindex="0" aria-checked="false" aria-label="real-world time">🕰</div>
+  <div id="realToggle" role="checkbox" tabindex="0" aria-checked="false" aria-label="real-world time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 19.4V11a7.5 7.5 0 0 1 15 0v8.4z"/><circle cx="12" cy="11" r="4.1"/><path d="M12 8.5V11l2 1.4"/><path d="M7 19.4v1.5M17 19.4v1.5"/></svg></div>
   <div id="eternityToggle" role="checkbox" tabindex="0" aria-checked="false" aria-label="ever-thickening trace">∞</div>
   <button type="button" id="loc-flag" title="check another location" aria-label="check another location" aria-expanded="false">🚩</button>
   <form id="loc-search" autocomplete="off">

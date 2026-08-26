@@ -279,7 +279,28 @@ capped to it. The cap only ever TIGHTENS, so a desktop keeps the sheet's own 56v
 Measured clear at 240, 280, 320, 390, 600 and 1200.<br>And the `#music` rule that lifted the
 headphones clear of the dock was still carrying **323px, the height of the dock it was written for** —
 with the dock at 136 that put them 7px off the TOP of the screen, over the back disc. It is 146 now,
-which is the dock's height plus a gap; **if the dock's height changes again, change this with it.** |
+which is the dock's height plus a gap; **if the dock's height changes again, change this with it.**<br>**The speed slider got WORSE above halfway**, found Aug 2026 by measurement before she ever ran the
+piece — and it is roller's fault in another shape. Ground covered in five seconds ran **1.33, 3.09,
+4.46, 4.00, 3.62** per cent across the range: rising to the middle and then falling, so pushing it
+past half made the ants *worse* at getting about. The cause is that **the edge of the tray was a
+clamp and not a wall.** Every move was `Math.max(4, Math.min(W-4, ...))`, which pins an ant on the
+border and leaves its heading still pointing into it, so it grinds along the edge until its run timer
+happens to expire. At a walking pace an ant seldom reaches a wall and it never showed; wound up, they
+get there ten times sooner and stay. Measured at full speed, **41.4% of all the movement on the page
+was happening within a whisker of an edge** against 24% at the middle, and movement out in the open
+collapsed from 13,030 pixels to 6,965. They turn away now, which is also simply what an ant does at
+the edge of a tray: coverage **1.99, 4.74, 5.17, 5.98, 6.96** — rising the whole way, a 3.5x spread —
+and edge-crowding at full speed down to **16.2%**. Three runs a setting at the top, because one run
+each showed a dip that was only spread. The turn clears `climbing` and `onTwig` (an ant that has hit
+the wall is not still crossing a twig), takes a shade of randomness or a corner ping-pongs it along
+one line, and resets `straightTimer` or the old run turns it straight back into the wall.<br>**The
+three objects are drawn, not emoji**, and there were two reasons. 🪨 and 🪵 both arrived in **2020**,
+and the newest emoji her Kindle Fire is actually *proven* to render is **2017** — bowl's 🥣 and
+candler's 🧘, both of which passed on it — so these were three years past anything demonstrated and
+would have shown as empty boxes if missing. And `color:var(--brass)` never reached any of the three
+anyway, because a colour emoji is a bitmap the font hands over whole and takes no colour from CSS:
+musebox's white rabbit again. 🍃 renders everywhere and was drawn along with them, since two brass
+outlines beside one green emoji is worse than either. |
 | `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Fourth piece
 through her four-device test, Aug 2026. **`windower-frame.png`'s centre pane was cut out of a light
 background** and kept a 3px white halo all the way round it — the same family of fault as the shelf plates,
@@ -957,7 +978,16 @@ the plate fills the card edge to edge** rather than sitting at 79% of its width,
 band — the brightest part, by the dwell curve — at the frame's own edges. Shot with ∞ ticked and the
 speed at 100 for about two minutes, which is what gives a full rosette with pins still standing as
 well as knocked. It is a quieter card than gyre's, and that is correct: it is a quieter piece, and the
-loud version was the lie. |
+loud version was the lie.<br>**The real-time tick was unreadable, and it is the white rabbit exactly**
+— found Aug 2026 by sweeping for it rather than by her hitting it. The 🕰 showed ticked from unticked
+through `color` and `filter:saturate()`, and **a colour emoji is a little bitmap the font hands over
+whole**: it ignores `color` on *every* platform, and Windows ignores `filter` on it too. So the only
+thing left saying whether the piece was running on the real clock was a faint glow — on a control that
+carries state. The ∞ beside it is a plain text glyph and dimmed properly all along, so the two halves
+of one control behaved differently and nobody noticed. It is a drawn mantel clock in `currentColor`
+now, so the existing rules do what they always meant to; the glow became a `drop-shadow` since there is
+no text left to shadow. **The colour is the cue and the glow only the flourish**, which is the way
+round it should be — the reliable thing carries the state. |
 | `storm/index.html` | ✅ | ✅ | A **storm glass** whose crystals form and clear with the visitor's real changing weather (open-meteo)<br>**Done**, and the piece that finishes instrumenta. Fifth through her four-device test, Aug 2026,
 and four things came out of it.<br>**The needle lied whenever it had nothing to say.** Untranslated,
 `#baro-needle-g` sits at x=0 in its own SVG — off the left-hand end of the printed scale, past
