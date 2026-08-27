@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="description" content="tools and toys for twiddling.">
-<meta name="theme-color" content="#101521">
+<meta name="theme-color" content="#2f3d4d">
 <link rel="canonical" href="https://sagne.co.uk/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="sagne">
@@ -35,7 +35,7 @@
      background has been recoloured to the same value, so the frame's edge
      disappears and the case simply stands in the dark rather than being pasted
      onto a blue card. */
-  html,body{ height:100%; margin:0; background:#101521; color:#e2d6bb;
+  html,body{ height:100%; margin:0; background:#2f3d4d; color:#e2d6bb;
     overflow-x:hidden;  /* the ground shadow spreads wider than the case; it fades
                            to nothing at its ends, so clipping it is invisible */
     font-family:'Cormorant Garamond', Georgia, serif; }
@@ -53,8 +53,26 @@
   /* The case does not stand on a drawn floor -- there isn't one, and the plain
      wall is the point. It stands on the evidence of one: the dark pools where its
      two feet bear, and thins away between them, the way real weight does. */
-  #stage{ position:relative; flex:none; }
-  #stage::after{ content:''; position:absolute; left:-8%; right:-8%; top:100%;
+  /* On a wide screen the wall fills the window and the surplus comes off its
+     ends. On a phone the wall is a tall picture: it takes the full width and is
+     allowed to run past the bottom, which is the answer kaleidoscope, storm,
+     chimes and ant all take when content genuinely does not fit. */
+  #stage{ position:fixed; inset:0; width:100vw; height:100vh; }
+  html.skin-phone, html.skin-small,
+  html.skin-phone body, html.skin-small body{ height:auto; overflow-y:auto; }
+  /* the case stood on the floor of the page and was padded off its edges; a wall
+     that fills the screen is not standing on anything */
+  html.skin-phone body, html.skin-small body{ padding:0; }
+  html.skin-phone #stage, html.skin-small #stage{
+    position:relative; inset:auto; width:100vw;
+    height:calc(100vw * var(--wallratio)); }
+  html.skin-phone #frame, html.skin-small #frame{
+    --h: calc(100vw * var(--wallratio));
+    height:var(--h); width:100vw; }
+  /* A wall is not furniture: it casts no shadow on a floor and needs no light
+     laid on behind it, so the case's two pieces of stagecraft are off here. */
+  #stage::after{ content:none; }
+  #stage::after--was{ content:''; position:absolute; left:-8%; right:-8%; top:100%;
     height:10%; pointer-events:none; opacity:1;
     transition:opacity .45s ease;
     background:
@@ -75,7 +93,8 @@
      background paints OVER a negative-z-index descendant, so the glow simply
      vanishes. Being first in the stage and unpositioned in z, it lands behind
      #frame on document order alone. */
-  #stage::before{ content:''; position:absolute; pointer-events:none;
+  #stage::before{ content:none; }
+  #stage::before--was{ position:absolute; pointer-events:none;
     left:-50%; right:-50%; top:-40%; bottom:-24%;
     opacity:1; transition:opacity .45s ease;
     background:
@@ -140,9 +159,12 @@
   body.tray #frame{ filter:brightness(.16) saturate(.7); transition:filter .5s ease; }
   body.tray #back{ display:none; }   /* the plate at the foot of the tray is the way back */
 
+  /* The wall fills the window rather than sitting in it: whichever of the two
+     needs more, gets it, and the surplus is cropped off the FOOT -- which is
+     floor, and the only part of the picture nothing stands on. */
   #frame{ position:relative; overflow:hidden; flex:none;
-    --h: min(95vh, calc(96vw * 1.230469), 1260px);
-    height:var(--h); width:calc(var(--h) / 1.230469);
+    --h: max(100vh, calc(100vw * var(--wallratio)));
+    height:100vh; width:100vw;
     transition:width .78s cubic-bezier(.42,.02,.16,1); }
   /* Sizes here are fractions of the case's own height, so the lettering keeps its
      proportion to the furniture at every screen size. They cannot be written as
@@ -151,9 +173,9 @@
   /* The case keeps its OWN width and stays centred, rather than filling the frame.
      That is what lets the frame widen on a zoom without the photograph stretching
      with it -- unzoomed the two are exactly the same width, so nothing moves. */
-  #case{ position:absolute; top:0; bottom:0;
-    left:50%; width:calc(var(--h) / 1.230469);
-    margin-left:calc(var(--h) / 1.230469 / -2);
+  #case{ position:absolute; top:0; bottom:auto; height:var(--h);
+    left:50%; width:calc(var(--h) / var(--wallratio));
+    margin-left:calc(var(--h) / var(--wallratio) / -2);
     transform-origin:50% 50%;
     transition:transform .78s cubic-bezier(.42,.02,.16,1); }
   #case > img.wood{ width:100%; height:100%; display:block; }
@@ -167,7 +189,8 @@
   #oval{ position:absolute; display:flex; align-items:center; justify-content:center;
     font:700 1em/1 'Libre Baskerville', Georgia, serif; letter-spacing:.12em; z-index:2;
     appearance:none; border:0; padding:0; cursor:pointer;
-    background:url(shelfoval.png) no-repeat center/100% 100%;
+    background:url(sagne-plate.png) no-repeat center/100% 100%;
+    flex-direction:column;
     filter:drop-shadow(0 2px 3px rgba(0,0,0,.8));
     /* engraved: cut dark into the brass, with a bright lip on the lower edge where
        the light catches the cut */
@@ -176,15 +199,16 @@
      nudge is optical: only the g drops below the baseline, so a word centred by
      its box reads as sitting low on the brass. The trailing letter-space after
      the final e is taken back the same way the plate names take theirs. */
-  #oval i{ font-style:normal; line-height:1; display:block;
-    transform:translateY(-0.055em); margin-right:-.10em; }
+  #oval i{ font-style:normal; line-height:1; display:block; margin-right:-.10em; }
+  #oval u{ text-decoration:none; font-weight:400; line-height:1; display:block;
+    font-size:.42em; letter-spacing:.03em; margin-top:.42em; color:#3a2606; }
   #oval:focus-visible{ outline:1px solid rgba(242,233,216,.45); outline-offset:3px; }
 
   /* the name of the type, engraved on the plate of the shelf it labels */
   .plate{ position:absolute; display:flex; align-items:center; justify-content:center;
     font:700 1em/1 'Libre Baskerville', Georgia, serif; letter-spacing:.045em;
     color:#4a3208; text-shadow:0 1px 0 rgba(255,240,200,.42), 0 -1px 1px rgba(0,0,0,.28);
-    white-space:nowrap; cursor:pointer;
+    white-space:nowrap; cursor:pointer; z-index:4;
     background-repeat:no-repeat; background-position:center; background-size:100% 100%;
     filter:drop-shadow(0 1px 2px rgba(0,0,0,.75)); }
   .plate i{ font-style:normal; line-height:1; }
@@ -198,7 +222,13 @@
      zoom the case does. */
   .stand{ position:absolute; left:0; top:-8.16%; width:100%; height:117.96%;
     background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 84.2 144.5' preserveAspectRatio='none'><g fill='%2315181d'><rect x='39.4' y='5' width='5.4' height='133' rx='1.2'/><rect x='29' y='5.4' width='26' height='5' rx='1.4'/><rect x='29' y='132.5' width='26' height='5' rx='1.4'/><rect x='24.6' y='137' width='35' height='7.5' rx='1.6'/></g><g fill='%2359636f' opacity='.55'><rect x='29' y='5.4' width='26' height='1' rx='.5'/><rect x='29' y='132.5' width='26' height='.9' rx='.45'/><rect x='24.6' y='137' width='35' height='1.1' rx='.55'/><rect x='39.4' y='5' width='1.5' height='133' rx='.7'/></g></svg>") no-repeat center/100% 100%;
-    filter:drop-shadow(0 2px 3px rgba(0,0,0,.75)); pointer-events:none; z-index:0; }
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.75)); pointer-events:none; z-index:2; }
+
+  /* Background, shelves, stands, cards -- her order. The board is drawn a second
+     time over the cards so a stand's foot lands on the wood and anything lower
+     goes behind the shelf's front edge. */
+  .boardface{ position:absolute; left:0; z-index:1; pointer-events:none;
+    background-image:var(--wallimg); background-repeat:no-repeat; }
 
   /* the pieces, standing face front on their shelf */
   .piece{ position:absolute; display:block; text-decoration:none;
@@ -206,10 +236,10 @@
     transform-origin:50% 100%; }
   /* the upright runs BEHIND the card -- an absolutely positioned stand would
      otherwise paint over it, and every picture got a black bar down its middle */
-  .piece img{ position:relative; z-index:1;
+  .piece img{ position:relative; z-index:3;
     width:100%; height:100%; object-fit:cover; display:block;
     border-radius:2px; box-shadow:0 2px 4px rgba(0,0,0,.8), 0 0 0 1px rgba(0,0,0,.5); }
-  .piece:hover{ transform:scale(1.14) translateY(calc(var(--h) * -0.0037)); z-index:5; }
+  .piece:hover{ transform:scale(1.14) translateY(calc(var(--h) * -0.0037)); z-index:8; }
   .piece:focus-visible{ outline:2px solid #b8903f; outline-offset:2px; }
 
   /* zoomed in: the shelf in focus stands forward, the rest steps back */
@@ -221,16 +251,16 @@
      brass and cards all go back together, and the lit shelf reads as the only one
      the light is falling on. The band's edges are set in JS from the same
      measurement table as everything else. */
-  #shelfveil{ position:absolute; inset:0; z-index:3; pointer-events:none;
+  #shelfveil{ position:absolute; inset:0; z-index:5; pointer-events:none;
     opacity:0; transition:opacity .55s ease; }
   #case.zoomed #shelfveil{ opacity:1; }
   /* Everything but the card in hand falls away. Not an effect for its own sake:
      with the furniture dark the card can be lifted well clear of it without the
      softening of the blown-up photograph behind it being the thing you notice. */
-  #veil{ position:absolute; inset:0; z-index:4; pointer-events:none;
+  #veil{ position:absolute; inset:0; z-index:6; pointer-events:none;
     background:#05080e; opacity:0; transition:opacity .5s ease; }
   #case.on-card #veil{ opacity:.9; }
-  #case.on-card .piece.picked{ z-index:7; transform-origin:50% 50%;
+  #case.on-card .piece.picked{ z-index:9; transform-origin:50% 50%;
     transition:transform .78s cubic-bezier(.42,.02,.16,1); }
   #case.on-card .piece.picked:hover{ transform:none; }
   #case.on-card .piece.on:not(.picked){ opacity:.35; }
@@ -274,11 +304,11 @@
   <div id="stage">
   <div id="frame">
     <div id="case">
-      <img class="wood" src="shelves-navy.jpg" alt="A dark case of five open shelves">
+      <img class="wood" alt="Five open shelves on a dark wall">
       <div id="shelfveil"></div>
       <div id="veil"></div>
       <button type="button" id="oval" aria-expanded="false" aria-controls="say-sagne"
-              aria-label="what is this?">sagne</button>
+              aria-label="what is this?"><i>sagne</i><u>/se&#618;n/</u></button>
       <button type="button" id="ask" aria-expanded="false" aria-controls="say-about"
               aria-label="about sagne"><img src="shelfdisk.png" alt=""><i>?</i></button>
     </div>
@@ -307,79 +337,96 @@
   // frame -- is worked out from it. The previous version carried forty hand-typed
   // percentages, which had to be retyped by hand every time the picture changed.
   // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Three walls, one table. The picture changes with the screen -- her idea: on a
+  // phone the shelves are SHORTENED, a slice taken out of the middle so every
+  // board keeps both of its real ends -- but which pieces stand where is written
+  // once, below, and every skin reads it. Adding a piece is one line there.
+  // ---------------------------------------------------------------------------
+  var SKINS = {
+    desktop:{ img:'wall-desktop.jpg', W:1896, H:1024, left:349, right:1542,
+      boards:[[204,235],[360,385],[520,539],[674,699],[829,860]],
+      surf:[204,360,520,674,829], railY:[219.5,370.5,529.5,691.5,854.5],
+      card:{w:66,h:96}, stand:9.4, plateH:21, plateFS:13, inset:44,
+      oval:{x:904,y:34,w:88,h:48}, disc:{cx:948,cy:897,d:44} },
+    phone:{ img:'wall-phone.jpg', W:430, H:728, left:25, right:405,
+      boards:[[176,207],[300,325],[424,443],[542,567],[660,691]],
+      surf:[176,300,424,542,660], railY:[191.5,310.5,433.5,558.5,683.5],
+      card:{w:54,h:78}, stand:7.6, plateH:17, plateFS:10.5, inset:10,
+      oval:{x:178,y:25,w:74,h:40}, disc:{cx:215,cy:706,d:24} },
+    small:{ img:'wall-small.jpg', W:324, H:600, left:14, right:310,
+      boards:[[143,174],[246,271],[349,368],[446,471],[543,574]],
+      surf:[143,246,349,446,543], railY:[158.5,256.5,358.5,461.5,565.5],
+      card:{w:44,h:64}, stand:6.3, plateH:14, plateFS:8.7, inset:4,
+      oval:{x:133,y:20,w:59,h:32}, disc:{cx:162,cy:586,d:20} }
+  };
+  var PLATE_AR={tactilia:4.671,systema:4.877,natura:4.694,phenomena:5.734,instrumenta:5.697};
+  function pickSkin(){
+    var w=window.innerWidth;
+    return w<300 ? 'small' : (w<560 ? 'phone' : 'desktop');
+  }
+  var SKIN_NAME = pickSkin(), SK = SKINS[SKIN_NAME];
+  document.documentElement.className += ' skin-' + SKIN_NAME;
+
   var GEO = {
-    W:1024, H:1260,
-    interior:{ left:85, right:939 },      // the opening between the two posts
-    // The brass is laid on rather than photographed in, so these are the boxes the
-    // cut-out plates are drawn into. The oval is 135 wide -- her call, shrunk twice
-    // from 238 until it sat round its own name instead of above it.
-    // Edge to edge on the front face of the top rail -- her call. That face runs
-    // y 0..58 in the photograph, so the plate takes all 58 of it and its width
-    // follows from the brass's own proportion.
-    oval:{ x:436, y:0, w:152, h:58 },
-    disc:{ cx:512, cy:1222, d:42 },       // on the band of dark below the counter
-    // Each plate was cut to the length of its own word, so the width is per shelf.
-    // 26 tall on every one; the names are engraved at 13px of the photograph's own
-    // scale, which is what those lengths were cut for.
-    plateH:22, plateFS:13,
-    // The card art is 11:16 almost to a file. Sized to the same fraction of the
-    // shelf pitch the walnut case used, so the cards keep their proportion to the
-    // furniture now that the opening is wider.
-    card:{ w:84.2, h:122.5 },
-    // the stand lifts the card off the board by its base and its lower arm
-    stand:12,
-    // A card stands ON the board, not at the lip of it -- its foot goes back from
-    // the front edge by this much, so a sliver of the lit top surface shows in
-    // front of it. This is a PROJECTED depth, not a real one, which is why it is
-    // per shelf ("seat" below, this being the fallback): the eye is a little above
-    // the top board, so how much of a board's top surface you can see grows all the
-    // way down the case. Measured off the photograph by luminance -- the lit top
-    // runs 0px on instrumenta, 4 on tactilia, 29 on systema and natura, 40 on
-    // phenomena. Her report, and she is right: with one constant, the top shelf's
-    // stands were seated 10px back from a front edge with nothing behind it, so
-    // they hung in the air. Each now sits about a third of its own board's visible
-    // depth back from the lip, which on the top shelf is the lip itself.
-    seatBack:10,
-    // ceil = underside of the shelf above; surf = the FRONT LIP of the board this
-    // shelf's cards stand on; railY = the centre of the board's front edge, which
-    // is where the plate is screwed on.
-    // Aug 2026: the top compartment came out of her generator 45px shallower than
-    // the other four, which would have left its cards with visibly less air. Its
-    // flat lit back panel was stretched to match -- the top frame above and the
-    // board below carried across rigid, so no joinery moved. That took the
-    // photograph from 1238 to 1288 tall. Then her call, looking at it: the top of
-    // the unit was to come closer to the first board, so that compartment's lit
-    // panel was compressed 204 -> 176 and the case is 1260. It now matches
-    // tactilia, which a shadow under the first board holds to the same 176; the
-    // lower three stand at 202, 202 and 211.
+    W:1896, H:1024,
+    interior:{ left:349, right:1542 },     // the run of the boards, end to end
+    // The brass is laid on, not photographed in. sagne is her own blank plate with
+    // the name engraved over it, so its size is a number rather than a picture.
+    oval:{ x:904, y:34, w:88, h:48 },
+    disc:{ cx:948, cy:897, d:44 },
+    plateH:21, plateFS:13,
+    card:{ w:66, h:96 },
+    stand:9.4,
+    // A stand's foot lands ON the board. These boards are shot nearly straight on,
+    // so there is very little top surface to stand on -- the top three sit right at
+    // the edge, the lower two a shade into it. Her eye, shelf by shelf.
+    seatBack:0,
+    // ceil = the underside of the board above; surf = the top of the board these
+    // cards stand on; railY = where the plate is screwed to the board's front face.
     shelves:[
-      { name:'instrumenta', ceil:107, surf:282, railY:290.5, plateW:125.3, seat:1,
+      { name:'tactilia', ceil:0, surf:204, railY:219.5, plateW:98.1, seat:0,
+        pieces:[['warmler','warmler/index.html','warmler/warmler-card.png'],
+                ['roller','roller/index.html','roller/roller-card.png'],
+                ['kaleidoscope','kaleidoscope/index.html','kaleidoscope/kaleidoscope-card.png']] },
+      { name:'systema', ceil:235, surf:360, railY:370.5, plateW:102.4, seat:0,
+        pieces:[['gyre','gyre/index.html','gyre/gyre-card.png'],
+                ['musebox','musebox/index.html','musebox/musebox-card.png'],
+                ['chimes','chimes/index.html','chimes/chimes-card.png']] },
+      { name:'natura', ceil:385, surf:520, railY:529.5, plateW:98.6, seat:0,
+        pieces:[['moths','moths/index.html','moths/moths-card.png'],
+                ['birds','birds/index.html','birds/birds-card.png'],
+                ['ant','ant/index.html','ant/ant-card.png'],
+                ['fireflies','fireflies/index.html','fireflies/fireflies-card.png']] },
+      { name:'phenomena', ceil:539, surf:674, railY:691.5, plateW:120.4, seat:2,
+        pieces:[['rain','rain/index.html','rain/rain-card.png'],
+                ['pendulum','pendulum/index.html','pendulum/pendulum-card.png'],
+                ['bowl','bowl/index.html','bowl/bowl-card.png'],
+                ['lamp','lamp/index.html','lamp/lamp-card.png'],
+                ['chladni','chladni/index.html','chladni/chladni-card.png']] },
+      { name:'instrumenta', ceil:699, surf:829, railY:854.5, plateW:119.6, seat:2,
         pieces:[['candler','candler/index.html','candler/candle-card.png'],
                 ['conometer','conometer/index.html','conometer/conometer-card.png'],
                 ['galileo','galileo/index.html','galileo/galileo-card.png'],
                 ['windower','windower/index.html','windower/windower-card.png'],
-                ['storm','storm/index.html','storm/storm-card.png']] },
-      { name:'tactilia', ceil:299, surf:497, railY:505.5, plateW:102.8, seat:2,
-        pieces:[['warmler','warmler/index.html','warmler/warmler-card.png'],
-                ['roller','roller/index.html','roller/roller-card.png'],
-                ['kaleidoscope','kaleidoscope/index.html','kaleidoscope/kaleidoscope-card.png']] },
-      { name:'systema', ceil:514, surf:715, railY:724, plateW:107.3, seat:10,
-        pieces:[['musebox','musebox/index.html','musebox/musebox-card.png'],
-                ['gyre','gyre/index.html','gyre/gyre-card.png'],
-                ['chimes','chimes/index.html','chimes/chimes-card.png']] },
-      { name:'natura', ceil:733, surf:934, railY:941.5, plateW:103.3, seat:10,
-        pieces:[['birds','birds/index.html','birds/birds-card.png'],
-                ['fireflies','fireflies/index.html','fireflies/fireflies-card.png'],
-                ['moths','moths/index.html','moths/moths-card.png'],
-                ['ant','ant/index.html','ant/ant-card.png']] },
-      { name:'phenomena', ceil:949, surf:1159, railY:1166.5, plateW:126.1, seat:10,
-        pieces:[['lamp','lamp/index.html','lamp/lamp-card.png'],
-                ['rain','rain/index.html','rain/rain-card.png'],
-                ['bowl','bowl/index.html','bowl/bowl-card.png'],
-                ['pendulum','pendulum/index.html','pendulum/pendulum-card.png'],
-                ['chladni','chladni/index.html','chladni/chladni-card.png']] }
-    ]
+                ['storm','storm/index.html','storm/storm-card.png']] }
+    ],
+    // the boards themselves, drawn again over the cards so a foot goes behind the
+    // shelf's front edge -- background, shelves, stands, cards, in that order
+    boards:[[204,235],[360,385],[520,539],[674,699],[829,860]]
   };
+
+  // the skin's own numbers, laid into the table
+  GEO.W=SK.W; GEO.H=SK.H; GEO.interior={left:SK.left,right:SK.right};
+  GEO.card=SK.card; GEO.stand=SK.stand; GEO.plateH=SK.plateH; GEO.plateFS=SK.plateFS;
+  GEO.oval=SK.oval; GEO.disc=SK.disc; GEO.boards=SK.boards;
+  GEO.shelves.forEach(function(sh,i){
+    sh.surf=SK.surf[i]; sh.railY=SK.railY[i];
+    sh.plateW=+(PLATE_AR[sh.name]*SK.plateH).toFixed(1);
+  });
+  document.querySelector('.wood').src = SK.img;
+  document.documentElement.style.setProperty('--wallimg','url('+SK.img+')');
+  document.documentElement.style.setProperty('--wallratio', (SK.H/SK.W).toFixed(6));
 
   var W=GEO.W, H=GEO.H;
   var IL=GEO.interior.left, IR=GEO.interior.right, IW=IR-IL, IMID=(IL+IR)/2;
@@ -387,7 +434,7 @@
 
   // Every shelf uses the same pitch, so a shelf of three sits in the middle three
   // columns of a shelf of five and the cards line up all the way down the case.
-  var PITCH = IW/5;
+  var PITCH = (IW - 2*SK.inset)/5;
   function slotX(n,i){ return IMID + PITCH*(i-(n-1)/2); }
 
   var caseEl=document.getElementById('case'), frame=document.getElementById('frame');
@@ -398,14 +445,14 @@
   // --- lay the oval, the plates and the cards onto the photograph ---------------
   ovalEl.style.left=pc(GEO.oval.x,W); ovalEl.style.top=pc(GEO.oval.y,H);
   ovalEl.style.width=pc(GEO.oval.w,W); ovalEl.style.height=pc(GEO.oval.h,H);
-  ovalEl.style.fontSize='calc(var(--h) * 0.0355)';
+  ovalEl.style.fontSize='calc(var(--h) * 0.0213)';
   // The veil takes the same box as the oval, a shade proud of it so the mask has
   // somewhere to fade out over the brass rather than at its rim.
   var askEl=document.getElementById('ask');
   askEl.style.left=pc(GEO.disc.cx-GEO.disc.d/2,W);
   askEl.style.top=pc(GEO.disc.cy-GEO.disc.d/2,H);
   askEl.style.width=pc(GEO.disc.d,W); askEl.style.height=pc(GEO.disc.d,H);
-  askEl.firstElementChild.nextElementSibling.style.fontSize='calc(var(--h) * 0.0262)';
+  askEl.firstElementChild.nextElementSibling.style.fontSize='calc(var(--h) * 0.0353)';
 
 
   GEO.shelves.forEach(function(sh,si){
@@ -422,6 +469,14 @@
       BY_SLUG[p[0]]={ el:a, shelf:si };
       RECT[p[0]]={ cx:cx, cy:y+GEO.card.h/2 };
     });
+    var bd=GEO.boards[si];
+    var bf=document.createElement('div'); bf.className='boardface';
+    bf.style.left='0'; bf.style.top=pc(bd[0],H);
+    bf.style.width='100%'; bf.style.height=pc(bd[1]-bd[0]+1,H);
+    bf.style.backgroundSize='100% '+(H/(bd[1]-bd[0]+1)*100).toFixed(3)+'%';
+    bf.style.backgroundPosition='0 '+(-bd[0]/(bd[1]-bd[0]+1)*100).toFixed(3)+'%';
+    caseEl.appendChild(bf);
+
     var pl=document.createElement('span');
     pl.className='plate'; pl.id='p-'+sh.name; pl.innerHTML='<i>'+sh.name+'</i>';
     pl.style.backgroundImage='url(shelfplate-'+sh.name+'.png)';
@@ -542,7 +597,7 @@
     // below its underside, and lighting it would put another shelf's name in the
     // lit band. The fade is 7 units of the photograph -- about ten screen pixels at
     // this zoom, so it reads as the edge of a board and not as a drawn line.
-    var top=(sh.ceil+5)/H*100, bot=(sh.railY+GEO.plateH/2+8)/H*100, r=7/H*100;
+    var top=(sh.ceil+3)/H*100, bot=(sh.railY+GEO.plateH/2+6)/H*100, r=5/H*100;
     var V='rgba(5,8,14,.92)', C='rgba(5,8,14,0)';
     return 'linear-gradient(to bottom,'+V+' 0%,'+V+' '+(top-r).toFixed(2)+'%,'+
       C+' '+(top+r).toFixed(2)+'%,'+C+' '+(bot-r).toFixed(2)+'%,'+
