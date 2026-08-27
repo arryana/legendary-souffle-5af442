@@ -89,3 +89,51 @@ round of proposing.
 
 Do not re-propose this, in this or any other form. It goes the way of the apothecary chest:
 kept as a record, not built on. **Only she reopens it.**
+
+---
+
+# Second day (27 Aug 2026)
+
+She reopened it herself, asking for one thing: the five-shelf wall with no light glare.
+It went on for another eight rounds and ended the same way — *"this shit is going even
+further off the rails and you keep getting 'bright ideas' instead of asking me."*
+
+`tried/5` to `tried/8` are that day, in order.
+
+## What "glared out" meant
+
+She used the phrase three times over the two days. It was misread all three times, and
+each misreading cost a round:
+
+- read as *the lit wood outshines the cards* → the wood was measured and dimmed. She:
+  *"now it's all just vague."*
+- read as *the shelf lighting is too hot* → all the lamps and pools were removed, leaving
+  only the ceiling soffit lights (`tried/6`). She: *"no. they're -glared out-. and i have
+  said this before."*
+- read as *a translucent film over the cards from a sloppy cut-out* → announced
+  confidently as a found bug, then measured properly and it was false; the card centres
+  render **pixel-identical** to her source files. Nothing was ever washing them out.
+
+It meant **the brass frame around every card**. Each card sat inside a bright brass
+picture frame, so twenty bright rings surrounded twenty dark pictures. Her live cabinet
+holds a card with two small dark clips and no frame at all, and she had shown that in a
+screen capture side by side. `tried/8` is the same picture with the frames taken off and
+nothing else changed.
+
+She had also said it at the very start, before anything was built: *"i imagine the stand
+on the right without the lucite bar would be easier."* She wanted a stand. She got a frame.
+
+## The standing instruction, sharpened
+
+The rule at the top of this file — do not re-propose — still holds. Added to it, and it is
+the more important half:
+
+**When she says something is wrong, ask her what she means before building anything.**
+Every round on both days was spent translating a plain sentence into a theory and acting on
+the theory. She said *"nothing is clear and everything fights for space"*, *"they're
+blurs"*, *"they're glared out"* — none of it needed interpreting, and interpreting it was
+the whole failure. Her own summary, on day one: *"i have to just say it's wrong, and hope
+for a fix. that's no way to run a railroad."*
+
+If this is ever picked up, `tools/walls.py` still has the half-built adjuster. Build that
+first. Do not open another round of proposing.
