@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sagne</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="tools and toys for twiddling.">
+<meta name="theme-color" content="#101521">
+<link rel="canonical" href="https://sagne.co.uk/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="sagne">
+<meta property="og:title" content="sagne">
+<meta property="og:description" content="tools and toys for twiddling.">
+<meta property="og:url" content="https://sagne.co.uk/">
+<meta property="og:image" content="https://sagne.co.uk/og/index.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="sagne">
+<meta name="twitter:description" content="tools and toys for twiddling.">
+<meta name="twitter:image" content="https://sagne.co.uk/og/index.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&display=swap');
+  /* The brass is engraved in Libre Baskerville, not the site's Cormorant. Her
+     choice, and the sturdier one: engraving wants even stroke weight, and
+     Cormorant's fine hairlines simply vanish at the size a shelf plate allows. */
+  @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&display=swap');
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  /* The wall. This is the field the cards themselves are drawn on -- gyre, chimes,
+     musebox, chladni, the candle all share it -- and the photograph's own
+     background has been recoloured to the same value, so the frame's edge
+     disappears and the case simply stands in the dark rather than being pasted
+     onto a blue card. */
+  html,body{ height:100%; margin:0; background:#101521; color:#e2d6bb;
+    overflow-x:hidden;  /* the ground shadow spreads wider than the case; it fades
+                           to nothing at its ends, so clipping it is invisible */
+    font-family:'Cormorant Garamond', Georgia, serif; }
+  /* The case stands on the floor of the page rather than floating in the middle of
+     it: on a phone its width is what limits it, so centring left as much empty dark
+     below the plinth as above the crown. Nothing sits under it now that the ? has
+     moved onto the plinth itself. */
+  body{ display:flex; align-items:flex-end; justify-content:center;
+    padding:2vh 2vw 3vh; }
+
+  /* The frame clips, so a zoomed-in shelf fills it instead of overflowing the page.
+     The case must fit the viewport in BOTH directions -- sized by height alone it ran
+     off the sides of a phone and the shelves were cut in half. 1232/990 is the case's
+     own proportion, so this is the tallest it can be and still fit across. */
+  /* The case does not stand on a drawn floor -- there isn't one, and the plain
+     wall is the point. It stands on the evidence of one: the dark pools where its
+     two feet bear, and thins away between them, the way real weight does. */
+  #stage{ position:relative; flex:none; }
+  #stage::after{ content:''; position:absolute; left:-8%; right:-8%; top:100%;
+    height:10%; pointer-events:none; opacity:1;
+    transition:opacity .45s ease;
+    background:
+      radial-gradient(13% 70% at 17% 0%, rgba(0,0,0,.9), rgba(0,0,0,0) 100%),
+      radial-gradient(13% 70% at 84% 0%, rgba(0,0,0,.9), rgba(0,0,0,0) 100%),
+      radial-gradient(52% 55% at 50% 0%, rgba(0,0,0,.6), rgba(0,0,0,0) 100%); }
+  /* a shadow under a shelf that has come forward would be a shadow cast by
+     nothing, so it goes when the case is zoomed */
+  #stage:has(#frame.zoomed)::after{ opacity:0; }
+
+  /* Light on the wall behind the case. Her ask, and the reason it was needed:
+     the photograph's own surround is DARKER than the wall it is laid on (2,5,13
+     against the wall's 16,21,33), so the case's outer edges had nothing to be
+     seen against and the whole unit read as a dark patch with no silhouette. A
+     soft ambient lift immediately around it gives the edges something to stand
+     out from -- about 5/255 at the sides, which is the whole of it. It must NOT
+     be given z-index:-1: html and body both carry the wall colour, and a body
+     background paints OVER a negative-z-index descendant, so the glow simply
+     vanishes. Being first in the stage and unpositioned in z, it lands behind
+     #frame on document order alone. */
+  #stage::before{ content:''; position:absolute; pointer-events:none;
+    left:-50%; right:-50%; top:-40%; bottom:-24%;
+    opacity:1; transition:opacity .45s ease;
+    background:
+      radial-gradient(37% 40% at 50% 53%,
+        rgba(120,158,214,.17)  0%, rgba(120,158,214,.150) 18%, rgba(120,158,214,.112) 36%,
+        rgba(120,158,214,.070) 54%, rgba(120,158,214,.034) 72%, rgba(120,158,214,.012) 86%,
+        rgba(120,158,214,0)   100%),
+      radial-gradient(44% 21% at 50% 30%,
+        rgba(120,158,214,.085) 0%, rgba(120,158,214,.055) 40%, rgba(120,158,214,.020) 72%,
+        rgba(120,158,214,0)   100%); }
+  /* The first shape was half the height of this one and died away by the third
+     shelf down, so the lower half of the case kept the edge it always had --
+     measured, the lift at the sides went 27,25,21,18 top to bottom, where 18 IS
+     the unlit case. It stays weakest at the feet on purpose: that is where the
+     ground shadow pools, and light spilling round a case would be dimmest there
+     anyway. */
+  /* same reasoning as the ground shadow: a shelf that has come forward is not
+     the case standing off a wall any more, so the light behind it goes with it --
+     and it goes when the tray takes over, or a halo hangs round a case that has
+     deliberately been dimmed to almost nothing */
+  #stage:has(#frame.zoomed)::before{ opacity:0; }
+  body.tray #stage::before{ opacity:.15; }
+
+  /* ------------------------------------------------------------------ tray --
+     Her design, and it answers the thing the zoom could not: on a small phone the
+     engraved name stayed too small to read however far the photograph came
+     forward, because the name is only 22px tall in a 990px picture. So on a touch
+     screen the shelf does not come forward at all -- the things come off it. The
+     cards lift out and lay themselves out by how many there are (three side by
+     side, four two by two, five like the face of a die) and the plate comes with
+     them, cut from its own place on the case and drawn large enough to read.
+     ------------------------------------------------------------------------- */
+  #tray{ position:fixed; inset:0; z-index:40; display:none;
+    opacity:0; transition:opacity .5s ease; }
+  body.tray #tray{ display:block; }
+  body.tray-in #tray{ opacity:1; }
+  #tray .slot{ position:absolute; display:block; text-decoration:none;
+    border-radius:2px; overflow:hidden;
+    box-shadow:0 6px 18px rgba(0,0,0,.85), 0 0 0 1px rgba(0,0,0,.6);
+    transform-origin:50% 50%;
+    transition:transform .78s cubic-bezier(.42,.02,.16,1), opacity .45s ease; }
+  #tray .slot img{ width:100%; height:100%; object-fit:cover; display:block; }
+  /* one card taken up out of the tray; the rest step back */
+  #tray.holding .slot{ opacity:.18; }
+  #tray.holding .slot.held{ opacity:1; z-index:3; }
+  /* the plate, cut from the photograph exactly as the pieces' own tags cut it */
+  #trayplate{ position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+    display:flex; align-items:center; justify-content:center;
+    border:0; padding:0; cursor:pointer; background-repeat:no-repeat;
+    /* a <button> carries the browser's own button face, and these all show a
+       cut-out with transparent edges over it -- so a pale rectangle sat behind
+       the brass. It is only obvious where the transparent margin is wide. */
+    background-color:transparent;
+
+    font:700 1em/1 'Libre Baskerville', Georgia, serif;
+    letter-spacing:.045em; color:#4a3208;
+    text-shadow:0 1px 0 rgba(255,240,200,.42), 0 -1px 1px rgba(0,0,0,.28);
+    background-size:100% 100%;
+    filter:drop-shadow(0 3px 7px rgba(0,0,0,.7)); }
+  #trayplate i{ font-style:normal; line-height:1; }
+  /* the case is still there behind, just well out of the way */
+  body.tray #frame{ filter:brightness(.16) saturate(.7); transition:filter .5s ease; }
+  body.tray #back{ display:none; }   /* the plate at the foot of the tray is the way back */
+
+  #frame{ position:relative; overflow:hidden; flex:none;
+    --h: min(92vh, calc(96vw * 0.666667), 1024px);
+    height:var(--h); width:calc(var(--h) / 0.666667);
+    transition:width .78s cubic-bezier(.42,.02,.16,1); }
+  /* Sizes here are fractions of the case's own height, so the lettering keeps its
+     proportion to the furniture at every screen size. They cannot be written as
+     "unit x px" -- --h is a length, and a length times a length is not a size, so
+     that silently fell back to the browser's 16px default and the names collided. */
+  /* The case keeps its OWN width and stays centred, rather than filling the frame.
+     That is what lets the frame widen on a zoom without the photograph stretching
+     with it -- unzoomed the two are exactly the same width, so nothing moves. */
+  #case{ position:absolute; top:0; bottom:0;
+    left:50%; width:calc(var(--h) / 0.666667);
+    margin-left:calc(var(--h) / 0.666667 / -2);
+    transform-origin:50% 50%;
+    transition:transform .78s cubic-bezier(.42,.02,.16,1); }
+  #case > img.wood{ width:100%; height:100%; display:block; }
+
+  /* The walnut case had its brass in the photograph, with a hard specular
+     highlight baked in that had to be veiled back down. This case's brass is
+     separate: her own plates and oval, cut out and laid on, so there is no shine
+     to fight and no veil. It also means a plate is as long as its own word. */
+
+  /* sagne, engraved into the brass oval at the crown */
+  #oval{ position:absolute; display:flex; align-items:center; justify-content:center;
+    font:700 1em/1 'Libre Baskerville', Georgia, serif; letter-spacing:.12em; z-index:2;
+    appearance:none; border:0; padding:0; cursor:pointer;
+    background:url(sagne-plate.png) no-repeat center/100% 100%;
+    flex-direction:column;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.8));
+    /* engraved: cut dark into the brass, with a bright lip on the lower edge where
+       the light catches the cut */
+    color:#33230a; text-shadow:0 1px 0 rgba(255,238,196,.5), 0 -1px 1px rgba(0,0,0,.35); }
+  /* line-height:1 puts the em box on the word instead of the line box, and the
+     nudge is optical: only the g drops below the baseline, so a word centred by
+     its box reads as sitting low on the brass. The trailing letter-space after
+     the final e is taken back the same way the plate names take theirs. */
+  #oval i{ font-style:normal; line-height:1; display:block; margin-right:-.10em; }
+  #oval u{ text-decoration:none; font-weight:400; line-height:1; display:block;
+    font-size:.42em; letter-spacing:.03em; margin-top:.42em; color:#3a2606; }
+  #oval:focus-visible{ outline:1px solid rgba(242,233,216,.45); outline-offset:3px; }
+
+  /* the name of the type, engraved on the plate of the shelf it labels */
+  .plate{ position:absolute; display:flex; align-items:center; justify-content:center;
+    font:700 1em/1 'Libre Baskerville', Georgia, serif; letter-spacing:.045em;
+    color:#4a3208; text-shadow:0 1px 0 rgba(255,240,200,.42), 0 -1px 1px rgba(0,0,0,.28);
+    white-space:nowrap; cursor:pointer; z-index:4;
+    background-repeat:no-repeat; background-position:center; background-size:100% 100%;
+    filter:drop-shadow(0 1px 2px rgba(0,0,0,.75)); }
+  .plate i{ font-style:normal; line-height:1; }
+
+  /* Her idea, off a picture of a real display stand: the cards are held rather
+     than merely stood up. An upright runs behind the card, an arm crosses over
+     its top edge and another takes its weight underneath, all on a base that
+     bears on the board. It reads as a thing mounted for looking at, and it stops
+     the cards seeming to hover a hair above the shelf. Drawn, not photographed --
+     it is four rectangles and a highlight, and drawing it keeps it crisp at every
+     zoom the case does. */
+  .stand{ position:absolute; left:0; top:-8.16%; width:100%; height:117.96%;
+    background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 84.2 144.5' preserveAspectRatio='none'><g fill='%2315181d'><rect x='39.4' y='5' width='5.4' height='133' rx='1.2'/><rect x='29' y='5.4' width='26' height='5' rx='1.4'/><rect x='29' y='132.5' width='26' height='5' rx='1.4'/><rect x='24.6' y='137' width='35' height='7.5' rx='1.6'/></g><g fill='%2359636f' opacity='.55'><rect x='29' y='5.4' width='26' height='1' rx='.5'/><rect x='29' y='132.5' width='26' height='.9' rx='.45'/><rect x='24.6' y='137' width='35' height='1.1' rx='.55'/><rect x='39.4' y='5' width='1.5' height='133' rx='.7'/></g></svg>") no-repeat center/100% 100%;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.75)); pointer-events:none; z-index:2; }
+
+  /* Background, shelves, stands, cards -- her order. The board is drawn a second
+     time over the cards so a stand's foot lands on the wood and anything lower
+     goes behind the shelf's front edge. */
+  .boardface{ position:absolute; left:0; z-index:1; pointer-events:none;
+    background-image:url(wall-desktop.jpg); background-repeat:no-repeat; }
+
+  /* the pieces, standing face front on their shelf */
+  .piece{ position:absolute; display:block; text-decoration:none;
+    transition:transform .25s cubic-bezier(.2,.7,.3,1), opacity .35s ease;
+    transform-origin:50% 100%; }
+  /* the upright runs BEHIND the card -- an absolutely positioned stand would
+     otherwise paint over it, and every picture got a black bar down its middle */
+  .piece img{ position:relative; z-index:3;
+    width:100%; height:100%; object-fit:cover; display:block;
+    border-radius:2px; box-shadow:0 2px 4px rgba(0,0,0,.8), 0 0 0 1px rgba(0,0,0,.5); }
+  .piece:hover{ transform:scale(1.14) translateY(calc(var(--h) * -0.0037)); z-index:8; }
+  .piece:focus-visible{ outline:2px solid #b8903f; outline-offset:2px; }
+
+  /* zoomed in: the shelf in focus stands forward, the rest steps back */
+  #case.zoomed .piece:not(.on){ opacity:.35; pointer-events:none; }
+  /* Her ask: the other shelves need to be MORE greyed out. Dimming the cards alone
+     left four brightly lit empty shelves behind them, which is the opposite of what
+     is wanted -- the wood is most of what the eye sees. So a near-black sheet is
+     laid over the whole case with a band cut out of it at the shelf in focus: wood,
+     brass and cards all go back together, and the lit shelf reads as the only one
+     the light is falling on. The band's edges are set in JS from the same
+     measurement table as everything else. */
+  #shelfveil{ position:absolute; inset:0; z-index:5; pointer-events:none;
+    opacity:0; transition:opacity .55s ease; }
+  #case.zoomed #shelfveil{ opacity:1; }
+  /* Everything but the card in hand falls away. Not an effect for its own sake:
+     with the furniture dark the card can be lifted well clear of it without the
+     softening of the blown-up photograph behind it being the thing you notice. */
+  #veil{ position:absolute; inset:0; z-index:6; pointer-events:none;
+    background:#05080e; opacity:0; transition:opacity .5s ease; }
+  #case.on-card #veil{ opacity:.9; }
+  #case.on-card .piece.picked{ z-index:9; transform-origin:50% 50%;
+    transition:transform .78s cubic-bezier(.42,.02,.16,1); }
+  #case.on-card .piece.picked:hover{ transform:none; }
+  #case.on-card .piece.on:not(.picked){ opacity:.35; }
+
+  /* Asked for, never announced. A saying has to lie over the furniture -- the case
+     fills the frame and there is no dark left to put it on -- so the case steps back
+     while one is open. That reads as the words being held up in front of the shelf,
+     rather than a panel sitting on top of a shelf it is hiding. */
+  #frame.asked #case{ opacity:.3; transition:opacity .5s ease; }
+  .saying{ position:absolute; left:50%; transform:translateX(-50%) translateY(-6px);
+    width:min(560px, 86%); margin:0; text-align:center; z-index:30;
+    background:rgba(9,17,28,.9); border-radius:10px; padding:1em 1.2em;
+    box-shadow:0 6px 24px rgba(0,0,0,.55);
+    font-size:clamp(13px, 1.7vh, 16px); line-height:1.65; color:#9fb2c6;
+    opacity:0; pointer-events:none; transition:opacity .6s ease, transform .6s ease; }
+  .saying.open{ opacity:1; transform:translateX(-50%); pointer-events:auto; }
+  #say-sagne{ top:13%; }
+  #say-about{ bottom:9%; }
+
+  /* Her brass disc, let into the middle of the plinth carving, with the ? cut into
+     it the way the names are cut into the plates. It is part of the furniture now,
+     so it sits inside the case and takes the case's own scale. */
+  #ask{ position:absolute; display:grid; place-items:center; z-index:3;
+    appearance:none; border:0; background:none; padding:0; font-family:inherit;
+    cursor:pointer; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+  #ask img{ grid-area:1/1; width:100%; height:100%; display:block; }
+  #ask i{ grid-area:1/1; font-style:normal; font-weight:700; line-height:1;
+    color:#33230a; text-shadow:0 1px 0 rgba(255,238,196,.5), 0 -1px 1px rgba(0,0,0,.35); }
+  /* A disc this size is a small target on a phone, so the reach around it is wider
+     than the brass. Invisible, and behind nothing else. */
+  #ask::before{ content:''; position:absolute; inset:-55%; }
+  #ask:focus-visible{ outline:1px solid rgba(242,233,216,.45); outline-offset:4px; }
+
+  @media (prefers-reduced-motion: reduce){
+    #case, .piece{ transition:none; }
+    .saying{ transition:opacity .2s linear; transform:translateX(-50%); }
+  }
+</style>
+</head>
+<body>
+  <div id="stage">
+  <div id="frame">
+    <div id="case">
+      <img class="wood" src="wall-desktop.jpg" alt="Five open shelves on a dark wall">
+      <div id="shelfveil"></div>
+      <div id="veil"></div>
+      <button type="button" id="oval" aria-expanded="false" aria-controls="say-sagne"
+              aria-label="what is this?"><i>sagne</i><u>/se\u026an/</u></button>
+      <button type="button" id="ask" aria-expanded="false" aria-controls="say-about"
+              aria-label="about sagne"><img src="shelfdisk.png" alt=""><i>?</i></button>
+    </div>
+
+    <!-- The two sayings the flat landing page carried, kept word for word: the one
+         under the name, and the one behind the ? at the foot. Nothing of either is
+         on screen until it is asked for. -->
+    <p class="saying" id="say-sagne">tools and toys for twiddling. no scores, no goals, no
+      timers (except the tools which are timers), no links (except for location accuracy), no
+      likes, no ads, no in-game purchases. nothing exciting, but hopefully something
+      enjoyable. the lack of text and explanations throughout is an intentional choice for
+      universal (if simplistic) communication. the author trusts curiosity and ever-present
+      search engines to suffice where clarity is needed.</p>
+    <p class="saying" id="say-about">sagne has been designed by one person, programming by
+      claude and images by gemini. it is a single individual's attempt to bring to digital
+      life some of the world's more interesting modes and models.</p>
+  </div>
+  </div>
+  <div id="tray" aria-hidden="true"><button type="button" id="trayplate"></button></div>
+<script>
+(function(){
+  // ---------------------------------------------------------------------------
+  // One table of measurements, taken off the photograph itself (990 x 1088), and
+  // everything else -- where each card stands, where each name is engraved, and
+  // where the case has to move to bring a shelf or a card into the middle of the
+  // frame -- is worked out from it. The previous version carried forty hand-typed
+  // percentages, which had to be retyped by hand every time the picture changed.
+  // ---------------------------------------------------------------------------
+  var GEO = {
+    W:1536, H:1024,
+    interior:{ left:169, right:1362 },     // the run of the boards, end to end
+    // The brass is laid on, not photographed in. sagne is her own blank plate with
+    // the name engraved over it, so its size is a number rather than a picture.
+    oval:{ x:698, y:16, w:140, h:64 },
+    disc:{ cx:768, cy:912, d:46 },
+    plateH:21, plateFS:13,
+    card:{ w:66, h:96 },
+    stand:9.4,
+    // A stand's foot lands ON the board. These boards are shot nearly straight on,
+    // so there is very little top surface to stand on -- the top three sit right at
+    // the edge, the lower two a shade into it. Her eye, shelf by shelf.
+    seatBack:0,
+    // ceil = the underside of the board above; surf = the top of the board these
+    // cards stand on; railY = where the plate is screwed to the board's front face.
+    shelves:[
+      { name:'tactilia', ceil:0, surf:204, railY:219.5, plateW:98.1, seat:0,
+        pieces:[['warmler','warmler/index.html','warmler/warmler-card.png'],
+                ['roller','roller/index.html','roller/roller-card.png'],
+                ['kaleidoscope','kaleidoscope/index.html','kaleidoscope/kaleidoscope-card.png']] },
+      { name:'systema', ceil:235, surf:360, railY:370.5, plateW:102.4, seat:0,
+        pieces:[['gyre','gyre/index.html','gyre/gyre-card.png'],
+                ['musebox','musebox/index.html','musebox/musebox-card.png'],
+                ['chimes','chimes/index.html','chimes/chimes-card.png']] },
+      { name:'natura', ceil:385, surf:520, railY:529.5, plateW:98.6, seat:0,
+        pieces:[['moths','moths/index.html','moths/moths-card.png'],
+                ['birds','birds/index.html','birds/birds-card.png'],
+                ['ant','ant/index.html','ant/ant-card.png'],
+                ['fireflies','fireflies/index.html','fireflies/fireflies-card.png']] },
+      { name:'phenomena', ceil:539, surf:674, railY:691.5, plateW:120.4, seat:2,
+        pieces:[['bowl','bowl/index.html','bowl/bowl-card.png'],
+                ['pendulum','pendulum/index.html','pendulum/pendulum-card.png'],
+                ['rain','rain/index.html','rain/rain-card.png'],
+                ['lamp','lamp/index.html','lamp/lamp-card.png'],
+                ['chladni','chladni/index.html','chladni/chladni-card.png']] },
+      { name:'instrumenta', ceil:699, surf:829, railY:854.5, plateW:119.6, seat:2,
+        pieces:[['candler','candler/index.html','candler/candle-card.png'],
+                ['conometer','conometer/index.html','conometer/conometer-card.png'],
+                ['galileo','galileo/index.html','galileo/galileo-card.png'],
+                ['windower','windower/index.html','windower/windower-card.png'],
+                ['storm','storm/index.html','storm/storm-card.png']] }
+    ],
+    // the boards themselves, drawn again over the cards so a foot goes behind the
+    // shelf's front edge -- background, shelves, stands, cards, in that order
+    boards:[[204,235],[360,385],[520,539],[674,699],[829,860]]
+  };
+
+  var W=GEO.W, H=GEO.H;
+  var IL=GEO.interior.left, IR=GEO.interior.right, IW=IR-IL, IMID=(IL+IR)/2;
+  var pc = function(v,total){ return (v/total*100).toFixed(4)+'%'; };
+
+  // Every shelf uses the same pitch, so a shelf of three sits in the middle three
+  // columns of a shelf of five and the cards line up all the way down the case.
+  var PITCH = IW/5;
+  function slotX(n,i){ return IMID + PITCH*(i-(n-1)/2); }
+
+  var caseEl=document.getElementById('case'), frame=document.getElementById('frame');
+  var veilEl=document.getElementById('shelfveil');
+  var ovalEl=document.getElementById('oval');
+  var BY_SLUG={}, RECT={};
+
+  // --- lay the oval, the plates and the cards onto the photograph ---------------
+  ovalEl.style.left=pc(GEO.oval.x,W); ovalEl.style.top=pc(GEO.oval.y,H);
+  ovalEl.style.width=pc(GEO.oval.w,W); ovalEl.style.height=pc(GEO.oval.h,H);
+  ovalEl.style.fontSize='calc(var(--h) * 0.0213)';
+  // The veil takes the same box as the oval, a shade proud of it so the mask has
+  // somewhere to fade out over the brass rather than at its rim.
+  var askEl=document.getElementById('ask');
+  askEl.style.left=pc(GEO.disc.cx-GEO.disc.d/2,W);
+  askEl.style.top=pc(GEO.disc.cy-GEO.disc.d/2,H);
+  askEl.style.width=pc(GEO.disc.d,W); askEl.style.height=pc(GEO.disc.d,H);
+  askEl.firstElementChild.nextElementSibling.style.fontSize='calc(var(--h) * 0.0353)';
+
+
+  GEO.shelves.forEach(function(sh,si){
+    sh.pieces.forEach(function(p,i){
+      var cx=slotX(sh.pieces.length,i);
+      var seat=(sh.seat==null?GEO.seatBack:sh.seat);
+      var x=cx-GEO.card.w/2, y=sh.surf-seat-GEO.card.h-GEO.stand;
+      var a=document.createElement('a');
+      a.className='piece'; a.href=p[1]; a.setAttribute('aria-label',p[0]);
+      a.style.left=pc(x,W); a.style.top=pc(y,H);
+      a.style.width=pc(GEO.card.w,W); a.style.height=pc(GEO.card.h,H);
+      a.innerHTML='<span class="stand"></span><img src="'+p[2]+'" alt="">';
+      caseEl.appendChild(a);
+      BY_SLUG[p[0]]={ el:a, shelf:si };
+      RECT[p[0]]={ cx:cx, cy:y+GEO.card.h/2 };
+    });
+    var bd=GEO.boards[si];
+    var bf=document.createElement('div'); bf.className='boardface';
+    bf.style.left='0'; bf.style.top=pc(bd[0],H);
+    bf.style.width='100%'; bf.style.height=pc(bd[1]-bd[0]+1,H);
+    bf.style.backgroundSize='100% '+(H/(bd[1]-bd[0]+1)*100).toFixed(3)+'%';
+    bf.style.backgroundPosition='0 '+(-bd[0]/(bd[1]-bd[0]+1)*100).toFixed(3)+'%';
+    caseEl.appendChild(bf);
+
+    var pl=document.createElement('span');
+    pl.className='plate'; pl.id='p-'+sh.name; pl.innerHTML='<i>'+sh.name+'</i>';
+    pl.style.backgroundImage='url(shelfplate-'+sh.name+'.png)';
+    pl.style.left=pc(IMID-sh.plateW/2,W); pl.style.top=pc(sh.railY-GEO.plateH/2,H);
+    pl.style.width=pc(sh.plateW,W); pl.style.height=pc(GEO.plateH,H);
+    pl.style.fontSize='calc(var(--h) * '+(GEO.plateFS/GEO.H).toFixed(6)+')';
+    caseEl.appendChild(pl);
+    sh.plateEl=pl;
+  });
+
+  // --- fit the engraved names to the brass they are cut into --------------------
+  // Measure the TEXT, not the box. The plate is a centred flex container, so its
+  // scrollWidth just reports the container however far the words overflow it -- an
+  // earlier go at this drove every name down to the floor and still called them too
+  // wide. Wrapping the words in an <i> lets them be measured directly. This also
+  // survives the webfont arriving late, which a guessed character width would not.
+  //
+  // A name is CUT INTO the plate, so it should take up the plate. The starting size
+  // is a fraction of the case, which left a short name like "natura" sitting tiny in
+  // the middle of its brass -- so scale to whichever of the two edges the name meets
+  // first, growing as readily as shrinking. line-height:1 on the <i> is what makes
+  // the height half of that honest: without it the measured box is the line box,
+  // about 1.2em of mostly air, and every name gets driven back down.
+  function fillPlate(el, wFrac, hFrac){
+    var inner=el.firstElementChild;
+    if(!inner) return;
+    var boxW=el.clientWidth*wFrac, boxH=el.clientHeight*hFrac;
+    if(!boxW || !boxH) return;
+    el.style.fontSize=el.dataset.base || (el.dataset.base=getComputedStyle(el).fontSize);
+    var size=parseFloat(getComputedStyle(el).fontSize);
+    for(var k=0; k<8; k++){
+      var w=inner.offsetWidth, h=inner.offsetHeight;
+      if(!w || !h) return;
+      var r=Math.min(boxW/w, boxH/h);
+      if(r>0.995) break;                    // already fits: leave it exactly as cut
+      size=Math.max(4, size*r);
+      el.style.fontSize=size+'px';
+    }
+    // A short name is left centred at the size the height gives it. Tracking it out
+    // to span the plate was tried and it read as spaced-out rather than engraved:
+    // a long name fills its brass because it is long, and a short one should simply
+    // sit in the middle of its own.
+  }
+  function fit(){
+    // None of the five names has a descender, so the letters can run the full
+    // height of the engraved area without dropping below it.
+    // Shrink only, and never past the screws. Every plate was cut to hold its own
+    // name at this size, so the fitter has nothing to do unless the webfont fails
+    // to arrive and a wider fallback face is standing in for it.
+    GEO.shelves.forEach(function(sh){
+      var el=document.getElementById('p-'+sh.name);
+      if(el) fillPlate(el, (sh.plateW-58)/sh.plateW, 0.62);
+    });
+    // sagne keeps the size it was drawn at -- it sits in a much taller oval, and
+    // filling that would make it shout. Shrink only, if it ever needs it.
+    // 0.72, not 0.90: the plate is screwed down at each end and the word has to
+    // clear both screws, so the writable brass is narrower than the plate.
+    var box=ovalEl.clientWidth*0.72, inner=ovalEl.firstElementChild;
+    if(!inner || !box) return;
+    ovalEl.style.fontSize=ovalEl.dataset.base || (ovalEl.dataset.base=getComputedStyle(ovalEl).fontSize);
+    var size=parseFloat(getComputedStyle(ovalEl).fontSize), guard=0;
+    while(inner.offsetWidth>box && size>4 && guard++<80){
+      size-=0.3; ovalEl.style.fontSize=size+'px';
+    }
+  }
+  if(!ovalEl.firstElementChild) ovalEl.innerHTML='<i>'+ovalEl.textContent+'</i>';
+
+  // --- the zoom ----------------------------------------------------------------
+  // On a phone the whole case has to shrink to fit across, which leaves the cards
+  // at about thirty pixels. Her idea, and the right one: bring a shelf out to the
+  // frame edges rather than shrinking the furniture. First tap zooms the shelf,
+  // second zooms the card, third opens it.
+  // Zoom to what is ON the shelf, not to the shelf's empty width. Every shelf uses
+  // the same pitch so the cards line up in columns when the whole case is in view --
+  // which means a shelf of three occupies only half the opening. Scaling all five by
+  // the same amount therefore left a shelf of three filling half the frame, with the
+  // cards no bigger than they needed to be. Each shelf now zooms until ITS cards span
+  // the frame, so a shelf of three comes closer than a shelf of five and the touch
+  // targets are as large as that shelf allows.
+  var FILL = 0.92;                         // leave a little air at each end
+  // And a shelf can only fill the WINDOW it is brought forward into. The case is a
+  // tall portrait box and a shelf is a wide landscape strip, so a shelf filling the
+  // case's own width used less than half the screen on a desktop -- 695px of 1440,
+  // which is what made the zoom look timid. Her report: it needs to be a lot bigger.
+  // So the window widens on a zoom and the case keeps its own proportion inside it;
+  // the scale is then multiplied by however much wider the window got. Nothing here
+  // touches a phone, which takes the tray instead of the zoom.
+  var ZOOM_FILL = 0.97;                    // of the page's width
+  function caseW(){ return caseEl.clientWidth || 1; }
+  function zoomWidth(n, art){
+    var span = PITCH*(n-1) + GEO.card.w;
+    var fh = frame.clientHeight || 1;
+    // Two honest ceilings, the same two the card zoom keeps: a picture is never
+    // enlarged past its own pixels, and the shelf zoom never grows so far that it
+    // starts doing the card zoom's job.
+    var maxCard = Math.min(art/(window.devicePixelRatio||1), fh*0.46);
+    var maxW = maxCard*span/(GEO.card.h*FILL);
+    return Math.max(caseW(), Math.min(window.innerWidth*ZOOM_FILL, maxW));
+  }
+  function shelfArt(sh){
+    var art = 1e9;
+    sh.pieces.forEach(function(p){
+      var im = BY_SLUG[p[0]].el.querySelector('img');
+      art = Math.min(art, im.naturalHeight || 640);
+    });
+    return (art && isFinite(art)) ? art : 640;
+  }
+  function shelfScale(n, fw){
+    var span = PITCH*(n-1) + GEO.card.w;   // outer edge to outer edge of its cards
+    return (fw/caseW()) * W*FILL/span;
+  }
+  // The band of the sheet that is cut away, in the photograph's own units: from just
+  // under the board above down to just under the plate, so the engraved name is lit
+  // with the shelf it belongs to.
+  function veilFor(sh){
+    // The top edge falls on the BOARD above, not in the compartment: that board's
+    // own front face carries the plate of the shelf above, which hangs a little
+    // below its underside, and lighting it would put another shelf's name in the
+    // lit band. The fade is 7 units of the photograph -- about ten screen pixels at
+    // this zoom, so it reads as the edge of a board and not as a drawn line.
+    var top=(sh.ceil+3)/H*100, bot=(sh.railY+GEO.plateH/2+6)/H*100, r=5/H*100;
+    var V='rgba(5,8,14,.92)', C='rgba(5,8,14,0)';
+    return 'linear-gradient(to bottom,'+V+' 0%,'+V+' '+(top-r).toFixed(2)+'%,'+
+      C+' '+(top+r).toFixed(2)+'%,'+C+' '+(bot-r).toFixed(2)+'%,'+
+      V+' '+(bot+r).toFixed(2)+'%,'+V+' 100%)';
+  }
+  // Tap two is not "the shelf, only nearer". It is the card itself, brought up to
+  // fill the frame. The case comes forward only far enough to carry the card into
+  // the middle; the card is then lifted on its own, on top of that. So the
+  // photograph is never blown up to the point of going soft, and how large the
+  // card can be is limited by its own artwork rather than by the wood behind it.
+  var CARD_CASE = 2.1;    // how far the furniture comes
+  var CARD_MAX  = 0.74;   // never more than this much of the frame's height
+  // How large the card can honestly be. A picture cannot be enlarged past its own
+  // artwork without inventing detail that was never photographed, so the card is
+  // brought up as far as its own pixels reach and no further -- which on a dense
+  // screen is less far than on a coarse one, and on neither is it ever soft.
+  function cardLift(slug){
+    var el=BY_SLUG[slug].el, art=el.querySelector('img').naturalHeight || 640;
+    var frameH=document.getElementById('frame').clientHeight || 1;
+    var honest=(art/(window.devicePixelRatio||1))/frameH;   // as a share of the frame
+    var fill=Math.min(CARD_MAX, honest);
+    return (fill*H/GEO.card.h)/CARD_CASE;
+  }
+
+  // Put a point of the photograph dead centre in the frame. This used to be
+  // clamped so the case could never pull away from an edge, because doing so
+  // exposed a bare strip beside it -- but the wall behind the case and the wall
+  // of the page are now one colour, so there is nothing to expose. The top and
+  // bottom shelves can finally sit in the middle like the other three, and the
+  // shelves above and below slide out of the frame instead of hanging in it.
+  function transform(px,py,s){
+    var tx=-s*(px-W/2)/W, ty=-s*(py-H/2)/H;
+    return 'translate('+(tx*100).toFixed(3)+'%,'+(ty*100).toFixed(3)+'%) scale('+s.toFixed(4)+')';
+  }
+
+  var level=0, shelfIx=null, cardSlug=null;
+
+
+  // ----------------------------------------------------------------- the tray
+  // On a touch screen the shelf does not come forward -- the things come off it.
+  // Bringing the photograph nearer could never make the engraved name legible on a
+  // small phone: the name is 22px tall in a 990px picture, so at any zoom that
+  // still showed a whole shelf it stayed about five pixels. Taking the cards and
+  // the plate off the case instead frees them from the photograph's proportions
+  // entirely, and the plate can be drawn at a size a person can read.
+  var trayEl=document.getElementById('tray'), trayPlate=document.getElementById('trayplate');
+  // Each plate is its own picture now, so the tray simply draws it at whatever
+  // size the screen allows and keeps its own proportion.
+  // How the cards lay themselves out, by how many there are: three side by side,
+  // four two by two, five like the face of a die. Positions are the centre of each
+  // card, as a fraction of the area they share.
+  var LAYOUT={
+    1:{cols:1,tiers:1,at:[[.5,.5]]},
+    2:{cols:2,tiers:1,at:[[.25,.5],[.75,.5]]},
+    3:{cols:3,tiers:1,at:[[1/6,.5],[.5,.5],[5/6,.5]]},
+    4:{cols:2,tiers:2,at:[[.25,.25],[.75,.25],[.25,.75],[.75,.75]]},
+    5:{cols:2,tiers:3,at:[[.25,1/6],[.75,1/6],[.5,.5],[.25,5/6],[.75,5/6]]},
+    6:{cols:2,tiers:3,at:[[.25,1/6],[.75,1/6],[.25,.5],[.75,.5],[.25,5/6],[.75,5/6]]}
+  };
+  var trayHeld=null;
+
+  function layTray(i){
+    var sh=GEO.shelves[i], n=sh.pieces.length, L=LAYOUT[n]||LAYOUT[5];
+    var vw=innerWidth, vh=innerHeight;
+
+    // the plate first: it is the thing that has to be readable, so it is sized
+    // from the screen and the cards take what is left
+    var pw=Math.min(268, Math.round(vw*0.78));
+    var ph=Math.round(pw*GEO.plateH/sh.plateW);
+    trayPlate.style.width=pw+'px';
+    trayPlate.style.height=ph+'px';
+    trayPlate.style.backgroundImage='url(shelfplate-'+sh.name+'.png)';
+    trayPlate.style.fontSize=Math.round(ph*(GEO.plateFS/GEO.plateH))+'px';
+    trayPlate.innerHTML='<i>'+sh.name+'</i>';
+    trayPlate.setAttribute('aria-label','back to the case');
+
+    // the area the cards share, above the plate
+    var pad=Math.max(10, Math.round(vw*0.045));
+    var areaTop=pad, areaBot=vh-(ph+28)-pad;
+    var areaW=vw-pad*2, areaH=areaBot-areaTop;
+    var cellW=areaW/L.cols, cellH=areaH/L.tiers;
+    var ratio=GEO.card.w/GEO.card.h;
+    var cardH=Math.min(cellH*0.88, cellW*0.88/ratio), cardW=cardH*ratio;
+
+    [].forEach.call(trayEl.querySelectorAll('.slot'), function(e){ e.remove(); });
+    sh.pieces.forEach(function(pc,k){
+      var at=L.at[k];
+      var a=document.createElement('a');
+      a.className='slot'; a.href=pc[1]; a.dataset.slug=pc[0];
+      a.setAttribute('aria-label',pc[0]);
+      a.style.width=cardW.toFixed(1)+'px';
+      a.style.height=cardH.toFixed(1)+'px';
+      a.style.left=(pad+at[0]*areaW-cardW/2).toFixed(1)+'px';
+      a.style.top=(areaTop+at[1]*areaH-cardH/2).toFixed(1)+'px';
+      a.innerHTML='<img src="'+pc[2]+'" alt="">';
+      a.addEventListener('click', function(ev){
+        if(trayHeld===pc[0]) return;          // second tap: let the link open it
+        ev.preventDefault(); hold(pc[0]);
+      });
+      trayEl.insertBefore(a, trayPlate);
+    });
+    trayHeld=null; trayEl.classList.remove('holding');
+  }
+
+  // one card taken up out of the tray, as large as its own artwork allows
+  function hold(slug){
+    var a=trayEl.querySelector('.slot[data-slug="'+slug+'"]');
+    if(!a) return;
+    [].forEach.call(trayEl.querySelectorAll('.slot'), function(e){ e.style.transform=''; });
+    var vw=innerWidth, vh=innerHeight;
+    var box=a.getBoundingClientRect();
+    var art=a.querySelector('img').naturalHeight || 640;
+    var honest=art/(window.devicePixelRatio||1);          // as far as its pixels reach
+    var want=Math.min(honest, vh*0.72, vw*0.92/(GEO.card.w/GEO.card.h));
+    // On a large dense screen the tray already lays the cards out at the limit of
+    // their own artwork, so there is no honest room left to grow into -- and the
+    // plain ratio would then SHRINK the card being picked up. Never shrink: lift it
+    // a little whatever happens, so the hand gets an answer, and let the others
+    // stepping back be what does the rest of the work.
+    var k=Math.max(1.06, want/box.height);
+    var dx=(vw/2)-(box.left+box.width/2), dy=(vh*0.44)-(box.top+box.height/2);
+    a.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px) scale('+k.toFixed(3)+')';
+    [].forEach.call(trayEl.querySelectorAll('.slot'), function(e){ e.classList.remove('held'); });
+    a.classList.add('held');
+    trayEl.classList.add('holding');
+    trayHeld=slug;
+  }
+
+  function openTray(i){
+    layTray(i);
+    document.body.classList.add('tray');
+    // the case is behind the tray now: it should not answer to a finger, and a
+    // screen reader should not find two of every card
+    frame.setAttribute('aria-hidden','true'); frame.inert=true;
+    trayEl.setAttribute('aria-hidden','false');
+    requestAnimationFrame(function(){ document.body.classList.add('tray-in'); });
+  }
+  function shutTray(){
+    document.body.classList.remove('tray','tray-in');
+    frame.removeAttribute('aria-hidden'); frame.inert=false;
+    trayEl.setAttribute('aria-hidden','true');
+    trayEl.classList.remove('holding'); trayHeld=null;
+  }
+  function release(){
+    [].forEach.call(trayEl.querySelectorAll('.slot'), function(e){
+      e.style.transform=''; e.classList.remove('held');
+    });
+    trayEl.classList.remove('holding'); trayHeld=null;
+  }
+  trayPlate.addEventListener('click', function(){ outOne(); });
+  addEventListener('resize', function(){
+    if(document.body.classList.contains('tray')) layTray(shelfIx); else if(level>0) paint();
+  });
+
+  function paint(){
+    // A pointer gets the case brought forward; a thumb gets the tray.
+    var tray = !FINE.matches;
+    if(tray){
+      if(level>0) openTray(shelfIx); else shutTray();
+      caseEl.style.transform=''; caseEl.classList.remove('zoomed','on-card');
+      frame.style.width='';
+      frame.classList.toggle('zoomed', level>0);
+      return;
+    }
+    shutTray();
+    caseEl.classList.toggle('zoomed', level>0);
+    caseEl.classList.toggle('on-card', level>1);
+    frame.classList.toggle('zoomed', level>0);
+    [].forEach.call(caseEl.querySelectorAll('.piece'), function(el){
+      el.classList.remove('on','picked');
+      el.style.transform='';
+    });
+    if(level>0){
+      GEO.shelves[shelfIx].pieces.forEach(function(p){
+        BY_SLUG[p[0]].el.classList.add('on');
+      });
+    }
+    if(level>1) BY_SLUG[cardSlug].el.classList.add('picked');
+    if(shelfIx!=null) veilEl.style.backgroundImage=veilFor(GEO.shelves[shelfIx]);
+    if(level===0){ caseEl.style.transform=''; frame.style.width=''; }
+    else if(level===1){
+      var sh=GEO.shelves[shelfIx];
+      // the engraved name belongs to the shelf, so centre on the group that
+      // includes it rather than on the empty compartment alone
+      var mid=(sh.ceil + sh.railY + GEO.plateH/2)/2;
+      var fw=zoomWidth(sh.pieces.length, shelfArt(sh));
+      frame.style.width=fw.toFixed(1)+'px';
+      caseEl.style.transform=transform(IMID, mid, shelfScale(sh.pieces.length, fw));
+    } else {
+      // a card is portrait, so the window comes back down to the case's own width
+      frame.style.width='';
+      var r=RECT[cardSlug];
+      caseEl.style.transform=transform(r.cx,r.cy,CARD_CASE);
+      BY_SLUG[cardSlug].el.style.transform='scale('+cardLift(cardSlug).toFixed(4)+')';
+    }
+  }
+
+  function toShelf(i){ level=1; shelfIx=i; cardSlug=null; paint(); }
+  function toCard(slug){ level=2; shelfIx=BY_SLUG[slug].shelf; cardSlug=slug; paint(); }
+  function outOne(){
+    if(trayHeld){ release(); return; }   // put the card down before leaving the tray
+    if(level===2){ level=1; cardSlug=null; }
+    else if(level===1){ level=0; shelfIx=null; }
+    paint();
+  }
+
+  // The three-step tap exists because a phone cannot show a card big enough to read.
+  // A mouse on a big screen has neither problem, and three clicks to reach a piece
+  // would just be in the way -- so with a real pointer a card opens on the first
+  // click, and the shelf zoom stays available from the name plates.
+  var FINE = matchMedia('(hover: hover) and (pointer: fine)');
+  Object.keys(BY_SLUG).forEach(function(slug){
+    BY_SLUG[slug].el.addEventListener('click', function(ev){
+      if(FINE.matches) return;                      // mouse: straight in
+      ev.preventDefault();
+      toShelf(BY_SLUG[slug].shelf);                 // a thumb: its shelf comes off the case
+    });
+  });
+  GEO.shelves.forEach(function(sh,i){
+    sh.plateEl.addEventListener('click', function(){
+      if(level===1 && shelfIx===i) outOne(); else toShelf(i);
+    });
+  });
+  // Nothing on screen says how to come back out, because nothing needs to: the
+  // plate of the shelf you are in steps you back, and so does the dark around the
+  // case -- tapping off the furniture is the gesture everyone already makes. It
+  // listens on the document, not the frame: zoomed in, the case fills the frame
+  // and the dark a visitor actually aims at is the page outside it. Only a tap
+  // landing on no piece and no plate counts, so the cards still open.
+  document.addEventListener('click', function(ev){
+    if(level===0) return;
+    if(ev.target.closest('.piece, .plate, .saying, #oval, #ask, .slot, #trayplate')) return;
+    outOne();
+  });
+  // --- the two sayings ----------------------------------------------------------
+  // sagne carries the one it always carried; the ? at the foot carries the other.
+  // Opening one closes the other, so there is never more than a single block of
+  // words on screen at a time.
+  var SAYINGS=[[ovalEl, document.getElementById('say-sagne')],
+               [askEl, document.getElementById('say-about')]];
+  function shut(){
+    frame.classList.remove('asked');
+    SAYINGS.forEach(function(pair){
+      pair[1].classList.remove('open');
+      pair[0].setAttribute('aria-expanded','false');
+    });
+  }
+  SAYINGS.forEach(function(pair){
+    pair[0].addEventListener('click', function(ev){
+      ev.stopPropagation();
+      var open=pair[1].classList.contains('open');
+      shut();
+      if(!open){
+        pair[1].classList.add('open'); pair[0].setAttribute('aria-expanded','true');
+        frame.classList.add('asked');
+      }
+    });
+  });
+
+  document.addEventListener('click', function(ev){
+    if(!ev.target.closest('.saying, #oval, #ask')) shut();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Escape') return;
+    shut(); outOne();
+  });
+
+  // A piece can send you back to the shelf it came from -- /#systema opens the case
+  // already zoomed to that shelf. Nothing writes the hash; it is only ever read, so
+  // the case's own history is untouched.
+  // Arriving from a piece, whether the fragment is already on location when this
+  // runs is a race -- it lands before the script about half the time and after it
+  // the rest. So the hash is read at every moment it could turn up, and a flag
+  // makes sure the case is only ever moved once by it: a visitor who zooms back
+  // out is not dragged in again by a late-firing load event.
+  var hashUsed=false;
+  function fromHash(){
+    if(hashUsed) return;
+    var want=(location.hash||'').replace('#','');
+    if(!want) return;
+    GEO.shelves.forEach(function(sh,i){
+      if(sh.name===want){ hashUsed=true; toShelf(i); }
+    });
+  }
+  addEventListener('hashchange', fromHash);
+  addEventListener('load', fromHash);
+  setTimeout(fromHash, 0);
+  fromHash();
+
+  fit();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  addEventListener('resize', fit);
+})();
+</script>
+</body>
+</html>
