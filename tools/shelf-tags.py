@@ -25,7 +25,7 @@ MARK_B = '<!-- /shelf-tags -->'
 # The plates are their own pictures now rather than crops of the case, and each
 # one was cut to the length of its own word -- so a tag keeps the plate's height
 # and takes whatever width that plate's proportion gives it.
-PLATE_H = 22                     # every plate is this tall in the case's own scale
+PLATE_H = 21                     # every plate is this tall in the wall's own scale
 TAG_H = 19                       # how tall a plate is drawn on a piece page
 
 # pages that already keep something in the top right corner, and how far down it
@@ -38,7 +38,9 @@ def groups(root):
     """The five groups, their pieces and their plate widths, straight out of the
     case's own table."""
     s = open(os.path.join(root, 'index.html')).read()
-    block = re.search(r'shelves:\[(.*?)\n    \]\n  \};', s, re.S).group(1)
+    # the shelves list closes on a bracket at four spaces; what follows it in the
+    # table (the boards, say) is no business of this script
+    block = re.search(r'shelves:\[(.*?)\n    \]', s, re.S).group(1)
     out = []
     for m in re.finditer(r"name:'(\w+)'.*?plateW:([\d.]+),.*?pieces:\[(.*?)\]\s*\}", block, re.S):
         out.append((m.group(1), float(m.group(2)),

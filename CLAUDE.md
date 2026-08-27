@@ -33,21 +33,64 @@ plain HTML + CSS + JavaScript. Editing = changing those files directly.
 branch**. That's the key fact behind everything below: **a change is only live once it's on
 `main`.** Until then it's a private draft.
 
-**Landing page:** `index.html` (titled *sagne*) — a **five-shelf case**, the pieces standing
-face-front on the shelves in mounts, and the name of each type on the brass plate beneath it.
-It replaced the flat card grid in Aug 2026. Every position on it derives from one table of
-measurements taken off the photograph itself — the interior opening, each shelf's surface and
-the rail its plate is screwed to. Change the picture and you change that table; don't retype
-percentages by hand.
+**Landing page:** `index.html` (titled *sagne*) — **five open shelves on a dark wall**, the
+pieces standing face-front on them in mounts, the name of each type engraved on the brass
+plate screwed to the board's front face. It replaced her apothecary **case** in Aug 2026,
+which had replaced the flat card grid a few days before. Every position on it derives from one
+table of measurements taken off the photograph itself. Change the picture and you change that
+table; don't retype percentages by hand.
 
-The case is **`shelves-navy.jpg`** (1024x1260), her dark cabinet, straight on. It replaced the
-walnut apothecary shelf in Aug 2026 — her call: *"while the shelves we built are undoubtedly
-beautiful, they're not as timeless or as understated."* `shelves.jpg`, the walnut one, is kept
-as a record and is no longer referenced by anything.
+**Three pictures, one table.** `wall-desktop.jpg` (1896x1024), `wall-phone.jpg` (430x728) and
+`wall-small.jpg` (324x600) — the same wall at three widths. Which pieces stand on which shelf
+is written **once**, in `GEO.shelves`, and every one of the three reads it; the rest of a
+skin is its own boards, card size and brass positions, in `SKINS` at the top of the script.
+**Adding a piece is one line in `GEO.shelves` plus its card picture**, and all three sizes and
+all twenty pieces' shelf tags follow. At the card size she approved, a shelf takes about ten
+before it is tight; the fullest have five.
+
+**Only the picture that is needed is fetched** — verified on the wire at 1440, 390 and 240,
+one wall each. The markup must NOT name a wall in the `<img src>`: the browser would fetch that
+one before the script had chosen, and you would be back to two on the wire. This is bowl's and
+fireflies' lesson at landing-page scale.
+
+**How each size behaves.** On a wide screen the wall **fills the window** and the surplus comes
+off its **ends**, never its foot — the ends of the wall are bare and the floor is not, which is
+why `tools/wall.py` adds 180 units of the wall's own plain surface at each end for the window
+to take. On a phone the wall takes the full width and is allowed to **run past the bottom**,
+which is the answer kaleidoscope, storm, chimes and ant all take. Measured: an ordinary phone
+fits exactly with nothing below the fold; the 3in Jelly Star scrolls about 94px, **her call** —
+the alternative was cards two thirds the size, and she chose the scroll.
+
+**The pictures are built, not hand-made.** `python3 tools/wall.py <shelves photo> <blank plate>`
+makes all three walls and the brass plate from her own photographs, so every step is recorded:
+half the floor traded for wall at the top, the bays given the clean unshadowed wall from above
+the top shelf, the colour matched to her cabinet's interior, the ends padded, and for the phones
+a slice taken out of the **middle** so every board keeps both of its real ends. Her originals
+(`sagnegalleryshelveswood.png`, `sagnebrassplateforfuckingreal.jpg`) are in her `daidle` folder.
+The cabinet, `shelves-navy.jpg`, is still here and still needed — the wall's colour is matched
+to it. `attic/museum-wall/cabinet-index.html` is the case's own page, kept as a record.
+
+**Background, shelves, stands, cards — in that order.** Her words, and it is load-bearing. Each
+board is drawn a **second** time over the cards (`.boardface`), so a stand's foot lands on the
+wood and anything lower goes behind the shelf's front edge. Getting this wrong is what made the
+stands read as standing *in front of* the shelves. The z-order is wall 0, boards 1, stands 2,
+cards 3, brass 4, the dimming sheet 5 — and the sheet must be **above** the brass or the
+off-shelves keep their names lit while their wood goes dark.
+
+**Seats and plate nudges are per shelf.** These boards are shot nearly straight on, so there is
+very little top surface for a foot to stand on: the top three sit right at the board's edge, the
+lower two a shade into it (`seat` in the table). The plates are geometrically centred on their
+boards and still don't *look* it, because a board's face isn't symmetric — so `railY` carries her
+eye, shelf by shelf. Don't "correct" these to the arithmetic centre.
+
+**One caution written down because it cost a day.** Give every board the same thickness and you
+will be seating cards on a line that isn't the wood — three of these five are thinner than the
+others, and the error is up to 6px, which reads as floating however you nudge it. The board rows
+in `SKINS` are measured off each picture. If the picture changes, measure again.
 
 **The brass is laid on, not photographed in.** The walnut case had its lettering engraved into
-the picture; this one carries her own plates as separate cut-outs — `shelfplate-<group>.png`,
-`shelfoval.png` — with the names set over them in **Libre Baskerville 700**, her pick over
+the picture; the wall carries her own plates as separate cut-outs — `shelfplate-<group>.png`
+for the five groups, and `sagne-plate.png`, her blank brushed plate, for the name — with the names set over them in **Libre Baskerville 700**, her pick over
 Cormorant: engraving wants even stroke weight, and Cormorant's hairlines vanish at the size a
 shelf plate allows. **Each plate is cut to the length of its own word**, which is why `plateW`
 is per shelf. Re-cutting is only needed if a group is renamed or the lettering resized; the
@@ -1076,11 +1119,18 @@ glass up under the two brass discs. A Kindle in landscape is 476 tall and never 
 | `crystal.html` | — | — | A crystal (not linked from the landing page) |
 | `chest.html`, `chest-open.html` | — | — | Dead apothecary-chest drafts she turned down; kept as a record, not linked |
 
-### The shelf, and how it got there
+### The wall, and how it got there
 
 The pieces are split into five groups: **instrumenta, tactilia, systema, natura,
 phenomena**. Those are her words, off her own handwritten notes — *instrumenta*, not
 "tools". Which piece belongs in which group is hers, and so is the list; don't reshuffle it.
+
+**The order down the wall is hers and is not the order they were in on the case.** Top to
+bottom: **tactilia, systema, natura, phenomena, instrumenta** — instrumenta at the foot because
+that shelf sits in the darkest part of the picture and its cards are the darkest of the twenty,
+so they show up better there. Within a shelf the order is hers too (moths, birds, ant, fireflies;
+rain, pendulum, bowl, lamp, chladni), set by eye so the pale and dark cards alternate rather than
+clumping at one end.
 
 It began as an apothecary **chest** of drawers. Three chest variants were built and she
 turned all three down — *"none of it feels right"*. The shelf was her idea instead: *"what
