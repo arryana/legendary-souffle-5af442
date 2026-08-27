@@ -53,7 +53,7 @@
   /* The case does not stand on a drawn floor -- there isn't one, and the plain
      wall is the point. It stands on the evidence of one: the dark pools where its
      two feet bear, and thins away between them, the way real weight does. */
-  #stage{ position:relative; flex:none; }
+  #stage{ position:relative; flex:none; width:100vw; height:100vh; }
   /* A wall is not furniture: it casts no shadow on a floor and needs no light
      laid on behind it, so the case's two pieces of stagecraft are off here. */
   #stage::after{ content:none; }
@@ -144,9 +144,12 @@
   body.tray #frame{ filter:brightness(.16) saturate(.7); transition:filter .5s ease; }
   body.tray #back{ display:none; }   /* the plate at the foot of the tray is the way back */
 
+  /* The wall fills the window rather than sitting in it: whichever of the two
+     needs more, gets it, and the surplus is cropped off the FOOT -- which is
+     floor, and the only part of the picture nothing stands on. */
   #frame{ position:relative; overflow:hidden; flex:none;
-    --h: min(92vh, calc(96vw * 0.666667), 1024px);
-    height:var(--h); width:calc(var(--h) / 0.666667);
+    --h: max(100vh, calc(100vw * 0.666667));
+    height:100vh; width:100vw;
     transition:width .78s cubic-bezier(.42,.02,.16,1); }
   /* Sizes here are fractions of the case's own height, so the lettering keeps its
      proportion to the furniture at every screen size. They cannot be written as
@@ -155,7 +158,7 @@
   /* The case keeps its OWN width and stays centred, rather than filling the frame.
      That is what lets the frame widen on a zoom without the photograph stretching
      with it -- unzoomed the two are exactly the same width, so nothing moves. */
-  #case{ position:absolute; top:0; bottom:0;
+  #case{ position:absolute; top:0; bottom:auto; height:var(--h);
     left:50%; width:calc(var(--h) / 0.666667);
     margin-left:calc(var(--h) / 0.666667 / -2);
     transform-origin:50% 50%;
