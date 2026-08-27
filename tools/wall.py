@@ -68,6 +68,21 @@ def match_cabinet(a, cabinet):
     matched = np.clip((a-wm)/np.maximum(ws,1e-6)*cs + cm, 0, 255)
     return np.clip(a + (matched-a)*m[:,:,None], 0, 255)
 
+def widen(a, pad=180):
+    """The desktop picture is cropped to the WINDOW's shape by its sides, never its
+    foot -- the ends of the wall are bare and the floor is not. So give it more of
+    its own plain wall at each end for the window to take."""
+    H,W,_ = a.shape
+    def stretch(block, out_w, flip):
+        src = block[:, ::-1] if flip else block
+        xs = np.linspace(0, src.shape[1]-1, out_w)
+        i0=np.floor(xs).astype(int); i1=np.clip(i0+1,0,src.shape[1]-1); f=(xs-i0)[None,:,None]
+        g = src[:,i0]*(1-f) + src[:,i1]*f
+        return g[:, ::-1] if flip else g
+    left  = stretch(a[:, :110], 110+pad, True)
+    right = stretch(a[:, -110:], 110+pad, False)
+    return np.concatenate([left, a[:, 110:-110], right], axis=1)
+
 def narrow(a, board_l, board_r, margin, keep, feather=26):
     """Her idea for phones: shorten the shelves.  The slice comes out of the
     MIDDLE, so every board keeps both of its real ends and the wall its corners."""
@@ -103,7 +118,9 @@ if __name__ == '__main__':
     B = [[t+40, b+40] for t, b in SRC_BOARDS]
     a = clean_bays(a, B, SKIRTING+40)
     a = match_cabinet(a, cabinet)
-    save(a, 'wall-desktop.jpg');  print('   desktop boards:', B)
+    PAD = 180
+    save(widen(a, PAD), 'wall-desktop.jpg')
+    print('   desktop boards:', B, ' everything shifted right by', PAD)
 
     # ---- phone: shelves shortened from the middle, bays closed up --------------
     p, pb = shorten(narrow(a, 169, 1362, 25, 380), B, 936, 191, 121, 728)

@@ -148,7 +148,7 @@
      needs more, gets it, and the surplus is cropped off the FOOT -- which is
      floor, and the only part of the picture nothing stands on. */
   #frame{ position:relative; overflow:hidden; flex:none;
-    --h: max(100vh, calc(100vw * 0.666667));
+    --h: max(100vh, calc(100vw * 0.540084));
     height:100vh; width:100vw;
     transition:width .78s cubic-bezier(.42,.02,.16,1); }
   /* Sizes here are fractions of the case's own height, so the lettering keeps its
@@ -159,8 +159,8 @@
      That is what lets the frame widen on a zoom without the photograph stretching
      with it -- unzoomed the two are exactly the same width, so nothing moves. */
   #case{ position:absolute; top:0; bottom:auto; height:var(--h);
-    left:50%; width:calc(var(--h) / 0.666667);
-    margin-left:calc(var(--h) / 0.666667 / -2);
+    left:50%; width:calc(var(--h) / 0.540084);
+    margin-left:calc(var(--h) / 0.540084 / -2);
     transform-origin:50% 50%;
     transition:transform .78s cubic-bezier(.42,.02,.16,1); }
   #case > img.wood{ width:100%; height:100%; display:block; }
@@ -323,12 +323,12 @@
   // percentages, which had to be retyped by hand every time the picture changed.
   // ---------------------------------------------------------------------------
   var GEO = {
-    W:1536, H:1024,
-    interior:{ left:169, right:1362 },     // the run of the boards, end to end
+    W:1896, H:1024,
+    interior:{ left:349, right:1542 },     // the run of the boards, end to end
     // The brass is laid on, not photographed in. sagne is her own blank plate with
     // the name engraved over it, so its size is a number rather than a picture.
-    oval:{ x:724, y:34, w:88, h:48 },
-    disc:{ cx:768, cy:897, d:44 },
+    oval:{ x:904, y:34, w:88, h:48 },
+    disc:{ cx:948, cy:897, d:44 },
     plateH:21, plateFS:13,
     card:{ w:66, h:96 },
     stand:9.4,
