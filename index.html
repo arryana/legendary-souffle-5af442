@@ -163,7 +163,7 @@
      needs more, gets it, and the surplus is cropped off the FOOT -- which is
      floor, and the only part of the picture nothing stands on. */
   #frame{ position:relative; overflow:hidden; flex:none;
-    --h: max(100vh, calc(100vw * var(--wallratio)));
+    --h: 100vh;
     height:100vh; width:100vw;
     transition:width .78s cubic-bezier(.42,.02,.16,1); }
   /* Sizes here are fractions of the case's own height, so the lettering keeps its
@@ -344,11 +344,11 @@
   // once, below, and every skin reads it. Adding a piece is one line there.
   // ---------------------------------------------------------------------------
   var SKINS = {
-    desktop:{ img:'wall-desktop.jpg', W:1896, H:1024, left:349, right:1542,
+    desktop:{ img:'wall-desktop.jpg', W:2662, H:1024, left:732, right:1925,
       boards:[[204,235],[360,385],[520,539],[674,699],[829,860]],
       surf:[204,360,520,674,829], railY:[219.5,370.5,529.5,691.5,854.5],
       card:{w:66,h:96}, stand:9.4, plateH:21, plateFS:13, inset:44,
-      oval:{x:904,y:34,w:88,h:48}, disc:{cx:948,cy:897,d:44} },
+      oval:{x:1287,y:34,w:88,h:48}, disc:{cx:1331,cy:897,d:44} },
     phone:{ img:'wall-phone.jpg', W:430, H:728, left:25, right:405,
       boards:[[176,207],[300,325],[424,443],[542,567],[660,691]],
       surf:[176,300,424,542,660], railY:[191.5,310.5,433.5,558.5,683.5],
@@ -362,8 +362,12 @@
   };
   var PLATE_AR={tactilia:4.671,systema:4.877,natura:4.694,phenomena:5.734,instrumenta:5.697};
   function pickSkin(){
-    var w=window.innerWidth;
-    return w<300 ? 'small' : (w<560 ? 'phone' : 'desktop');
+    var w=window.innerWidth, h=window.innerHeight||1;
+    // the long wall needs a window at least a quarter wider than it is tall, or
+    // its own shelves run off the sides -- a Kindle held upright is 600px wide and
+    // still nowhere near wide enough
+    if (w/h >= 1.25 && w >= 700) return 'desktop';
+    return w < 300 ? 'small' : 'phone';
   }
   var SKIN_NAME = pickSkin(), SK = SKINS[SKIN_NAME];
   document.documentElement.className += ' skin-' + SKIN_NAME;

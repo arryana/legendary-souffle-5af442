@@ -118,7 +118,7 @@ if __name__ == '__main__':
     B = [[t+40, b+40] for t, b in SRC_BOARDS]
     a = clean_bays(a, B, SKIRTING+40)
     a = match_cabinet(a, cabinet)
-    PAD = 180
+    PAD = 563   # enough plain wall that the widest window crops sides, never the foot
     save(widen(a, PAD), 'wall-desktop.jpg')
     print('   desktop boards:', B, ' everything shifted right by', PAD)
 
