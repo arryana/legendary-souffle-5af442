@@ -588,9 +588,18 @@
   // tall portrait box and a shelf is a wide landscape strip, so a shelf filling the
   // case's own width used less than half the screen on a desktop -- 695px of 1440,
   // which is what made the zoom look timid. Her report: it needs to be a lot bigger.
-  // So the window widens on a zoom and the case keeps its own proportion inside it;
-  // the scale is then multiplied by however much wider the window got. Nothing here
-  // touches a phone, which takes the tray instead of the zoom.
+  // Nothing here touches a phone, which takes the tray instead of the zoom.
+  //
+  // WHAT THIS RETURNS IS THE WIDTH THE SHELF'S CARDS ARE AIMED AT, NOT A WINDOW.
+  // That distinction is the whole of a fault she reported: this used to widen the
+  // frame itself, with a floor of the case's own width -- and since the Mac fix the
+  // case is `height / wallratio`, which on any ordinary desktop window is WIDER than
+  // the window (that is the point of it: the wall fills the window and the surplus
+  // comes off its ends). So the floor pushed the frame past the right-hand edge of
+  // the screen every time, anchored at the left. Measured at 1000x533, a shelf of
+  // three came out 1386px wide in a 1000px window and its third card sat entirely
+  // off the screen; at 1440x900 the frame was 2340. The frame stays at the window
+  // width now and only the scale follows this figure.
   var ZOOM_FILL = 0.97;                    // of the page's width
   function caseW(){ return caseEl.clientWidth || 1; }
   function zoomWidth(n, art){
@@ -601,7 +610,7 @@
     // starts doing the card zoom's job.
     var maxCard = Math.min(art/(window.devicePixelRatio||1), fh*0.46);
     var maxW = maxCard*span/(GEO.card.h*FILL);
-    return Math.max(caseW(), Math.min(window.innerWidth*ZOOM_FILL, maxW));
+    return Math.min(window.innerWidth*ZOOM_FILL, maxW);
   }
   function shelfArt(sh){
     var art = 1e9;
@@ -811,7 +820,7 @@
       // includes it rather than on the empty compartment alone
       var mid=(sh.ceil + sh.railY + GEO.plateH/2)/2;
       var fw=zoomWidth(sh.pieces.length, shelfArt(sh));
-      frame.style.width=fw.toFixed(1)+'px';
+      frame.style.width='';
       caseEl.style.transform=transform(IMID, mid, shelfScale(sh.pieces.length, fw));
     } else {
       // a card is portrait, so the window comes back down to the case's own width

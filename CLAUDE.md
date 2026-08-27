@@ -1255,6 +1255,26 @@ shelf zoom starts doing the card zoom's job. **On a Retina Mac the first of thos
 and a three-card shelf comes to 1112px rather than 1397, the card exactly 1:1 with its own
 photograph; that is correct, not a shortfall.
 
+**And then it ran off the right-hand edge of the screen**, her report Aug 2026 — *"the shelf
+zoom is now off to the left and missing the right side"* — with a screen capture showing a
+three-card shelf of which only two cards were on the page at all. The cause is the sentence
+above, taken too literally: the zoom **widened the frame itself**, with a floor of the case's
+own width. That floor was harmless while `#case` was as wide as the window — but the Mac fix
+made the case `height / wallratio`, and on any ordinary desktop window that is **wider** than
+the window, which is the whole point of it (the wall fills the window and the surplus comes
+off its ends). So the floor pushed the frame past the screen every time, anchored at the left.
+Measured at 1000x533, a shelf of three came out **1386px wide in a 1000px window** with its
+third card entirely off the page; at 1440x900 the frame was **2340**, at 1920x1080 it was
+2808. The two ceilings above were never reached, because the floor beat them.
+
+**The frame stays at the window width now and only the SCALE follows.** What `zoomWidth`
+returns was never a window — it is the width the shelf's cards are aimed at, and conflating
+the two is the whole fault; the frame's `width` is no longer touched on a shelf zoom at all.
+Measured after, on all five shelves at 1000x533, 1440x900 and 1600x1000: **nothing over
+either edge, and the margins equal to the pixel** on both sides at every size. The un-zoomed
+page is **pixel-identical** at both sizes. The cards do come out smaller than the broken
+version drew them — that is the part that was off the screen.
+
 **And the other four shelves go back as furniture, not as cards.** Dimming the off-shelf
 cards alone (which is all it did) left four brightly lit empty shelves behind them — the
 wood is most of what the eye sees. A near-black sheet is laid over the whole case with a
