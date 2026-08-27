@@ -147,5 +147,28 @@ if __name__ == '__main__':
     al = np.clip(((w[:,:,0]-w[:,:,2])-14)/12.0, 0, 1)
     msk = Image.fromarray((al*255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.8))
     dim = 255.0*np.power(np.clip(w/255.0,0,1), 1.30)*0.92     # her call: it was glary
-    out = Image.fromarray(np.dstack([np.clip(dim,0,255), np.asarray(msk)]).astype(np.uint8), 'RGBA')
-    out.save('sagne-plate.png');  print(f'   wrote sagne-plate.png  {out.size[0]}x{out.size[1]}')
+    # The plate was stood on a bench and shot slightly from above, so it tapers --
+    # its bottom edge is wider than its top and neither side is upright. Her catch.
+    # Fit a straight line to each side and pull every row out to the full width, so
+    # the sides stand vertical. The brass's own shading and its screws come with it.
+    rgba = np.dstack([np.clip(dim,0,255), np.asarray(msk)]).astype(np.float64)
+    A = rgba[:,:,3]; hh, ww = A.shape
+    ys, ls, rs = [], [], []
+    for y in range(hh):
+        on = np.where(A[y] > 140)[0]
+        if len(on) > ww*0.5: ys.append(y); ls.append(on.min()); rs.append(on.max())
+    ys = np.array(ys, float)
+    lm, lc = np.polyfit(ys, np.array(ls, float), 1)
+    rm, rc = np.polyfit(ys, np.array(rs, float), 1)
+    sq = np.zeros_like(rgba)
+    for y in range(hh):
+        L, R = lm*y + lc, rm*y + rc
+        if R - L < 2: continue
+        xs = L + (R - L) * (np.arange(ww) / (ww - 1.0))
+        i0 = np.clip(np.floor(xs).astype(int), 0, ww-1); i1 = np.clip(i0+1, 0, ww-1)
+        f = (xs - i0)[:, None]
+        sq[y] = rgba[y][i0]*(1-f) + rgba[y][i1]*f
+    out = Image.fromarray(np.clip(sq,0,255).astype(np.uint8), 'RGBA')
+    out.save('sagne-plate.png')
+    print(f'   wrote sagne-plate.png  {out.size[0]}x{out.size[1]}  (sides squared: '
+          f'left leaned {lm*hh:+.1f}px, right {rm*hh:+.1f}px over its height)')

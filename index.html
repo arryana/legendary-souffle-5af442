@@ -278,6 +278,28 @@
     opacity:0; pointer-events:none; transition:opacity .6s ease, transform .6s ease; }
   .saying.open{ opacity:1; transform:translateX(-50%); pointer-events:auto; }
   #say-sagne{ top:13%; }
+  /* Her ask: when the saying opens, the name comes forward above the words so the
+     pronunciation can actually be read. The plate in the wall cannot do this --
+     it is inside the case, and the case dims when a saying is open -- so the
+     saying carries its own, cut from the same brass and engraved the same way. */
+  #sagnebig{ position:absolute; left:50%; top:6vh; z-index:31;
+    transform:translateX(-50%) translateY(-10px); opacity:0; pointer-events:none;
+    height:18vh; width:calc(18vh * 1.839);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:url(sagne-plate.png) no-repeat center/100% 100%;
+    filter:drop-shadow(0 3px 8px rgba(0,0,0,.75));
+    font:700 8.2vh/1 'Libre Baskerville', Georgia, serif; letter-spacing:.12em;
+    color:#33230a; text-shadow:0 1px 0 rgba(255,238,196,.5), 0 -1px 1px rgba(0,0,0,.35);
+    transition:opacity .5s ease, transform .5s cubic-bezier(.2,.7,.3,1); }
+  #sagnebig i{ font-style:normal; line-height:1; display:block; margin-right:-.10em; }
+  #sagnebig u{ text-decoration:none; font-weight:400; line-height:1; display:block;
+    font-size:.42em; letter-spacing:.03em; margin-top:.42em; color:#3a2606; }
+  #frame.asked-sagne #sagnebig{ opacity:1; transform:translateX(-50%); }
+  #frame.asked-sagne #say-sagne{ top:34%; }
+  /* the one on the wall stands down while its bigger self is up -- two of the same
+     plate on screen reads as two plates, not as one come forward */
+  #frame.asked-sagne #oval{ opacity:0; transition:opacity .35s ease; }
+  #oval{ transition:opacity .45s ease; }
   #say-about{ bottom:9%; }
 
   /* Her brass disc, let into the middle of the plinth carving, with the ? cut into
@@ -316,6 +338,7 @@
     <!-- The two sayings the flat landing page carried, kept word for word: the one
          under the name, and the one behind the ? at the foot. Nothing of either is
          on screen until it is asked for. -->
+    <div id="sagnebig" aria-hidden="true"><i>sagne</i><u>/se&#618;n/</u></div>
     <p class="saying" id="say-sagne">tools and toys for twiddling. no scores, no goals, no
       timers (except the tools which are timers), no links (except for location accuracy), no
       likes, no ads, no in-game purchases. nothing exciting, but hopefully something
@@ -346,7 +369,7 @@
   var SKINS = {
     desktop:{ img:'wall-desktop.jpg', W:2662, H:1024, left:732, right:1925,
       boards:[[204,235],[360,385],[520,539],[674,699],[829,860]],
-      surf:[204,360,520,674,829], railY:[219.5,370.5,529.5,691.5,854.5],
+      surf:[204,360,520,674,829], railY:[216.5,370.5,529.5,691.5,854.5],
       card:{w:66,h:96}, stand:9.4, plateH:21, plateFS:13, inset:44,
       oval:{x:1287,y:34,w:88,h:48}, disc:{cx:1331,cy:897,d:44} },
     phone:{ img:'wall-phone.jpg', W:430, H:728, left:25, right:405,
@@ -843,7 +866,7 @@
   var SAYINGS=[[ovalEl, document.getElementById('say-sagne')],
                [askEl, document.getElementById('say-about')]];
   function shut(){
-    frame.classList.remove('asked');
+    frame.classList.remove('asked','asked-sagne');
     SAYINGS.forEach(function(pair){
       pair[1].classList.remove('open');
       pair[0].setAttribute('aria-expanded','false');
@@ -857,6 +880,7 @@
       if(!open){
         pair[1].classList.add('open'); pair[0].setAttribute('aria-expanded','true');
         frame.classList.add('asked');
+        if(pair[1].id==='say-sagne') frame.classList.add('asked-sagne');
       }
     });
   });
