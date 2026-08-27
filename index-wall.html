@@ -53,7 +53,9 @@
   /* The case does not stand on a drawn floor -- there isn't one, and the plain
      wall is the point. It stands on the evidence of one: the dark pools where its
      two feet bear, and thins away between them, the way real weight does. */
-  #stage{ position:relative; flex:none; width:100vw; height:100vh; }
+  /* pinned to the window itself, so the picture meets all four edges and the
+     page's own ground never shows past it */
+  #stage{ position:fixed; inset:0; width:100vw; height:100vh; }
   /* A wall is not furniture: it casts no shadow on a floor and needs no light
      laid on behind it, so the case's two pieces of stagecraft are off here. */
   #stage::after{ content:none; }
