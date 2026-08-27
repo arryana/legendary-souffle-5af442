@@ -116,7 +116,7 @@ if __name__ == '__main__':
     # ---- the brass plate, cut off its ground and turned down -------------------
     pl = Image.open(plate_src).convert('RGB')
     q  = np.asarray(pl).astype(float)
-    m  = (q[:,:,0]-q[:,:,2]) > 22;  m[:180] = False
+    m  = (q[:,:,0]-q[:,:,2]) > 22;  m[:180] = False   # the brushed plate, on grey
     on = np.where(m.sum(axis=0) > 120)[0]
     runs=[]; s0=on[0]; prev=on[0]
     for x in on[1:]:

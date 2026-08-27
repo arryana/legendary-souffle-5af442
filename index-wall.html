@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="description" content="tools and toys for twiddling.">
-<meta name="theme-color" content="#101521">
+<meta name="theme-color" content="#2f3d4d">
 <link rel="canonical" href="https://sagne.co.uk/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="sagne">
@@ -35,7 +35,7 @@
      background has been recoloured to the same value, so the frame's edge
      disappears and the case simply stands in the dark rather than being pasted
      onto a blue card. */
-  html,body{ height:100%; margin:0; background:#101521; color:#e2d6bb;
+  html,body{ height:100%; margin:0; background:#2f3d4d; color:#e2d6bb;
     overflow-x:hidden;  /* the ground shadow spreads wider than the case; it fades
                            to nothing at its ends, so clipping it is invisible */
     font-family:'Cormorant Garamond', Georgia, serif; }
@@ -54,7 +54,10 @@
      wall is the point. It stands on the evidence of one: the dark pools where its
      two feet bear, and thins away between them, the way real weight does. */
   #stage{ position:relative; flex:none; }
-  #stage::after{ content:''; position:absolute; left:-8%; right:-8%; top:100%;
+  /* A wall is not furniture: it casts no shadow on a floor and needs no light
+     laid on behind it, so the case's two pieces of stagecraft are off here. */
+  #stage::after{ content:none; }
+  #stage::after--was{ content:''; position:absolute; left:-8%; right:-8%; top:100%;
     height:10%; pointer-events:none; opacity:1;
     transition:opacity .45s ease;
     background:
@@ -75,7 +78,8 @@
      background paints OVER a negative-z-index descendant, so the glow simply
      vanishes. Being first in the stage and unpositioned in z, it lands behind
      #frame on document order alone. */
-  #stage::before{ content:''; position:absolute; pointer-events:none;
+  #stage::before{ content:none; }
+  #stage::before--was{ position:absolute; pointer-events:none;
     left:-50%; right:-50%; top:-40%; bottom:-24%;
     opacity:1; transition:opacity .45s ease;
     background:
@@ -286,7 +290,7 @@
       <div id="shelfveil"></div>
       <div id="veil"></div>
       <button type="button" id="oval" aria-expanded="false" aria-controls="say-sagne"
-              aria-label="what is this?"><i>sagne</i><u>/se\u026an/</u></button>
+              aria-label="what is this?"><i>sagne</i><u>/se&#618;n/</u></button>
       <button type="button" id="ask" aria-expanded="false" aria-controls="say-about"
               aria-label="about sagne"><img src="shelfdisk.png" alt=""><i>?</i></button>
     </div>
@@ -320,8 +324,8 @@
     interior:{ left:169, right:1362 },     // the run of the boards, end to end
     // The brass is laid on, not photographed in. sagne is her own blank plate with
     // the name engraved over it, so its size is a number rather than a picture.
-    oval:{ x:698, y:16, w:140, h:64 },
-    disc:{ cx:768, cy:912, d:46 },
+    oval:{ x:724, y:20, w:88, h:48 },
+    disc:{ cx:768, cy:897, d:44 },
     plateH:21, plateFS:13,
     card:{ w:66, h:96 },
     stand:9.4,
