@@ -60,6 +60,9 @@
   #stage{ position:fixed; inset:0; width:100vw; height:100vh; }
   html.skin-phone, html.skin-small,
   html.skin-phone body, html.skin-small body{ height:auto; overflow-y:auto; }
+  /* the case stood on the floor of the page and was padded off its edges; a wall
+     that fills the screen is not standing on anything */
+  html.skin-phone body, html.skin-small body{ padding:0; }
   html.skin-phone #stage, html.skin-small #stage{
     position:relative; inset:auto; width:100vw;
     height:calc(100vw * var(--wallratio)); }
