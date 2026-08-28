@@ -819,8 +819,21 @@ document.addEventListener('focusout', () => setTimeout(setVisibleHeight, 60));
     ensureGrainCanvas();
     grainCtx.clearRect(0,0,W,H);
     // same soft, pale character at every hue — only the hue itself moves,
-    // so it always still reads as fine sand, never a saturated paint colour
-    grainCtx.fillStyle=`hsla(${hue}, ${sub.sat}%, ${sub.light}%, ${sub.alpha})`;
+    // so it always still reads as fine sand, never a saturated paint colour.
+    // But moving ONLY the hue left two of the four substances with nothing to
+    // show it in: salt and fine flour are very nearly white (sat 22 and 18,
+    // light 90 and 93), and measured across the whole slider they shifted
+    // 11/255 and 4/255 of colour against sand's 72 — a control that visibly
+    // did nothing on half the substances. So each keeps its own pale colour
+    // exactly at its own hue, and only as the slider moves AWAY from that does
+    // it gain enough saturation to carry one. The floors are sand's own
+    // character, which already reads as sand, so sand and lycopodium are
+    // untouched at every position of the slider.
+    const dh=Math.abs(hue-sub.hue)%360;
+    const away=Math.min(1,(dh>180?360-dh:dh)/60);
+    const gsat=sub.sat+(Math.max(sub.sat,58)-sub.sat)*away;
+    const glight=sub.light+(Math.min(sub.light,80)-sub.light)*away;
+    grainCtx.fillStyle=`hsla(${hue}, ${gsat}%, ${glight}%, ${sub.alpha})`;
     for(let i=0;i<activeN;i++){
       const [x,y]=toPx(px[i],py[i]);
       const s=gsize[i]*DPR*1.1;
