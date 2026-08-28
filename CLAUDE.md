@@ -452,7 +452,7 @@ headphones sat on the crow slider — measured, **23x30px of it at 240 and 3x30 
 every width; change this with it if that changes). Otherwise clean: nothing below the fold at any
 size, no console errors, and it fetches **one** background, picked by the time of day, not all four
 — so its 6.7MB folder is only 3.0MB on the wire. |
-| `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**.<br>Aug 2026, found by measuring for a 3-inch phone: the dock is one row that never wrapped and wants **369px** laid out end to end, so on anything narrower the LAST thing in it — the flower, which is the whole object chooser — was pushed clean off the right edge, and with the page unable to scroll there was no way to reach it. It cleared a 390px phone by 22px, which is exactly why it looked perfect everywhere anyone had looked. Behind that sat a second fault: the chooser popup is a fixed 326px grid and hung 43px off **both** edges of a 240px screen, so fixing the button alone would only have revealed half the flowers. Below 379px the dock now wraps to two lines and the popup drops to three slightly smaller tiles; above it, nothing applies and the dock is pixel-identical at 390, 600 and 1200. The wrapped row is **right-aligned, not centred** — the music button is pinned in the bottom-left corner and a centred second row lands straight on top of it.<br>**It did not load on the Jelly Star** — her report, Aug 2026, and it was true in the
+| `bowl/index.html` | ✅ | ✅ | A still bowl of water for floating things on; has a breeze and an object picker<br>**Done**.<br>**Where it comes from, because it explains the piece.** Her grandmother used to set a bowl out and she would float the same objects in it — so what is inherited here is the **practice**, not the vessel: set a bowl out, choose things, float them. The ten bowls themselves are the opposite of a reconstruction. They are *"bowls we never had but i think are beautiful"* — stone, china, copper. Don't reduce the set to one "authentic" bowl on the grounds of provenance; the variety is the point and the memory is the gesture.<br>Aug 2026, found by measuring for a 3-inch phone: the dock is one row that never wrapped and wants **369px** laid out end to end, so on anything narrower the LAST thing in it — the flower, which is the whole object chooser — was pushed clean off the right edge, and with the page unable to scroll there was no way to reach it. It cleared a 390px phone by 22px, which is exactly why it looked perfect everywhere anyone had looked. Behind that sat a second fault: the chooser popup is a fixed 326px grid and hung 43px off **both** edges of a 240px screen, so fixing the button alone would only have revealed half the flowers. Below 379px the dock now wraps to two lines and the popup drops to three slightly smaller tiles; above it, nothing applies and the dock is pixel-identical at 390, 600 and 1200. The wrapped row is **right-aligned, not centred** — the music button is pinned in the bottom-left corner and a centred second row lands straight on top of it.<br>**It did not load on the Jelly Star** — her report, Aug 2026, and it was true in the
 strongest sense. The ten bowl photographs are 1408x768 and about 1.5MB apiece, **15.7MB**
 of them, and *nothing was drawn until every one had arrived*: the first `resize()` and the
 first frame both sat behind one `Promise.all` over the lot. The picker made it worse, building
@@ -1771,6 +1771,167 @@ load-bearing. Move that piece's geometry without knowing it and the fault comes 
 back. "Invisibly broken" there means *conditionally* invisible, which is a parked problem,
 not a solved one.
 
+## The other half of the standard: what a piece costs to put down
+
+The section above is the *instrument* half of the argument — the pinecone, the ones that
+make a real behaviour legible. This is the half that explains the quiet ones, and without
+it a session reads the shelf and concludes that `rain` and `warmler` are the slight pieces.
+They are not. Her words, Aug 2026:
+
+> *"rain does almost nothing. except the experience of watching drops gather and fall on
+> glass does something to the human physical state. we're meant to get idly absorbed in
+> such things, it's when creative thoughts happen and the internal dialogue stops."*
+
+And the criterion that follows from it, which is the sharpest test on this site after
+*does it behave like the real thing?* —
+
+> *"a kid can play with that for half an hour and be reasonably amused without being
+> overstimulated, emotionally manipulated, or distressed when told it's time to put it away."*
+
+**Call it the exit cost, and check every piece against it.** Nearly everything else on a
+tablet is built so that stopping is expensive: a streak to break, a level half-finished, an
+autoplay three seconds into the next thing, a reward that lands just after the point where
+someone would have stopped. The distress when a child is told to put it down is not a side
+effect of those designs, it is the product working. **No piece on this site may have that
+property.** `rain` has no state to lose — no score, no progress, nothing unfinished, nothing
+taken away when the tablet goes down. That is a real, checkable property of a design and it
+is rarer than the fidelity is. Anything proposed here that makes leaving cost something —
+a streak, a saved run to finish, a thing that escalates, a payoff withheld until later — is
+refused on this ground alone, whatever else recommends it.
+
+**These are instruments she uses, not exhibits — and that is the reason for the whole
+fidelity standard.** Aug 2026, unprompted: she uses the **candle timer all the time**, in
+place of an ordinary alarm; she **checks the weather with `windower` and `galileo`**; she
+sits and watches `bowl`, or leaves it idling while doing something else. So the insistence
+everywhere in this file that a piece must be truthful is not a philosophical position. **She
+is the first person a lying piece would mislead** — about the weather outside her own window.
+Treat every piece as something in daily use by the person who commissioned it, and be
+correspondingly careful; a session that reads this file as a description of artworks will be
+less careful than it should be.
+
+**And the candle-versus-alarm reasoning is worth having written down, because it is the exit
+cost applied to time.** Her observation: the candle timer *"is so much less intrusive than a
+normal alarm, and does not build the same tension."* That is a real mechanism, not a
+preference. A countdown builds tension precisely because it is a **discrete number
+approaching a threshold** — checkable, and therefore compulsively checked. A candle burning
+down is **continuous and read at a glance**, with no moment visibly arriving. Same function,
+opposite effect on the body of the person using it. Anything proposed for `candler` that
+makes the remaining time more numeric, more prominent, or more alarming is working against
+the reason she uses it. (Note this is exactly why the readout fix of Aug 2026 was worth
+doing and stayed small: making the count *honest* is not the same as making it *louder*.)
+
+**The plainest statement of the whole position is hers, about a six-year-old:** *"i'd rather
+see a six year old picking things to float than getting wound up by angry birds."* **"Wound
+up"** is the operative phrase. This is not an argument about screen time and it is not
+nostalgia — it is about what state a child is in twenty minutes later, and the difference
+between a thing that entertains and a thing that must agitate in order to keep entertaining.
+One leaves a child choosing between a copper bowl and a stone one. The other leaves them
+needing another go.
+
+**Patience is not a filter, it is the thing being taught.** *"The way patience is learned is
+by being given things that reward it."* So the objection that these pieces only reward
+visitors who arrive patient has the cost the right way round: that is what teaching it looks
+like from the inside, and the slowness is the lesson rather than the entry fee.
+
+**Under that aim the twiddle pieces are the ENTRY, not the weak half.** Her hope for the
+site is *"a toddler's tablet, instead of something loud and flashy."* A two-year-old will
+not get `conometer`. They will get `warmler`, `rain`, `bowl`, `roller` and `kaleidoscope` —
+the pieces that teach that touching a thing makes it answer, which is the whole prerequisite
+for the instruments later. A session that ranks the shelf by cleverness has it backwards.
+And there is a mechanism worth knowing in this: small children are not patient but they are
+ferociously repetitive, returning to one thing dozens of times. Most apps answer that with
+novelty, which is where the flashiness comes from. These answer it by being genuinely
+different each visit — a different sky, different weather, a different amount of oil in the
+lamp. Same object, new state. That rewards returning without escalating.
+
+**The bar every piece has to clear, in her words:** *"anyone from a 4 year old to a 65 year
+old Chinese engineer can immediately engage."* That is the universality test, and it is why
+so many decisions in this file went the way they did — emoji or drawn glyphs instead of text
+on the controls, no lettering on the shelf that is not engraved into brass, the fetch-trouble
+marks being marks rather than a sentence, the icons drawn in `currentColor` rather than
+borrowed from a font. **No piece may depend on reading, on a language, on a cultural
+reference, or on knowing anything first.** If a control needs a word to be understood, it is
+the wrong control.
+
+**And note what "immediately" does and does not mean here, because it looks like it
+contradicts the patience the rest of this section is about.** It does not. **Engagement is
+immediate; comprehension is not.** Touch anything and it must answer at once — the ring
+brightens, the card lifts, the sand moves, the tray tips. What takes patience is working out
+what the answer *means*: that the sky is the real sky outside, that the cone is reading the
+humidity, that the lamp will actually run out.
+
+**But comprehension has to be REACHABLE, and that is a requirement rather than a hope.** Her
+own qualifier, Aug 2026: *"comprehension doesn't have to be immediate, but it should be
+accessible through a bit of twiddling. google can explain anything these days, and they're
+all identifiable for the concepts or objects they are."* So there are exactly two routes in,
+and every piece must offer at least one:
+
+1. **Twiddling.** Working the controls has to be able to disclose the point on its own. This
+   is why the lamp got an oil can — it makes the tap *comparable*, which is much the fastest
+   way anybody works out what tapping is for — and why `conometer` and `storm` carry a
+   live/manual toggle at all.
+2. **Recognition, then a search.** The piece must look enough like the real object or the
+   real phenomenon that a curious person can name it and go and find out. **That makes
+   recognisability a design requirement, not an aesthetic accident** — the pinecone has to
+   read as a pinecone, the storm glass as a storm glass, the Chladni plate as sand on metal.
+   This is the same reasoning already recorded under *Exploring is the point*: the URLs are a
+   hint, the location flag is itself the disclosure, and the site trusts curiosity and
+   ever-present search engines to do the rest.
+
+**So the failing case is a piece that is neither.** Not one that takes twenty minutes to
+arrive — that is the design working. One where twiddling discloses nothing AND the thing on
+screen cannot be named. That is the only version of "undiscoverable" this file treats as a
+fault, and it is a real one, distinct from the nudging that is forbidden. **Fixing it is
+never done with words.** It is done by making the object more like itself, or by giving the
+controls something to compare.
+
+**The distinction that keeps this from eating good work: refusing to explain is not the same
+as refusing to be usable.** Bowl not loading at all on the Jelly Star was a broken door, not
+a patience test. Chimes' dock swamping the piece asked nothing of anybody. A pin too small
+to grab with a thumb taught nobody anything. The whole four-device programme is that second
+category, and it is why the principle has not turned into an excuse. **Keep the line bright**
+— the day it blurs is the day *"it is meant to be demanding"* starts covering for something
+that is simply broken. Her own sharpest handling of it is `pendulum`: at the true Foucault
+rate the turn is imperceptible, and the sped-up version exists anyway, as a choice, with the
+honest one on a checkbox beside it. That was the principle held with judgement, not as a rule.
+
+**On the "calm" sites, and why this is not one of them.** Her reading, and it is correct:
+*"the 'calm' sites are all more about... selling a mood, not returning touch and sense
+through a digital medium."* Rain-noise and lo-fi sites simulate a **feeling** — the calm is
+the product. These pieces simulate a **behaviour**, truthfully, and the calm is a by-product
+of the thing being real and taking its own time. A pinecone that opened at the wrong humidity
+would still be soothing; it would just be a lie.
+
+### A caution about asking an AI to rate this site
+
+Aug 2026 she asked both Claude and Google's AI to rate sagne. Both scored it highly, both
+said very little compares with it, both said the way to improve it further was to market it,
+and both reached for **neal.fun** as the comparison. Treat all of that with suspicion, and
+know why:
+
+- **A session that has read this file is not an independent judge.** It has absorbed her
+  reasoning and will hand it back as agreement.
+- **The neal.fun comparison is by SHAPE, not intent** — one author, single pages, browser
+  toys, no framework. But those pieces are built to produce a reaction and these are built
+  to produce a noticing. Comparing by form flatters the site with the wrong compliment. The
+  honest comparison set is mostly not on the web at all: the Exploratorium floor, Montessori
+  sensorial materials, the demonstration apparatus in an old physics classroom.
+- **"Market it" is what an AI says when it cannot find a fault.** And it carries a trap this
+  file has already ruled on: any description good enough to make somebody click ("watch a
+  pinecone respond to the humidity where you are") has already given away the discovery. That
+  is the refused reference sheet wearing a different hat. Telling people the site *exists* is
+  not the same as telling them what it does, and only the first is safe.
+- **"Radical" and "rebellious" are the raters' words, not hers.** Worth deflating: none of
+  this is radical as an idea. A spinning top has no exit cost either. What is unusual is only
+  doing it *on a screen*, which is the one place the incentives run hard the other way. The
+  site is not proposing something strange; it is declining to do the strange thing everyone
+  else is doing.
+
+What an AI session *can* judge here is the measurable half — whether the physics is right,
+whether a fetch is wasteful, whether a target is too small for a thumb. Whether a piece is
+beautiful is hers alone, which is why the Done marks are hers and why she was right about
+the guitar when every number said it was fine.
+
 ## Exploring is the point — don't ever "help"
 
 Her words, and they settle it: *"I want people to have to explore. I don't want things
@@ -1814,6 +1975,18 @@ does this" and the stem says what. **And the flag is already the disclosure**: i
 seven location-aware pieces, and pressing it opens a box asking where you are, which says
 plainly that the piece cares. The fetch-trouble marks count for less, since they only show
 when something has broken.
+
+**And the rule does not stop at the edge of the site.** Aug 2026, asked whether she would
+make the case for sagne being good for children: *"i don't plan on making any claims. you've
+seen the wording and lack of on the site. i have no intention of departing from that on any
+level. if anyone wants to put my stuff in that category, that's their call."* So **do not
+draft her a tagline, a pitch, an about page, a description of what a piece teaches, or a
+claim about its effect on anybody** — not for parents, not for teachers, not for an awards
+entry, and not on the grounds that it would help the site reach people. A session asked to
+help sagne find an audience will reach for exactly that and must not. Saying the site
+*exists* is the only safe form; saying what it does is the refused sheet again. Where it gets
+categorised, and by whom, is other people's business and she has accepted that it is slow and
+out of her hands.
 
 ## Guardrails
 
