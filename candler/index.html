@@ -1178,10 +1178,15 @@ document.addEventListener('click', (e) => {
 
 // ---------- status readout ----------
 function formatDuration(ms) {
+  // count DOWN to each mark rather than rounding to the nearest one. Rounding
+  // put "1m" on screen for only its first 30 seconds and then "60s" — the same
+  // amount of time said twice, which reads as the timer stuttering backwards —
+  // and showed "3m" while two and a half minutes were left. Flooring gives every
+  // mark its own full minute, and the seconds branch can never reach 60.
   if (ms < 60_000) {
-    return `${Math.max(0, Math.round(ms / 1000))}s`;
+    return `${Math.max(0, Math.floor(ms / 1000))}s`;
   }
-  const totalMinutes = Math.max(0, Math.round(ms / 60_000));
+  const totalMinutes = Math.max(0, Math.floor(ms / 60_000));
   const d = Math.floor(totalMinutes / 1440);
   const h = Math.floor((totalMinutes % 1440) / 60);
   const m = totalMinutes % 60;
