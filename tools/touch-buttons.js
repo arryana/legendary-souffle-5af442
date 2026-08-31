@@ -25,11 +25,20 @@
 // the humidity droplet, small and perfectly visible side by side.
 //
 // SO NEITHER FORM IS TRUSTED. Every rule is screenshotted against the page's own
-// pristine rendering, under a frozen clock and a seeded PRNG, and only what comes
-// back pixel-identical is written out. A rule that cannot be made invisible either
-// way is DROPPED and named in the run's report -- better a control that is still
-// small than a piece that quietly looks different. That is the owner's standing
-// instruction and this is where it is enforced.
+// rendering and only what comes back identical is written out. A rule that cannot
+// be made invisible either way is DROPPED and named in the run's report -- better
+// a control that is still small than a piece that quietly looks different. That is
+// the owner's standing instruction and this is where it is enforced.
+//
+// TWO BASELINES, and this is the part that took a wrong run to find. A frozen
+// clock and a seeded PRNG are not enough to make these pages deterministic --
+// candler's flame and lamp's differ from THEMSELVES between two identical loads.
+// Compared byte for byte, every rule on those two pieces "failed" and the whole
+// lot was thrown away for a harness reason rather than a real one. So the piece is
+// shot twice with no rule applied at all: wherever those two disagree is the piece
+// animating, and those pixels are masked out. Everything else must match exactly.
+// If a run ever reports a very high masked share for a piece, the mask is eating
+// the evidence and that piece's result means little -- say so rather than trust it.
 //
 // Each control reaches only HALF the gap to its nearest neighbour, so no two can
 // overlap and steal each other's taps, and only as far as TARGET.
@@ -100,6 +109,38 @@ async function shoot(browser, slug, css) {
   const s = await cdp.send('Page.captureScreenshot', { format:'png' });
   await c.close();
   return s.data;
+}
+
+// Compare three screenshots: two baselines and a candidate. Pixels where the two
+// baselines disagree are the piece animating and are ignored; every other pixel
+// must match. Decoded in the browser that is already open, so the tool stays one
+// file with one dependency.
+async function compare(browser, a, b, d) {
+  const c = await browser.newContext();
+  const p = await c.newPage();
+  const r = await p.evaluate(async ({a, b, d}) => {
+    const load = s => new Promise((res, rej) => {
+      const i = new Image(); i.onload = () => res(i); i.onerror = rej;
+      i.src = 'data:image/png;base64,' + s;
+    });
+    const [A, B, D] = await Promise.all([load(a), load(b), load(d)]);
+    const cv = document.createElement('canvas');
+    cv.width = A.width; cv.height = A.height;
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    const px = im => { g.clearRect(0,0,cv.width,cv.height); g.drawImage(im,0,0);
+                       return g.getImageData(0,0,cv.width,cv.height).data; };
+    const pa = px(A), pb = px(B), pd = px(D);
+    let differing = 0, worst = 0, masked = 0;
+    for (let i = 0; i < pa.length; i += 4) {
+      const noise = Math.max(Math.abs(pa[i]-pb[i]), Math.abs(pa[i+1]-pb[i+1]), Math.abs(pa[i+2]-pb[i+2]));
+      if (noise > 0) { masked++; continue; }            // the piece's own animation
+      const diff = Math.max(Math.abs(pa[i]-pd[i]), Math.abs(pa[i+1]-pd[i+1]), Math.abs(pa[i+2]-pd[i+2]));
+      if (diff > 2) { differing++; if (diff > worst) worst = diff; }
+    }
+    return { differing, worst, maskedPct: 100*masked/(pa.length/4) };
+  }, {a, b, d});
+  await c.close();
+  return r;
 }
 
 (async () => {
@@ -208,8 +249,13 @@ async function shoot(browser, slug, css) {
     if (!res.specs.length) { console.log(slug.padEnd(13) + 'nothing to grow'); continue; }
 
     // ---- verify: keep only what is invisible -------------------------------
-    const baseline = await shoot(b, slug, null);
-    const check = async css => (await shoot(b, slug, css)) === baseline;
+    const base1 = await shoot(b, slug, null);
+    const base2 = await shoot(b, slug, null);
+    const noise = await compare(b, base1, base2, base2);
+    const check = async css => {
+      const r = await compare(b, base1, base2, await shoot(b, slug, css));
+      return r.differing === 0;
+    };
 
     let kept = res.specs.map(s => ({ s, kind:'pad' }));
     if (!(await check(wrap(kept.map(k => rule(k.s, k.kind)))))) {
@@ -249,8 +295,8 @@ ${END}`;
     src = re.test(src) ? src.replace(re, block) : src.replace('</body>', block + '\n</body>');
     fs.writeFileSync(file, src);
     grew += kept.length;
-    console.log(slug.padEnd(13) + kept.map(k =>
-      `${k.s.name} ${k.s.w}x${k.s.h}->${k.s.nw}x${k.s.nh}${k.kind==='overlay'?'*':''}`).join('  '));
+    console.log(slug.padEnd(13) + `[${noise.maskedPct.toFixed(1)}% animated, masked]  ` +
+      kept.map(k => `${k.s.name} ${k.s.w}x${k.s.h}->${k.s.nw}x${k.s.nh}${k.kind==='overlay'?'*':''}`).join('  '));
   }
 
   console.log('\n' + grew + ' controls grown, all verified pixel-identical  (* = overlay form)');
