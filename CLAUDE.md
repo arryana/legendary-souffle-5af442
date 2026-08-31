@@ -1235,6 +1235,45 @@ twenty on a fast one, because the browser's idea of "near the viewport" widens w
 bandwidth. The attribute is still there as a second line for anything that scrolls them
 into view another way.
 
+**And the landing page's OWN twenty cards are small versions now** — the fault above, one
+level up, on the one page where the cards cannot be deferred because they *are* the page.
+Aug 2026, found by measuring what the front door fetches rather than by anyone reporting it.
+The wall was sending the full card artwork — up to 756x1100, **5.99MB** — to draw a card at
+**201x290 real pixels at the very largest**, measured across every screen from the 3in Jelly
+Star to a 2560 desktop with hover's 1.14 included. About thirty times the picture any screen
+could show, twenty times over. Measured on the simulated Jelly Star (240x350, 1.6Mbps, CPU
+6x slower): the shelves themselves appeared at 0.7s and then **stood empty while the cards
+trickled in until 25.9s**, the page settling at 35.2s. It is **4.3s and 6.8s now, on 1.30MB**.
+
+The wall gets `<slug>-card-sm.jpg` from `python3 tools/card-thumbs.py` — 259KB for all
+twenty — and the full artwork is fetched **on the first zoom of any kind**, which is the only
+place a card is ever drawn at its own size (on a Retina Mac a zoomed shelf puts a card exactly
+1:1 with its photograph). The shelf being opened comes first, then the rest **one at a time**,
+because twenty at once is worse on the machine already struggling: bowl's and fireflies'
+bargain, for bowl's and fireflies' reason. If a full picture fails to arrive the small one
+simply stays — a slightly soft card beats a blank one.
+
+Two things about it are load-bearing. **`CARD_ART` carries each picture's TRUE size and is
+generated** (between the `card-art` markers — don't hand-edit; `tools/card-thumbs.py` rewrites
+it): three places cap how far a card may be enlarged at its own pixels, and read off the small
+version they would cap a zoom far too low. It is keyed off the picture's own **filename**, not
+the piece's name, because candler's card is `candle-card.png` and the two do not always agree —
+keying it by slug silently capped candler's zoom at the 640 fallback. And **the wall is not
+softer for it**: measured per card at 390px@3x, mean difference 1.44/255 and sharpness
+*up* 11.7%, because one clean Lanczos downscale beats the browser scaling 440px to 150 in a
+single step. Verified pixel-identical (0/255, worst case) in all three zoomed states —
+desktop shelf zoom, the phone tray, and a card held out of it.
+
+**Not fixed, and worth knowing before it bites: the whole site blocks on Google Fonts.**
+Every page links two stylesheets at `fonts.googleapis.com`, and a stylesheet is
+render-blocking — so if that host is slow, throttled or unreachable, the page is a blank dark
+rectangle until the request resolves or gives up. Measured in a sandbox where it is blocked:
+**nothing at all happened for 12.5 seconds**, not the wall, not a plate, not one card, on
+both the old page and the new. On an ordinary connection it answers in a moment and none of
+this shows, which is exactly why it has never been seen. The fix, if it is ever wanted, is to
+self-host the two faces — the site has no other third-party dependency but the weather API,
+and that one fails out loud by design where this one fails silently.
+
 **Interaction.** On a touch screen it is three taps — shelf, then card, then open — because
 a phone cannot show a card big enough to read; her idea, and the right one. With a fine
 pointer a card opens on the first click instead, and the shelf zoom stays reachable from the
@@ -1445,7 +1484,10 @@ not a caption on a piece: it is the visitor's own file's name, not the site's wo
 
 ### Asset naming conventions (follow these for any new asset)
 
-- **Card previews** on the landing page: `<demo>-card.png` (e.g. `lamp-card.png`).
+- **Card previews** on the landing page: `<demo>-card.png` (e.g. `lamp-card.png`), each with
+  a small `<demo>-card-sm.jpg` beside it for the un-zoomed wall. **Don't write the small one by
+  hand** — `python3 tools/card-thumbs.py` builds all of them and rewrites the `card-art` block
+  in `index.html`. Run it after adding or reshooting any card.
 - **conometer** frames: `cone-01.png` … `cone-09.png`, plus `conometer-background.png`
   (frame 1 = fully open/dry, frame 9 = closed/wet).
 - **galileo** floats: `floats/<color>.png` — `blue, aqua, green, yellow, orange, red, pink,
