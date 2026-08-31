@@ -1394,6 +1394,17 @@ screenshot can't show live weather.)
 
 ### Touch targets: a slider is a mouse dimension
 
+**HER STANDING INSTRUCTION, Aug 2026, and it applies to work you have not been asked
+about:** *"in future please make sure all small buttons and sliders are suitably (and
+invisibly) fixed."* So this is not a job that waits to be raised with her. **Any piece
+you touch, and any control you add, comes with a thumb-sized target already on it** —
+and the parenthesis is the hard half. *Invisibly* means the painted thing does not move
+or change by one pixel; a target that is easier to hit and looks even slightly different
+has not met the instruction. Both generators below enforce that by measurement, and
+`tools/touch-buttons.js` throws away its own rule rather than ship a visible one. If you
+add a control by hand, run them.
+
+
 Most of this site's sliders were painted as a **3px hairline**, which is right for a
 mouse — a mouse is pixel-precise, and a hairline reads as elegant. A thumb is about 9mm
 across: it can only catch the little knob, and it covers the whole track the moment it
