@@ -758,7 +758,43 @@ the DPR, the blend fraction **and which photograph is standing in** — the back
 they arrive, and without `base.src` in the key a stand-in sky would stick after the real one landed.
 And it is drawn at `W*DPR` with the same `setTransform` the main canvas uses, or a Retina screen gets a
 soft sky. Verified pixel-identical to the old drawing at darkness 0, 25, 66 and 90: **0.000% of sky
-pixels differ by more than 2/255, worst 0**. Neither freezes; both read as less smooth. |
+pixels differ by more than 2/255, worst 0**. Neither freezes; both read as less smooth.<br>**They
+flew in the grass, in formation, and all on the same beat** — three faults, all hers, Aug 2026, found
+by her watching it and none of them visible in a screenshot.<br>*"is it my imagination or do they stay
+really low?"* It wasn't. `altFrac` runs 0 at the ceiling to 1 at the ground, the top of the near grass
+sits at **0.45** of that band, and the preference was 0.58 at the default darkness — so the whole
+population cruised **below** the blades. Measured by reading the fireflies' own positions out of the
+running piece: **11.3% were above the top of the grass** and the median sat 65px inside it.<br>**And
+the flash fired at the bottom of the dip**, though the line of comment above it said "flashing partway
+up out of it". `sin(0.55·π)` is 0.988 — 99% of full dip. The swoop takes 2.2–3.4s and the light is
+spent in about half a second, so weighted by brightness the firefly sat **72% of a dip below its
+cruising height the whole time it was lit**, about 29px. At 0.78 that is 25%, ~10px, and the climb
+while lit goes from ~9px to ~21px, so **the J gets deeper, not shallower**. Share of LIT fireflies
+above the grass: **16.5% → 26.6% from the altitude alone → 57.0% with both.** Don't go past ~0.85 or
+the light arrives after the climb is over.<br>**Her call on the height, off four rendered options:
+the highest.** The ceiling went `horizonY()-55` → `-130`, so they can rise against the sky. That is
+hers and it is not unfaithful — species differ, and the ones that flash up among and above the trees
+are real; she had already confirmed the low flying itself is true to life, so what moved is the
+ceiling, not the idea.<br>**"they all seem to be in such formation. real fireflies dip and loop and
+wander."** Three causes, all shared state. Every firefly had **one preferred altitude with a narrow
+uniform wobble**, so they stratified — and once the preference sits near the ceiling a symmetric
+wobble CLIPS, and the clamp piles everyone who would have gone higher onto exactly one line. It is a
+soft-edged spread now (three randoms averaged), **reflected** off the ceiling and floor rather than
+clamped; **don't put the clamp back, the pile-up is the formation.** `steerPhase` advanced at a fixed
+**0.5 for every firefly**, so the whole flock turned on one beat — per-firefly now, with its own turn
+strength, big enough that `vx` reverses, which is what makes a loop. And the vertical was a single
+slow sine plus a small fast one — a wave, which is what reads as mechanical — so it carries a second
+sway at an unrelated rate (the two never come back into step) plus an **idle dip** every few seconds
+that sometimes climbs instead. Measured over 30s per firefly: **own vertical range 74px → 173px**,
+doubles back 4.0 → 5.3 times a minute, highest reached 68% → 46% of the page.<br>**Measuring this
+needs the fireflies read out of the page, not off the pixels, and that cost three wrong answers.**
+Counting bright blobs in screenshots put the share above the grass anywhere between 12% and 38% for
+the *same* build — the population's own random spread swamps the effect — and on that evidence the
+flash fix was first reported as working, then as not working. A one-line `window.__probe` in a
+throwaway copy gives exact positions and settles it. **Two traps in doing that**: `cp -al` hard-links
+the file, so editing the "copy" edits the real one (it did); and keying a trail by its index in
+`males` draws a straight line from one insect to another whenever the array is spliced — key on the
+object. |
 | `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
 after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
 and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
