@@ -508,7 +508,14 @@
   const MAX_FEMALES=10, MAX_MALES=26;
   const LIGHT_FLOOR=0.018; // males never go fully dark between flashes — just barely visible
 
-  function fireflyZoneTop(){ return horizonY()-55; }   // fireflies stay low, over the field — not up in the open sky
+  // How high they may get. This was horizonY()-55 — barely above the field, so no
+  // firefly ever rose against the sky. HER CALL, Aug 2026, after seeing four heights
+  // side by side: she picked the highest. It is not a licence taken lightly and it is
+  // not unfaithful either — species differ, and the ones that flash up among and above
+  // the trees are real; what was wrong was that this piece allowed no height at all.
+  // She had already confirmed the low flying itself is true to life, so the ceiling is
+  // what moved, not the idea.
+  function fireflyZoneTop(){ return horizonY()-130; }
   function batZoneTop(){ return horizonY()*0.3; }      // bats hunt higher, against the sky
   function fireflyGroundY(){ return H*0.985; }
 
@@ -533,27 +540,51 @@
     // night comes on — a preferred cruising altitude (with some natural spread) that
     // shifts with the darkness slider, rather than a fixed band.
     //
-    // THEY WERE CRUISING INSIDE THE GRASS, not over it, which is her report — "there's
-    // just not enough of them drifting around above the grass". altFrac runs 0 at the
-    // ceiling to 1 at the ground, and the top of the near grass sits at 0.45 of that
-    // band, so at the default darkness a preference of 0.58 put the whole population
-    // below it. Measured off the running piece: only 11.3% of fireflies were above the
-    // top of the grass and the median one sat 65px inside it. Now 56.9%, with the
-    // median just clear of the blades. They are still well under the treeline — that
-    // ceiling is untouched, and she confirmed the low flying is true to life.
+    // THEY WERE CRUISING INSIDE THE GRASS, not over it, which is her first report —
+    // "there's just not enough of them drifting around above the grass". altFrac runs
+    // 0 at the ceiling to 1 at the ground, and the top of the near grass sits at 0.45
+    // of that band, so at the default darkness a preference of 0.58 put the whole
+    // population below it: only 11.3% of fireflies were above the top of the grass and
+    // the median one sat 65px inside it.
+    const altPref = 0.03 + 0.20*dark;
+
+    // AND THEY FLEW IN FORMATION, which is her second report — "they all seem to be in
+    // such formation" — and it is a separate fault from the height. Every firefly was
+    // given the same preferred altitude with a narrow uniform wobble of ±0.25 around
+    // it, so the whole population stratified into one horizontal band; raising them
+    // without fixing this would only have moved the band up. Worse, once the preferred
+    // height is near the ceiling a symmetric wobble CLIPS against it, and a clamp piles
+    // everyone that would have gone higher onto exactly the same line — a hard edge,
+    // which is the most formation-like thing a scatter can do.
     //
-    // Don't push this much lower: at 0.08+0.32 it is 88.7% above the grass, which is
-    // no longer fireflies over a meadow.
-    const altPref = 0.12 + 0.45*dark;
-    const altFrac = Math.max(0, Math.min(1, altPref + (Math.random()-0.5)*0.5));
+    // So: a soft-edged spread (three randoms averaged, so the middle is commoner than
+    // the edges, the way a real population is), twice as wide as before, and REFLECTED
+    // off the ceiling and the floor instead of clamped, so nothing accumulates on
+    // either. Don't put the clamp back — the pile-up is the formation.
+    const u = (Math.random()+Math.random()+Math.random())/3 - 0.5;   // −0.5..0.5, soft
+    let alt = altPref + u*1.5;
+    if(alt < 0) alt = -alt;                 // reflect, never stack on the ceiling
+    if(alt > 1) alt = 2-alt;
+    const altFrac = Math.max(0, Math.min(1, alt));
     const targetY = fireflyZoneTop() + altFrac*(groundY-fireflyZoneTop());
     const spawnY = groundY - 4 - Math.random()*10;
     males.push({
       x, y: spawnY, depth,
       vx: (Math.random()<0.5?-1:1) * (6+14*Math.random()), // lazy horizontal cruise, px/s
+      // Every one of these was shared before, which is what made them fly as a flock.
+      // steerSpeed especially: it was a fixed 0.5 for every firefly, so the whole
+      // population turned on one rhythm. Her report — "they all seem to be in such
+      // formation. real fireflies dip and loop and wander".
       steerPhase: Math.random()*Math.PI*2,
+      steerSpeed: 0.25+Math.random()*0.7,
+      steerAmp: 4+Math.random()*7,          // big enough that vx reverses -- that is the loop
       spawnY, riseT:0, riseDur: 1.6+Math.random()*1.6,
       cruiseY: targetY, cruisePhase: Math.random()*Math.PI*2, cruiseSpeed: 0.12+Math.random()*0.1, cruiseAmp: 10+Math.random()*14,
+      // a SECOND vertical sway at a rate unrelated to the first, so the two never come
+      // back into step and the path does not repeat -- one sine alone is a wave, and a
+      // wave is what reads as mechanical
+      cruisePhase2: Math.random()*Math.PI*2, cruiseSpeed2: 0.04+Math.random()*0.09, cruiseAmp2: 7+Math.random()*15,
+      dipT: 2+Math.random()*7, dipping:0, dipDur:0, dipSize:0,
       bobPhase: Math.random()*Math.PI*2, bobSpeed: 0.9+Math.random()*0.5, bobAmp: 2.5+Math.random()*2,
       state:'cruise', stateT:0,
       nextFlashAt: 1+Math.random()*4,
@@ -618,8 +649,8 @@
 
       // fireflies never hover in place — they're always cruising, a lazy drifting
       // heading that occasionally bends toward a female who's just answered a flash
-      m.steerPhase += dt*0.5;
-      let steer = Math.sin(m.steerPhase)*4;
+      m.steerPhase += dt*m.steerSpeed;
+      let steer = Math.sin(m.steerPhase)*m.steerAmp;
       if(m.target) steer += Math.sign(m.target.x-m.x)*6;
       m.vx = Math.max(-26, Math.min(26, m.vx + steer*dt));
       if(m.x<24) m.vx = Math.abs(m.vx)*0.9+4;      // turn back in from the edges
@@ -627,8 +658,28 @@
       m.x += m.vx*dt;
 
       m.cruisePhase += dt*m.cruiseSpeed;
+      m.cruisePhase2 += dt*m.cruiseSpeed2;
       m.bobPhase += dt*m.bobSpeed;
-      const wanderY = Math.sin(m.cruisePhase)*m.cruiseAmp;
+
+      // an idle dip: a real firefly drops and climbs again between flashes, not only
+      // when it is signalling. Without this the only vertical event in a whole minute
+      // is the flash swoop, and everything in between is a smooth wave.
+      let idleDip = 0;
+      if(m.dipping > 0){
+        m.dipping -= dt;
+        const q = 1 - m.dipping/m.dipDur;
+        idleDip = m.dipSize*Math.sin(Math.min(1,Math.max(0,q))*Math.PI);
+      } else {
+        m.dipT -= dt;
+        if(m.dipT <= 0){
+          m.dipDur = 0.9+Math.random()*1.8;
+          m.dipping = m.dipDur;
+          m.dipSize = (Math.random()<0.35 ? -1 : 1) * (8+Math.random()*26);  // sometimes a climb
+          m.dipT = 3+Math.random()*9;
+        }
+      }
+      const wanderY = Math.sin(m.cruisePhase)*m.cruiseAmp
+                    + Math.sin(m.cruisePhase2)*m.cruiseAmp2 + idleDip;
       const flutter = Math.sin(m.bobPhase)*m.bobAmp;
 
       let swoopY=0;
