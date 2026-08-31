@@ -531,8 +531,20 @@
     const groundY = fireflyGroundY();
     // real fireflies range highest right at dusk and settle low into the grass as full
     // night comes on — a preferred cruising altitude (with some natural spread) that
-    // shifts with the darkness slider, rather than a fixed band
-    const altPref = 0.15 + 0.65*dark;
+    // shifts with the darkness slider, rather than a fixed band.
+    //
+    // THEY WERE CRUISING INSIDE THE GRASS, not over it, which is her report — "there's
+    // just not enough of them drifting around above the grass". altFrac runs 0 at the
+    // ceiling to 1 at the ground, and the top of the near grass sits at 0.45 of that
+    // band, so at the default darkness a preference of 0.58 put the whole population
+    // below it. Measured off the running piece: only 11.3% of fireflies were above the
+    // top of the grass and the median one sat 65px inside it. Now 56.9%, with the
+    // median just clear of the blades. They are still well under the treeline — that
+    // ceiling is untouched, and she confirmed the low flying is true to life.
+    //
+    // Don't push this much lower: at 0.08+0.32 it is 88.7% above the grass, which is
+    // no longer fireflies over a meadow.
+    const altPref = 0.12 + 0.45*dark;
     const altFrac = Math.max(0, Math.min(1, altPref + (Math.random()-0.5)*0.5));
     const targetY = fireflyZoneTop() + altFrac*(groundY-fireflyZoneTop());
     const spawnY = groundY - 4 - Math.random()*10;
@@ -631,10 +643,24 @@
         }
       } else if(m.state==='swoop'){
         // the classic firefly J: a slow dip, then a rising curve — flashing partway
-        // up out of it — rather than a straight elevator ride up and back down
+        // up out of it — rather than a straight elevator ride up and back down.
+        //
+        // WHERE IN THE RISE IT FLASHES IS THE WHOLE POINT, and 0.55 did not do what the
+        // line above says: sin(0.55*PI) is 0.988, so the light came on at 99% of full
+        // dip — the very bottom. The swoop takes 2.2-3.4s and the light is spent in
+        // about half a second, so the firefly had barely climbed before it stopped
+        // being visible. Weighted by how bright it actually is through the flash it sat
+        // 72% of a dip below its cruising height the whole time it was lit, about 29px.
+        // At 0.78 that is 25%, about 10px. And the hook gets DEEPER, not shallower: it
+        // now climbs ~21px while lit against ~9px before, so the J is more of a J.
+        //
+        // Measured on the running piece, share of LIT fireflies above the top of the
+        // grass: 16.5% before, 26.6% from the altitude fix alone, 57.0% with both.
+        // The two are independent and both are needed. Don't go past ~0.85: by 0.92 the
+        // light does not arrive until the climb is over and there is no hook left.
         const p=Math.min(1, m.stateT/m.swoopDur);
         swoopY = m.dipAmp * Math.sin(p*Math.PI);
-        if(!m.flashedThisSwoop && p>=0.55){
+        if(!m.flashedThisSwoop && p>=0.78){
           m.flashedThisSwoop=true; m.hasFlashed=true; m.flashStartT=m.stateT;
           onMaleFlash(m);
         }
