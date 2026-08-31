@@ -1264,15 +1264,32 @@ softer for it**: measured per card at 390px@3x, mean difference 1.44/255 and sha
 single step. Verified pixel-identical (0/255, worst case) in all three zoomed states —
 desktop shelf zoom, the phone tray, and a card held out of it.
 
-**Not fixed, and worth knowing before it bites: the whole site blocks on Google Fonts.**
+**FIXED Aug 2026: the site no longer blocks on Google Fonts.** What it was, and why it went
+unseen for so long, is below; `python3 tools/self-host-fonts.py` is what changed it. The four
+families — Libre Baskerville, Cormorant Garamond, Jost and Spectral — are now the site's own,
+24 woff2 files in `fonts/` at 617KB in total, latin and latin-ext only. Per page that is 20KB
+where only Libre Baskerville is used and 119KB at galileo's worst, shared across pages after the
+first. Measured on the landing page with that host hanging: **first paint 15.1s before, 88ms
+after**; with it merely slow, 12.7s against 196ms. Verified that all four families really load and
+apply rather than silently falling back to a system face.
+
+**It moves two pieces by half a pixel**, and this was checked rather than assumed: galileo's
+instrument column and conometer's scene sit 0.5px higher, because those two size themselves in
+script at load and now do it with the real metrics already in hand. Measured with the button work
+absent, so it is the fonts and nothing else. Nothing anywhere else on the site moves at all.
+
+**If a face is ever added**, put it in the page as an `@import` as before and re-run the tool; it
+fetches only what it hasn't got and rewrites from the same source.
+
+**What it was, kept because the failure mode is the instructive part: the whole site blocked on Google Fonts.**
 Every page links two stylesheets at `fonts.googleapis.com`, and a stylesheet is
 render-blocking — so if that host is slow, throttled or unreachable, the page is a blank dark
 rectangle until the request resolves or gives up. Measured in a sandbox where it is blocked:
 **nothing at all happened for 12.5 seconds**, not the wall, not a plate, not one card, on
 both the old page and the new. On an ordinary connection it answers in a moment and none of
 this shows, which is exactly why it has never been seen. The fix, if it is ever wanted, is to
-self-host the two faces — the site has no other third-party dependency but the weather API,
-and that one fails out loud by design where this one fails silently.
+self-host the faces — which is what was done. The site now has no third-party dependency but the
+weather API, and that one fails out loud by design where this one failed silently.
 
 **Interaction.** On a touch screen it is three taps — shelf, then card, then open — because
 a phone cannot show a card big enough to read; her idea, and the right one. With a fine
@@ -1394,6 +1411,17 @@ screenshot can't show live weather.)
 
 ### Touch targets: a slider is a mouse dimension
 
+**HER STANDING INSTRUCTION, Aug 2026, and it applies to work you have not been asked
+about:** *"in future please make sure all small buttons and sliders are suitably (and
+invisibly) fixed."* So this is not a job that waits to be raised with her. **Any piece
+you touch, and any control you add, comes with a thumb-sized target already on it** —
+and the parenthesis is the hard half. *Invisibly* means the painted thing does not move
+or change by one pixel; a target that is easier to hit and looks even slightly different
+has not met the instruction. Both generators below enforce that by measurement, and
+`tools/touch-buttons.js` throws away its own rule rather than ship a visible one. If you
+add a control by hand, run them.
+
+
 Most of this site's sliders were painted as a **3px hairline**, which is right for a
 mouse — a mouse is pixel-precise, and a hairline reads as elegant. A thumb is about 9mm
 across: it can only catch the little knob, and it covers the whole track the moment it
@@ -1450,6 +1478,55 @@ faint gradient. Nothing moved, nothing overlaps, and the desktop is byte-identic
 were **3, 4, 5, 19, 20** and are now 21–30 (its wind slider had no rule at all); `birds`' two were
 18 and are now 30. `moths` measured 44–45px before and after — it is the one that was given room
 first, and it shows.
+
+**The BUTTONS and tickboxes got the same treatment, Aug 2026** — `node tools/touch-buttons.js`,
+the companion generator, run after she made the instruction above a standing one. **95 controls
+across 19 of the 20 pieces**, every one now 40–44px where they had been 14–38. The smallest were
+candler's three tickboxes at **15x15** — on the piece she uses daily in place of an alarm — musebox's
+save and clear at 22x18, lamp's mute at 14x14 and roller's at 17x14.
+
+**Two forms, and which one is used matters.** PAD grows the box with padding and hands the space
+back with an equal negative margin; `position` is never touched. OVERLAY makes the host
+`position:relative` and hangs an invisible `::after` off it — events on a pseudo-element target
+their host, so the page's own handlers pick them up unchanged. PAD is tried first and OVERLAY only
+where padding moves something; the run marks overlay rules with a `*`.
+
+**OVERLAY has a cost that is easy to miss and cost a pass to find: making a static element
+positioned lifts it ABOVE its static siblings in paint order.** On conometer that pushed the
+live/manual toggle over the pinecone artwork and changed 14x19px of the humidity droplet — correct,
+tiny, and exactly the kind of thing the parenthesis in her instruction forbids. conometer's toggle
+goes in on PAD instead.
+
+**So the tool verifies itself and throws its own work away.** Each rule is screenshotted against the
+piece's own rendering and kept only if nothing changed. Three things about that check are
+load-bearing, each learned by getting it wrong:
+
+- **A frozen clock and a seeded PRNG are not enough.** candler's flame and lamp's differ from
+  *themselves* between two identical loads. Compared byte for byte, every rule on those two failed
+  and the run reported "nothing could be grown invisibly" — which was false. The piece is now shot
+  three times with no rule applied; wherever any two disagree is the piece animating, and those
+  pixels are masked out.
+- **The mask needs a margin, and the margin is per piece.** The next frame's flame is not confined
+  to the pixels the last three happened to disagree about. Measured on candler: 2 baselines, no
+  margin → 31 pixels escape; 3 → 14; 3 with a 4px margin → 0, masking 0.99%. moths needs 10–30. So
+  the tool takes one extra clean shot and uses the **smallest margin at which that shot comes back
+  clean**, rather than one figure wide enough for the worst piece — which would quietly weaken the
+  check on the other nineteen.
+- **The masked share is reported per piece and is the figure to distrust first.** chladni masks
+  20.5%, rain 15.7%, bowl 15.0%: their controls sit in docks clear of the animation so the check
+  still covers them, but a wide mask means a weaker guarantee.
+
+**`moths` is the one piece with no touch-button block, and it is not an oversight.** Its whole scene
+moves and its controls run from the back disc at the top to the dock at the bottom, so the moths fly
+straight through every one of them — there is no still region to compare. And the margin it needs
+is not stable: measured across runs it wanted 10px once, then 20, then 30, so a pass at any fixed
+figure is luck rather than proof. The tool refuses it and says so. **Don't "fix" this by widening
+the mask until moths passes** — that is throwing away the guarantee to get a tick. If moths is ever
+to be done, it needs a different kind of check (its scene is canvas-drawn, so a geometry-only proof
+for PAD rules would be sound, since PAD cannot alter paint order), not a looser one.
+
+**`chimes`' rod-material trigger was also dropped**, for the ordinary reason: its neighbour is too
+close to grow into without stealing that neighbour's taps.
 
 **`kaleidoscope` and `moths` had to be given room first** — their sliders sat 14px and 11px
 apart, which leaves nothing to grow into. Both had space going spare on a phone, so the gaps

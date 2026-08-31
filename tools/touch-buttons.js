@@ -1,0 +1,364 @@
+// Grow the BUTTONS, tickboxes and small icon controls so a thumb can catch them,
+// without moving a single painted pixel.
+//
+//   node tools/touch-buttons.js            (needs playwright-core, and the site
+//                                           served at localhost:8137 from the root)
+//
+// Companion to tools/touch-targets.js, which does the same for sliders. That one
+// grows the slider's own box with padding and gives the space back with a negative
+// margin. Buttons need more care, because a button's box IS its painted face.
+//
+// TWO FORMS, and the order matters.
+//
+//   PAD      padding grows the box a thumb hits; an equal negative margin hands
+//            the space straight back. `position` is never touched, so paint order
+//            cannot move. Preferred, and it is what nearly everything gets.
+//   OVERLAY  the host is made position:relative and an invisible ::after hangs off
+//            it, reaching past the edges. Events on a pseudo-element target their
+//            host, so the page's own handlers pick them up unchanged. Used only
+//            where PAD moves something -- an inline element, or one whose explicit
+//            size is in border-box terms.
+//
+// OVERLAY has a real cost that took a pass to find: making a static element
+// positioned lifts it ABOVE its static siblings in paint order. On conometer that
+// pushed the live/manual toggle over the pinecone artwork -- a 14x19px change to
+// the humidity droplet, small and perfectly visible side by side.
+//
+// SO NEITHER FORM IS TRUSTED. Every rule is screenshotted against the page's own
+// rendering and only what comes back identical is written out. A rule that cannot
+// be made invisible either way is DROPPED and named in the run's report -- better
+// a control that is still small than a piece that quietly looks different. That is
+// the owner's standing instruction and this is where it is enforced.
+//
+// THREE BASELINES, and this is the part that took a wrong run to find. A frozen
+// clock and a seeded PRNG are not enough to make these pages deterministic --
+// candler's flame and lamp's differ from THEMSELVES between two identical loads.
+// Compared byte for byte, every rule on those two pieces "failed" and the whole
+// lot was thrown away for a harness reason rather than a real one. So the piece is
+// shot several times with no rule applied at all: wherever any two of those
+// disagree is the piece animating, and those pixels -- plus a small margin around
+// them -- are masked out. Everything else must match exactly.
+// If a run ever reports a very high masked share for a piece, the mask is eating
+// the evidence and that piece's result means little -- say so rather than trust it.
+//
+// Each control reaches only HALF the gap to its nearest neighbour, so no two can
+// overlap and steal each other's taps, and only as far as TARGET.
+//
+// Held to (pointer: coarse). A desktop is untouched.
+//
+// Idempotent: the block from the last run is removed before measuring AND before
+// every screenshot, which is the lesson touch-targets.js records at length --
+// measure on top of your own output and it compounds silently.
+const { chromium } = require('playwright-core');
+const fs = require('fs');
+const ROOT = '/home/user/legendary-souffle-5af442';
+const BASE = 'http://localhost:8137';
+const ALL_SLUGS = ['candler','roller','lamp','warmler','rain','ant','windower','galileo','conometer',
+  'gyre','birds','bowl','chimes','chladni','fireflies','kaleidoscope','moths','musebox','pendulum','storm'];
+// name pieces on the command line to run just those -- a piece that got dropped can
+// be retried on its own without redoing the nineteen that were fine
+const SLUGS = process.argv.slice(2).length ? process.argv.slice(2) : ALL_SLUGS;
+const TARGET = 44, ALREADY_BIG = 40, MAX_SIDE = 16;
+// How the animation mask is built. THREE baselines, not two, and dilated: with two
+// and no margin, candler's flame still differed from the mask in 31 pixels and the
+// whole piece was thrown away for it. Measured on candler -- 2 baselines: 31 pixels
+// differ; 3: 14; 3 dilated 4px: 0, masking 0.99% of the page. Its tickboxes are
+// 450px below the flame, so nothing that matters is hidden by that.
+const BASELINES = 3;
+// How far the mask is grown beyond the pixels the baselines disagreed about. This
+// is CALIBRATED PER PIECE rather than fixed, because pieces move by different
+// amounts: candler's flame settles at 4px, but moths -- where the whole swarm
+// wanders -- still had 4 pixels escaping the mask at 4 and needs 10. A single
+// figure would have to be the widest any piece needs, which would quietly weaken
+// the check on the nineteen that don't. So the tool takes one extra clean shot and
+// uses the SMALLEST margin at which that shot comes back clean; if none does, the
+// piece cannot be judged and is skipped rather than guessed at.
+const DILATE_TRY = [4, 6, 8, 10, 12, 16, 20];
+const START = '<!-- touch-buttons -->', END = '<!-- /touch-buttons -->';
+const MARK = 'GENERATED by tools/touch-buttons';
+
+// one deterministic world, so a screenshot measures layout and not the flame
+// flickering, windower's stars or the hour of the day
+const FREEZE = () => {
+  let s = 123456789;
+  Math.random = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const T0 = 1756000000000, RealDate = Date;
+  Date = class extends RealDate {
+    constructor(...a){ super(...(a.length ? a : [T0])); }
+    static now(){ return T0; }
+  };
+  let t = 0, frames = 0;
+  performance.now = () => t;
+  window.requestAnimationFrame = (cb) => {
+    if (frames++ > 600) return 0;
+    t += 16.7; setTimeout(() => cb(t), 0); return frames;
+  };
+  window.cancelAnimationFrame = () => {};
+};
+
+const stripOwnStyle = (mark) => {
+  for (const st of document.querySelectorAll('style'))
+    if (st.textContent.indexOf(mark) >= 0) st.remove();
+};
+
+const esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const rule = (s, kind) => kind === 'pad'
+  ? `  ${s.name}{ box-sizing:content-box; background-clip:content-box; ` +
+    `padding:${s.t}px ${s.r}px ${s.b}px ${s.l}px; ` +
+    `margin:${s.mt - s.t}px ${s.mr - s.r}px ${s.mb - s.b}px ${s.ml - s.l}px; }`
+  : `  ${s.name}{ ${s.staticPos ? 'position:relative; ' : ''}}\n` +
+    `  ${s.name}::${s.slot}{ content:''; position:absolute; ` +
+    `top:${-s.t}px; right:${-s.r}px; bottom:${-s.b}px; left:${-s.l}px; }`;
+const wrap = lines => `@media (pointer: coarse){\n${lines.join('\n')}\n}`;
+
+async function shoot(browser, slug, css) {
+  const c = await browser.newContext({ viewport:{width:390,height:844},
+    isMobile:true, hasTouch:true, deviceScaleFactor:1 });
+  const p = await c.newPage();
+  await p.addInitScript(FREEZE);
+  await p.route('**://fonts.googleapis.com/**',
+    r => r.fulfill({ status:200, contentType:'text/css', body:'/* */' }));
+  await p.goto(`${BASE}/${slug}/`, { waitUntil:'load', timeout:60000 });
+  await p.evaluate(stripOwnStyle, MARK);
+  await p.waitForFunction(() => [...document.images].every(i => i.complete && i.naturalWidth > 0),
+    null, { timeout:30000 }).catch(() => {});
+  if (css) await p.addStyleTag({ content: css });
+  await p.waitForTimeout(2200);
+  const cdp = await c.newCDPSession(p);
+  const s = await cdp.send('Page.captureScreenshot', { format:'png' });
+  await c.close();
+  return s.data;
+}
+
+// Compare three screenshots: two baselines and a candidate. Pixels where the two
+// baselines disagree are the piece animating and are ignored; every other pixel
+// must match. Decoded in the browser that is already open, so the tool stays one
+// file with one dependency.
+async function compare(browser, bases, cand, dilate) {
+  const c = await browser.newContext();
+  const p = await c.newPage();
+  const r = await p.evaluate(async ({bases, cand, R}) => {
+    const load = s => new Promise((res, rej) => {
+      const i = new Image(); i.onload = () => res(i); i.onerror = rej;
+      i.src = 'data:image/png;base64,' + s;
+    });
+    const ims = await Promise.all(bases.concat([cand]).map(load));
+    const cv = document.createElement('canvas');
+    cv.width = ims[0].width; cv.height = ims[0].height;
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    const px = im => { g.clearRect(0,0,cv.width,cv.height); g.drawImage(im,0,0);
+                       return g.getImageData(0,0,cv.width,cv.height).data; };
+    const d = ims.map(px), D = d.pop();
+    const W = cv.width, H = cv.height, n = W * H;
+
+    // anywhere any two baselines disagree is the piece animating
+    const mask = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      let mx = 0;
+      for (let a = 0; a < d.length; a++)
+        for (let q = a + 1; q < d.length; q++)
+          for (let k = 0; k < 3; k++) mx = Math.max(mx, Math.abs(d[a][i*4+k] - d[q][i*4+k]));
+      if (mx > 2) mask[i] = 1;
+    }
+    // ...plus a margin, because the next frame's flame is not confined to the
+    // pixels the last three happened to disagree about
+    if (R > 0) {
+      const m2 = new Uint8Array(mask);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        if (!mask[y*W + x]) continue;
+        for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+          const yy = y + dy, xx = x + dx;
+          if (yy < 0 || xx < 0 || yy >= H || xx >= W) continue;
+          m2[yy*W + xx] = 1;
+        }
+      }
+      mask.set(m2);
+    }
+    let differing = 0, worst = 0, masked = 0;
+    for (let i = 0; i < n; i++) {
+      if (mask[i]) { masked++; continue; }
+      let diff = 0;
+      for (let k = 0; k < 3; k++) diff = Math.max(diff, Math.abs(d[0][i*4+k] - D[i*4+k]));
+      if (diff > 2) { differing++; if (diff > worst) worst = diff; }
+    }
+    return { differing, worst, maskedPct: 100*masked/n };
+  }, {bases, cand, R: dilate});
+  await c.close();
+  return r;
+}
+
+(async () => {
+  const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args:['--no-sandbox'] });
+  let grew = 0; const dropped = [], skipped = [];
+
+  for (const slug of SLUGS) {
+    // ---- measure ----------------------------------------------------------
+    const c = await b.newContext({ viewport:{width:390,height:844}, isMobile:true, hasTouch:true });
+    const p = await c.newPage();
+    await p.goto(`${BASE}/${slug}/`, { waitUntil:'domcontentloaded', timeout:60000 });
+    await p.waitForTimeout(1800);
+    const res = await p.evaluate(({TARGET, ALREADY_BIG, MAX_SIDE, MARK}) => {
+      for (const st of document.querySelectorAll('style'))
+        if (st.textContent.indexOf(MARK) >= 0) st.remove();
+
+      const SEL = 'button,input[type=checkbox],input[type=radio],[role="button"],a[href],label,select';
+      const all = [...document.querySelectorAll(SEL)]
+        .map(e => ({ e, r: e.getBoundingClientRect(), cs: getComputedStyle(e) }))
+        .filter(o => o.r.width > 2 && o.r.height > 2 && o.cs.visibility !== 'hidden' &&
+                     o.cs.display !== 'none' && parseFloat(o.cs.opacity) > 0.02);
+      const nameOf = o => {
+        if (o.e.id) return '#' + CSS.escape(o.e.id);
+        const cn = (o.e.className && o.e.className.baseVal !== undefined)
+          ? o.e.className.baseVal : (o.e.className || '');
+        const f = String(cn).trim().split(/\s+/)[0];
+        return f ? o.e.tagName.toLowerCase() + '.' + CSS.escape(f) : null;
+      };
+      const out = [], skip = [];
+      for (const o of all) {
+        if (o.r.width >= ALREADY_BIG && o.r.height >= ALREADY_BIG) continue;
+        const name = nameOf(o);
+        if (!name) { skip.push('unnameable ' + o.e.tagName.toLowerCase()); continue; }
+
+        // a tickbox inside its own <label> already has the whole label as a tap
+        // target -- the browser forwards the click. Growing the label is the job.
+        if (/^(checkbox|radio)$/.test(o.e.type || '')) {
+          const lab = o.e.closest('label') ||
+            (o.e.id ? document.querySelector('label[for="' + CSS.escape(o.e.id) + '"]') : null);
+          if (lab) {
+            const lr = lab.getBoundingClientRect();
+            if (lr.width > o.r.width + 4 || lr.height > o.r.height + 4) continue;
+          }
+        }
+        const aft = getComputedStyle(o.e, '::after').content;
+        const bef = getComputedStyle(o.e, '::before').content;
+        const slot = (aft === 'none' || aft === '') ? 'after'
+                   : (bef === 'none' || bef === '') ? 'before' : null;
+        if (!slot) { skip.push(name + ' (::before and ::after both in use)'); continue; }
+
+        let clip = null;
+        for (let n = o.e.parentElement; n; n = n.parentElement) {
+          const s = getComputedStyle(n);
+          if (/hidden|clip|scroll|auto/.test(s.overflow + s.overflowX + s.overflowY)) {
+            clip = n.getBoundingClientRect(); break;
+          }
+        }
+        const gap = { top:Infinity, right:Infinity, bottom:Infinity, left:Infinity };
+        for (const q of all) {
+          if (q.e === o.e || q.e.contains(o.e) || o.e.contains(q.e)) continue;
+          const hOver = q.r.right > o.r.left + 1 && q.r.left < o.r.right - 1;
+          const vOver = q.r.bottom > o.r.top + 1 && q.r.top < o.r.bottom - 1;
+          if (hOver) {
+            if (q.r.bottom <= o.r.top) gap.top = Math.min(gap.top, o.r.top - q.r.bottom);
+            if (q.r.top >= o.r.bottom) gap.bottom = Math.min(gap.bottom, q.r.top - o.r.bottom);
+          }
+          if (vOver) {
+            if (q.r.right <= o.r.left) gap.left = Math.min(gap.left, o.r.left - q.r.right);
+            if (q.r.left >= o.r.right) gap.right = Math.min(gap.right, q.r.left - o.r.right);
+          }
+        }
+        const needV = Math.max(0, TARGET - o.r.height) / 2;
+        const needH = Math.max(0, TARGET - o.r.width) / 2;
+        const room = {
+          top:    clip ? Math.max(0, o.r.top - clip.top) : Infinity,
+          bottom: clip ? Math.max(0, clip.bottom - o.r.bottom) : Infinity,
+          left:   clip ? Math.max(0, o.r.left - clip.left) : Infinity,
+          right:  clip ? Math.max(0, clip.right - o.r.right) : Infinity };
+        const side = (g, need, r) =>
+          Math.max(0, Math.floor(Math.min(g === Infinity ? MAX_SIDE : g/2, need, MAX_SIDE, r)));
+        const t = side(gap.top, needV, room.top),   bo = side(gap.bottom, needV, room.bottom);
+        const l = side(gap.left, needH, room.left), ri = side(gap.right, needH, room.right);
+        if (!(t || bo || l || ri)) continue;
+        const num = k => parseFloat(o.cs[k]) || 0;
+        out.push({ name, slot, t, r: ri, b: bo, l,
+          mt:num('marginTop'), mr:num('marginRight'), mb:num('marginBottom'), ml:num('marginLeft'),
+          w:Math.round(o.r.width), h:Math.round(o.r.height),
+          nw:Math.round(o.r.width + l + ri), nh:Math.round(o.r.height + t + bo),
+          staticPos: o.cs.position === 'static' });
+      }
+      // one rule per selector; where a class matches several, take the SMALLEST
+      // reach any of them can afford
+      const by = {};
+      for (const s of out) {
+        const k = s.name;
+        if (!by[k]) { by[k] = s; continue; }
+        const q = by[k];
+        q.t=Math.min(q.t,s.t); q.r=Math.min(q.r,s.r); q.b=Math.min(q.b,s.b); q.l=Math.min(q.l,s.l);
+        q.staticPos = q.staticPos || s.staticPos;
+        q.nw=Math.min(q.nw,s.nw); q.nh=Math.min(q.nh,s.nh);
+      }
+      return { specs: Object.values(by).filter(s => s.t||s.r||s.b||s.l), skip };
+    }, {TARGET, ALREADY_BIG, MAX_SIDE, MARK});
+    await c.close();
+    skipped.push(...res.skip.map(s => slug + ': ' + s));
+    if (!res.specs.length) { console.log(slug.padEnd(13) + 'nothing to grow'); continue; }
+
+    // ---- verify: keep only what is invisible -------------------------------
+    const bases = [];
+    for (let i = 0; i < BASELINES; i++) bases.push(await shoot(b, slug, null));
+
+    // calibrate: the smallest margin at which one more untouched load of this very
+    // page comes back clean. Anything narrower and the piece's own movement would
+    // be read as a change the rules had made.
+    const control = await shoot(b, slug, null);
+    let DILATE = null, noise = null;
+    for (const R of DILATE_TRY) {
+      const r = await compare(b, bases, control, R);
+      if (r.differing === 0) { DILATE = R; noise = r; break; }
+    }
+    if (DILATE === null) {
+      console.log(slug.padEnd(13) + 'cannot be judged — this piece never renders the same twice');
+      dropped.push(slug + ': the page could not be compared with itself at any margin');
+      continue;
+    }
+    const check = async css => {
+      const r = await compare(b, bases, await shoot(b, slug, css), DILATE);
+      return r.differing === 0;
+    };
+
+    let kept = res.specs.map(s => ({ s, kind:'pad' }));
+    if (!(await check(wrap(kept.map(k => rule(k.s, k.kind)))))) {
+      // something in the batch shows -- find it, and try the other form for it
+      kept = [];
+      for (const s of res.specs) {
+        let kind = null;
+        for (const k of ['pad','overlay']) {
+          if (await check(wrap([rule(s, k)]))) { kind = k; break; }
+        }
+        if (kind) kept.push({ s, kind });
+        else dropped.push(`${slug}: ${s.name} (${s.w}x${s.h}) — neither form was invisible`);
+      }
+      // and confirm the survivors are still invisible together
+      if (kept.length && !(await check(wrap(kept.map(k => rule(k.s, k.kind)))))) {
+        dropped.push(`${slug}: the whole set showed when combined — nothing applied`);
+        kept = [];
+      }
+    }
+    if (!kept.length) { console.log(slug.padEnd(13) + 'nothing could be grown invisibly'); continue; }
+
+    const block = `${START}
+<style>
+  /* ${MARK}.js -- do not hand-edit between the markers.
+     A 14px tickbox is a mouse dimension, the same way a 3px slider is: a thumb is
+     about 9mm across. Each control below is given a body a thumb can catch, and
+     the space is handed straight back, so nothing on the page moves. Each reaches
+     only half the gap to its nearest neighbour, so no two can overlap and steal
+     each other's taps. Every rule here was screenshotted against the page's own
+     rendering and kept only because it came back pixel-identical. */
+${wrap(kept.map(k => rule(k.s, k.kind))).split('\n').map(l => '  ' + l).join('\n')}
+</style>
+${END}`;
+    const file = `${ROOT}/${slug}/index.html`;
+    let src = fs.readFileSync(file, 'utf8');
+    const re = new RegExp(esc(START) + '[\\s\\S]*?' + esc(END));
+    src = re.test(src) ? src.replace(re, block) : src.replace('</body>', block + '\n</body>');
+    fs.writeFileSync(file, src);
+    grew += kept.length;
+    console.log(slug.padEnd(13) + `[${noise.maskedPct.toFixed(1)}% masked, ${DILATE}px margin]  ` +
+      kept.map(k => `${k.s.name} ${k.s.w}x${k.s.h}->${k.s.nw}x${k.s.nh}${k.kind==='overlay'?'*':''}`).join('  '));
+  }
+
+  console.log('\n' + grew + ' controls grown, all verified pixel-identical  (* = overlay form)');
+  if (dropped.length) console.log('\nDROPPED as not invisible:\n  ' + dropped.join('\n  '));
+  if (skipped.length) console.log('\nskipped:\n  ' + skipped.join('\n  '));
+  await b.close();
+})();
