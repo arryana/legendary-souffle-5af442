@@ -360,6 +360,19 @@
   // ---------- audio: hiss/roar scaling with wick height, exactly as
   // described — a low hiss turned down, a fuller sound at full flame ----------
   let audioCtx = null, hissGain = null, hissFilter = null;
+
+  /* A browser may hand back a SUSPENDED audio context -- Safari always does until the
+     visitor has interacted, and Chrome does when the context is built before any
+     gesture. Nothing here ever called resume(), so where that happens the piece is
+     silent for good: the context exists, so it is never rebuilt, and nothing wakes it.
+     chimes is the one this could really bite, because it builds its context from the
+     PHYSICS loop -- the moment two rods happen to strike -- which is not a gesture at
+     all. Could not be reproduced under Chromium, which resumed it unasked; this is
+     insurance against the browsers that do not, which are the ones that cannot be
+     tested from here. Harmless where it is not needed. */
+  addEventListener('pointerdown', function(){
+    try{ if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }catch(e){}
+  }, true);
   function ensureAudio(){
     if (audioCtx) return;
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
