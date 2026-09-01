@@ -794,7 +794,24 @@ flash fix was first reported as working, then as not working. A one-line `window
 throwaway copy gives exact positions and settles it. **Two traps in doing that**: `cp -al` hard-links
 the file, so editing the "copy" edits the real one (it did); and keying a trail by its index in
 `males` draws a straight line from one insect to another whenever the array is spliced — key on the
-object. |
+object.<br>**AND THERE WAS NO INSECT BETWEEN FLASHES AT ALL**, which is her sharpest catch on this
+piece and the plainest fault: *"you can more or less predict where they're going to light up next. at
+dusk there's just a hint of a silhouette of them between flashes. but there's no.... path."*
+`drawMales()` called `drawFlash` and nothing else, so a firefly existed only while lit — every flash
+arrived unrelated to the last, and the anticipation, which is most of what makes watching them
+enjoyable, could not exist. `LIGHT_FLOOR` was meant to leave one "just barely visible" and rendered at
+about **3/255**. The insect is drawn now, and **which of the two things carries it depends on how much
+light is left in the scene, which is what keeps it honest rather than a marker**: a dark speck —
+the body, not a glow — strongest at dusk against a sky that still has light in it, weaker below the
+horizon where it is against dark ground, and gone by full night, because at full dark you really
+cannot see one between flashes; and the ember lifted to 0.07 for what is left after that. Measured at
+dusk, an unlit firefly stands out from the sky by **~17/255** against nothing before.<br>**This one is
+not provable from a screenshot and three attempts at a before/after picture were misleading** — the
+two builds put their fireflies in different places, other insects wander into a close crop, and a
+still cannot show *following* something. Don't try to settle it that way. The useful number is that a
+firefly covers only **50px between one flash and the next** (112px before the wander work, so that
+change helped this rather than hurt it): there was never much ground to cover, and the only question
+was whether anything was there to see. |
 | `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
 after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
 and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
