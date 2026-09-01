@@ -1027,7 +1027,23 @@
   function drawFlash(x,y,alpha,depth,hue){
     if(alpha<=0.01) return;
     const nearness = 1-depth;
-    const r = (3.2+7*nearness) * (0.6+0.4*alpha);
+    /* THE GLOW SHRINKS TO A SPECK AND SWELLS AS IT BRIGHTENS -- hers: "when they're
+       between flashes, can you make the residual glow smaller in diameter? it goes down
+       to a speck and expands as it brightens." It was 0.6+0.4*alpha, so at its faintest
+       it was still SIXTY per cent of full width: between flashes a firefly wore a large
+       dim halo rather than a pinpoint. A real lantern's lit area really does grow and
+       shrink with its output; the size and the brightness are the same thing happening.
+       Now the radius is very nearly proportional to alpha, with just enough floor that
+       the ember does not vanish to nothing between frames. At the ember's 0.05 the lit
+       disc is about a ninth of the width of a full flash, so between flashes what you
+       see is the dark speck of the body with a pinpoint at its tail -- which is her
+       description of a real one -- rather than a body inside a soft lamp.
+
+       Don't try to choose this floor by measuring the rendered glow. It is a few pixels
+       across and what happens to be behind a given firefly moves the reading more than
+       the setting does: a sweep of 0.13, 0.06 and 0.03 came back 7.3, 9.1 and 13.6px,
+       which is backwards. The arithmetic above is the part that can be trusted. */
+    const r = (3.2+7*nearness) * (0.07+0.93*alpha);
     const skyDim = 0.35+0.65*dark; // flashes read more vividly against a darker sky
     ctx.save();
     ctx.globalCompositeOperation='lighter';
