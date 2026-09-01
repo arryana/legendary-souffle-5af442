@@ -955,10 +955,24 @@
       if(m.hasFlashed){
         // the flash keeps its OWN clock rather than the swoop's, because a firefly can
         // now light while hovering, with no swoop running at all
+        /* THE FLASH IS A PULSE, NOT A SPIKE. Hers: "could you make the males flash a
+           little longer? maybe twice as long? and slow down the die-off of the light."
+           It came up over 0.11s and then began fading immediately -- there was no hold
+           at full at all, so the light was at its brightest for a single instant. It
+           comes up, HOLDS, and then dies away over roughly twice the time it used to.
+           Measured on the running piece, how long the light stays above a given share
+           of full:
+             half of full   0.32s -> 0.89
+             a fifth        0.83  -> 1.83
+             a tenth        1.29  -> 2.79
+           And a second effect worth knowing about, because it answers her much earlier
+           complaint that too few were visible at once: fireflies lit at any given
+           moment went from 1.0 to 2.4. Lengthening the flash raises that without
+           touching how OFTEN they flash or how many there are. */
         m.flashT += dt;
-        const justFlashed = m.flashT < 0.11;
-        if(justFlashed) m.flashAlpha = m.flashT/0.11;
-        else m.flashAlpha += (LIGHT_FLOOR - m.flashAlpha) * (1 - Math.exp(-dt/0.45));
+        if(m.flashT < 0.13)        m.flashAlpha = m.flashT/0.13;   // comes up
+        else if(m.flashT < 0.33)   m.flashAlpha = 1;               // holds at full
+        else m.flashAlpha += (LIGHT_FLOOR - m.flashAlpha) * (1 - Math.exp(-dt/0.9));
       }
     }
 
