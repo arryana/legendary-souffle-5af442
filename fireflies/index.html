@@ -512,7 +512,16 @@
   // is too dark for a silhouette this faint ember is what is left. 0.018 rendered as
   // about 3/255 and was invisible in practice, so the piece had nothing at all between
   // flashes and every flash arrived unrelated to the last.
-  const LIGHT_FLOOR=0.07;
+  //
+  // 0.07 first, then 0.05 at her ask — "can you tone down their glow slightly when
+  // they're between flashes?" Don't try to choose this by measurement: the ember is a
+  // few parts in 255 and what happens to be behind a given firefly moves the reading
+  // more than the setting does, so a sweep of values comes back non-monotonic. The
+  // reliable figure is the arithmetic — the core is drawn at `alpha * skyDim` of a pale
+  // yellow, so at the default darkness 0.07 adds about 13/255 at the centre and 0.05
+  // about 9. Below roughly 0.03 it stops being visible at all and the piece is back to
+  // having nothing between flashes, which is the fault this exists to fix.
+  const LIGHT_FLOOR=0.05;
 
   // How high they may get. This was horizonY()-55 — barely above the field, so no
   // firefly ever rose against the sky. HER CALL, Aug 2026, after seeing four heights
@@ -599,7 +608,7 @@
       // the screen and all the flashes read as one gesture -- see swoopVx below.
       swoopLean: (Math.random()<0.5?-1:1) * (18+Math.random()*58),
       flashAt: 0.72+Math.random()*0.14,
-      flashAlpha:0, hasFlashed:false, flashT:0, target:null
+      flashAlpha:0, hasFlashed:false, flashT:0, vxEff:0, vyEff:0, target:null
     });
   }
   function spawnBat(){
@@ -771,9 +780,13 @@
         const eased = 1 - Math.pow(1-p, 3);
         baseY = m.spawnY + (m.cruiseY-m.spawnY)*eased;
       }
+      const px=m.x, py=m.y;
       m.x = m.pendingX + (m.vx + swoopVx)*dt;       // the cruise plus the J's own sweep
       m.x = Math.max(6, Math.min(W-6, m.x));
       m.y = Math.max(fireflyZoneTop(), Math.min(fireflyGroundY(), baseY + wanderY + flutter + swoopY));
+      // which way it is actually going, for laying the body along its heading and
+      // putting the lantern at the back of it
+      if(dt>0){ m.vxEff=(m.x-px)/dt; m.vyEff=(m.y-py)/dt; }
 
       // real fireflies don't blink out — the light eases down slowly and never quite
       // reaches zero, settling to a faint ember between flashes rather than going dark
@@ -893,17 +906,38 @@
   // the sky still carries light, gone by full night, and weaker below the horizon
   // where it is against dark ground instead of sky. At full dark you really cannot see
   // a firefly between flashes, and the piece should not pretend you can.
+  // A FIREFLY IS A TINY BLACK SPECK WITH A BLURRY OUTLINE, and its light is at ONE END
+  // of it -- hers, and the last of it is a real anatomical point rather than a stylistic
+  // one: the lantern is at the tip of the abdomen, so the glow belongs at the insect's
+  // tail and not in the middle of its body. A hard-edged ellipse read as "a little too
+  // defined"; this is a radial gradient with nothing but soft falloff, so it has no
+  // drawn edge at any size.
+  function bodyLen(m){ return 0.8 + 1.7*(1-m.depth); }
+
+  // where the lantern is: behind the insect, along the way it is travelling
+  function lanternAt(m){
+    const vx=m.vxEff||0, vy=m.vyEff||0, sp=Math.hypot(vx,vy), L=bodyLen(m)*1.15;
+    if(sp < 2) return [m.x, m.y + L*0.35];          // barely moving: just behind/below
+    return [m.x - (vx/sp)*L, m.y - (vy/sp)*L];
+  }
+
   function drawBody(m){
     const sky = m.y < horizonY() ? 1 : 0.4;      // against the sky, or against the field
-    const a = 0.6 * Math.pow(1-dark, 0.75) * sky;
+    const a = 0.55 * Math.pow(1-dark, 0.75) * sky;
     if(a < 0.02) return;
-    const r = 1.0 + 2.0*(1-m.depth);
+    const r = bodyLen(m);
+    const vx=m.vxEff||0, vy=m.vyEff||0;
+    const ang = Math.hypot(vx,vy) > 2 ? Math.atan2(vy,vx) : 0;
     ctx.save();
-    ctx.globalAlpha = a;
-    ctx.fillStyle = '#090b07';
-    ctx.beginPath();
-    ctx.ellipse(m.x, m.y, r*1.6, r*0.8, 0, 0, Math.PI*2);
-    ctx.fill();
+    ctx.translate(m.x, m.y);
+    ctx.rotate(ang);
+    ctx.scale(1.5, 0.75);                        // a body, lying along its heading
+    const g=ctx.createRadialGradient(0,0,0,0,0,r*2.1);
+    g.addColorStop(0,   `rgba(5,7,4,${a})`);
+    g.addColorStop(0.45,`rgba(5,7,4,${a*0.6})`);
+    g.addColorStop(1,   'rgba(5,7,4,0)');        // no edge at all, just falloff
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(0,0,r*2.1,0,Math.PI*2); ctx.fill();
     ctx.restore();
   }
 
@@ -911,7 +945,10 @@
     const sorted=[...males].sort((a,b)=>b.depth-a.depth);
     for(const m of sorted){
       drawBody(m);
-      if(m.flashAlpha>0.008) drawFlash(m.x,m.y,m.flashAlpha,m.depth,58);
+      if(m.flashAlpha>0.008){
+        const [lx,ly]=lanternAt(m);
+        drawFlash(lx,ly,m.flashAlpha,m.depth,58);
+      }
     }
   }
   function drawBats(){
