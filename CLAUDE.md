@@ -950,7 +950,23 @@ slower did it cost about a tenth, which is a machine that does not exist.<br>**C
 of this piece needs the randomness and the clock both seeded**, or the moths are simply somewhere
 else in the two pictures and nothing can be read off them — fireflies' lesson. Seeding `Math.random`
 and driving `requestAnimationFrame` off a stubbed `performance.now` puts the same moths in the same
-places in both, and a pixel diff over the whole frame then shows only the colour. |
+places in both, and a pixel diff over the whole frame then shows only the colour.<br>**Size shows how
+far a moth is from the EYE, and it cannot show how far it is from the bulb** — her follow-up was
+*"can you also alter the size of the moth on a scale to show its distance?"*, and the honest half of
+the answer is that no perspective can do it: a moth far from the bulb is as likely to be right up in
+front of you, where it is drawn huge, as at the back, where it is tiny. Two things were done that
+could be. **The drawn size is the moth's true distance from the eye now, not its depth alone**: the
+eye sits FOCAL bulb-heights this side of the filament, so a moth three out to one side is 6.0 away
+where one at the bulb is 5.2, and a moth that far off the axis is also turned that far from square-on
+and foreshortens by about as much again. Depth alone had the sign **backwards** — measured, a moth
+further from the bulb was drawn slightly *bigger* (correlation **+0.11**); it is **-0.11** now. And
+**the moths' own size spread was cut**, 0.70-1.36 to 0.80-1.22, because that spread was 0.191 in log
+terms against distance's 0.176 — so how big a moth looked said more about which moth it was than
+about how far away it was, and size could be read as neither. It is 0.122 against 0.176 now, and
+distance leads. **The wingbeat's spread is untouched**: bigger wings beat slower, so beat used to be
+worked back out of the size, and it is taken from a `heft` of its own now — narrowing the drawn size
+would otherwise have flattened the beat with it. If she ever wants size to be *purely* distance, the
+dial is that spread and taking it to nothing costs the moths being different animals. |
 | `musebox/index.html` | ✅ |  | A **music box** — set pins on the disc to write a tune<br>**The look question is SETTLED**, Aug 2026. She had said *"you did a lovely job
 building it, but i'm not sure it's -beautiful-"* and thought she might bring pictures from Gemini to
 rebuild it from. She did, it was rebuilt on them, and her verdict on the result is ***"to my eye, yes.

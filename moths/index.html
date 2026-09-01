@@ -219,7 +219,15 @@ function makeMoth(i){
   // middling and only a few are truly taken with it, which is what a real night
   // under a bulb looks like.
   const zeal=Math.pow(Math.random(),1.5);
-  const size=0.70+Math.random()*0.66;
+  // How big an animal it is, 0 to 1. It drives the drawn size and the wingbeat
+  // together -- bigger wings beat slower -- but the SPREAD of the two is set
+  // separately. The drawn size used to run 0.70 to 1.36, a spread of nearly two,
+  // which is the same spread distance gives it; so size carried the two things at
+  // once and could be read as neither. It is 0.80 to 1.22 now, and the beat's own
+  // range is untouched, because the beat is taken from `heft` rather than from the
+  // size it used to be worked back out of.
+  const heft=Math.random();
+  const size=0.80+heft*0.42;
   const m={
     x:sr*Math.cos(th)*r, y:u*r, z:sr*Math.sin(th)*r,
     hx:0, hy:0, hz:0,
@@ -237,7 +245,7 @@ function makeMoth(i){
     // How long a knock on the glass leaves it flying without a reference. A short
     // fuse rebounds and tries again; a long one is carried right out of the light.
     dazed:0.45+Math.random()*2.3,
-    beat:(8.2-2.4*(size-0.70)/0.66)+Math.random()*1.7,
+    beat:(8.2-2.4*heft)+Math.random()*1.7,
     phase:Math.random()*FRAMES,
     size:size,
     // Flapping flight is not a smooth curve. A moth is thrown about by its own
@@ -389,7 +397,18 @@ const FOCAL=5.2;
 function U(){ return bulbH*0.45; }
 function project(m){
   const p=FOCAL/(FOCAL+m.z);
-  return {sx:cx+m.x*U()*p, sy:cy+m.y*U()*p, p};
+  // WHERE it lands on the glass is the pinhole, which is depth and nothing else.
+  // HOW BIG it is drawn is its distance from the EYE, which is not the same
+  // number: the eye sits FOCAL bulb-heights this side of the filament, so a moth
+  // three out to one side is 6.0 away where one at the bulb is 5.2, and a moth
+  // that far off the axis is also turned that far away from square-on to us and
+  // foreshortens by about as much again. Depth alone made size a readout of
+  // toward-and-away only -- measured, it tracked depth at -0.97 and distance from
+  // the bulb at -0.21, so a moth right out at the edge of the light was drawn the
+  // same size as one at the glass beside it.
+  const ex=m.x, ey=m.y, ez=FOCAL+m.z;
+  const q=FOCAL/Math.max(0.35, Math.hypot(ex,ey,ez));
+  return {sx:cx+m.x*U()*p, sy:cy+m.y*U()*p, p, q};
 }
 
 // How brightly the bulb is lighting a moth d bulb-heights out. It is the same
@@ -510,7 +529,7 @@ function draw(sky, glow, flick){
 
 function drawMoth(m, flick){
   if(wingReady<FRAMES) return;
-  const {sx,sy,p}=project(m);
+  const {sx,sy,p,q}=project(m);
   if(p<=0.05) return;
   const d=Math.hypot(m.x,m.y,m.z)||1e-6;
   // Colour is nothing but position, and her three rules for it are not one rule.
@@ -544,7 +563,7 @@ function drawMoth(m, flick){
     : 0.5*(1+c)*(1 - 0.95*glareAt(sx,sy)*Math.pow(-c, 0.4));
   const frame=((Math.floor(m.phase)%FRAMES)+FRAMES)%FRAMES;
   const im=wing[frame];
-  const w=bulbH*0.115*m.size*p, h=w*im.height/im.width;
+  const w=bulbH*0.120*m.size*q, h=w*im.height/im.width;
   // pointed the way it is going
   const nx=cx+(m.x+m.hx*0.05)*U()*(FOCAL/(FOCAL+m.z+m.hz*0.05));
   const ny=cy+(m.y+m.hy*0.05)*U()*(FOCAL/(FOCAL+m.z+m.hz*0.05));
