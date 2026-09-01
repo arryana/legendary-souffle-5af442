@@ -822,7 +822,14 @@ gesture without touching how HIGH it happens. And the flash now picks one of thr
 (the J, the common one), a **total hover** with no swoop at all so the only vertical movement is its
 own drift, or **on the way down** into the dip. Measured: **69% up, 12% hovering, 19% down**, against
 99% up before, with the lit share above the grass unchanged at 99%. The flash keeps its own clock
-(`flashT`) rather than the swoop's, because a hovering flash has no swoop running. |
+(`flashT`) rather than the swoop's, because a hovering flash has no swoop running.<br>**Her verdict on
+the whole of it: *"that's much, much, much better."*** Not a Done mark — she has not run it over the
+four machines — but the piece is where she wants it. **And the general lesson of the day is in how
+these four faults were found: every one of them came from her sitting and watching, and not one would
+have shown in a screenshot or a sweep.** The measuring was worth doing — it proved each fix and caught
+several of my own mistakes, including one I had introduced myself — but it kept pointing at the wrong
+thing until she said what was actually wrong. A session that only measures will conclude this piece is
+fine. |
 | `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
 after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
 and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
