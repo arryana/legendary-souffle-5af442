@@ -839,7 +839,13 @@ train track"*, *"they're just black specks with a glowing end"*, *"barely see on
 the early dusk"* — every one of those was a correction to something measurably wrong, and none of
 them could have come from the code. **Treat what she says about how they behave as the primary
 source, and the measurements as the way of proving you have implemented it, never the other way
-round.** |
+round.**<br>**Her verdict at the end of that evening: *"perfect. it's perfect."*** **It is NOT a Done
+mark** — she has still not run fireflies over the four machines, and only she gives that. What it
+settles is the look and the behaviour, after a rebuild done entirely on her reports: the height, the
+flash timing, the scatter, the per-firefly rhythms, the turning radius, the round speck, the crab,
+the surge, and the transparency ladder (0.55 solid → 0.46 → 0.34 translucent → **0.17**, each step
+hers). If a later session is tempted to adjust any of it on the strength of a measurement, that is
+the thing to weigh it against. |
 | `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
 after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
 and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
