@@ -595,7 +595,11 @@
       state:'cruise', stateT:0,
       nextFlashAt: 1+Math.random()*4,
       swoopDur: 2.2+Math.random()*1.2, dipAmp: 26+Math.random()*30,
-      flashAlpha:0, hasFlashed:false, target:null
+      // how far the J leans, and which way. Without this every rise is straight up
+      // the screen and all the flashes read as one gesture -- see swoopVx below.
+      swoopLean: (Math.random()<0.5?-1:1) * (18+Math.random()*58),
+      flashAt: 0.72+Math.random()*0.14,
+      flashAlpha:0, hasFlashed:false, flashT:0, target:null
     });
   }
   function spawnBat(){
@@ -661,7 +665,7 @@
       m.vx = Math.max(-26, Math.min(26, m.vx + steer*dt));
       if(m.x<24) m.vx = Math.abs(m.vx)*0.9+4;      // turn back in from the edges
       if(m.x>W-24) m.vx = -Math.abs(m.vx)*0.9-4;
-      m.x += m.vx*dt;
+      m.pendingX = m.x;                             // moved below, once the swoop is known
 
       m.cruisePhase += dt*m.cruiseSpeed;
       m.cruisePhase2 += dt*m.cruiseSpeed2;
@@ -688,7 +692,7 @@
                     + Math.sin(m.cruisePhase2)*m.cruiseAmp2 + idleDip;
       const flutter = Math.sin(m.bobPhase)*m.bobAmp;
 
-      let swoopY=0;
+      let swoopY=0, swoopVx=0;
       if(m.state==='cruise'){
         if(m.target){
           if(Math.abs(m.target.x-m.x) < 26){
@@ -696,7 +700,25 @@
           }
         } else {
           m.nextFlashAt -= dt;
-          if(m.nextFlashAt<=0){ m.state='swoop'; m.stateT=0; m.flashedThisSwoop=false; }
+          if(m.nextFlashAt<=0){
+            // HOW it lights, which is hers: "real ones light going up, sometimes at a
+            // total hover, and sometimes going down". Up is the common one and it is
+            // the J; the other two are occasional and were absent entirely — measured
+            // before this, 99% of flashes happened while rising.
+            const r=Math.random();
+            if(r < 0.22){
+              // a total hover: it lights where it is, no swoop at all, so the only
+              // vertical movement is its own gentle drift
+              m.flashT=0; m.hasFlashed=true; m.flashAlpha=0;
+              onMaleFlash(m);
+              m.nextFlashAt=(7-4*act)+Math.random()*3;
+            } else {
+              m.state='swoop'; m.stateT=0; m.flashedThisSwoop=false;
+              // going down on the way into the dip, or up on the way out of it
+              m.flashAt = (r < 0.42) ? 0.14+Math.random()*0.22
+                                     : 0.72+Math.random()*0.14;
+            }
+          }
         }
       } else if(m.state==='swoop'){
         // the classic firefly J: a slow dip, then a rising curve — flashing partway
@@ -717,8 +739,20 @@
         // light does not arrive until the climb is over and there is no hook left.
         const p=Math.min(1, m.stateT/m.swoopDur);
         swoopY = m.dipAmp * Math.sin(p*Math.PI);
-        if(!m.flashedThisSwoop && p>=0.78){
-          m.flashedThisSwoop=true; m.hasFlashed=true; m.flashStartT=m.stateT;
+        // THE J LEANS, and it leans a different way for each firefly. Her question:
+        // "do they only light up when traveling upward at the same angles?" They do
+        // travel upward -- that is the J and it is right -- but the SAME ANGLE was a
+        // side effect of moving the flash to 0.78. There the rise is near its fastest
+        // (18-62px/s) while vx is capped at 26, so the vertical dominates and every
+        // flash went more or less straight up. Measured at the moment of lighting:
+        // 77% within 30° of vertical, against a spread of shallow rises both ways
+        // before. So the swoop carries a sideways sweep too, its own size and
+        // direction per firefly, which tilts the J without touching how HIGH the
+        // flash happens. It is added as a velocity, not an offset, so the position
+        // stays continuous when the swoop ends.
+        swoopVx = m.swoopLean * (Math.PI/m.swoopDur) * Math.cos(p*Math.PI);
+        if(!m.flashedThisSwoop && p>=m.flashAt){
+          m.flashedThisSwoop=true; m.hasFlashed=true; m.flashT=0; m.flashAlpha=0;
           onMaleFlash(m);
         }
         if(p>=1){
@@ -737,13 +771,18 @@
         const eased = 1 - Math.pow(1-p, 3);
         baseY = m.spawnY + (m.cruiseY-m.spawnY)*eased;
       }
+      m.x = m.pendingX + (m.vx + swoopVx)*dt;       // the cruise plus the J's own sweep
+      m.x = Math.max(6, Math.min(W-6, m.x));
       m.y = Math.max(fireflyZoneTop(), Math.min(fireflyGroundY(), baseY + wanderY + flutter + swoopY));
 
       // real fireflies don't blink out — the light eases down slowly and never quite
       // reaches zero, settling to a faint ember between flashes rather than going dark
       if(m.hasFlashed){
-        const justFlashed = m.state==='swoop' && m.flashedThisSwoop && (m.stateT-m.flashStartT) < 0.11;
-        if(justFlashed) m.flashAlpha = (m.stateT-m.flashStartT)/0.11;
+        // the flash keeps its OWN clock rather than the swoop's, because a firefly can
+        // now light while hovering, with no swoop running at all
+        m.flashT += dt;
+        const justFlashed = m.flashT < 0.11;
+        if(justFlashed) m.flashAlpha = m.flashT/0.11;
         else m.flashAlpha += (LIGHT_FLOOR - m.flashAlpha) * (1 - Math.exp(-dt/0.45));
       }
     }

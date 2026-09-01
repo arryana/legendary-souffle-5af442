@@ -811,7 +811,18 @@ two builds put their fireflies in different places, other insects wander into a 
 still cannot show *following* something. Don't try to settle it that way. The useful number is that a
 firefly covers only **50px between one flash and the next** (112px before the wander work, so that
 change helped this rather than hurt it): there was never much ground to cover, and the only question
-was whether anything was there to see. |
+was whether anything was there to see.<br>**HOW it lights, which is hers off the machines**: *"do
+they only light up when traveling upward at the same angles?"* and then *"real ones light going up,
+sometimes at a total hover, and sometimes going down"*. Both halves were right and the first was a
+side effect of the flash being moved to 0.78 — there the rise is near its fastest (18–62px/s) while
+`vx` is capped at 26, so the vertical dominated and **77% of flashes went within 30° of straight up**.
+Two things fix it. The **J leans**, its own size and direction per firefly (`swoopLean`), added as a
+velocity rather than an offset so the position stays continuous when the swoop ends — that tilts the
+gesture without touching how HIGH it happens. And the flash now picks one of three ways: **rising**
+(the J, the common one), a **total hover** with no swoop at all so the only vertical movement is its
+own drift, or **on the way down** into the dip. Measured: **69% up, 12% hovering, 19% down**, against
+99% up before, with the lit share above the grass unchanged at 99%. The flash keeps its own clock
+(`flashT`) rather than the swoop's, because a hovering flash has no swoop running. |
 | `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
 after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
 and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
