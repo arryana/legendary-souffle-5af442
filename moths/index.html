@@ -143,11 +143,12 @@
 // gradient rather than out of a plotted route.
 //
 // The scene is three-dimensional, because a moth's colour is a readout of where
-// it is: dark when it passes in front of the bulb and we see its shadowed side,
-// pale when it is behind and the bulb lights the face turned toward us, grey at
-// the sides between. One cut of each wing frame serves all of it -- the frames
-// are silhouettes with clean alpha, so the colour is painted through the mask at
-// the moment of drawing.
+// it is: white when it is behind and the bulb lights the face turned toward us,
+// black only in full silhouette between us and the bulb, and grey both at the
+// sides between and far out, where the light no longer reaches it. See drawMoth
+// for why that is not a straight line. One cut of each wing frame serves it all
+// -- the frames are silhouettes with clean alpha, so the colour is painted
+// through the mask at the moment of drawing.
 // =============================================================================
 
 const cv=document.getElementById('sky'), ctx=cv.getContext('2d');
@@ -391,27 +392,73 @@ function project(m){
   return {sx:cx+m.x*U()*p, sy:cy+m.y*U()*p, p};
 }
 
-// the tinted wing frame, cached: the frames are alpha masks, so colour is
-// painted through them rather than baked into twelve more files
-const tintCache=new Map();
+// How brightly the bulb is lighting a moth d bulb-heights out. It is the same
+// inverse square the flight steers by, so turning the bulb up reaches further out
+// as well as burning brighter -- one lamp, not two: turn the bulb down and the
+// moths grey out much closer in. It falls to NOTHING, not to a floor, because
+// that is her observation exactly: *a moth at a distance behind the
+// bulb looks as grey as one close and to the side.* At nothing, the lit side is
+// mid grey, which is precisely what a moth at the side reads.
+let shadeReach=1, glowNow=0.7;
+function litFrac(d){
+  // Square-law, not inverse-square, and that is a choice made by looking: a true
+  // inverse square is nearly all of its falling in the first bulb-height, so it
+  // greyed the moths in the thick of it -- which is where she wants the white --
+  // and still had half its lift left at the far edge, where she wants grey. This
+  // holds the near and middle pale and gives the whole fall to the far half.
+  const D=2.4 + 2.3*Math.min(1.2, shadeReach);
+  const q=d/D;
+  return Math.max(0, 1 - q*q);
+}
+
+// How badly the eye is dazzled at the point on the screen where this moth is.
+// Hers, and the whole of it is about the EYE rather than about the moth: *a
+// person's eye is blinded to colour when it's looking at that much light, so even
+// a partially-in-front-of looks black.* So the dark side is not a narrow cone
+// round the glass -- anything in front of the bulb ANYWHERE in the glare goes to
+// silhouette, and the same moth out in the dark sky is only a grey shape. It is
+// measured in screen pixels off the filament, because the glare is a thing the
+// eye does with the picture, not a thing that happens in the room; and it fades
+// with the bulb, so a lamp turned down dazzles nobody.
+function glareAt(sx, sy){
+  const r=bulbH*(0.35+glowNow*0.55);
+  const q=Math.hypot(sx-cx, sy-cy)/r;
+  return Math.min(1, glowNow*1.15)/(1+q*q);
+}
+
+// The frames are alpha masks, so the colour is painted through one of them at the
+// moment of drawing. It used to be cached in ELEVEN steps, and eleven steps from
+// black to white is a jump of 25 in 255 at every one -- which on a flat silhouette
+// is a tread, not a gradient, and is what she was seeing when she asked whether it
+// could be smooth. There are never more than five moths on screen, so tinting each
+// one on the frame it is drawn costs almost nothing and the shade is exact.
+//
+// It is tinted at the FRAME's own size, not at the size it will be drawn. Drawn
+// size was tried, as a twentieth of the work: the sprite is then resampled down
+// and rotated afterwards, and the main canvas is at the screen's own device
+// pixels, so it came out 146 of 255 different along the wing edges -- and twice
+// the drawn size was still 110. Measured, the saving was inside the noise of the
+// frame rate anyway, on five moths.
+const scratch=document.createElement('canvas');
+scratch.width=scratch.height=64;                    // grown on demand, rarely
+const sctx=scratch.getContext('2d');
 function tinted(frame, shade){
-  const q=Math.round(shade*10);              // eleven steps is under the eye's threshold
-  const key=frame+':'+q;
-  let c=tintCache.get(key);
-  if(c) return c;
   const im=wing[frame];
-  c=document.createElement('canvas'); c.width=im.width; c.height=im.height;
-  const g=c.getContext('2d');
-  g.drawImage(im,0,0);
-  g.globalCompositeOperation='source-in';
-  const v=Math.round(255*(q/10));
-  g.fillStyle='rgb('+v+','+Math.round(v*0.99)+','+Math.round(v*0.94)+')';
-  g.fillRect(0,0,c.width,c.height);
-  tintCache.set(key,c);
-  return c;
+  if(scratch.width<im.width)  scratch.width=im.width;   // a resize clears it;
+  if(scratch.height<im.height) scratch.height=im.height; // we clear anyway
+  sctx.globalCompositeOperation='source-over';
+  sctx.clearRect(0,0,im.width,im.height);
+  sctx.drawImage(im,0,0);
+  sctx.globalCompositeOperation='source-in';
+  const v=Math.round(255*Math.max(0,Math.min(1,shade)));
+  sctx.fillStyle='rgb('+v+','+Math.round(v*0.99)+','+Math.round(v*0.94)+')';
+  sctx.fillRect(0,0,im.width,im.height);
+  sctx.globalCompositeOperation='source-over';
+  return im;
 }
 
 function draw(sky, glow, flick){
+  glowNow=glow;
   // --- the air -------------------------------------------------------------
   const gsky=ctx.createLinearGradient(0,0,0,H);
   gsky.addColorStop(0, sky.top); gsky.addColorStop(0.55, sky.mid); gsky.addColorStop(1, sky.low);
@@ -466,19 +513,38 @@ function drawMoth(m, flick){
   const {sx,sy,p}=project(m);
   if(p<=0.05) return;
   const d=Math.hypot(m.x,m.y,m.z)||1e-6;
-  // Colour is nothing but position: 0 when it is between us and the bulb and we
-  // see only its shadow, 1 when the bulb is between us and it, lighting the face
-  // turned our way, and half way between at the sides.
-  // Nothing but position. There used to be a term here lifting the shade of any
-  // moth close to the bulb, meant as light wrapping round its edges -- but it
-  // lifted moths IN FRONT of the glass too, which is exactly backwards: a moth
+  // Colour is nothing but position, and her three rules for it are not one rule.
+  //
+  //   The SIDES are mid grey: half the lit face, half the shadowed one.
+  //   BEHIND the bulb it lifts toward white, and how far it gets is DISTANCE --
+  //   *a moth at a distance behind the bulb looks as grey as one close and to the
+  //   side*, which is what a lift falling to nothing gives, exactly.
+  //   IN FRONT it falls toward black, and how far it gets is GLARE, not geometry
+  //   -- *the eye is blinded to colour when it's looking at that much light, so
+  //   even a partially-in-front-of looks black*. Out in the dark sky, away from
+  //   the bulb, the same moth in front is only a grey shape.
+  //
+  // A narrow black cone round the glass was tried and she turned it down on
+  // sight: a moth at the bulb's shoulder, well outside the glass, came out grey
+  // where the eye says black. Glare is why, and glare is measured on the SCREEN.
+  //
+  // The distance term is on the LIT side only. There used to be one on both, and
+  // it lifted moths IN FRONT of the glass, which is exactly backwards: a moth
   // between us and the bulb is more thoroughly backlit the closer it gets, not
-  // less. It showed up as grey moths in front of the lower third of the bulb,
-  // where the filament sits and the term bit hardest.
-  const shade=(1 + m.z/d)/2;
+  // less. It showed up as grey moths in front of the lower third of the bulb.
+  //
+  // Both halves must reach exactly mid grey at the sides and they are written so
+  // they cannot do otherwise: the lit lift and the glare crush are both scaled by
+  // how far round the moth is. Without that the glare arrives at full strength the
+  // instant a moth crosses the bulb's own plane, and it would snap from 0.50 to
+  // 0.12 in one frame -- a flicker, at the exact moment it is most watched.
+  const c=m.z/d;              // -1 dead in front, 0 at the sides, +1 dead behind
+  const shade = c>=0
+    ? 0.5 + 0.5*Math.pow(c, 0.7)*litFrac(d)
+    : 0.5*(1+c)*(1 - 0.95*glareAt(sx,sy)*Math.pow(-c, 0.4));
   const frame=((Math.floor(m.phase)%FRAMES)+FRAMES)%FRAMES;
-  const img=tinted(frame, shade);
-  const w=bulbH*0.115*m.size*p, h=w*img.height/img.width;
+  const im=wing[frame];
+  const w=bulbH*0.115*m.size*p, h=w*im.height/im.width;
   // pointed the way it is going
   const nx=cx+(m.x+m.hx*0.05)*U()*(FOCAL/(FOCAL+m.z+m.hz*0.05));
   const ny=cy+(m.y+m.hy*0.05)*U()*(FOCAL/(FOCAL+m.z+m.hz*0.05));
@@ -490,10 +556,12 @@ function drawMoth(m, flick){
   const narrow=0.34+0.66*Math.abs(Math.cos(lean));
   // and it rises and falls on the beat, because flapping flight does
   const bob=Math.sin(m.phase*Math.PI*2/FRAMES)*h*0.055;
+  tinted(frame, shade);
   ctx.save();
   ctx.translate(sx,sy+bob); ctx.rotate(rot+lean*0.42);
   ctx.globalAlpha=Math.max(0,Math.min(1, 0.35+0.65*Math.min(1,p)));
-  ctx.drawImage(img, -w*narrow/2, -h/2, w*narrow, h);
+  // the scratch canvas is only ever grown, so take this moth's own corner of it
+  ctx.drawImage(scratch, 0, 0, im.width, im.height, -w*narrow/2, -h/2, w*narrow, h);
   ctx.restore();
 }
 
@@ -536,6 +604,7 @@ function frame(now){
   const flick=flicker(dt, b);
   // the bulb's brightness widens the reach of the gradient as well as raising it
   const reach=(0.10+1.30*b)*flick;
+  shadeReach=reach;
   setCount(+count.value);
   step(dt, sky, reach);
   draw(sky, Math.max(0.05, b)*0.9+0.10, flick);
