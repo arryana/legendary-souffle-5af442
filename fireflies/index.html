@@ -512,7 +512,16 @@
   // is too dark for a silhouette this faint ember is what is left. 0.018 rendered as
   // about 3/255 and was invisible in practice, so the piece had nothing at all between
   // flashes and every flash arrived unrelated to the last.
-  const LIGHT_FLOOR=0.07;
+  //
+  // 0.07 first, then 0.05 at her ask — "can you tone down their glow slightly when
+  // they're between flashes?" Don't try to choose this by measurement: the ember is a
+  // few parts in 255 and what happens to be behind a given firefly moves the reading
+  // more than the setting does, so a sweep of values comes back non-monotonic. The
+  // reliable figure is the arithmetic — the core is drawn at `alpha * skyDim` of a pale
+  // yellow, so at the default darkness 0.07 adds about 13/255 at the centre and 0.05
+  // about 9. Below roughly 0.03 it stops being visible at all and the piece is back to
+  // having nothing between flashes, which is the fault this exists to fix.
+  const LIGHT_FLOOR=0.05;
 
   // How high they may get. This was horizonY()-55 — barely above the field, so no
   // firefly ever rose against the sky. HER CALL, Aug 2026, after seeing four heights
