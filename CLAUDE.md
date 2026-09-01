@@ -829,7 +829,17 @@ these four faults were found: every one of them came from her sitting and watchi
 have shown in a screenshot or a sweep.** The measuring was worth doing — it proved each fix and caught
 several of my own mistakes, including one I had introduced myself — but it kept pointing at the wrong
 thing until she said what was actually wrong. A session that only measures will conclude this piece is
-fine. |
+fine.<br>**WHY THIS PIECE IN PARTICULAR, and it should be read before touching it.** Aug 2026,
+unprompted: ***"i really miss fireflies, living in scotland. it's nice to have digital ones. it
+matters to me a lot that they're... authentic feeling."*** There are no fireflies in Scotland. This
+is not a decorative toy and it is not a simulation exercise — it is a substitute for something she
+cannot go outside and see, and the fidelity is the entire value of it. That is also why her reports
+on it are so exact: she is not imagining what a firefly does, she is remembering one. *"like a model
+train track"*, *"they're just black specks with a glowing end"*, *"barely see one at twenty feet in
+the early dusk"* — every one of those was a correction to something measurably wrong, and none of
+them could have come from the code. **Treat what she says about how they behave as the primary
+source, and the measurements as the way of proving you have implemented it, never the other way
+round.** |
 | `kaleidoscope/index.html` | ✅ | ✅ | A tray of real photographed small objects — glass, gems, gears, beads — mirrored live. Place them, then turn the ring<br>Objects re-cropped and the desktop controls spread Aug 2026. The turning ring (top) is **drawn, not an image** — brass-bound wood with a grab knob, dimmed so it doesn't fight the mirrored view. **The tray ring (bottom) is deliberately left brighter than the scope ring** — her call: the bright one pulls the eye first and says *drop things here*, then you look up and the dim ring's view makes sense. Don't 'fix' the mismatch; it is the wordless instruction. **Done** — her verdict came on Mon 24 Aug,
 after the ring drag was made a real turn and the card reshot: *"i have checked those on the machines
 and they are great."* That closes the question this row had been carrying open.<br>**The ring drag was a sideways swipe, not a turn.** Aug 2026, her
