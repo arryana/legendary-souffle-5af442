@@ -506,7 +506,13 @@
   let males=[];   // flying agents
   let bats=[];
   const MAX_FEMALES=10, MAX_MALES=26;
-  const LIGHT_FLOOR=0.018; // males never go fully dark between flashes — just barely visible
+  // Between flashes a firefly is not gone. Two things carry it, and which one you see
+  // depends on how much light is left in the scene — at dusk the insect reads as a dark
+  // speck against a sky that still has light in it (drawBody, below), and once that sky
+  // is too dark for a silhouette this faint ember is what is left. 0.018 rendered as
+  // about 3/255 and was invisible in practice, so the piece had nothing at all between
+  // flashes and every flash arrived unrelated to the last.
+  const LIGHT_FLOOR=0.07;
 
   // How high they may get. This was horizonY()-55 — barely above the field, so no
   // firefly ever rose against the sky. HER CALL, Aug 2026, after seeing four heights
@@ -833,9 +839,39 @@
       }
     }
   }
+  // THE INSECT ITSELF, between flashes. Her report, Aug 2026, after watching it:
+  // "part of what makes watching fireflies fun in real life is that you can more or
+  // less predict where they're going to light up next. at dusk there's just a hint of
+  // a silhouette of them between flashes. but there's no.... path."
+  //
+  // She was right in the most literal way: drawMales drew ONLY the flash, so between
+  // flashes there was no firefly on the screen at all. Every flash therefore arrived
+  // unrelated to the last one, and the anticipation — which is most of the pleasure of
+  // watching them — could not exist, because there was nothing to follow.
+  //
+  // It is a dark speck, not a glow, and it is tied to how much light is left in the
+  // scene, which is what makes it honest rather than a marker: strongest at dusk when
+  // the sky still carries light, gone by full night, and weaker below the horizon
+  // where it is against dark ground instead of sky. At full dark you really cannot see
+  // a firefly between flashes, and the piece should not pretend you can.
+  function drawBody(m){
+    const sky = m.y < horizonY() ? 1 : 0.4;      // against the sky, or against the field
+    const a = 0.6 * Math.pow(1-dark, 0.75) * sky;
+    if(a < 0.02) return;
+    const r = 1.0 + 2.0*(1-m.depth);
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.fillStyle = '#090b07';
+    ctx.beginPath();
+    ctx.ellipse(m.x, m.y, r*1.6, r*0.8, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawMales(){
     const sorted=[...males].sort((a,b)=>b.depth-a.depth);
     for(const m of sorted){
+      drawBody(m);
       if(m.flashAlpha>0.008) drawFlash(m.x,m.y,m.flashAlpha,m.depth,58);
     }
   }
