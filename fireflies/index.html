@@ -611,6 +611,8 @@
       // heading, speed, and the tightest curve this one can fly
       hd: Math.random()*Math.PI*2, sp: 8+Math.random()*8, minR: 30+Math.random()*32,
       spMax: 26+Math.random()*15,
+      airPhase: Math.random()*Math.PI*2,
+      surgePhase: Math.random()*Math.PI*2, surgeSpeed: 0.55+Math.random()*0.75,
       curv: 0, curvPhase: Math.random()*Math.PI*2, curvSpeed: 0.16+Math.random()*0.26,
       curvPhase2: Math.random()*Math.PI*2, curvSpeed2: 0.05+Math.random()*0.11,
       flashAlpha:0, hasFlashed:false, flashT:0, vxEff:0, vyEff:0, target:null, targetT:0
@@ -692,6 +694,7 @@
       m.vx = Math.max(-21, Math.min(21, m.vx + steer*dt));
       m.pendingX = m.x;                             // moved below, once the swoop is known
 
+      m.airPhase += dt*(2.1+1.3*(1-m.depth));
       m.cruisePhase += dt*m.cruiseSpeed;
       m.cruisePhase2 += dt*m.cruiseSpeed2;
       m.bobPhase += dt*m.bobSpeed;
@@ -878,7 +881,12 @@
       // a burst to make it. Held too low and the J flattens out: at a flat cap the
       // flashes came out 26% rising where they had been 69%, because the firefly could
       // no longer follow its own climb.
-      const cap = m.spMax * (m.state==='swoop' ? 1.5 : 1);
+      // it surges and coasts. A crawling insect keeps one pace; a flying one is always
+      // putting on a little effort and then riding it out, and measured against its own
+      // average this varied by only 31% before -- steady enough to read as a walk.
+      m.surgePhase += dt*m.surgeSpeed;
+      const surge = 1 + 0.42*Math.sin(m.surgePhase) + 0.22*Math.sin(m.surgePhase*2.31+0.7);
+      const cap = m.spMax * surge * (m.state==='swoop' ? 1.5 : 1);
       m.sp += (Math.min(wantSp, cap) - m.sp) * (1 - Math.exp(-dt/0.5));
       m.sp = Math.min(m.sp, cap);
 
@@ -1070,28 +1078,45 @@
 
   // where the lantern is: behind the insect, along the way it is travelling
   function lanternAt(m){
-    const vx=m.vxEff||0, vy=m.vyEff||0, sp=Math.hypot(vx,vy), L=bodyLen(m)*1.15;
-    if(sp < 2) return [m.x, m.y + L*0.35];          // barely moving: just behind/below
-    return [m.x - (vx/sp)*L, m.y - (vy/sp)*L];
+    const L=bodyLen(m)*1.15;
+    const air = 1.0 + 1.4*(1-m.depth);
+    const jx = Math.sin(m.airPhase*2.7)*air*0.5, jy = Math.sin(m.airPhase*1.9+1.1)*air;
+    // behind the body along the way it is POINTING, for the same reason as above
+    return [m.x + jx - Math.cos(m.hd)*L, m.y + jy - Math.sin(m.hd)*L];
   }
 
   function drawBody(m){
     const sky = m.y < horizonY() ? 1 : 0.4;      // against the sky, or against the field
-    const a = 0.55 * Math.pow(1-dark, 0.75) * sky;
+    /* SEMI-TRANSPARENT, hers: "you can barely see the glow and you can barely see the
+       bodies. they don't have as much... presence." A real firefly between flashes is
+       barely there at all -- a suggestion against the sky rather than an object on it.
+       This was a solid dark speck at up to 0.46 alpha, which has more presence than the
+       thing it stands for. */
+    const a = 0.34 * Math.pow(1-dark, 0.75) * sky;
     if(a < 0.02) return;
     const r = bodyLen(m);
-    const vx=m.vxEff||0, vy=m.vyEff||0;
-    const ang = Math.hypot(vx,vy) > 2 ? Math.atan2(vy,vx) : 0;
+    /* A FLYING FIREFLY IS NOT A BUG SHAPE. Hers, and it is most of why they read as
+       "ants crawling than something flying": this drew an ELONGATED body, rotated to
+       lie along its direction of travel, tracing a smooth path. An oriented body welded
+       to its own track is precisely what a crawling insect looks like -- it is pushing
+       against the ground, so it must point where it goes. In the air, at this size,
+       there is no bug to see: "they're just.. black specks with a glowing end."
+       So: a round speck, no long axis, no rotation. What the heading is still for is
+       WHICH END the lantern is on -- see lanternAt -- and because the track differs
+       from the heading by the wind, the glow sits slightly off the line of travel,
+       which is the crab of something being carried rather than walking. */
+    const air = 1.0 + 1.4*(1-m.depth);
+    const jx = Math.sin(m.airPhase*2.7)*air*0.5, jy = Math.sin(m.airPhase*1.9+1.1)*air;
     ctx.save();
-    ctx.translate(m.x, m.y);
-    ctx.rotate(ang);
-    ctx.scale(1.5, 0.75);                        // a body, lying along its heading
-    const g=ctx.createRadialGradient(0,0,0,0,0,r*2.1);
+    ctx.translate(m.x + jx, m.y + jy);
+    // translucent all the way through, not a solid middle with a soft rim: the sky
+    // should come through the whole speck
+    const g=ctx.createRadialGradient(0,0,0,0,0,r*1.9);
     g.addColorStop(0,   `rgba(5,7,4,${a})`);
-    g.addColorStop(0.45,`rgba(5,7,4,${a*0.6})`);
+    g.addColorStop(0.5, `rgba(5,7,4,${a*0.72})`);
     g.addColorStop(1,   'rgba(5,7,4,0)');        // no edge at all, just falloff
     ctx.fillStyle=g;
-    ctx.beginPath(); ctx.arc(0,0,r*2.1,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0,0,r*1.9,0,Math.PI*2); ctx.fill();
     ctx.restore();
   }
 
