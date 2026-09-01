@@ -608,6 +608,11 @@
       // the screen and all the flashes read as one gesture -- see swoopVx below.
       swoopLean: (Math.random()<0.5?-1:1) * (10+Math.random()*34),
       flashAt: 0.72+Math.random()*0.14,
+      // heading, speed, and the tightest curve this one can fly
+      hd: Math.random()*Math.PI*2, sp: 8+Math.random()*8, minR: 30+Math.random()*32,
+      spMax: 26+Math.random()*15,
+      curv: 0, curvPhase: Math.random()*Math.PI*2, curvSpeed: 0.16+Math.random()*0.26,
+      curvPhase2: Math.random()*Math.PI*2, curvSpeed2: 0.05+Math.random()*0.11,
       flashAlpha:0, hasFlashed:false, flashT:0, vxEff:0, vyEff:0, target:null, targetT:0
     });
   }
@@ -749,8 +754,13 @@
             } else {
               m.state='swoop'; m.stateT=0; m.flashedThisSwoop=false;
               // going down on the way into the dip, or up on the way out of it
-              m.flashAt = (r < 0.42) ? 0.14+Math.random()*0.22
-                                     : 0.72+Math.random()*0.14;
+              // Later in the swoop than the intent alone would suggest, because the
+              // turn limit means the firefly LAGS its own intent: it is still coming
+              // out of the dive at 0.78 and does not read as climbing until nearer
+              // 0.85. Measured -- at 0.72-0.86 the flashes came out 28% rising and
+              // 38% descending, the wrong way round.
+              m.flashAt = (r < 0.42) ? 0.18+Math.random()*0.20
+                                     : 0.80+Math.random()*0.13;
             }
           }
         }
@@ -816,9 +826,118 @@
         baseY = m.spawnY + (m.cruiseY-m.spawnY)*eased;
       }
       const px=m.x, py=m.y;
-      m.x = m.pendingX + (m.vx + swoopVx)*dt;       // the cruise plus the J's own sweep
+
+      /* A FIREFLY IS A BODY WITH A HEADING, and until here this piece had none. Her
+         description, and it is the best statement of the fault anyone made all day:
+         "real ones are sort of... like a model train track. you know how you can't
+         have too sharp a curve or it derails? real fireflies never do sharp turns.
+         they just cruise and loop, drift and curve. they may pause, but they don't
+         -turn- when still, or starting to move."
+
+         Everything above computes x and y INDEPENDENTLY -- x from a steered velocity,
+         y as a position assembled from a stack of oscillators (cruise height, two
+         sways, flutter, idle dip, swoop). Nothing anywhere held a direction of travel.
+         So whenever the vertical stack happened to reverse while the horizontal was
+         slow, the apparent heading flipped instantly: a turn with no radius at all.
+         And a firefly barely moving sideways was still being carried up and down, so
+         it turned while all but stationary -- the two things she says a real one never
+         does.
+
+         So everything above is now INTENT, and it is flown rather than obeyed. The
+         firefly has a heading and a speed. Speed eases toward what the intent asks
+         for. The heading turns toward it at a rate bounded by speed/minR -- which is
+         the train track: a bounded RADIUS rather than a bounded angle, so the slower
+         it goes the less it can turn, and at a standstill it cannot turn at all. It
+         still cruises, loops, drifts and curves; it simply cannot corner. */
+      /* The intent has to be a VELOCITY in its own right. Taking (intended position -
+         ACTUAL position)/dt is what a first attempt did, and it was worse than what it
+         replaced: once the flown path drifts from the intended one -- which is the whole
+         point of flying it rather than obeying it -- that gap divided by a 16ms frame
+         becomes an enormous velocity, and the firefly whips round chasing it. Measured,
+         turning while nearly still went from 5.8 to 34.6 degrees per frame. So: the
+         intent's own rate of change, plus a gentle pull back toward the height it wants,
+         clamped so it can never become a lunge. */
+      const wantYNow = baseY + wanderY + flutter + swoopY;
+      if(m.wantYPrev === undefined) m.wantYPrev = wantYNow;
+      let wantVy = (wantYNow - m.wantYPrev)/dt;
+      m.wantYPrev = wantYNow;
+      wantVy += Math.max(-21, Math.min(21, (wantYNow - py)*0.7));
+      // "wind drifts them too, they're slow, frail little things" -- hers. The same wind
+      // that bends the grass carries them, which at the default breeze is a couple of
+      // px/s and at full wind is about what they fly at themselves.
+      let wantVx = m.vx + swoopVx + wind*24;
+      const wantSp=Math.hypot(wantVx,wantVy);
+
+      // "they're slow, frail little things" -- so there is a speed it simply cannot
+      // exceed, whatever the intent asks for. Without this the climb out of the grass
+      // was the fastest thing on screen: the ease-out on that rise starts at three
+      // times its average, up to ~560px/s of intent, and the firefly accelerated into
+      // it, peaking at 198px/s.
+      //
+      // The swoop gets a little more, because the J IS an effort -- a real one puts on
+      // a burst to make it. Held too low and the J flattens out: at a flat cap the
+      // flashes came out 26% rising where they had been 69%, because the firefly could
+      // no longer follow its own climb.
+      const cap = m.spMax * (m.state==='swoop' ? 1.5 : 1);
+      m.sp += (Math.min(wantSp, cap) - m.sp) * (1 - Math.exp(-dt/0.5));
+      m.sp = Math.min(m.sp, cap);
+
+      /* AND IT IS ALWAYS ON THAT RADIUS. Her second point, which the first pass missed:
+         "they're always on it. their motion is like a sine wave. it might vary, or even
+         loop back on itself, but it's always a -bend-, not a turn."
+
+         Steering a heading toward what the intent wants lets the heading ARRIVE, and
+         then the path is straight until the next correction -- straight lines joined by
+         corrections, which is what a turn is. So what is driven here is the CURVATURE,
+         never the heading: the firefly is always bending, the bend varies smoothly and
+         sometimes tightens far enough to loop, and the intent above only biases which
+         way it bends rather than commanding a direction. */
+      m.curvPhase  += dt*m.curvSpeed;
+      m.curvPhase2 += dt*m.curvSpeed2;
+      // During a swoop the firefly is doing something deliberate, so its own idle
+      // wander stands back and the intent leads. Left at equal weight the two simply
+      // cancelled: the J came out flat, and the flashes read 26% rising where they had
+      // been 69%, because half the time the wander was bending it the other way.
+      const deliberate = m.state==='swoop';
+      const wanderW = deliberate ? 0.35 : 1;
+      const intentW = deliberate ? 2.2  : 1.35;
+      let bend = (Math.sin(m.curvPhase)*0.62 + Math.sin(m.curvPhase2)*0.42) * wanderW;
+      if(wantSp > 0.01){
+        let dh = Math.atan2(wantVy,wantVx) - m.hd;
+        while(dh >  Math.PI) dh -= 2*Math.PI;
+        while(dh < -Math.PI) dh += 2*Math.PI;
+        bend += Math.max(-1.4, Math.min(1.4, dh/0.8)) * intentW;  // bends it, never steers it
+      }
+      // the bend itself eases rather than switching, and can never be tighter than the
+      // radius this firefly flies -- which is why it cannot turn while barely moving
+      // The J is the one moment a firefly is making an effort, so it may bend harder
+      // than its idle cruising radius -- a real one climbs out of the dip far more
+      // decisively than it wanders. Held to the cruising radius the J flattened to
+      // nothing: the flashes came out 30% rising and 36% descending, where the design
+      // is 58/20. Still a bounded radius, just a tighter one for a second or two.
+      const maxRate = m.sp / (m.minR * (deliberate ? 0.45 : 1));
+      m.curv += (Math.max(-1,Math.min(1,bend))*maxRate - m.curv) * (1 - Math.exp(-dt/0.55));
+      m.curv = Math.max(-maxRate, Math.min(maxRate, m.curv));
+      m.hd += m.curv*dt;
+      m.x = px + Math.cos(m.hd)*m.sp*dt;
+      m.y = py + Math.sin(m.hd)*m.sp*dt;
+
+      // it can now overshoot its band, since it may not be able to turn away in time.
+      // Bank away from the edge rather than stopping dead against it.
+      // near the top or the floor of its band, bank away -- still a bend, still bounded
+      const top=fireflyZoneTop(), gnd=fireflyGroundY();
+      const near = m.y < top+40 ? (top+40-m.y)/40 : m.y > gnd-40 ? -(m.y-(gnd-40))/40 : 0;
+      if(near !== 0){
+        const goingUp = Math.sin(m.hd) < 0;                   // screen y grows downward
+        if((near > 0 && goingUp) || (near < 0 && !goingUp)){
+          const push = Math.min(1, Math.abs(near)) * maxRate * 1.6 * (near>0?1:-1);
+          m.hd += Math.max(-maxRate*1.6*dt, Math.min(maxRate*1.6*dt,
+                    (Math.cos(m.hd) >= 0 ? push : -push) * dt));
+        }
+      }
       m.x = Math.max(6, Math.min(W-6, m.x));
-      m.y = Math.max(fireflyZoneTop(), Math.min(fireflyGroundY(), baseY + wanderY + flutter + swoopY));
+      m.y = Math.max(top, Math.min(gnd, m.y));
+
       // which way it is actually going, for laying the body along its heading and
       // putting the lantern at the back of it
       if(dt>0){ m.vxEff=(m.x-px)/dt; m.vyEff=(m.y-py)/dt; }
