@@ -608,7 +608,7 @@
       // the screen and all the flashes read as one gesture -- see swoopVx below.
       swoopLean: (Math.random()<0.5?-1:1) * (18+Math.random()*58),
       flashAt: 0.72+Math.random()*0.14,
-      flashAlpha:0, hasFlashed:false, flashT:0, vxEff:0, vyEff:0, target:null
+      flashAlpha:0, hasFlashed:false, flashT:0, vxEff:0, vyEff:0, target:null, targetT:0
     });
   }
   function spawnBat(){
@@ -670,7 +670,13 @@
       // heading that occasionally bends toward a female who's just answered a flash
       m.steerPhase += dt*m.steerSpeed;
       let steer = Math.sin(m.steerPhase)*m.steerAmp;
-      if(m.target) steer += Math.sign(m.target.x-m.x)*6;
+      // The pull toward a female has to be stronger than the firefly's own wandering,
+      // or it circles her for ever and never arrives. This used to be a flat 6 against
+      // a fixed wander of 4, so it always won; when each firefly got its own turn
+      // strength (4-11) the wander could outweigh it, and a male that never arrives
+      // never flashes again -- see the target timeout below. Scaled off its own
+      // steerAmp so it always wins, whatever that firefly's wander happens to be.
+      if(m.target) steer += Math.sign(m.target.x-m.x)*(m.steerAmp+5);
       m.vx = Math.max(-26, Math.min(26, m.vx + steer*dt));
       if(m.x<24) m.vx = Math.abs(m.vx)*0.9+4;      // turn back in from the edges
       if(m.x>W-24) m.vx = -Math.abs(m.vx)*0.9-4;
@@ -704,7 +710,19 @@
       let swoopY=0, swoopVx=0;
       if(m.state==='cruise'){
         if(m.target){
-          if(Math.abs(m.target.x-m.x) < 26){
+          // A MALE WITH A TARGET NEVER COUNTS DOWN TO A FLASH -- it lights only when it
+          // reaches her. So anything that stops it arriving makes it silent for ever,
+          // and her report was exactly that: "there's one lightning bug that's just
+          // cruising around the sky part but never lighting". Two ways it can happen:
+          // its own wander outweighing the pull (fixed above), and the female being
+          // taken off the dish while it is on its way, which left it chasing a ghost.
+          // So it gives up: if she is gone, or it has not got there in a reasonable
+          // time, the target is dropped and it goes back to flashing on its own.
+          m.targetT = (m.targetT||0) + dt;
+          if(females.indexOf(m.target) < 0 || m.targetT > 14){
+            m.target=null; m.targetT=0;
+            m.nextFlashAt=Math.min(m.nextFlashAt, 1+Math.random()*2);
+          } else if(Math.abs(m.target.x-m.x) < 26){
             m.state='swoop'; m.stateT=0; m.flashedThisSwoop=false;
           }
         } else {
@@ -765,7 +783,7 @@
           onMaleFlash(m);
         }
         if(p>=1){
-          m.state='cruise'; m.stateT=0; m.target=null;
+          m.state='cruise'; m.stateT=0; m.target=null; m.targetT=0;
           m.nextFlashAt=(7-4*act)+Math.random()*3;
         }
       }
@@ -851,7 +869,7 @@
       setTimeout(()=>{
         const idle = males.filter(o=>o!==m && o.state==='cruise' && !o.target);
         const near = idle.sort((a,b)=>Math.hypot(a.x-female.x,a.y-female.y)-Math.hypot(b.x-female.x,b.y-female.y))[0];
-        if(near) near.target=female;
+        if(near){ near.target=female; near.targetT=0; }
       }, 2000+Math.random()*200);
     }
   }
