@@ -585,7 +585,7 @@
     const spawnY = groundY - 4 - Math.random()*10;
     males.push({
       x, y: spawnY, depth,
-      vx: (Math.random()<0.5?-1:1) * (6+14*Math.random()), // lazy horizontal cruise, px/s
+      vx: (Math.random()<0.5?-1:1) * (5+11*Math.random()), // lazy horizontal cruise, px/s
       // Every one of these was shared before, which is what made them fly as a flock.
       // steerSpeed especially: it was a fixed 0.5 for every firefly, so the whole
       // population turned on one rhythm. Her report — "they all seem to be in such
@@ -603,10 +603,10 @@
       bobPhase: Math.random()*Math.PI*2, bobSpeed: 0.9+Math.random()*0.5, bobAmp: 2.5+Math.random()*2,
       state:'cruise', stateT:0,
       nextFlashAt: 1+Math.random()*4,
-      swoopDur: 2.2+Math.random()*1.2, dipAmp: 26+Math.random()*30,
+      swoopDur: 2.4+Math.random()*1.4, dipAmp: 20+Math.random()*24,
       // how far the J leans, and which way. Without this every rise is straight up
       // the screen and all the flashes read as one gesture -- see swoopVx below.
-      swoopLean: (Math.random()<0.5?-1:1) * (18+Math.random()*58),
+      swoopLean: (Math.random()<0.5?-1:1) * (10+Math.random()*34),
       flashAt: 0.72+Math.random()*0.14,
       flashAlpha:0, hasFlashed:false, flashT:0, vxEff:0, vyEff:0, target:null, targetT:0
     });
@@ -676,10 +676,15 @@
       // strength (4-11) the wander could outweigh it, and a male that never arrives
       // never flashes again -- see the target timeout below. Scaled off its own
       // steerAmp so it always wins, whatever that firefly's wander happens to be.
-      if(m.target) steer += Math.sign(m.target.x-m.x)*(m.steerAmp+5);
-      m.vx = Math.max(-26, Math.min(26, m.vx + steer*dt));
-      if(m.x<24) m.vx = Math.abs(m.vx)*0.9+4;      // turn back in from the edges
-      if(m.x>W-24) m.vx = -Math.abs(m.vx)*0.9-4;
+      // tanh rather than sign: a sign flips the whole steering force the instant he
+      // crosses her line, which is a hard turn and then a hunt back and forth across
+      // it. This eases off as he closes, so he settles onto her instead of snapping.
+      if(m.target) steer += Math.tanh((m.target.x-m.x)/55)*(m.steerAmp+5);
+      // turn back in from the edges by STEERING, not by reversing: flipping vx outright
+      // is an instant about-face, which is one of the hard turns she reported
+      if(m.x < 70)   steer += (70-m.x)*0.5;
+      if(m.x > W-70) steer -= (m.x-(W-70))*0.5;
+      m.vx = Math.max(-21, Math.min(21, m.vx + steer*dt));
       m.pendingX = m.x;                             // moved below, once the swoop is known
 
       m.cruisePhase += dt*m.cruiseSpeed;
@@ -692,8 +697,10 @@
       let idleDip = 0;
       if(m.dipping > 0){
         m.dipping -= dt;
-        const q = 1 - m.dipping/m.dipDur;
-        idleDip = m.dipSize*Math.sin(Math.min(1,Math.max(0,q))*Math.PI);
+        const q = Math.min(1, Math.max(0, 1 - m.dipping/m.dipDur));
+        // eased at both ends, for the same reason the swoop is: a sin(q*PI) starts at
+        // full vertical speed from a standstill, which is a lurch
+        idleDip = m.dipSize*(1-Math.cos(2*Math.PI*q))/2;
       } else {
         m.dipT -= dt;
         if(m.dipT <= 0){
@@ -765,7 +772,13 @@
         // The two are independent and both are needed. Don't go past ~0.85: by 0.92 the
         // light does not arrive until the climb is over and there is no hook left.
         const p=Math.min(1, m.stateT/m.swoopDur);
-        swoopY = m.dipAmp * Math.sin(p*Math.PI);
+        // THE SWOOP HAS TO START AND END AT REST, which sin(p*PI) does not: its slope
+        // at p=0 is dipAmp*PI/swoopDur, up to 80px/s, so every swoop began with the
+        // firefly lurching downward from a standstill and ended by stopping dead. Her
+        // report -- "they come to abrupt halts and make hard angle turns. real ones
+        // don't do that." (1-cos(2*PI*p))/2 traces the same dip and back, but its
+        // slope is ZERO at both ends, so it eases in and eases out.
+        swoopY = m.dipAmp * (1-Math.cos(2*Math.PI*p))/2;
         // THE J LEANS, and it leans a different way for each firefly. Her question:
         // "do they only light up when traveling upward at the same angles?" They do
         // travel upward -- that is the J and it is right -- but the SAME ANGLE was a
@@ -777,7 +790,11 @@
         // direction per firefly, which tilts the J without touching how HIGH the
         // flash happens. It is added as a velocity, not an offset, so the position
         // stays continuous when the swoop ends.
-        swoopVx = m.swoopLean * (Math.PI/m.swoopDur) * Math.cos(p*Math.PI);
+        // the same for the sideways sweep, and this one was the worst of them: as a
+        // cos it was at FULL speed the instant the swoop began -- up to 108px/s against
+        // a cruise of 21 -- and cut to nothing the instant it ended. This is the
+        // derivative of a smooth sideways drift, so it is zero at both ends.
+        swoopVx = m.swoopLean * (1-Math.cos(2*Math.PI*p)) / m.swoopDur;
         if(!m.flashedThisSwoop && p>=m.flashAt){
           m.flashedThisSwoop=true; m.hasFlashed=true; m.flashT=0; m.flashAlpha=0;
           onMaleFlash(m);
@@ -1004,9 +1021,33 @@
   // ---------- audio: crickets (Dolbear's law) + wind ----------
   let audioCtx=null, windGain=null, windFilter=null, cricketVoices=[];
   const muteCheckbox=document.getElementById('muteCheckbox'), volumeSlider=document.getElementById('volumeSlider');
-  let muted=false, volumeLevel=0.6;
-  muteCheckbox.addEventListener('change', ()=> muted=muteCheckbox.checked);
-  volumeSlider.addEventListener('input', ()=> volumeLevel=volumeSlider.value/100);
+
+  /* THE SOUND SETTING WAS NEVER REMEMBERED. Her report: "if i hit reload on the page,
+     the crickets start up again even if the no sound box is checked." It was true --
+     nothing here read or wrote anything, so every reload came back unmuted and at the
+     default volume. Same keys roller uses, so turning the sound off on one piece turns
+     it off on the others too, which is what someone means by "no sound".
+
+     Both go through the guarded pair: localStorage does not merely come back empty when
+     a browser refuses it, it THROWS, and an unguarded read at the top of a script takes
+     the whole piece down. Losing the setting is nothing; losing the piece is
+     everything. */
+  const readStore = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+  const writeStore = (k,v) => { try{ localStorage.setItem(k,v); }catch(e){} };
+
+  let muted = readStore('sagne-muted') === 'true';
+  let volumeLevel = (()=>{ const v=parseFloat(readStore('sagne-volume'));
+                           return isFinite(v) && v>=0 && v<=1 ? v : 0.6; })();
+  muteCheckbox.checked = muted;
+  volumeSlider.value = Math.round(volumeLevel*100);
+  muteCheckbox.addEventListener('change', ()=>{
+    muted = muteCheckbox.checked;
+    writeStore('sagne-muted', muted ? 'true' : 'false');
+  });
+  volumeSlider.addEventListener('input', ()=>{
+    volumeLevel = volumeSlider.value/100;
+    writeStore('sagne-volume', String(volumeLevel));
+  });
 
   function chirpRateForTemp(c){
     const pts=[[5,40],[13,60],[25,128],[30,160],[38,185]];
