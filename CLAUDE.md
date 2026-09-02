@@ -829,7 +829,34 @@ these four faults were found: every one of them came from her sitting and watchi
 have shown in a screenshot or a sweep.** The measuring was worth doing — it proved each fix and caught
 several of my own mistakes, including one I had introduced myself — but it kept pointing at the wrong
 thing until she said what was actually wrong. A session that only measures will conclude this piece is
-fine.<br>**WHY THIS PIECE IN PARTICULAR, and it should be read before touching it.** Aug 2026,
+fine.<br>**THE TOP OF EVERY FLASH WAS WHITE**, hers, Sep 2026: *"when the firefly starts
+flashing, the glow gets brighter than a real one does."* She was right, and the fault was the
+renderer's rather than the model's. `drawFlash` lays down two layers with `lighter` — a glow and
+a small hard lantern on top of it — and at full output they sum to about **1.9x what a screen can
+show**. Everything past 255 is thrown away, and the first thing thrown away is the blue channel's
+headroom, so the flash **lost its colour before it stopped getting brighter**. Measured over 200-odd
+flash positions on ordinary sky (stars excluded — anything laid on a star clips whatever you do):
+at the default darkness **67.6% of flashes clipped to pure white and at full night 100% did**, mean
+blue 249 and 255. A white spark, where a real lantern is yellow-green at any brightness it reaches.
+
+The fix is **musebox's waveshaper in another medium**, and for the same reason: a soft ceiling with
+no lookahead, exactly y=x below the knee so everything she has already tuned down there passes
+through untouched, bending only near the top (`KNEE=0.15, CEIL=0.44`). It is applied to the
+**output** (`alpha*skyDim`) rather than to alpha, so it bites where the render is actually near the
+ceiling and barely at dusk, where the sky is doing half the dimming already. The ember between
+flashes (`LIGHT_FLOOR`) and the females' resting pulse both sit below the knee and came back
+**byte-identical** — her tuning of those is untouched, which is the whole reason for a knee rather
+than a scale factor. Clipping **0% at every position on the darkness slider**, mean blue back to
+157-169.
+
+**And it gave the swell back, which nobody had noticed was gone.** The flash's envelope rises to
+full over 0.13s, but at full night the render already read **250 at alpha 0.60 and 255 at 1.00** —
+so the top 40% of every flash was invisible and it **snapped on rather than growing**. Measured
+after: 151, 181, 195, 204 across the same span, rising the whole way. Worth keeping as the general
+point: **a piece that clips is not merely too bright, it is losing the top of whatever it is
+doing** — the colour and the gesture both. Check any additive `lighter` glow on this site for it.
+
+**WHY THIS PIECE IN PARTICULAR, and it should be read before touching it.** Aug 2026,
 unprompted: ***"i really miss fireflies, living in scotland. it's nice to have digital ones. it
 matters to me a lot that they're... authentic feeling."*** There are no fireflies in Scotland. This
 is not a decorative toy and it is not a simulation exercise — it is a substitute for something she

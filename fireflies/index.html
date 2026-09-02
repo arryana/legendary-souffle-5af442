@@ -1059,15 +1059,47 @@
        which is backwards. The arithmetic above is the part that can be trusted. */
     const r = (3.2+7*nearness) * (0.07+0.93*alpha);
     const skyDim = 0.35+0.65*dark; // flashes read more vividly against a darker sky
+    /* THE TOP OF A FLASH IS ROUNDED OFF, NOT SQUARED AGAINST WHITE. Hers, Aug 2026:
+       "when the firefly starts flashing, the glow gets brighter than a real one does."
+       She was right and the fault is the renderer's, not the model's. Two layers are
+       laid down with 'lighter' -- a glow and a small hard lantern on top of it -- and
+       at full output they sum to about 1.9x what a screen can show. Everything past
+       255 is thrown away, and what is thrown away FIRST is the blue channel's
+       headroom, so the flash loses its colour before it stops getting brighter.
+       Measured over 200-odd flash positions on ordinary sky (stars excluded, since
+       anything laid on a star clips whatever you do): at the default darkness 67.6%
+       of flashes clipped to pure white and at full night 100% of them did, mean blue
+       249 and 255 -- a white spark, where a real lantern is yellow-green at any
+       brightness it ever reaches.
+
+       This is musebox's waveshaper in another medium, and for the same reason: a
+       soft ceiling with no lookahead, exactly y=x below the knee so everything she
+       has already tuned down there passes through untouched, bending only near the
+       top. The ember between flashes (LIGHT_FLOOR) and the females' resting pulse
+       both sit below the knee and are byte-identical, verified.
+
+       It is applied to the OUTPUT (alpha*skyDim) rather than to alpha, so it bites
+       where the render is actually near the ceiling and barely at dusk, where the sky
+       is doing half the dimming already.
+
+       And it gives the swell back, which is the part worth knowing: the flash's own
+       envelope rises to full over 0.13s, but at full night the render already read
+       250 at alpha 0.60 and 255 at 1.00 -- so the top 40% of every flash was
+       invisible and it snapped on rather than growing. Measured after: 151, 181,
+       195, 204 across the same span, rising the whole way. Clipping is 0% at every
+       position on the darkness slider, and mean blue is back to 157-169. */
+    const KNEE=0.15, CEIL=0.44;
+    const raw = alpha*skyDim;
+    const out = raw<=KNEE ? raw : CEIL-(CEIL-KNEE)*Math.exp(-(raw-KNEE)/(CEIL-KNEE));
     ctx.save();
     ctx.globalCompositeOperation='lighter';
     const g=ctx.createRadialGradient(x,y,0,x,y,r*3.6);
-    g.addColorStop(0, `hsla(${hue},92%,72%,${alpha*0.95*skyDim})`);
-    g.addColorStop(0.35, `hsla(${hue},90%,60%,${alpha*0.5*skyDim})`);
+    g.addColorStop(0, `hsla(${hue},92%,72%,${out*0.95})`);
+    g.addColorStop(0.35, `hsla(${hue},90%,60%,${out*0.5})`);
     g.addColorStop(1, `hsla(${hue},90%,55%,0)`);
     ctx.fillStyle=g;
     ctx.beginPath(); ctx.arc(x,y,r*3.6,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle=`hsla(${hue},95%,85%,${alpha*skyDim})`;
+    ctx.fillStyle=`hsla(${hue},95%,85%,${out})`;
     ctx.beginPath(); ctx.arc(x,y,r*0.4,0,Math.PI*2); ctx.fill();
     ctx.restore();
   }
