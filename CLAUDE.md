@@ -856,6 +856,38 @@ after: 151, 181, 195, 204 across the same span, rising the whole way. Worth keep
 point: **a piece that clips is not merely too bright, it is losing the top of whatever it is
 doing** — the colour and the gesture both. Check any additive `lighter` glow on this site for it.
 
+**A PERCHED FEMALE IS SEEN THROUGH THE GRASS, NOT OVER IT**, hers, Sep 2026: *"can you dim
+the ones that are placed, in the grass? those are usually dimmer because they're not on top of the
+grass."* That is a mechanism and not a level — a male flashing above the sward has nothing between
+him and you, a female down among the blades has all of it — so it is keyed off **how far down the
+meadow she sits** rather than a constant: near the bottom of the frame she is a few feet off with
+sparse near blades in front, up by the horizon there is a whole field of it. Transmission runs
+**0.68 at the horizon to 0.88 at the front**. The males are deliberately untouched: they fly above
+the grass by design, that height is hers and set over several reports, and there is nothing in
+front of them.
+
+**The two numbers were chosen against the RENDER and not against the arithmetic, and the gap
+between the two is the thing to remember.** `drawFlash`'s radius carries alpha in it — her own rule
+that *"the size and the brightness are the same thing happening"* — so dimming a glow **shrinks**
+it too and the visible loss compounds. The first attempt used 0.42–0.70, which sounds like a dim
+and measured like an extinction: the resting glow, which is the whole of what you see when you put
+one down, fell to **0.28–0.49 of its peak and 0.14–0.44 of its lit area**. Swept at one spot, the
+resting glow renders at 0.86 of its area at 0.90 transmission, 0.71 at 0.85, 0.53 at 0.75 and 0.19
+at 0.50 — so a factor read off the physics alone costs far more than it looks like it should.
+At the numbers taken: resting glow **peak 0.52–0.78, area 0.47–0.71**; her answering flash, being
+much brighter to start with, **peak 0.88–0.95, area 0.61–0.88**. Anyone retuning this should sweep
+it and read the rendered figures.
+
+**And it is floored well above nothing on purpose**: a placed firefly that cannot be found reads as
+a firefly that was never placed, which is the *reads as broken* class, not fidelity.
+
+**Measuring this needs the glows rendered directly, not read off the running piece** — three passes
+were wasted before that. A box around a placed female catches whatever is behind her (a star can be
+brighter than she is, and the far field is brighter than the near), and males and bats fly through
+it: one pass reported the far glow *brighter* than the near, another reported a female 8.9x brighter
+after a change that only dimmed her. Call `drawFlash` at the exact alphas `drawFemales` would use,
+on a cleared sky, and diff against the same box with nothing drawn.
+
 **WHY THIS PIECE IN PARTICULAR, and it should be read before touching it.** Aug 2026,
 unprompted: ***"i really miss fireflies, living in scotland. it's nice to have digital ones. it
 matters to me a lot that they're... authentic feeling."*** There are no fireflies in Scotland. This
