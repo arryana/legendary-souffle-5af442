@@ -555,8 +555,9 @@
   // ---------- ants ----------
   let ants = [];
   function makeAnt(){
+    const spawnA = Math.random()*Math.PI*2, spawnR = Math.random()*10;  // the nest mouth has a width
     return {
-      x: colony.x, y: colony.y,
+      x: colony.x + Math.cos(spawnA)*spawnR, y: colony.y + Math.sin(spawnA)*spawnR,
       heading: Math.random()*Math.PI*2,
       state: 'search', // search | toFood | return
       wobble: Math.random()*Math.PI*2,
@@ -568,6 +569,22 @@
                 // than being indistinguishable from ordinary wandering
       walkPhase: Math.random()*10, // distance walked, in world px — drives the leg gait;
                                     // randomized start so a group of ants doesn't step in unison
+      /* NO TWO ANTS ARE THE SAME ANT, AND NONE OF THEM IS A CLOCK. Her report, Sep
+         2026: "all the ants move at the same speed. none ever stop. they don't pause,
+         wave around for a second, and take off in a different direction. they don't
+         pause, go a few steps, pause again. they don't act like real ants." Every one
+         of those was true -- there was one speed, and the only stop in the whole piece
+         was the beat at an obstacle. So each ant has its own pace, a surge that
+         wanders about it (an ant hurries and slackens within one walk), and a rest
+         clock of its own: it stops, works its antennae over the ground for a moment,
+         and then either carries on, sets off somewhere else, or does a few steps and
+         stops again. */
+      pace: 0.72 + Math.random()*0.56,     // this ant's own walking speed, 0.72-1.28 of the slider
+      surge: 1,                             // slow drift about that pace within a walk
+      nextRest: 40 + Math.random()*200,     // frames until it next stops of its own accord
+      afterRest: null,                      // what it does when the stop ends (set when the stop begins)
+      antPhase: Math.random()*Math.PI*2,    // its antennae's own rhythm, so a group doesn't wave in step
+      meetCooldown: 0,                      // frames until it will stop to greet another ant again
     };
   }
   function syncAntCount(){
@@ -609,11 +626,48 @@
     return turned;
   }
 
-  function stepAnt(a, dt){
-    const speed = 1.3 * speedMult * dt;
-    a.wobble += dt*0.15;
+  // an ant stopping of its own accord: a stop, then whatever it decides to do
+  // with it. Searching ants stop most; an ant carrying food home stops less
+  // often and for less time, and keeps its heading (home is home).
+  function startRest(a){
+    const carrying = a.state === 'return';
+    const long = Math.random() < 0.15;
+    a.pause = carrying ? 6 + Math.random()*16 : (long ? 50 + Math.random()*60 : 10 + Math.random()*36);
+    const stutter = !carrying && Math.random() < 0.38;   // go a few steps, stop again
+    a.afterRest = {
+      turn: !carrying && Math.random() < 0.6,            // take off in a different direction
+      next: stutter ? 6 + Math.random()*22 : (carrying ? 120 + Math.random()*300 : 90 + Math.random()*330),
+    };
+  }
+  function endRest(a){
+    const r = a.afterRest; a.afterRest = null;
+    if (!r) return;
+    if (r.turn){
+      a.heading += (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random()*1.8);
+      a.straightTimer = 40 + Math.random()*100;
+    }
+    a.nextRest = r.next;
+  }
 
-    if (a.pause > 0){ a.pause -= dt; return; }
+  function stepAnt(a, dt){
+    // the surge wanders about this ant's own pace and is pulled back toward it
+    a.surge += (Math.random()-0.5)*0.05*dt + (1-a.surge)*0.01*dt;
+    a.surge = Math.max(0.55, Math.min(1.45, a.surge));
+    const load = a.state === 'return' ? 0.88 : 1;   // carrying something is slower
+    const speed = 1.3 * speedMult * a.pace * a.surge * load * dt;
+    a.wobble += dt*0.15;
+    if (a.meetCooldown > 0) a.meetCooldown -= dt;
+
+    if (a.pause > 0){
+      a.pause -= dt;
+      if (a.pause <= 0) endRest(a);
+      return;
+    }
+
+    if (!a.climbing && !a.onTwig){
+      a.nextRest -= dt;
+      if (a.nextRest <= 0){ startRest(a); return; }
+    }
 
     if (a.onTwig){
       // walking the twig's own length rather than crossing straight over it
@@ -734,6 +788,59 @@
     }
     moveWithin(a, nx, ny);
     a.walkPhase += speed;
+  }
+
+  /* ANTS ARE BODIES. Her report, Sep 2026: "they also walk all over each other, and
+     through each other." There was no test of any kind between two ants -- each was a
+     point that moved, and the drawing was the only place they had a size. Two ants
+     that come within a body of one another are now held apart (each gives way by
+     half, and neither is pushed into an obstacle it could not walk into), and if
+     neither has just met someone they stop for a beat, antennae working, and the
+     searching one turns off a little -- which is what two ants meeting on a path
+     actually do. Ants up on a pebble or a twig are on a different level and are left
+     out of it, as is anything under the leaf. */
+  const MEET_R = 4.6;   // body units: a little under one ant's length
+  function meetAnts(){
+    const minD = MEET_R*antSizeMult;
+    for (let i=0;i<ants.length;i++){
+      const a = ants[i];
+      if (a.climbing || a.onTwig) continue;
+      for (let j=i+1;j<ants.length;j++){
+        const b = ants[j];
+        if (b.climbing || b.onTwig) continue;
+        let dx = b.x-a.x, dy = b.y-a.y;
+        let d = Math.hypot(dx,dy);
+        if (d >= minD) continue;
+        if (d < 0.01){ const t = Math.random()*Math.PI*2; dx = Math.cos(t); dy = Math.sin(t); d = 1; }
+        const push = Math.min(0.9, (minD-d)*0.5);
+        const ux = dx/d, uy = dy/d;
+        const ax = a.x-ux*push, ay = a.y-uy*push, bx = b.x+ux*push, by = b.y+uy*push;
+        if (!blockedAt(ax,ay)){ a.x = Math.max(4, Math.min(W-4, ax)); a.y = Math.max(4, Math.min(H-4, ay)); }
+        if (!blockedAt(bx,by)){ b.x = Math.max(4, Math.min(W-4, bx)); b.y = Math.max(4, Math.min(H-4, by)); }
+        // at the nest mouth ants pour past one another and nobody stops to say
+        // hello -- a crowd greeting a crowd in a doorway never clears (it didn't:
+        // the first version heaped every ant that came out of the nest on the
+        // doorstep). The push still holds them apart there; only the greeting is off.
+        const atNest = Math.hypot(a.x-colony.x, a.y-colony.y) < 34 || Math.hypot(b.x-colony.x, b.y-colony.y) < 34;
+        if (!atNest && a.meetCooldown <= 0 && b.meetCooldown <= 0 && a.pause <= 0 && b.pause <= 0){
+          a.meetCooldown = b.meetCooldown = 90 + Math.random()*90;
+          if (Math.random() < 0.6){
+            a.pause = 5 + Math.random()*12; a.afterRest = null;
+            b.pause = 5 + Math.random()*12; b.afterRest = null;
+          }
+          // the searching one gives way; a carrier keeps its line home
+          const ang = Math.atan2(dy,dx);
+          if (a.state !== 'return'){
+            const side = Math.sin(a.heading-ang) >= 0 ? 1 : -1;
+            a.heading += side*(0.4 + Math.random()*0.7); a.straightTimer = 30 + Math.random()*60;
+          }
+          if (b.state !== 'return'){
+            const side = Math.sin(b.heading-(ang+Math.PI)) >= 0 ? 1 : -1;
+            b.heading += side*(0.4 + Math.random()*0.7); b.straightTimer = 30 + Math.random()*60;
+          }
+        }
+      }
+    }
   }
 
   function render(){
@@ -973,7 +1080,13 @@
       }
       ctx.rotate(a.heading);
       const s = antSizeMult;
-      const col = a.state==='return' ? `rgba(154,85,189,${lightLevel})` : `rgba(24,16,10,${lightLevel})`;
+      // AN ANT CARRYING FOOD IS AN ANT CARRYING FOOD, not a purple ant. Her report,
+      // Sep 2026: "the ants shouldn't turn entirely purple when carrying lollipop back
+      // to the nest." It was drawn purple all over as a state colour; it carries a
+      // crumb of the sweet in its jaws now (drawn after the head, below) and is
+      // otherwise the same ant it was on the way out.
+      const col = `rgba(24,16,10,${lightLevel})`;
+      const carrying = a.state === 'return';
       ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineCap='round'; ctx.lineWidth = 0.32*s;
       // legs: jointed (origin -> knee -> foot) and walking an alternating tripod
       // gait — front+back on one side step together with the opposite side's
@@ -993,9 +1106,18 @@
           ctx.moveTo(originX,0); ctx.lineTo(kneeX,kneeY); ctx.lineTo(footX,footY);
         }
       }
-      // antennae from the head
-      ctx.moveTo(2.35*s,0); ctx.lineTo(3.75*s,-1.3*s);
-      ctx.moveTo(2.35*s,0); ctx.lineTo(3.75*s, 1.3*s);
+      // antennae from the head -- and they MOVE. Walking, each sweeps a little with
+      // the stride; stopped, the ant works them over the ground, each on its own
+      // rhythm (about 4 a second), which is what a paused ant is visibly doing and
+      // is the difference between "stopped" and "frozen". A carrier holds them
+      // forward and lower, over the load.
+      const stopped = a.pause > 0;
+      const t = a.wobble*3 + a.antPhase;
+      const sweepL = stopped ? 0.55*Math.sin(t) : 0.14*Math.sin(gaitBase*Math.PI*2);
+      const sweepR = stopped ? 0.55*Math.sin(t*1.23 + 1.9) : -0.14*Math.sin(gaitBase*Math.PI*2);
+      const base = carrying ? 0.55 : 0.75, len = 1.9*s;
+      ctx.moveTo(2.35*s,0); ctx.lineTo(2.35*s + Math.cos(-base+sweepL)*len, Math.sin(-base+sweepL)*len);
+      ctx.moveTo(2.35*s,0); ctx.lineTo(2.35*s + Math.cos( base+sweepR)*len, Math.sin( base+sweepR)*len);
       ctx.stroke();
       // body, rear to front: gaster (large), thorax, head — left with a bare
       // gap rather than a filled bit between gaster and thorax, so the waist
@@ -1003,6 +1125,20 @@
       ctx.beginPath(); ctx.ellipse(-2.15*s,0, 1.85*s,1.55*s, 0,0,Math.PI*2); ctx.fill();
       ctx.beginPath(); ctx.ellipse( 0.55*s,0, 0.95*s,0.68*s, 0,0,Math.PI*2); ctx.fill();
       ctx.beginPath(); ctx.ellipse( 2.35*s,0, 1.15*s,0.85*s, 0,0,Math.PI*2); ctx.fill();
+      if (carrying){
+        // a crumb of the candy held out in front of the head, the lollipop's own
+        // colours, with the one small highlight that makes it read as a glossy
+        // bit of boiled sugar rather than a purple dot
+        const cr = 0.95*s, cx = 3.6*s;
+        ctx.beginPath(); ctx.arc(cx, 0, cr, 0, Math.PI*2);
+        const g = ctx.createRadialGradient(cx-cr*0.35, -cr*0.35, cr*0.1, cx, 0, cr*1.05);
+        g.addColorStop(0, `rgba(201,163,224,${lightLevel})`);
+        g.addColorStop(0.5, `rgba(154,85,189,${lightLevel})`);
+        g.addColorStop(1, `rgba(92,44,120,${lightLevel})`);
+        ctx.fillStyle = g; ctx.fill();
+        ctx.beginPath(); ctx.arc(cx-cr*0.3, -cr*0.3, cr*0.22, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255,255,255,${0.7*lightLevel})`; ctx.fill();
+      }
       ctx.restore();
     }
     // an ant currently inside the leaf's footprint is simply skipped here
@@ -1032,6 +1168,7 @@
     lastT = t;
     decayTrail(dt);
     ants.forEach(a => stepAnt(a, dt));
+    meetAnts();
     render();
     requestAnimationFrame(loop);
   }
