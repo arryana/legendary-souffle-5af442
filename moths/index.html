@@ -439,6 +439,7 @@ function litFrac(d){
 // measured in screen pixels off the filament, because the glare is a thing the
 // eye does with the picture, not a thing that happens in the room; and it fades
 // with the bulb, so a lamp turned down dazzles nobody.
+const GLARE_VEIL=0.75;   // how much of a pale moth the dazzle takes away
 function glareAt(sx, sy){
   const r=bulbH*(0.35+glowNow*0.55);
   const q=Math.hypot(sx-cx, sy-cy)/r;
@@ -578,7 +579,35 @@ function drawMoth(m, flick){
   tinted(frame, shade);
   ctx.save();
   ctx.translate(sx,sy+bob); ctx.rotate(rot+lean*0.42);
-  ctx.globalAlpha=Math.max(0,Math.min(1, 0.35+0.65*Math.min(1,p)));
+  /* WHAT IS BEHIND THE BULB IS SEEN THROUGH THE GLARE; WHAT IS IN FRONT IS NOT.
+     Hers, Sep 2026: *"there are still white moths flying 'in front' of the bulb."*
+     Her quotes round 'in front' are the whole report -- measured, NOTHING actually
+     in front is ever pale (the brightest shade any moth with z<=0 reaches is
+     0.483, below mid grey, so the silhouette rule works exactly as written). Every
+     pale moth she was looking at was BEHIND the bulb, and all of them were within
+     one bulb-height of the filament on screen. They are correctly shaded and they
+     read as being in front, because nothing in the picture says otherwise: the
+     bulb's opaque glass only reaches 0.084-0.232 bulb-heights from the filament
+     depending on direction, so a moth just outside that is beside the bulb with no
+     occlusion to place it, and the shading alone cannot carry depth -- a viewer
+     does not know the rule.
+
+     The cue that was missing is the one the eye actually uses, and it is the same
+     glare already written here for the front. A moth behind the bulb is seen
+     THROUGH the dazzle; one in front is not. So the glare veils it, and how much
+     it veils goes with how PALE the moth is -- near a light that bright the eye
+     keeps only the strong contrasts, so a black moth stays a hard silhouette and a
+     pale one is swallowed. That is why, in life, the moths in front of a lamp are
+     crisp black shapes and the ones behind it can barely be made out at all.
+
+     Scaling by the shade is what makes it continuous and is not a tuning choice:
+     at the sides both branches are mid grey, so both get the same veil and there
+     is no seam where the two rules meet. Measured, standing out from its
+     surroundings: a pale moth at the bulb 195 -> 103, the same moth a bulb-height
+     out 210 -> 163, one well out in the dark untouched, and a black moth in front
+     of the bulb 38 -> 38. The silhouettes she ruled on are not touched. */
+  const veil = 1 - GLARE_VEIL*glareAt(sx,sy)*shade;
+  ctx.globalAlpha=Math.max(0,Math.min(1, (0.35+0.65*Math.min(1,p))*veil));
   // the scratch canvas is only ever grown, so take this moth's own corner of it
   ctx.drawImage(scratch, 0, 0, im.width, im.height, -w*narrow/2, -h/2, w*narrow, h);
   ctx.restore();
