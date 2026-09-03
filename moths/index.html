@@ -407,7 +407,34 @@ function project(m){
   // the bulb at -0.21, so a moth right out at the edge of the light was drawn the
   // same size as one at the glass beside it.
   const ex=m.x, ey=m.y, ez=FOCAL+m.z;
-  const q=FOCAL/Math.max(0.35, Math.hypot(ex,ey,ez));
+  /* AND THE NEAREST FEW ARE HELD BACK. Hers, Sep 2026: *"the largest 'closest'
+     moths are a bit too big. instead of being clear they're a bit jarring."*
+     Both halves of that are right and the measurement says so: size really does
+     track distance from the eye (-0.88 in log terms) and the biggest-drawn tenth
+     really are the nearest tenth, so the readout she asked for is working -- it
+     is the AMOUNT at the top that overshoots. Measured over 60,000 samples, a
+     moth's drawn height runs 18px at the far end, 32 at the median and 44 at the
+     ninetieth, and then the tail runs away to 97px, nearly a QUARTER of the
+     bulb's own height and three times the median, when one strays to 2.13
+     bulb-heights from the eye where the bulb sits at 5.2. It is about 1% of the
+     time, which is exactly why it reads as a lurch rather than as depth: rare,
+     sudden and much bigger than anything else on screen.
+
+     Standing further back (raising FOCAL) was measured as the alternative and is
+     the more obviously physical one, but it is much blunter -- it compresses the
+     whole range, weakens the depth readout everywhere, and moves where every moth
+     lands on screen, to fix a 1% tail. This is fireflies' soft ceiling instead,
+     for the same reason and in the same shape: exactly y=x below the knee, so the
+     median and the ninetieth percentile come back UNCHANGED at 30 and 39px, and
+     only the excursions bend. Measured after: biggest 73 -> 55px on the same
+     sample, nothing at all over 60px where 1.04% of the time was before, and size
+     still tracks distance at -0.862 against -0.881. Don't reach for the 0.35
+     clamp below thinking it does this job -- it exists to stop a divide by
+     nothing and is never reached, the closest any moth ever came being 2.13. */
+  const NEAR_KNEE=1.15, NEAR_CEIL=1.55;
+  const qRaw=FOCAL/Math.max(0.35, Math.hypot(ex,ey,ez));
+  const q = qRaw<=NEAR_KNEE ? qRaw
+          : NEAR_CEIL-(NEAR_CEIL-NEAR_KNEE)*Math.exp(-(qRaw-NEAR_KNEE)/(NEAR_CEIL-NEAR_KNEE));
   return {sx:cx+m.x*U()*p, sy:cy+m.y*U()*p, p, q};
 }
 

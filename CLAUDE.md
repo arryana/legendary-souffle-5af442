@@ -1048,6 +1048,34 @@ that a translucent bulb was letting moths show through it (its glass is **78.8% 
 the draw order is already behind → bulb → in front), and that the moth was drawn **brighter than the
 bulb** (it peaks at **193** against the bulb's 255, so it is not).
 
+**AND THE NEAREST FEW ARE HELD BACK**, hers, Sep 2026: *"the largest 'closest' moths are a bit too
+big. instead of being clear they're a bit jarring."* Both halves are right and the measurement says
+so — size really does track distance from the eye (**-0.88** in log terms) and the biggest-drawn tenth
+really **are** the nearest tenth (61% overlap), so the readout works and it is the **amount** at the
+top that overshoots. Over 60,000 samples a moth's drawn height runs 18px at the far end, **32 at the
+median, 44 at the ninetieth** — and then the tail runs away to **97px, nearly a quarter of the bulb's
+own height and three times the median**, when one strays to 2.13 bulb-heights from the eye where the
+bulb sits at 5.2. It happens about **1% of the time**, which is exactly why it reads as a lurch rather
+than as depth: rare, sudden, and far bigger than anything else on screen.
+
+Standing further back (raising `FOCAL`) was measured as the alternative and is the more obviously
+physical move, but it is much blunter — it compresses the whole range, weakens the depth readout
+everywhere, and moves where every moth lands, to fix a 1% tail. **This is fireflies' soft ceiling
+instead**, in the same shape and for the same reason: exactly y=x below the knee, so the median and
+the ninetieth come back **unchanged at 30 and 39px** and only the excursions bend
+(`NEAR_KNEE=1.15, NEAR_CEIL=1.55` on `q`). Measured after: biggest **73 → 55px** on the same sample,
+**nothing at all over 60px** where 1.04% of the time was before, and size still tracks distance at
+**-0.862** against -0.881. On the staged worst case, the near moth goes **81 → 51px** and the far one
+is **22px in both**. Frame rate at 6x slower with five moths 13.5fps, unchanged.
+
+**Don't reach for the `Math.max(0.35, ...)` clamp thinking it does this job** — it is there to stop a
+divide by nothing and is never reached; the closest any moth ever came in 60,000 samples was 2.13.
+
+**And don't trust a short sample for this.** The first run of 9,000 samples reported the biggest moth
+at 52px and a 2.6x spread, and was simply too short to catch the tail — the real figures are 97px and
+5.4x. The excursions are what she is complaining about, and they are precisely the part a quick
+measurement misses; she had been watching it, which is why she saw them.
+
 **Size shows how
 far a moth is from the EYE, and it cannot show how far it is from the bulb** — her follow-up was
 *"can you also alter the size of the moth on a scale to show its distance?"*, and the honest half of
