@@ -42,6 +42,33 @@ state, not a stalled one.** Don't hold a change back waiting for the look, don't
 around a tool she hasn't got, and don't propose a rebuild on aesthetic grounds — `birds`' row and
 `rain`'s both record her doing that arithmetic herself and landing on *later, with the right tool*.
 
+**WHICH TOOL MAKES WHAT, and the one case where the deadlock is false.** Hers, Sep 2026, on
+`gyre`: *"if i could get the stupid fucking thing to make me realistic brass gears that were all of
+the right size and teeth spacing, i'd do that too... gemini is too ... creative... to follow my
+instructions, and i'm too ignorant to use an artistic tool myself to do it. so it's deadlocked where
+it is. musebox was exactly the same, except that we managed to hammer a final image you could alter
+sufficiently out of gemini in the end."*
+
+**The two cases are not the same, and the difference is the useful part.** `musebox`'s disc is a
+photographable OBJECT with no precision constraint — round, face-on, engraved rings, and whatever
+came back could be measured afterwards and the code fitted to it (the eight note rings were read off
+the picture, not imposed on it). **A gear cannot be treated that way, because a gear has to MESH.**
+Its module, tooth count, pressure angle and involute profile are fixed by the simulation it is part
+of, and two gears that do not agree on them cannot turn together. So the thing she is asking an image
+model for — *the right size and teeth spacing* — is the one thing an image model has no mechanism to
+hold. **That is a category limit and not a prompting problem: more attempts at the brief will not
+get there**, and this is written down so nobody spends another session trying.
+
+So alongside her rule from `chimes` — ***draw what is smooth, photograph what is textured*** — there
+is a third: ***generate what is geometric.*** The gyre gears are already generated, correctly, from
+the maths in `gears.md`. What is actually missing from them is not geometry but **material**, and
+material is shading rather than art. **There is a precedent on this site and it is hers:** `roller`'s
+bean was made convincingly glossy entirely by shading arithmetic — a long soft sheen, ONE small hard
+specular, a bounce light up the shaded edge — and she passed it. If realistic brass on gyre is ever
+wanted, that is the route, and it does not need Gemini or Blender. **It is parked unless she asks
+for it** — she has said the learning is on her at the moment, and this is recorded as a way out that
+exists, not as a proposal.
+
 **And the constraint on all of it:** *"i'm trying to keep the process manageable as a rank
 beginner."* That is a real limit on throughput and it is hers to set, not a thing to work around.
 Keep changes small and self-contained, one idea at a time; don't stack proposals, don't hand her a
