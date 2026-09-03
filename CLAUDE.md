@@ -343,7 +343,28 @@ candler's 🧘, both of which passed on it — so these were three years past an
 would have shown as empty boxes if missing. And `color:var(--brass)` never reached any of the three
 anyway, because a colour emoji is a bitmap the font hands over whole and takes no colour from CSS:
 musebox's white rabbit again. 🍃 renders everywhere and was drawn along with them, since two brass
-outlines beside one green emoji is worse than either. |
+outlines beside one green emoji is worse than either.<br>**Three of hers, Sep 2026, all from watching
+it.** *"the ants shouldn't turn entirely purple when carrying lollipop back to the nest"* — a carrier
+was painted purple all over as a state colour; it carries a **crumb of the sweet in its jaws** now, the
+lollipop's own colours with one highlight, and is otherwise the same ant. *"all the ants move at the
+same speed. none ever stop. they don't pause, wave around for a second, and take off in a different
+direction. they don't pause, go a few steps, pause again."* Measured, every word was true: all twenty
+within 0.5% of one pace, and **zero stops in twenty seconds** — the only pause in the piece was the beat
+at an obstacle. Each ant has its own `pace` (0.72–1.28), a `surge` that wanders within a walk, and a
+rest clock of its own (`startRest`/`endRest`): it stops, works its antennae over the ground at about
+4Hz — **the antennae move now, walking and stopped, which is the difference between stopped and
+frozen** — then carries on, turns off (60%), or takes a few steps and stops again (38%). Carriers stop
+less, for less time, and keep their line home. About **one in five stopped at any moment**, 22 stops
+an ant a minute; if that ever reads as too much or too little, the interval in `startRest` is the one
+number. *"they also walk all over each other, and through each other."* They were points; **they are
+bodies now** (`meetAnts`, `MEET_R`): two within a body of each other are eased apart, neither into an
+obstacle, and if neither has just met someone they stop for a beat and the searching one turns off.
+Ants up on a pebble or twig are on another level and are left out. **No greeting within 34px of the
+nest** — the first version stopped every ant coming out of the nest to greet the others and heaped
+them on the doorstep, caught in my own first screenshot; at the nest mouth they pour past. Deep
+overlaps (centres under 3px apart) in 900 frames: **35 → 0**. Her verdict the same evening, on ants,
+fireflies and moths together: ***"i would consider fireflies, moths, and ants all to be significantly
+improved."*** Not a Done mark — she has not run any of the three over the four machines. |
 | `windower/index.html` | ✅ | ✅ | A window onto the sky that follows the visitor's **local time & location** (uses geolocation + the clock)<br>**Done** once the sill light stopped being too bright on dull days and moonless nights.<br>Fourth piece
 through her four-device test, Aug 2026. **`windower-frame.png`'s centre pane was cut out of a light
 background** and kept a 3px white halo all the way round it — the same family of fault as the shelf plates,
