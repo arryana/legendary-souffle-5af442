@@ -888,6 +888,13 @@ it: one pass reported the far glow *brighter* than the near, another reported a 
 after a change that only dimmed her. Call `drawFlash` at the exact alphas `drawFemales` would use,
 on a cleared sky, and diff against the same box with nothing drawn.
 
+**Her verdict on both of the September changes, after living with it: *"i've been watching fireflies
+since, and it's vastly improved."*** That covers the flash no longer burning out to white and the
+placed females seen through the grass, and it is the half neither could be checked from here — a
+still cannot show a flash swelling, and the grass dimming had to be judged on a moving field rather
+than on the two crops it was previewed with. **It is NOT a Done mark**: she has still not run
+fireflies over the four machines, and only she gives that.
+
 **WHY THIS PIECE IN PARTICULAR, and it should be read before touching it.** Aug 2026,
 unprompted: ***"i really miss fireflies, living in scotland. it's nice to have digital ones. it
 matters to me a lot that they're... authentic feeling."*** There are no fireflies in Scotland. This
