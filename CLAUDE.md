@@ -2265,6 +2265,34 @@ is rarer than the fidelity is. Anything proposed here that makes leaving cost so
 a streak, a saved run to finish, a thing that escalates, a payoff withheld until later — is
 refused on this ground alone, whatever else recommends it.
 
+**AND THE POSITIVE HALF, WHICH IS STRONGER THAN THE EXIT COST AND CAME LATER.** Sep 2026, and it is
+the clearest statement of the aim she has given: ***"when it's done i want any parent to be able to
+load any one on to any kid's tablet. no traps. no emotional wind up. there are answers, but only to
+those observant and patient. there are patterns, and space to poke without breaking the internal
+structures which benefit a person. it doesnt... exploit them."***
+
+The exit cost above is a **negative** property — nothing is lost when the tablet goes down. This is a
+positive one: **patience and observation are the way IN.** The only route to what is in these pieces
+is the exact faculty a feed erodes, so the shelf is not neutral ground, it is the opposite exercise.
+That reframes the *Exploring is the point* rule below: withholding explanation is not only respect
+for curiosity, it is the mechanism — an answer that can only be reached by attending is a repetition
+of attending.
+
+**Why she holds it that strongly, in her own words, and it is a developmental argument rather than an
+aesthetic one:** *"a kid having nothing to watch becomes creative in that gap. they become observant.
+they become patient. they become present."* And: it erodes those *"actively"* — her word, and the
+stronger claim. None of those four is taught; they only develop by being used, so a gap that is
+always filled means the capacity never has to run. **Boredom is a prompt and not an absence** — the
+discomfort is the instruction that sends a child to find something, and closing every gap deletes the
+search that was supposed to follow. Every gap closed also teaches that gaps get closed, so the
+tolerance for an open one shrinks with practice.
+
+**The *any parent, any tablet* bar is already met and it is worth a session knowing that**: no
+account, no purchase, nothing collected, nothing that escalates, nothing that breaks if a child stops
+in the middle. What is outstanding on it is not that property but her four-device programme. Anything
+proposed that would cost the site that bar — a sign-in, a saved profile, a thing that has to phone
+home, a reward that arrives late — fails on this ground before any other argument is reached.
+
 **These are instruments she uses, not exhibits — and that is the reason for the whole
 fidelity standard.** Aug 2026, unprompted: she uses the **candle timer all the time**, in
 place of an ordinary alarm; she **checks the weather with `windower` and `galileo`**; she
