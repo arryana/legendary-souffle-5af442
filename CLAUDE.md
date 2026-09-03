@@ -2318,9 +2318,29 @@ The structural version is useful only as a way of predicting that feeling: **a d
 The game *withholds* something; a piece would have them *make* something, and if they never return,
 nothing has been taken. It also marks a real split down the shelf — some pieces are for **absorption**
 (`rain`, `bowl`, `warmler`, `fireflies`) and should leave nothing behind them at all; some are for
-**construction** (`gyre`, `musebox`, `chimes`, `kaleidoscope`), where leaving someone with a plan is
+**setting** (`gyre`, `musebox`, `chimes`, `kaleidoscope`), where leaving someone with a plan is
 the piece working. Don't give an absorption piece something to take away; that is how one acquires an
 exit cost.
+
+**"Setting" and not "building", which is her correction to that word and worth keeping**: *"mine
+aren't really building games. it could be argued that muse is building, but it's a limited toy.
+toktok and toca boca are more like.. into to minecraft and such."* Eight notes on one disc; a train
+that either meshes or it doesn't. You configure a small bounded mechanism rather than assembling a
+world — and **the boundedness is the point, not a shortfall.** A limited toy can be exhausted and put
+down. An open world always has more in it, which is exactly where the acquisition loop lives and what
+makes leaving cost something. Don't let a piece here grow unbounded on the grounds that more would be
+generous.
+
+**And her cut against the good calm apps is sharper than any of mine, so use hers.** Sep 2026, after
+looking at Pok Pok Playroom and Toca Boca herself: *"they're a lot more like... digital colorforms
+(the old stick-on things) and simplified building games or paper dolls."* Those are **arrangement** —
+you compose a scene from supplied parts and nothing underneath has a mechanism, so there is nothing to
+discover. Good toys, different category. What separates this shelf is that things go on behaving
+whether or not anyone touches them, by rules a person could work out; the fidelity standard above is
+what does the separating, not the absence of a subscription. (A session had reached for the pricing
+difference first — Pok Pok is $4/month, Toca Boca World sells content — which is true and much the
+weaker argument.) Note the middle case: `bowl` and `kaleidoscope` ARE arrangement pieces, and what
+saves them is that what answers is real — drop a stone and the water rocks the way water rocks.
 
 **These are instruments she uses, not exhibits — and that is the reason for the whole
 fidelity standard.** Aug 2026, unprompted: she uses the **candle timer all the time**, in
