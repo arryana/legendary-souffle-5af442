@@ -2293,6 +2293,35 @@ in the middle. What is outstanding on it is not that property but her four-devic
 proposed that would cost the site that bar — a sign-in, a saved profile, a thing that has to phone
 home, a reward that arrives late — fails on this ground before any other argument is reached.
 
+**HOW IT LEAVES THE CHILD FEELING IS THE TEST.** Hers, Sep 2026: ***"if i succeed, those kids will
+drift to sleep with the idea of what gyre configuration they can come up with to make the light the
+intensity they want. i want them to think about what music they'll try on muse. that's not the same
+feeling as 'i did/didn't get to that level/fight that boss...'"*** Answered structurally, she
+corrected it twice — ***"to me the important part is how it leaves the kid feeling"*** — and then gave
+the sentence this file should keep:
+
+> ***"one is curious and putting-the-brain-away-neatly. the other is fighting their feelings until
+> they're worn out."***
+
+**So the exit-cost rule does NOT mean a piece may not be memorable.** Both of those follow a child to
+bed. One is closing the day down in order with something pleasant left out for tomorrow; the other is
+not falling asleep at all but *running out* — worn down into it, having lost a fight with feelings the
+game manufactured.
+
+**And her own frame for it, which is the least novel thing about this project and counts in its
+favour:** *"this is what people used to do with bedtime stories."* A bedtime story asks nothing,
+cannot be failed, loses nothing if the child falls asleep halfway, and exists to send them off with
+something gentle to turn over. Nobody derived that from principles. The tablet displaced it; the
+shelf puts the function back on the machine that took it.
+
+The structural version is useful only as a way of predicting that feeling: **a debt is not a plan.**
+The game *withholds* something; a piece would have them *make* something, and if they never return,
+nothing has been taken. It also marks a real split down the shelf — some pieces are for **absorption**
+(`rain`, `bowl`, `warmler`, `fireflies`) and should leave nothing behind them at all; some are for
+**construction** (`gyre`, `musebox`, `chimes`, `kaleidoscope`), where leaving someone with a plan is
+the piece working. Don't give an absorption piece something to take away; that is how one acquires an
+exit cost.
+
 **These are instruments she uses, not exhibits — and that is the reason for the whole
 fidelity standard.** Aug 2026, unprompted: she uses the **candle timer all the time**, in
 place of an ordinary alarm; she **checks the weather with `windower` and `galileo`**; she
