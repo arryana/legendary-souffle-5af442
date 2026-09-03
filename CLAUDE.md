@@ -57,7 +57,14 @@ Its module, tooth count, pressure angle and involute profile are fixed by the si
 of, and two gears that do not agree on them cannot turn together. So the thing she is asking an image
 model for — *the right size and teeth spacing* — is the one thing an image model has no mechanism to
 hold. **That is a category limit and not a prompting problem: more attempts at the brief will not
-get there**, and this is written down so nobody spends another session trying.
+get there**, and this is written down so nobody spends another session trying. She tried
+a great many times, and **the failure list is itself the diagnosis** — hers: *"it either made the
+gears the wrong size, wrong teeth, weird holes in the middle, overlapping, or in some other way not
+useful."* Every item there is a **number or a relationship** and not one of them is a look: it never
+returned an ugly gear, it returned handsome gears that were wrong. The bore is the clearest tell —
+a gear's centre hole is where the axle goes and its size is determined, so a model with no notion
+that the hole is *for* anything draws a plausible one; and overlap is the same blindness to two
+gears being solid objects that cannot share a space.
 
 So alongside her rule from `chimes` — ***draw what is smooth, photograph what is textured*** — there
 is a third: ***generate what is geometric.*** The gyre gears are already generated, correctly, from
