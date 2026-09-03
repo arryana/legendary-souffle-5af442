@@ -22,6 +22,35 @@ This file tells Claude Code how to work on this site. Read it first, every sessi
 
 ---
 
+## How a piece gets made, and what my part in it is
+
+Hers, Sep 2026: ***"starting with a concept, brief, you making a working prototype, then using
+gemini to make it prettier has been really functional so far."*** Four steps, and only the third
+is mine:
+
+1. **The concept** — hers, always.
+2. **The brief** — hers. `musebox`'s row records what a good one looks like and what it costs to
+   skip: four images, one object each, dead face-on, on plain black, nothing else in frame. When a
+   supplied picture is wrong for the job, **say so and specify the right one; do not repair it.**
+3. **A working prototype** — mine. *Working* is the operative word, not finished and not pretty.
+4. **Prettier** — hers, with Gemini, from her own photographs and generations.
+
+**And her priority between the two, which settles a lot:** *"moths, birds, rain, smoke, and maybe
+one or two others would -really- benefit from proper animation. but they all work, and that part
+matters to me most at the moment."* So **a piece that works and is not yet beautiful is in a good
+state, not a stalled one.** Don't hold a change back waiting for the look, don't offer to hand-draw
+around a tool she hasn't got, and don't propose a rebuild on aesthetic grounds — `birds`' row and
+`rain`'s both record her doing that arithmetic herself and landing on *later, with the right tool*.
+
+**And the constraint on all of it:** *"i'm trying to keep the process manageable as a rank
+beginner."* That is a real limit on throughput and it is hers to set, not a thing to work around.
+Keep changes small and self-contained, one idea at a time; don't stack proposals, don't hand her a
+list of options to adjudicate, and don't open a second front while she is in the middle of
+something. A session that produces four careful changes she has actually looked at has done better
+than one that produces twelve she has not.
+
+---
+
 ## What this site is
 
 **sagne** is a small collection of beautifully-made, standalone interactive web pieces —
