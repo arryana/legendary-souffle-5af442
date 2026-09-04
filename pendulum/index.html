@@ -478,10 +478,33 @@
     if (cut > 0) trail.splice(0, cut);
     if (trail.length < 2) return;
     ctx.lineCap = 'round';
+    /* A FRESH GROOVE IS CUT, NOT PAINTED ON. Hers, 4 Sep 2026: "it has stopped
+       leaving trails." The trail was still being drawn every frame — measured, it
+       never stopped — but it was one pale line in the sand's own colour, which
+       worked while the swept ground was dark and stopped working the moment the
+       scouring earlier that day made that ground pale and busy. Light on light.
+       So it is drawn as what it is: a narrow dark core, which is the depression
+       the bob has just dragged through the sand, with the old pale line kept
+       UNDER it and a shade wider as the lip of displaced grain. The pale lip
+       carries it on bare floor, where a dark groove would be invisible; the dark
+       core carries it over worked ground, where the pale one was lost. It reads
+       on both, which is the whole point — at the true rate the bob spends its
+       time retracing one groove across ground it has already worked.
+       Nothing accumulates here: this is the live canvas, redrawn every frame, so
+       it cannot pile up or depend on the frame rate the way the sand layer can. */
     for (let i=1; i<trail.length; i++){
       const k = i/(trail.length-1);
-      ctx.strokeStyle = 'rgba(233,217,168,'+(0.34*k*k).toFixed(3)+')';
-      ctx.lineWidth = 0.6 + 2.0*k;
+      ctx.strokeStyle = 'rgba(233,217,168,'+(0.30*k*k).toFixed(3)+')';
+      ctx.lineWidth = 1.4 + 2.6*k;
+      ctx.beginPath();
+      ctx.moveTo(trail[i-1].x, trail[i-1].y);
+      ctx.lineTo(trail[i].x, trail[i].y);
+      ctx.stroke();
+    }
+    for (let i=1; i<trail.length; i++){
+      const k = i/(trail.length-1);
+      ctx.strokeStyle = 'rgba(38,30,18,'+(0.46*k*k).toFixed(3)+')';
+      ctx.lineWidth = 0.5 + 1.5*k;
       ctx.beginPath();
       ctx.moveTo(trail[i-1].x, trail[i-1].y);
       ctx.lineTo(trail[i].x, trail[i].y);
