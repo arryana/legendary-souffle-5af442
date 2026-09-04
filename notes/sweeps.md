@@ -84,4 +84,6 @@ inside the generated `shelf-tags` block, so any change to it goes through `tools
 lands on all twenty pages, twelve of which she has already passed — a wide risk for a cosmetic fault
 in a band of window heights none of her four devices occupies. If it is ever to be fixed, the lever
 is the resting `opacity`, not the shadow (the shadow is already there); `.85` was tried and is
-crisper but changes every page's disc, so it wants her eye first.
+crisper but changes every page's disc, so it wants her eye first. **Put to her with the three
+pictures on 4 Sep 2026 and closed: *"yeah, i think it's probably left better as it is"*.** So this
+is now her call rather than an open item, and it should not come back as a proposal.
