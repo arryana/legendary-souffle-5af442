@@ -258,3 +258,13 @@ flash timing, the scatter, the per-firefly rhythms, the turning radius, the roun
 the surge, and the transparency ladder (0.55 solid → 0.46 → 0.34 translucent → **0.17**, each step
 hers). If a later session is tempted to adjust any of it on the strength of a measurement, that is
 the thing to weigh it against.
+
+**DONE — her call, 4 Sep 2026**: *"i'd even go more and say fireflies is done."* Given unprompted,
+the day after the flash and grass work, and it is the mark the two earlier verdicts in this file were
+explicitly NOT — *"perfect. it's perfect."* was about the look and behaviour, and *"significantly
+improved"* was about the September pass. This one is the Done column. **It does not cover the four
+machines**: fireflies has still not been run over them, and natura was left until last on purpose
+because these four animate continuously and want sitting with through a whole dusk-to-night cycle on
+each machine. So the mark and the device programme are separate here, as they are for lamp, pendulum,
+musebox and chimes. Nothing found on 4 Sep argues against it: the two tickboxes and the location flag
+measured 42x43, 43x43 and 36x41 under a thumb, the last at its limit rather than neglected.
