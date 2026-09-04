@@ -139,26 +139,26 @@ grow back. Her call, 3 Sep 2026: *"we can always cache it and use it for referen
 | File | On landing page? | Done? | What it is, and where it stands |
 |------|:---:|:---:|------------|
 | `index.html` | — | — | Landing page: five shelves on a dark wall ("sagne"), all 20 pieces. `notes/wall.md` |
-| `candler/index.html` | ✅ | ✅ | *Sagne Candle* — an interactive candle (`candler_5.html` is an unlinked alternate). **Done** and through the four machines; the first piece through that test and the standard for the rest. She uses it daily in place of an alarm. `notes/candler.md` |
-| `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a pebble, disc or jellybean stone. **Done**, through the four machines. `notes/roller.md` |
+| `candler/index.html` | ✅ | ✅ | *Sagne Candle* — an interactive candle (`candler_5.html` is an unlinked alternate). **Done** and **tested on every machine**; the first piece through that test and the standard for the rest. She uses it daily in place of an alarm. `notes/candler.md` |
+| `roller/index.html` | ✅ | ✅ | *Roller* — a wooden tray you tilt to roll a pebble, disc or jellybean stone. **Done**, **tested on every machine**. `notes/roller.md` |
 | `lamp/index.html` | ✅ | ✅ | An oil lamp: trim the wick and the flame follows. The fuel that burns down, her father's ten penny nail for tapping the level, the sputter, and the oil can are Aug 2026 builds; the ✅ was given for wick and flame and predates all of it. Sep 2026: the nail is **held by the point and tapped with the head**, her family's way round, and the card is recentred on the lamp. Not run on the machines since. `notes/lamp.md` |
-| `warmler/index.html` | ✅ | ✅ | A warming plate with selectable metal finishes (`warmler-picker-concept.html` is an unlinked concept). **Done**, through the four machines with nothing to repair. `notes/warmler.md` |
-| `rain/index.html` | ✅ | ✅ | Rain on glass. **Done** — *"as done as i can make it without an animating software"*: don't propose rebuilding it. Through the four machines. `notes/rain.md` |
+| `warmler/index.html` | ✅ | ✅ | A warming plate with selectable metal finishes (`warmler-picker-concept.html` is an unlinked concept). **Done**, **tested on every machine** with nothing to repair. `notes/warmler.md` |
+| `rain/index.html` | ✅ | ✅ | Rain on glass. **Done** — *"as done as i can make it without an animating software"*: don't propose rebuilding it. **Tested on every machine**. `notes/rain.md` |
 | `ant/index.html` | ✅ |  | Ants foraging on a tray, with a lollipop, pebble, leaf and twig. Sep 2026: a carrier holds a crumb rather than turning purple, each ant has its own pace and stops to antennate, and ants are bodies that give way; 4 Sep, off her report of a jerky halt, they run down into most stops and gather speed out of all of them. Her verdict on the first *"significantly improved"*; not run on the machines. `notes/ant.md` |
-| `windower/index.html` | ✅ | ✅ | A window onto the real sky at the visitor's time and place, with real weather on request. **Done**, through the four machines. Her ruling that a phone shows the same slice of sky stands; don't re-propose. `notes/windower.md` |
-| `galileo/index.html` | ✅ | ✅ | A Galileo thermometer on the real local temperature, three instruments reading 12–116°F. **Done**, through the four machines. `notes/galileo.md` |
-| `conometer/index.html` | ✅ | ✅ | A pinecone hygrometer on the real local humidity, live/manual toggle. **Done**, through the four machines. `notes/conometer.md` |
-| `gyre/index.html` | ✅ | ✅ | Meshable gears on a board driving a signal lamp (`gears.md` has the maths). **Done**, through the four machines. `notes/gyre.md` |
+| `windower/index.html` | ✅ | ✅ | A window onto the real sky at the visitor's time and place, with real weather on request. **Done**, **tested on every machine**. Her ruling that a phone shows the same slice of sky stands; don't re-propose. `notes/windower.md` |
+| `galileo/index.html` | ✅ | ✅ | A Galileo thermometer on the real local temperature, three instruments reading 12–116°F. **Done**, **tested on every machine**. `notes/galileo.md` |
+| `conometer/index.html` | ✅ | ✅ | A pinecone hygrometer on the real local humidity, live/manual toggle. **Done**, **tested on every machine**. `notes/conometer.md` |
+| `gyre/index.html` | ✅ | ✅ | Meshable gears on a board driving a signal lamp (`gears.md` has the maths). **Done**, **tested on every machine**. `notes/gyre.md` |
 | `birds/index.html` | ✅ |  | Birds on sagging wires against a sunset sky. Swept Aug 2026, otherwise untouched; waiting on her machines. `notes/birds.md` |
-| `bowl/index.html` | ✅ | ✅ | A bowl of water for floating things on; ten bowls, a breeze, an object picker. **Done**, through the four machines. A tap lifts a stone out, a drag moves it. `notes/bowl.md` |
+| `bowl/index.html` | ✅ | ✅ | A bowl of water for floating things on; ten bowls, a breeze, an object picker. **Done**, **tested on every machine**. A tap lifts a stone out, a drag moves it. `notes/bowl.md` |
 | `chimes/index.html` | ✅ | ✅ | Wind chimes you build: rod material, cord, count, length. Tuned to real notes, each material cut to its own lengths, her own photographed hanger and cords. **Done** 4 Sep 2026, *"barring adding my own sounds at some point"* — her own recordings are a change she may still want, not an open fault. Not run on the machines; test with the rods at DIFFERENT lengths. `notes/chimes.md` |
-| `chladni/index.html` | ✅ | ✅ | A Chladni plate: sand, salt, lycopodium or flour on metal. **Done**, through the four machines. A cornflour suspension is parked, her call; don't re-propose it on this renderer. `notes/chladni.md` |
+| `chladni/index.html` | ✅ | ✅ | A Chladni plate: sand, salt, lycopodium or flour on metal. **Done**, **tested on every machine**. A cornflour suspension is parked, her call; don't re-propose it on this renderer. `notes/chladni.md` |
 | `fireflies/index.html` | ✅ | ✅ | A field at dusk where you place fireflies; real dusk-to-night sky, bats. Rebuilt entirely on her reports (she is remembering real ones; there are none in Scotland). **Done** 4 Sep 2026, after *"perfect. it's perfect."* on the look and behaviour and *"significantly improved"* on the Sep flash and grass work. Not run on the machines. **Read its notes before changing anything.** `notes/fireflies.md` |
-| `kaleidoscope/index.html` | ✅ | ✅ | Real photographed objects on a tray, mirrored live; turn the ring. **Done**, through the four machines. Scrolling is the small-screen answer she took. `notes/kaleidoscope.md` |
+| `kaleidoscope/index.html` | ✅ | ✅ | Real photographed objects on a tray, mirrored live; turn the ring. **Done**, **tested on every machine**. Scrolling is the small-screen answer she took. `notes/kaleidoscope.md` |
 | `moths/index.html` | ✅ |  | Moths losing their bearings on a hanging bulb; shade is glare in front and distance behind. Built Aug 2026 from her brief, shading rules hers Sep 2026, verdict *"significantly improved"*; not run on the machines. The slowest piece on a Kindle-speed processor (about 14fps at 6x slower). `notes/moths.md` |
 | `musebox/index.html` | ✅ | ✅ | A music box: set pins on the disc. Rebuilt on her Gemini pictures (*"to my eye, yes. yes it is."*); four voices, the guitar a real plucked string now in the piano's slot at her ask. **Done** 4 Sep 2026, *"barring adding my own sounds at some point"* — her own recordings are a change she may still want, not an open fault. Not run on the machines. `notes/musebox.md` |
 | `pendulum/index.html` | ✅ | ✅ | A Foucault pendulum with a real-world-time checkbox (sidereal rate) and a locator globe. **Done**; the checkbox and the pin fix postdate the mark. Whether the swept sand reads as sand is still hers: *"it's better"*, not settled. `notes/pendulum.md` |
-| `storm/index.html` | ✅ | ✅ | A storm glass on the real changing weather, with a barometer. **Done**, through the four machines; the piece that finished instrumenta. `notes/storm.md` |
+| `storm/index.html` | ✅ | ✅ | A storm glass on the real changing weather, with a barometer. **Done**, **tested on every machine**; the piece that finished instrumenta. `notes/storm.md` |
 | `crystal.html` | — | — | A crystal (not linked from the landing page) |
 | `chest.html`, `chest-open.html` | — | — | Dead apothecary-chest drafts she turned down; kept as a record, not linked |
 
@@ -364,16 +364,24 @@ undid** in one sentence.
 
 **The programme is hers**: a Rocketbook page per piece, each tested for what it does on **all
 settings and at all times of day**, on four machines — her Mac (*frelliple*), a **Windows tablet**,
-a **Kindle Fire** and a **Unihertz Jelly Star** (a 3in phone, about 240px across). A piece is not
-finished until she has run it on all four. Her words: *"I intend to finish every one of them to the
-same standard."*
+a **Kindle Fire** and a **Unihertz Jelly Star** (a 3in phone, about 240px across). Her words:
+*"I intend to finish every one of them to the same standard."*
 
-**Through as of Mon 24 Aug 2026: candler, conometer, galileo, windower, storm, warmler, chladni,
-bowl, roller, kaleidoscope, gyre, rain** — her call on all twelve; every fault they turned up is fixed and live, and
+**Call it "tested on every machine", which is her own phrase for it (4 Sep 2026), and keep it
+separate from the Done column — they are two different things and conflating them confuses her.**
+**Done** is her judgement that the piece itself is finished. **Tested on every machine** is whether
+it has been run on all four. A piece can be one without the other, and five currently are: `lamp`,
+`pendulum`, `musebox`, `chimes` and `fireflies` are all done and none has been tested on every
+machine. When she comes to those five she is not judging whether they are any good — she has already
+ruled — she is only checking they do not break on a small screen or a slow one. Say it her way in
+chat: *"twelve tested on every machine, eight to go"*, not "through the four machines".
+
+**Tested on every machine as of Mon 24 Aug 2026: candler, conometer, galileo, windower, storm,
+warmler, chladni, bowl, roller, kaleidoscope, gyre, rain** — her call on all twelve; every fault they turned up is fixed and live, and
 the details are in each one's `notes/` file. The case itself was worked on the same day: light on the wall behind it, the
 white cut line off all five plates, darker arrows in the two discs.
 
-**Twelve through, eight to go**, by shelf: **instrumenta 5/5**, **tactilia 3/3**, phenomena 3/5
+**Twelve tested on every machine, eight to go**, by shelf: **instrumenta 5/5**, **tactilia 3/3**, phenomena 3/5
 (`bowl`, `chladni`, `rain`), systema 1/3 (`gyre`, straight after its two changes — *"gyre works on
 everything too"*), natura 0/4. The eight left are `musebox`, `chimes`, `lamp`, `pendulum`, `birds`,
 `fireflies`, `moths`, `ant`. `chladni` and `bowl` cost one repair each on the afternoon of
@@ -407,12 +415,12 @@ still twelve through. The eight that are left, and what state each is actually i
   heard it on the tablet**, and two of the four voices were wrong: the guitar sounded like the piano
   (it very nearly was one, measured) and the flute like a horn. Both rebuilt Aug 2026, see the row
   above. The white rabbit she reported on the same pass is a drawn hare now. She has not run the
-  piece over the four machines.
+  piece on every machine.
 - `chimes` — tuned to real notes, each material cut to its own lengths, its own strike sound, a
   rod-length slider, and the tangle fixed. **And re-dressed in her own photographs** — the hanger,
   its chains, the eyelets and all three cords. **She has HEARD it** — Aug 2026, *"it sounds a great
   deal better"* — which is a verdict on the rebuilt sound and **not** a Done mark; she has still not
-  run it over the four machines. Test it with the rods at DIFFERENT
+  tested it on every machine. Test it with the rods at DIFFERENT
   lengths or the tangle it was reported for cannot appear at all. Two things to watch for that are
   known and not repaired: on the 3in phone the dock swamps the piece entirely — **repaired Aug 2026
   off her report**, see the row above. The **wood** rods
