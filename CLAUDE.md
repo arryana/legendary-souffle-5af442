@@ -125,7 +125,7 @@ of anything, so a number would be inventing a ranking she doesn't mean. The test
 apply to every piece is the one further down this file: *does it behave like the real
 thing?* That is a yes or a no.
 
-**14 of the 20 are done.**
+**16 of the 20 are done.**
 
 **Where the history lives.** This file is read at the start of every session, so it carries only
 what every session must know: the rules, the things not to re-propose, and the state of each
@@ -151,12 +151,12 @@ grow back. Her call, 3 Sep 2026: *"we can always cache it and use it for referen
 | `gyre/index.html` | ✅ | ✅ | Meshable gears on a board driving a signal lamp (`gears.md` has the maths). **Done**, through the four machines. `notes/gyre.md` |
 | `birds/index.html` | ✅ |  | Birds on sagging wires against a sunset sky. Swept Aug 2026, otherwise untouched; waiting on her machines. `notes/birds.md` |
 | `bowl/index.html` | ✅ | ✅ | A bowl of water for floating things on; ten bowls, a breeze, an object picker. **Done**, through the four machines. A tap lifts a stone out, a drag moves it. `notes/bowl.md` |
-| `chimes/index.html` | ✅ |  | Wind chimes you build: rod material, cord, count, length. Tuned to real notes, each material cut to its own lengths, her own photographed hanger and cords. She has heard it (*"it sounds a great deal better"*) but not run it on the machines. Test with the rods at DIFFERENT lengths. `notes/chimes.md` |
+| `chimes/index.html` | ✅ | ✅ | Wind chimes you build: rod material, cord, count, length. Tuned to real notes, each material cut to its own lengths, her own photographed hanger and cords. **Done** 4 Sep 2026, *"barring adding my own sounds at some point"* — her own recordings are a change she may still want, not an open fault. Not run on the machines; test with the rods at DIFFERENT lengths. `notes/chimes.md` |
 | `chladni/index.html` | ✅ | ✅ | A Chladni plate: sand, salt, lycopodium or flour on metal. **Done**, through the four machines. A cornflour suspension is parked, her call; don't re-propose it on this renderer. `notes/chladni.md` |
 | `fireflies/index.html` | ✅ |  | A field at dusk where you place fireflies; real dusk-to-night sky, bats. Rebuilt entirely on her reports (she is remembering real ones; there are none in Scotland). Her verdicts *"perfect. it's perfect."* on the look and behaviour and *"significantly improved"* after the Sep flash and grass work; not run on the machines. **Read its notes before changing anything.** `notes/fireflies.md` |
 | `kaleidoscope/index.html` | ✅ | ✅ | Real photographed objects on a tray, mirrored live; turn the ring. **Done**, through the four machines. Scrolling is the small-screen answer she took. `notes/kaleidoscope.md` |
 | `moths/index.html` | ✅ |  | Moths losing their bearings on a hanging bulb; shade is glare in front and distance behind. Built Aug 2026 from her brief, shading rules hers Sep 2026, verdict *"significantly improved"*; not run on the machines. The slowest piece on a Kindle-speed processor (about 14fps at 6x slower). `notes/moths.md` |
-| `musebox/index.html` | ✅ |  | A music box: set pins on the disc. Rebuilt on her Gemini pictures (*"to my eye, yes. yes it is."*); four voices, the guitar a real plucked string now in the piano's slot at her ask. Not run on the machines. `notes/musebox.md` |
+| `musebox/index.html` | ✅ | ✅ | A music box: set pins on the disc. Rebuilt on her Gemini pictures (*"to my eye, yes. yes it is."*); four voices, the guitar a real plucked string now in the piano's slot at her ask. **Done** 4 Sep 2026, *"barring adding my own sounds at some point"* — her own recordings are a change she may still want, not an open fault. Not run on the machines. `notes/musebox.md` |
 | `pendulum/index.html` | ✅ | ✅ | A Foucault pendulum with a real-world-time checkbox (sidereal rate) and a locator globe. **Done**; the checkbox and the pin fix postdate the mark. Whether the swept sand reads as sand is still hers: *"it's better"*, not settled. `notes/pendulum.md` |
 | `storm/index.html` | ✅ | ✅ | A storm glass on the real changing weather, with a barometer. **Done**, through the four machines; the piece that finished instrumenta. `notes/storm.md` |
 | `crystal.html` | — | — | A crystal (not linked from the landing page) |

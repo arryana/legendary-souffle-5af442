@@ -214,3 +214,11 @@ The
 page also **grows to its own content now**, as kaleidoscope does: the instrument row put the last 26px
 of controls off the bottom of a 3in phone that could not scroll to them. Desktop, an ordinary phone
 and a Kindle are unchanged and do not scroll.
+
+**DONE — her call, 4 Sep 2026**, given for musebox and chimes together: *"barring adding my own
+sounds at some point, i would consider both muse and chimes done."* So the mark is hers and it stands.
+**The caveat is a change she may still want, not an open fault**: her own recorded sounds in place of
+the built ones. Don't treat it as a defect to be fixed, don't propose it back to her, and don't let it
+hold anything up — if she asks for it, it is a new piece of work on a finished piece. **The mark does
+not cover the four machines**: musebox has still not been run over them, and that programme is
+separate from the Done column, the same way lamp's and pendulum's marks sit beside untested devices.

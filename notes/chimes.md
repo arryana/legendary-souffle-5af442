@@ -227,3 +227,11 @@ first attempt made room for the chain by shrinking the chime, when the card had 
 height as empty sky above the ring; the chain fills that and costs the chime nothing. The subject is the
 RING down to the rod tips, padded 30% and nudged 3% down — the same rule as the first card, and the
 general point is that adding something to a piece is not automatically a reason to re-frame its card.
+
+**DONE — her call, 4 Sep 2026**, given for chimes and musebox together: *"barring adding my own
+sounds at some point, i would consider both muse and chimes done."* This is the Done mark; the earlier
+*"it sounds a great deal better"* was a verdict on the rebuilt sound and was explicitly not one.
+**The caveat is a change she may still want, not an open fault**: her own recorded sounds in place of
+the built ones. Don't treat it as a defect, and don't propose it back to her. **The mark does not
+cover the four machines** — chimes has still not been run over them, and when it is, the rods must be
+set to DIFFERENT LENGTHS or the tangle it was originally reported for cannot appear at all.
