@@ -102,3 +102,29 @@ button is not free once a piece has something of its own in that corner.
 Aug 2026: the old one predated the whole fuel system, so it showed a lamp with **no nail beside it** —
 and the nail is now how anybody finds out the lamp has a level at all. Framed by measuring the lamp's
 own painted extent and the nail's, so both are in shot and the oil can's corner button is not.
+
+**HELD BY THE POINT, TAPPED WITH THE HEAD.** Hers, 4 Sep 2026, first thought on picking the piece up
+again: *"we held the nail by the point and tapped with the head."* The piece had it the other way
+about — `nailTip()` returned the `+a` end, which is the point, so the point met the copper. Wrong end
+on both counts: it is not what her family did, and a point is the wrong end of a nail to strike soft
+copper with. The striking end is now `strikeEnd()`, the `-a` end, which is the **head**; and the
+facing that turns the nail to whichever side it is brought in from is turned through half a circle
+(`HOME.a + lean + PI` and `-HOME.a - lean`), so the head leads and the point sits back toward the
+hand. **The geometry is exactly mirrored, so the earlier repair is untouched** — the four approaches
+that were measured then (left and right, high and low) were re-run before and after: the same taps
+land at all four, and the striking end went from **143/155 units from the lamp's axis against the
+point's 371/383, to the reverse** — head 143/155, point 371/383. The nail turns 180° as it is picked
+up, which is a nail being turned in the hand and is the same idiom the side-flip already used. The
+`approach` hysteresis, the on-surface stop, the above/below-oil pitch and the sound are all unchanged.
+
+**THE CARD IS CENTRED ON THE LAMP NOW.** Hers, the same day: *"could the lamp still be centered on
+the card with the nail beside it? it seems a bit odd, not being sure which is the focus."* Correct,
+and measurable: the copper base sat at **62.5% across** the old card with a wide empty dark field to
+its left, so the nail read as a second subject rather than a companion. The old card had been cropped
+off-centre to fit the nail in. It did not need to be: `wicklampblack.png` is 848x1239 and the lamp's
+axis is at **429**, four pixels off the photograph's own centre — so the **whole width** of the photo
+is a lamp-centred frame with the nail already in it at the bottom left. Reshot as exactly that, with
+the surplus height taken off the **top**, where there is nothing but dark above the chimney. Measured
+after: copper base at **48.8%**, lit content centroid 62.8% → 49.0%. **Still 440x640**, so no card on
+the wall moves and `card-thumbs.py` reported the `card-art` block already current; the small
+`lamp-card-sm.jpg` was rebuilt by the same tool. The oil can's corner button is out of shot as before.
