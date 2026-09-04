@@ -479,7 +479,7 @@
 
   // The copper reservoir's own outline, measured off the photograph by hue: the
   // half-width of the body at each height, about the axis the lamp stands on. It is
-  // what the nail's point meets, and what decides whether a tap landed above the
+  // what the nail's head meets, and what decides whether a tap landed above the
   // oil or below it.
   const BASE_CX = 429;
   const BASE = [[878,58],[886,88],[894,110],[904,124],[916,129],[926,138],[936,153],
@@ -609,9 +609,15 @@
                  lift:0, recoil:0, armed:true };
   let grabU=0, grabV=0, nailSpeed=0, lastPx=null, lastPy=null;
 
-  function nailTip(){
-    return { x: nail.x + Math.cos(nail.a)*NAIL_LEN/2,
-             y: nail.y + Math.sin(nail.a)*NAIL_LEN/2 };
+  /* IT IS HELD BY THE POINT AND TAPPED WITH THE HEAD. Hers, Sep 2026, remembering
+     the lamp itself: "we held the nail by the point and tapped with the head." The
+     piece had it the other way about -- the point met the copper, which is the wrong
+     end of a nail to strike soft metal with, and not what her family did. So the
+     striking end is the HEAD, the end away from the hand's grip along the nail's
+     own axis, and the facing below turns it head-first rather than point-first. */
+  function strikeEnd(){
+    return { x: nail.x - Math.cos(nail.a)*NAIL_LEN/2,
+             y: nail.y - Math.sin(nail.a)*NAIL_LEN/2 };
   }
   function nailHit(px, py){
     const dx=px-nail.x, dy=py-nail.y, c=Math.cos(-nail.a), sn=Math.sin(-nail.a);
@@ -623,18 +629,18 @@
     const halfV = Math.max(13, 22/(photoScale||1));
     return Math.abs(u) <= NAIL_LEN/2 + 8 && Math.abs(v) <= halfV;
   }
-  let approach = -1;                 // which side of the lamp the point came from
+  let approach = -1;                 // which side of the lamp the head came from
   function collide(){
-    const tp = nailTip();
+    const tp = strikeEnd();
     const hw = baseHalfW(tp.y);
     const off = tp.x - BASE_CX;
     const pen = hw > 0 ? hw - Math.abs(off) : -999;
     if (pen <= 0 && hw > 0) approach = off < 0 ? -1 : 1;
     if (pen > 0){
-      // The point stops ON the surface rather than going into it, which is what
+      // The head stops ON the surface rather than going into it, which is what
       // makes it read as a tap instead of the nail sinking through the copper. It
       // is put back on the side it CAME from, not the side it happens to be on: a
-      // quick drag can carry the point clean past the axis in one frame, and
+      // quick drag can carry the head clean past the axis in one frame, and
       // pushing it out by the shorter way then shot the nail out the far side.
       nail.x += (BASE_CX + approach*hw) - tp.x;
       if (nail.armed){
@@ -709,9 +715,9 @@
     }
     // it leans a little with the hand carrying it -- a thing being carried, not a
     // sprite being slid about -- and it TURNS IN THE HAND to face whichever side of
-    // the lamp it is being brought in from. Its facing used to be fixed: the point
-    // always faced right, so carried round to the far side it faced away from the
-    // copper and the tip never met it at all. Her report off the machines: "the tap
+    // the lamp it is being brought in from. Its facing used to be fixed: the head
+    // always faced left, so carried round to the far side it faced away from the
+    // copper and never met it at all. Her report off the machines: "the tap
     // only works on the left side of the lamp base". The 40-unit hysteresis is
     // load-bearing -- flipping on the axis itself spins the nail round every time
     // the hand crosses the middle of the lamp, which is most of the way to it.
@@ -720,7 +726,9 @@
     if (nail.x < BASE_CX - 40) nail.face = 1;
     else if (nail.x > BASE_CX + 40) nail.face = -1;
     const lean = Math.max(-0.14, Math.min(0.14, my*0.010));
-    const want = nail.face > 0 ? HOME.a + lean : Math.PI - HOME.a - lean;
+    // half a turn from where this used to sit, so the HEAD leads and the point is
+    // back toward the hand -- the same mirrored geometry, the other end forward
+    const want = nail.face > 0 ? HOME.a + lean + Math.PI : -HOME.a - lean;
     let turn = (want - nail.a) % (Math.PI*2);
     if (turn >  Math.PI) turn -= Math.PI*2;      // always the short way round
     if (turn < -Math.PI) turn += Math.PI*2;
