@@ -152,10 +152,26 @@ answer is that the scour does not depend on WHICH sector was worked — the grou
 way everywhere — so it is built **once for the whole plate, at half scale**, and each sweep clips its
 sector and blits it. Half scale is deliberate as well as cheap: scaled back up the streaks soften,
 which is nearer sand than a hairline. The one-off build is itself laid down **a few hundred strokes
-per frame** from the moment the plate exists, so it never lands as a lump. Measured after, at 6x
-slower: ticking the clock **104ms** against 105 before, dragging the latitude **111ms** against 124,
-and the worst frame in the first eight seconds — which covers the whole background build — **58ms
-against 87**. No regression anywhere. The tile is dropped on resize, since `amp` changes with it.
+per frame** from the moment the plate exists, so it never lands as a lump. The tile is dropped on
+resize, since `amp` changes with it.
+
+**THE "NO REGRESSION ANYWHERE" WRITTEN HERE FIRST WAS WRONG, and it is corrected rather than
+quietly dropped.** Re-measured 4 Sep 2026, three runs each of the live page and this one, worst
+frame gap at **6x slower**, the same throttle the rest of this file uses:
+
+| moment | live (flat fill) | scoured |
+|---|---|---|
+| first 9s, which covers the whole background build | 83 / 50 / 67 ms | 83 / 83 / 67 ms |
+| ticking keep-the-marks | 133 / 117 / 133 ms | 133 / 167 / 133 ms |
+| ticking the clock | 117 / 83 / 117 ms | 150 / 133 / 133 ms |
+| dragging the latitude | 100 / 100 / 83 ms | 133 / 133 / 150 ms |
+
+**It costs 16–67ms more at the two moments that rebuild the whole trace**, consistently across all
+three runs, and the worst frame seen anywhere was 167ms. So the honest statement is not "no slower"
+but: **the character is unchanged — one hitch, at the moment you ask for it, never a freeze — and
+the hitch is about a third longer.** The background build genuinely does keep the opening clear,
+which is the part of the design that worked. Anyone tempted to write "no regression" here again
+should run it three times first; a single run of this page swings 30ms on its own.
 
 **The icons are open and hers.** *"i'm going to need to find better icons"*, and later *"i'll think
 over the icons."* Her own thought, worth keeping: *"maybe the infinity should be a globe. then it
@@ -166,3 +182,29 @@ latitude the globe sets is the **🕰**. So a globe belongs there if anywhere, p
 day/night line to say "the actual world, now", with the ∞ then free to become something about sand (a
 rake was floated). Two globes side by side is the risk. **Nothing here is decided — do not build any
 of it unasked.**
+
+**THE RAKE AND THE FAST-FORWARD, 4 Sep 2026, both hers.** She first floated putting a **globe** on
+the ∞, to tie it to the flag and the latitude globe and show the piece was bound to a place. The
+instinct was right and the target was not: the ∞ only says whether the sand fades, and the control
+actually bound to place *and* clock is the 🕰, whose rate comes from the latitude that globe sets.
+Told that, she took the rake instead. Three were drawn into the real dock and screenshotted at three
+times size; she picked **B, the upright wide-headed one**, and she was right — at 19px the angled one
+reads as a small brush or a tick and the short-handled one as a comet. Drawn in `currentColor` beside
+the clock, never an emoji, for the reason recorded further up this file.
+
+**Its sense was deliberately NOT changed, and this is the open question on the piece.** Lit still
+means the marks stay, unlit still means they fade, and unlit is still how the piece opens — exactly
+as the ∞ behaved. A rake genuinely reads both ways (a garden rake clears sand; a zen rake draws it),
+I put both readings to her, and she has not ruled. **Don't flip it quietly**; if she rules the other
+way it is one class and the default state, not a rebuild.
+
+**The fast-forward**: *"there is no icon to indicate what the slider does. could we perhaps put a
+fast-forward icon to the left of it?"* Every other control on the plate carried its object and the
+speed slider was a bare line. It is a **label, not a control** — `aria-hidden`, no pointer — filled
+rather than stroked because two solid triangles read at 15px where outlines of them do not, and it
+**dims with the slider** when the clock takes over, since with the plane handed to the real world
+there is no winding forward to be had. **It and the slider are ONE flex item** (`#speedPair`): the
+dock wraps, and the first attempt left the mark stranded a row above the slider it labelled at 240px.
+Measured after at 1200, 390 and 240: same row every time, 11px apart, the generated 33px thumb target
+on the slider intact, and no page taller than its window. The dock's height is unchanged (184px at
+390), so `#music` needs no adjustment.

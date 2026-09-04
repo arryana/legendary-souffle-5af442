@@ -58,6 +58,40 @@
      is a drop-shadow rather than a text-shadow, since there is no text now -- but
      the colour is the cue and the glow is only the flourish, which is the way
      round it should be. */
+  /* THE RAKE REPLACED THE INFINITY SIGN. Hers, 4 Sep 2026, on the piece being the
+     least readable on the shelf: "nothing explains anything, and i'm going to need to
+     find better icons." The infinity sign said nothing about sand and needed a word to
+     be understood, which by her own rule makes it the wrong control. A rake is an
+     object, names itself at four years old and in any language, and belongs on a sand
+     plate. Three were drawn into the real dock and she took the upright wide-headed
+     one: at 19px the angled one reads as a brush or a tick and the short-handled one
+     as a comet, and only this one keeps handle, head and tines legible. Drawn in
+     currentColor like the clock beside it, NOT an emoji -- a colour emoji is a bitmap
+     the font hands over whole and ignores `color` on every platform, which is the
+     whole reason the clock stopped being one.
+     NOTHING ABOUT THE CONTROL'S BEHAVIOUR CHANGED: lit still means the marks stay,
+     unlit still means they fade, and unlit is still how the piece opens. Which way
+     round a rake ought to read is genuinely two-sided -- a garden rake clears sand, a
+     zen rake draws it -- and that is hers to rule, not a thing to flip quietly. */
+  /* THE SLIDER HAD NOTHING SAYING WHAT IT WAS. Hers, 4 Sep 2026: "there is no icon to
+     indicate what the slider does. could we perhaps put a fast-forward icon to the left
+     of it?" Every other control on the plate carries its object; the speed slider was a
+     bare line. This is a LABEL, not a control -- aria-hidden and no pointer -- and it
+     is filled rather than stroked because two small solid triangles read at 15px where
+     outlines of them do not. It dims with the slider when the clock takes over, which
+     is the honest thing: with the plane handed to the real world there is no winding
+     forward to be had. */
+  /* the label and the line it labels are ONE flex item, so the dock's wrapping can
+     never put them on separate rows -- which it did at 240px, leaving a fast-forward
+     mark stranded above a slider it no longer touched. */
+  #speedPair{ display:flex; align-items:center; gap:9px; flex:0 0 auto; }
+  #speedIcon{ color:rgba(231,221,201,.32); flex:0 0 auto; display:block;
+    transition:opacity .35s ease; pointer-events:none; }
+  #speedIcon svg{ width:15px; height:15px; display:block; }
+  #speedIcon.off{ opacity:.26; }
+  #eternityToggle svg{ width:19px; height:19px; display:block; }
+  #eternityToggle{ transition:color .35s ease, filter .35s ease; }
+  #eternityToggle.active{ filter:drop-shadow(0 0 5px rgba(233,217,168,.75)); }
   #realToggle svg{ width:19px; height:19px; display:block; }
   #realToggle{ transition:color .35s ease, filter .35s ease; }
   #realToggle.active{ filter:drop-shadow(0 0 5px rgba(233,217,168,.75)); }
@@ -146,9 +180,9 @@
 <canvas id="scene"></canvas>
 <div id="dock">
   <canvas id="globeWrap" width="164" height="164" aria-label="latitude" role="slider" tabindex="0"></canvas>
-  <input type="range" id="speedSlider" min="0" max="100" value="80" aria-label="time speed">
+  <span id="speedPair"><span id="speedIcon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M3.6 5.4 12 12 3.6 18.6z"/><path d="M12.6 5.4 21 12l-8.4 6.6z"/></svg></span><input type="range" id="speedSlider" min="0" max="100" value="80" aria-label="time speed"></span>
   <div id="realToggle" role="checkbox" tabindex="0" aria-checked="false" aria-label="real-world time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 19.4V11a7.5 7.5 0 0 1 15 0v8.4z"/><circle cx="12" cy="11" r="4.1"/><path d="M12 8.5V11l2 1.4"/><path d="M7 19.4v1.5M17 19.4v1.5"/></svg></div>
-  <div id="eternityToggle" role="checkbox" tabindex="0" aria-checked="false" aria-label="ever-thickening trace">∞</div>
+  <div id="eternityToggle" role="checkbox" tabindex="0" aria-checked="false" aria-label="keep the marks in the sand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9"/><path d="M5.5 12h13"/><path d="M6.5 12v4M9.5 12v5M12 12v5.5M14.5 12v5M17.5 12v4"/></svg></div>
   <button type="button" id="loc-flag" title="check another location" aria-label="check another location" aria-expanded="false">🚩</button>
   <form id="loc-search" autocomplete="off">
     <input type="text" id="loc-search-input" placeholder="postcode or city" aria-label="postcode or city">
@@ -160,6 +194,7 @@
   const canvas=document.getElementById('scene'), ctx=canvas.getContext('2d');
   const globeCanvas=document.getElementById('globeWrap'), gctx=globeCanvas.getContext('2d');
   const speedSlider=document.getElementById('speedSlider');
+  const speedIcon=document.getElementById('speedIcon');
   const eternityToggle=document.getElementById('eternityToggle');
   let W=0,H=0,DPR=1, cx=0, cy=0, floorR=0;
 
@@ -831,6 +866,7 @@
     realToggle.setAttribute('aria-checked', String(v));
     realToggle.classList.toggle('active', v);
     speedSlider.disabled=v;
+    speedIcon.classList.toggle('off', v);
     if(v) rebuildRealTrace();
   }
   realToggle.addEventListener('click', ()=>setRealTime(!realTime));
