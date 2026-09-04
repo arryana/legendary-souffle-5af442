@@ -52,8 +52,16 @@ identical value across a sky row is 12px of 963. The old PNGs are deleted (two o
 field) and are in the history if ever wanted.
 
 Its five sliders were **3, 4, 5, 19 and 20px** under a thumb — the wind one had no
-rule at all — and are now 21–30. Still small and not repaired: its two tickboxes at 14px and its
-location flag at 25x18, where galileo's was grown to 22x15 under `(pointer: coarse)`.
+rule at all — and are now 21–30. Its two tickboxes at 14px and its location flag at 25x18 were left
+small in that pass and **were grown on 31 Aug 2026** by `tools/touch-buttons.js` (*"Thumb-sized
+targets on fireflies and kaleidoscope, verified invisible"*). Re-measured on a simulated touch phone
+4 Sep 2026, the invisible targets are **bats 42x43, the flag 43x43, no-sound 36x41** against a
+thumb's 44 — the painted controls are untouched at 14px and 25x18. **The no-sound box is at its
+limit rather than neglected**: the 🔊 beside it takes the taps on its right and `#batCtrl` bounds it
+on the left, which is the generator's own rule (each control reaches only half the gap to its
+neighbour). The only way to the full 44 is to make the 🔊 part of the control, so tapping the speaker
+mutes — a change of behaviour, not a repair, and hers to ask for. **The sentence this replaces said
+both were unrepaired, and was three days out of date when it was written up.**
 
 **And it is
 one of the two that slow down on a Kindle-speed processor**: 60fps normally, 58 at 4x slower, **43
