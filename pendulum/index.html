@@ -575,7 +575,7 @@
     prevSwingFrac = swingFrac; prevRising = rising;
     if(pins.every(p=>p.knocked)){
       for(const p of pins){ p.knocked=false; p.knockedAt=-1; }
-      if(!sandEternal) clearSand();
+      if(!sandEternal){ clearSand(); sweptTo=planeAngle; }
     }
   }
   function drawPins(t){
@@ -638,6 +638,24 @@
   // the trace the plate would have drawn by now in one pass and lays it down.
   const realToggle=document.getElementById('realToggle');
   let realTime=false, pendingRebuild=false;
+  /* THE SWEPT GROUND HAS TO KEEP GROWING. Hers, 4 Sep 2026, with a picture: dark
+     ground beyond the pale sector, with only the bright stylus fans in it, and
+     "the black spots seem to happen when i have the browser minimized or closed."
+     Exactly right, and the cause is older than the scouring that made it visible:
+     `sweepSand` had ONE call site, the last line of `rebuildRealTrace`, so in real
+     time the worked ground was a snapshot taken the moment the clock was ticked and
+     never grew again. The plane went on turning and the bob went on drawing its thin
+     live line, but the ground it crossed was never worked, so everything after that
+     moment was a bright thread on bare floor. Minimising makes it stark rather than
+     causing it: the frame loop stops, so not even the thread is drawn for that
+     while, and you come back to a clean dark band.
+     `sweptTo` is how far the sector has actually been laid. The tick extends it once
+     the plane has moved a whole sand bin — about four minutes at the true rate, so
+     it costs nothing, and a long absence is caught up in one arc on return. Manual
+     mode is deliberately left alone: there the passes are far enough apart to read
+     as separate lines, which is the piece at its most legible and what the fan and
+     the rosette are. */
+  let sweptTo=0;
   function reDerive(){ if(realTime) pendingRebuild=true; }
 
   // local midnight is the anchor: as arbitrary as a real pendulum's starting
@@ -856,7 +874,7 @@
         if(!sandEternal) from=a;
       }
     }
-    planeAngle=total; posSweepAngle=total; negSweepAngle=total+Math.PI;
+    planeAngle=total; posSweepAngle=total; negSweepAngle=total+Math.PI; sweptTo=total;
     prevSwingFrac=1; prevRising=false; sandPrev=null; clearTrail();
     sweepSand(from, total);
   }
@@ -893,6 +911,11 @@
       // which is why nothing has to be remembered between visits
       if(pendingRebuild && !draggingGlobe) rebuildRealTrace();
       planeAngle = realPlaneAngle();
+      // the ground the plane has crossed since the last bin, worked in one go —
+      // which is also how a long minimise is caught up on the way back
+      if(Math.abs(planeAngle-sweptTo) >= (Math.PI*2)/SAND_BINS){
+        sweepSand(sweptTo, planeAngle); sweptTo=planeAngle;
+      }
     } else {
       const dtSim = dtReal*speedMultiplier();
       planeAngle += (Math.PI*2) * (Math.sin(lat)/SIDEREAL_DAY) * dtSim;
