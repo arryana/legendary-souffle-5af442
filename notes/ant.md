@@ -87,3 +87,22 @@ them on the doorstep, caught in my own first screenshot; at the nest mouth they 
 overlaps (centres under 3px apart) in 900 frames: **35 → 0**. Her verdict the same evening, on ants,
 fireflies and moths together: ***"i would consider fireflies, moths, and ants all to be significantly
 improved."*** Not a Done mark — she has not run any of the three over the four machines.
+
+**Hers, 4 Sep 2026, from watching it again:** *"ants rather jarringly stop. none of them ever slows
+down before they stop, they just jerk to a halt. which is what they do occasionally, but not always.
+and sometimes they take a step or two and pause before restarting. it's all a bit mechanical."*
+Measured over forty seconds and twenty ants: of 253 stops, **232 were dead stops** (full speed one
+frame, nothing the next) and 224 of 248 restarts went from nothing to full speed in one frame. A stop
+set `pause` and the step returned; that was the whole of it. Each ant now has a **`gait`**, the
+fraction of its speed it is actually using. When its own rest falls due, three times in four it runs
+down into the stop over 7–23 frames (`slowing`, the curve `(left/total)^1.6`, quickest at first),
+and one time in four it stops dead, because an ant does do that. A carrier runs down shorter and
+stops dead more often. **Every** stop, its own or a beat at an obstacle or a meeting, is left from a
+standstill: the gait comes back from 0.1–0.25 at the ant's own `pickup`, 6–18 frames to full stride.
+And about a third of restarts after a proper rest are **a step or two, a check, and then off** — a
+brief stop of 3–9 frames with no turn (`brief`, `startRest(a, true)`), never chained (a check after a
+check is a stammer). Same measure afterwards: 253 stops (the rhythm is untouched), **170 slowed into**,
+83 dead — the 83 are the deliberate quarter plus the obstacle and meeting beats, which stay abrupt
+because they are reactions — and **237 of 267 restarts built up**. The legs follow for free, since the
+gait drives `walkPhase` through `speed`. The picture doesn't change by a pixel; what she is judging
+is the motion, so the preview she was given was a speed trace of one ant before and after.
