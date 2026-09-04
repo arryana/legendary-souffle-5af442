@@ -62,10 +62,14 @@ soften. Doing it properly wants an angular gradient (`createConicGradient`), whi
 on her bench may not have; the way in, if it is ever wanted, is conic where it exists and the flat
 fill where it doesn't.
 
-**Still open, and hers**: whether the sector now reads as sand or still as a
-dial. The geometry is honest — that ground really has been worked — so this is a question about the
-look, not a fault to fix. Her word on the change was ***"it's better"*** — which is an improvement
-banked and not a verdict, so **don't revert it and don't treat it as settled either**.
+**This was open and hers, and she settled it on 4 Sep 2026 — see the entries at the foot of this
+file.** The question was whether the sector read as sand or still as a dial. Her answer was that it
+read as neither: ***"it just looks like wedges... nothing about that seems visually explanatory."***
+The ground is scoured radially with a heaped lip now, at the third of three strengths she was shown,
+and her verdict on that was ***"it looks incredibly better."*** So **the sand question is closed** —
+don't reopen it, and don't read the paragraph below as a live question. What was true then and is
+still true: the geometry is honest, that ground really has been worked, and the earlier *"it's
+better"* was banked rather than a verdict.
 
 **"The line
 moves AHEAD of the pendulum swing."** Her report on the speed-slider setting, Aug 2026. Measured, it
