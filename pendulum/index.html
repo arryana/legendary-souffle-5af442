@@ -491,6 +491,7 @@
     fl.strokeStyle='rgba(231,221,201,.12)'; fl.lineWidth=1;
     fl.beginPath(); fl.arc(cx,cy,floorR*0.86,0,7); fl.stroke();
     sandLayer=document.createElement('canvas'); sandLayer.width=W; sandLayer.height=H;
+    scourTile=null; scourJob=null;        // amp changed, so the scour must be re-made
     sandCtx=sandLayer.getContext('2d');
     sandPrev=null;   // the old sand went with the old layer; don't draw across the gap
     sandDeposit.fill(0);
@@ -635,7 +636,7 @@
      though the swing underneath it was measured as perfect.
      Clamped near the rim, because the true curve goes to infinity at the turning
      point itself and an infinitely bright ring is not sand either. */
-  const SWEPT_BASE=0.085, SWEPT_CLAMP=6.2;
+  const SWEPT_BASE=0.055, SWEPT_CLAMP=6.2;
   const dwellAt=u=>Math.min(SWEPT_CLAMP, 1/Math.sqrt(Math.max(1e-4, 1-u*u)));
   function sweptGradient(scale){
     const amp=floorR*0.72;
@@ -644,6 +645,117 @@
       g.addColorStop(u, 'rgba(233,217,168,'+(SWEPT_BASE*dwellAt(u)*scale).toFixed(4)+')');
     }
     return g;
+  }
+
+  /* WORKED GROUND HAS TO LOOK WORKED. Hers, 4 Sep 2026, on the real-time trace with
+     the sand kept: "this is real-time-plus-persistent-sand-marks, and it just looks
+     like wedges. nothing about that seems... visually explanatory." She is right, and
+     the three states together say why: the piece explains itself through SEPARATE
+     PASSES -- fanning at the default speed, a rosette with the sand kept -- and at the
+     true rate consecutive passes land 0.007 degrees apart, finer than a pixel and finer
+     than a grain, so they merge and the one legible feature averages away. What is left
+     is area, and area with a hard radial edge is a pie chart.
+     Spacing the grooves out to fake the fan would LIE: a plate swept fourteen hours
+     really has been worked solid, about 25,000 passes, and that lie is the same kind as
+     the solar-day rate that had to be fixed. So the geometry is untouched. What changes
+     is that the swept ground stops being a flat tint:
+       - it is SCOURED RADIALLY, because every groove runs through the centre, so the
+         working leaves directional streaking. Short broken streaks at random radii,
+         never full-radius lines -- a line from pivot to rim would read as one pass and
+         be countable, which is the same lie again.
+       - the turning points carry a HEAPED LIP. The bob dwells longest there and the
+         sand it displaces piles at the outer end of the groove, so the swept edge is a
+         raised rim with the ground falling away outside it, not a cut.
+     Alpha is kept at 0.012-0.045 a streak. That matters: the temporal fade backed out
+     earlier stippled because eighteen stacked fills at a few THOUSANDTHS is below what
+     the canvas can hold, and it dithered. Strokes in the hundredths are well clear of
+     that floor. */
+  /* THE SCOUR IS DRAWN ONCE AND KEPT. Batching the strokes into a few bands was
+     tried first and did almost nothing -- 449ms to 480ms on a processor six times
+     slower than this one -- which says the cost is the drawing itself and not the
+     per-call overhead: twelve thousand short antialiased strokes over a big clipped
+     area is simply a lot of blending. Since the ground is scoured the same way
+     everywhere (radially, because every groove runs through the centre), the texture
+     does not depend on WHICH sector has been worked. So it is built once for the
+     whole plate, at half scale, and each sweep clips its sector and blits it. A
+     rebuild -- ticking the clock, dragging the latitude, a resize -- then costs one
+     drawImage instead of twelve thousand strokes. Half scale is deliberate as well
+     as cheap: scaled back up the streaks soften, which is nearer sand than a crisp
+     hairline is. The tile is thrown away on resize, since amp changes with it. */
+  const SCOUR_ALPHA=[0.016, 0.055];       // base, and how much the dwell curve adds
+  const SCOUR_BANDS=7;
+  let scourTile=null, scourJob=null;
+  /* Built a slice at a time. The whole tile is about sixteen thousand strokes, which
+     is one 200ms lump on a slow processor however it is batched -- so instead of
+     spending it the moment the clock is ticked, it is laid down a few hundred strokes
+     per frame from the moment the plate exists, in the gaps of an animation that is
+     only moving a bob. By the time anyone reaches for the clock it is long done. If
+     someone gets there first, scourSand finishes the rest in one go rather than
+     drawing half a texture. */
+  function startScour(amp){
+    const k=0.5;
+    const t=document.createElement('canvas');
+    t.width=Math.max(1,Math.round(W*k)); t.height=Math.max(1,Math.round(H*k));
+    const tcx=cx*k, tcy=cy*k, tamp=amp*k;
+    const n=Math.ceil(2600*Math.PI*2);     // the whole plate, not one sector
+    const bands=[];
+    for(let i=0;i<SCOUR_BANDS;i++) bands.push([]);
+    for(let i=0;i<n;i++){
+      const a=Math.random()*Math.PI*2;
+      // biased outward: the ground nearest the turning points is worked hardest
+      const u=Math.pow(Math.random(),0.55);
+      const len=tamp*(0.03+Math.random()*0.075);
+      const r0=Math.max(1, u*tamp-len*0.5), r1=Math.min(tamp, r0+len);
+      const ca=Math.cos(a), sa=Math.sin(a);
+      const d=dwellAt(Math.min(0.999,(r0+r1)/2/tamp))/SWEPT_CLAMP;   // 0..1
+      const bi=Math.min(SCOUR_BANDS-1, Math.floor(d*SCOUR_BANDS));
+      bands[bi].push(tcx+ca*r0, tcy+sa*r0, tcx+ca*r1, tcy+sa*r1);
+    }
+    const g=t.getContext('2d');
+    g.lineCap='round';
+    scourJob={ t, g, bands, band:0, at:0 };
+  }
+  function stepScour(budget){
+    if(!scourJob) return;
+    const j=scourJob;
+    let left=budget;
+    while(j.band<SCOUR_BANDS && left>0){
+      const arr=j.bands[j.band];
+      if(j.at>=arr.length){ j.band++; j.at=0; continue; }
+      const take=Math.min(left*4, arr.length-j.at);
+      j.g.strokeStyle='rgba(243,230,190,'+(SCOUR_ALPHA[0]+SCOUR_ALPHA[1]*((j.band+0.5)/SCOUR_BANDS)).toFixed(3)+')';
+      j.g.lineWidth=0.45+(j.band%3)*0.3;
+      j.g.beginPath();
+      for(let m=j.at;m<j.at+take;m+=4){ j.g.moveTo(arr[m],arr[m+1]); j.g.lineTo(arr[m+2],arr[m+3]); }
+      j.g.stroke();
+      j.at+=take; left-=take/4;
+    }
+    if(j.band>=SCOUR_BANDS){ scourTile=j.t; scourJob=null; }
+  }
+  function scourSand(lo, hi, amp){
+    if(!sandCtx || hi<=lo) return;
+    if(!scourTile){
+      if(!scourJob) startScour(amp);
+      stepScour(Infinity);                // wanted before it was ready: finish it now
+    }
+    sandCtx.save();
+    for(const off of [0, Math.PI]){
+      sandCtx.save();
+      sandCtx.beginPath(); sandCtx.moveTo(cx,cy);
+      sandCtx.arc(cx,cy,amp,lo+off,hi+off); sandCtx.closePath(); sandCtx.clip();
+      sandCtx.drawImage(scourTile, 0,0,scourTile.width,scourTile.height, 0,0,W,H);
+      sandCtx.restore();
+      // the heaped lip at the turning point, and the ground falling away outside it
+      const lip=sandCtx.createRadialGradient(cx,cy,amp*0.955,cx,cy,amp*1.035);
+      lip.addColorStop(0,   'rgba(243,230,190,0)');
+      lip.addColorStop(0.45,'rgba(247,236,201,0.30)');
+      lip.addColorStop(0.62,'rgba(120,104,74,0.16)');
+      lip.addColorStop(1,   'rgba(120,104,74,0)');
+      sandCtx.fillStyle=lip;
+      sandCtx.beginPath(); sandCtx.moveTo(cx,cy);
+      sandCtx.arc(cx,cy,amp*1.035,lo+off,hi+off); sandCtx.closePath(); sandCtx.fill();
+    }
+    sandCtx.restore();
   }
 
   function sweepSand(from, to){
@@ -672,6 +784,7 @@
        doesn't. */
     sandCtx.fillStyle=sweptGradient(1);
     wedge(lo, hi);
+    scourSand(lo, hi, amp);
     const STEP=(Math.PI*2)/SAND_BINS;
     for(let a=lo; a<=hi+STEP; a+=STEP){
       sandDeposit[sandBin(a)]=SAND_CAP_PASSES;   // worked ground; the live stylus adds nothing to it
@@ -749,6 +862,7 @@
       planeAngle += (Math.PI*2) * (Math.sin(lat)/SIDEREAL_DAY) * dtSim;
     }
     updatePins(t, swingFrac);
+    if(!scourTile){ if(!scourJob) startScour(floorR*0.72); stepScour(420); }
 
     const amp=floorR*0.72;
 
