@@ -118,3 +118,93 @@ of one control behaved differently and nobody noticed. It is a drawn mantel cloc
 now, so the existing rules do what they always meant to; the glow became a `drop-shadow` since there is
 no text left to shadow. **The colour is the cue and the glow only the flourish**, which is the way
 round it should be — the reliable thing carries the state.
+
+**"IT JUST LOOKS LIKE WEDGES."** Hers, 4 Sep 2026, on the real-time trace with the sand kept, which
+settles the question left open above — the sector was still reading as a dial, and worse than that,
+as nothing: *"that one is the least comprehensible on watching. nothing explains anything... this is
+real-time-plus-persistent-sand-marks, and it just looks like wedges. nothing about that seems...
+visually explanatory."*
+
+**The diagnosis, from putting the three states side by side.** The piece explains itself through
+**separate passes** — the fan at the default speed, the rosette with the sand kept and the speed up.
+Both of those are legible because you can see one swing, then the next one slightly turned. At the
+true rate consecutive passes land **0.007° apart**, finer than a pixel and finer than a grain, so
+they merge and that one legible feature averages away. What is left is area, and area with a hard
+radial edge is a pie chart. **Nothing was drawn wrong; the readable thing had been averaged out.**
+
+**Spacing the grooves out to fake the fan was refused.** A plate swept fourteen hours really has been
+worked solid — about 25,000 passes — and drawing them apart would be a lie of exactly the kind the
+solar-day rate was. The geometry is untouched. What changed is that the worked ground stops being a
+flat tint: it is **scoured radially**, because every groove runs through the centre, in short broken
+streaks (never full-radius lines, which would read as countable passes and be the same lie again);
+and the turning points carry a **heaped lip**, since the bob dwells longest there and the sand it
+displaces piles at the outer end of the groove, so the swept edge is a raised rim with the ground
+falling away outside it rather than a cut. `SWEPT_BASE` goes **0.085 → 0.055** so the texture carries
+the read instead of the fill. Three strengths were put to her and **she took the third**, the one with
+the fill pulled furthest back.
+
+**And it cost a freeze before it was made to work.** Twelve thousand short antialiased strokes over a
+clipped sector measured **449ms on a processor six times slower than this one**, against a 98–120ms
+baseline — a two-thirds-of-a-second freeze at the moment the clock is ticked, on exactly the machine
+this file already worries about. **Batching the strokes into bands was tried and did nearly nothing**
+(449 → 480ms), which is the useful finding: the cost is the blending, not the per-call overhead. The
+answer is that the scour does not depend on WHICH sector was worked — the ground is scoured the same
+way everywhere — so it is built **once for the whole plate, at half scale**, and each sweep clips its
+sector and blits it. Half scale is deliberate as well as cheap: scaled back up the streaks soften,
+which is nearer sand than a hairline. The one-off build is itself laid down **a few hundred strokes
+per frame** from the moment the plate exists, so it never lands as a lump. The tile is dropped on
+resize, since `amp` changes with it.
+
+**THE "NO REGRESSION ANYWHERE" WRITTEN HERE FIRST WAS WRONG, and it is corrected rather than
+quietly dropped.** Re-measured 4 Sep 2026, three runs each of the live page and this one, worst
+frame gap at **6x slower**, the same throttle the rest of this file uses:
+
+| moment | live (flat fill) | scoured |
+|---|---|---|
+| first 9s, which covers the whole background build | 83 / 50 / 67 ms | 83 / 83 / 67 ms |
+| ticking keep-the-marks | 133 / 117 / 133 ms | 133 / 167 / 133 ms |
+| ticking the clock | 117 / 83 / 117 ms | 150 / 133 / 133 ms |
+| dragging the latitude | 100 / 100 / 83 ms | 133 / 133 / 150 ms |
+
+**It costs 16–67ms more at the two moments that rebuild the whole trace**, consistently across all
+three runs, and the worst frame seen anywhere was 167ms. So the honest statement is not "no slower"
+but: **the character is unchanged — one hitch, at the moment you ask for it, never a freeze — and
+the hitch is about a third longer.** The background build genuinely does keep the opening clear,
+which is the part of the design that worked. Anyone tempted to write "no regression" here again
+should run it three times first; a single run of this page swings 30ms on its own.
+
+**The icons are open and hers.** *"i'm going to need to find better icons"*, and later *"i'll think
+over the icons."* Her own thought, worth keeping: *"maybe the infinity should be a globe. then it
+would also link back to the flag/globe line slider. that would show that it was linked to the place."*
+The instinct — one visual family for the things tied to place — is right, and the snag is that **∞ is
+not the place-linked control**; it only stops the sand fading. The one whose rate comes from the
+latitude the globe sets is the **🕰**. So a globe belongs there if anywhere, perhaps carrying the
+day/night line to say "the actual world, now", with the ∞ then free to become something about sand (a
+rake was floated). Two globes side by side is the risk. **Nothing here is decided — do not build any
+of it unasked.**
+
+**THE RAKE AND THE FAST-FORWARD, 4 Sep 2026, both hers.** She first floated putting a **globe** on
+the ∞, to tie it to the flag and the latitude globe and show the piece was bound to a place. The
+instinct was right and the target was not: the ∞ only says whether the sand fades, and the control
+actually bound to place *and* clock is the 🕰, whose rate comes from the latitude that globe sets.
+Told that, she took the rake instead. Three were drawn into the real dock and screenshotted at three
+times size; she picked **B, the upright wide-headed one**, and she was right — at 19px the angled one
+reads as a small brush or a tick and the short-handled one as a comet. Drawn in `currentColor` beside
+the clock, never an emoji, for the reason recorded further up this file.
+
+**Its sense was deliberately NOT changed, and this is the open question on the piece.** Lit still
+means the marks stay, unlit still means they fade, and unlit is still how the piece opens — exactly
+as the ∞ behaved. A rake genuinely reads both ways (a garden rake clears sand; a zen rake draws it),
+I put both readings to her, and she has not ruled. **Don't flip it quietly**; if she rules the other
+way it is one class and the default state, not a rebuild.
+
+**The fast-forward**: *"there is no icon to indicate what the slider does. could we perhaps put a
+fast-forward icon to the left of it?"* Every other control on the plate carried its object and the
+speed slider was a bare line. It is a **label, not a control** — `aria-hidden`, no pointer — filled
+rather than stroked because two solid triangles read at 15px where outlines of them do not, and it
+**dims with the slider** when the clock takes over, since with the plane handed to the real world
+there is no winding forward to be had. **It and the slider are ONE flex item** (`#speedPair`): the
+dock wraps, and the first attempt left the mark stranded a row above the slider it labelled at 240px.
+Measured after at 1200, 390 and 240: same row every time, 11px apart, the generated 33px thumb target
+on the slider intact, and no page taller than its window. The dock's height is unchanged (184px at
+390), so `#music` needs no adjustment.
