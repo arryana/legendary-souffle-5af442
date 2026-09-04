@@ -585,6 +585,20 @@
       afterRest: null,                      // what it does when the stop ends (set when the stop begins)
       antPhase: Math.random()*Math.PI*2,    // its antennae's own rhythm, so a group doesn't wave in step
       meetCooldown: 0,                      // frames until it will stop to greet another ant again
+      /* AND NONE OF THEM IS A SWITCH. Her report, Sep 2026: "none of them ever slows
+         down before they stop, they just jerk to a halt. which is what they do
+         occasionally, but not always. and sometimes they take a step or two and pause
+         before restarting. it's all a bit mechanical." It was: a stop set the speed
+         from full to nothing between one frame and the next, and the restart set it
+         back the same way. So an ant has a gait -- the fraction of its speed it is
+         actually using -- that runs down over several frames before most of its own
+         stops (a quarter are still dead stops: an ant does do that), and builds back up
+         after every stop, each ant at its own rate. And about a third of the time the
+         restart is a step or two, a check, and then off. */
+      gait: 1,                              // fraction of its speed in use: runs down into a stop, builds up out of one
+      slowing: 0, slowTotal: 0,             // frames left of a run-down before a stop, and its length
+      pickup: 1/(6 + Math.random()*12),     // how fast it gets going again: 6-18 frames to full stride
+      brief: 0,                             // the rest clock to go back to after a step-or-two-and-a-check
     };
   }
   function syncAntCount(){
@@ -629,8 +643,16 @@
   // an ant stopping of its own accord: a stop, then whatever it decides to do
   // with it. Searching ants stop most; an ant carrying food home stops less
   // often and for less time, and keeps its heading (home is home).
-  function startRest(a){
+  // A brief stop is the step-or-two-and-a-check kind: a few frames, no turn, and the
+  // rest clock carries on as it was.
+  function startRest(a, brief){
     const carrying = a.state === 'return';
+    if (brief){
+      a.pause = 3 + Math.random()*7;
+      a.afterRest = { turn: false, next: a.brief, wasBrief: true };
+      a.brief = 0;
+      return;
+    }
     const long = Math.random() < 0.15;
     a.pause = carrying ? 6 + Math.random()*16 : (long ? 50 + Math.random()*60 : 10 + Math.random()*36);
     const stutter = !carrying && Math.random() < 0.38;   // go a few steps, stop again
@@ -647,6 +669,17 @@
       a.straightTimer = 40 + Math.random()*100;
     }
     a.nextRest = r.next;
+    // a step or two, a check, and then off -- about a third of restarts, and only
+    // after a proper rest (a check after a check would be a stammer)
+    if (!r.wasBrief && r.next > 30 && Math.random() < 0.3){ a.brief = r.next; a.nextRest = 2 + Math.random()*5; }
+  }
+  // an ant's own stop coming due: most of the time it runs down into it over some
+  // frames; a quarter of the time (more for a carrier hurrying home) it just stops
+  function dueToRest(a){
+    if (a.brief){ startRest(a, true); return; }
+    const carrying = a.state === 'return';
+    if (Math.random() < (carrying ? 0.4 : 0.25)){ startRest(a); return; }
+    a.slowTotal = a.slowing = carrying ? 5 + Math.random()*9 : 7 + Math.random()*16;
   }
 
   function stepAnt(a, dt){
@@ -654,19 +687,30 @@
     a.surge += (Math.random()-0.5)*0.05*dt + (1-a.surge)*0.01*dt;
     a.surge = Math.max(0.55, Math.min(1.45, a.surge));
     const load = a.state === 'return' ? 0.88 : 1;   // carrying something is slower
-    const speed = 1.3 * speedMult * a.pace * a.surge * load * dt;
     a.wobble += dt*0.15;
     if (a.meetCooldown > 0) a.meetCooldown -= dt;
 
     if (a.pause > 0){
       a.pause -= dt;
-      if (a.pause <= 0) endRest(a);
+      a.gait = 0; a.slowing = 0;
+      // every stop, its own or a beat at an obstacle or a meeting, is left from a standstill
+      if (a.pause <= 0){ a.gait = 0.1 + Math.random()*0.15; endRest(a); }
       return;
     }
 
-    if (!a.climbing && !a.onTwig){
+    if (a.slowing > 0){
+      // running down into a stop: the gait tails off, quickest at first
+      a.slowing -= dt;
+      if (a.slowing <= 0){ a.slowing = 0; startRest(a); return; }
+      a.gait = Math.min(a.gait, Math.pow(a.slowing/a.slowTotal, 1.6));
+    } else if (a.gait < 1){
+      a.gait = Math.min(1, a.gait + a.pickup*dt);
+    }
+    const speed = 1.3 * speedMult * a.pace * a.surge * load * a.gait * dt;
+
+    if (!a.climbing && !a.onTwig && a.slowing <= 0){
       a.nextRest -= dt;
-      if (a.nextRest <= 0){ startRest(a); return; }
+      if (a.nextRest <= 0){ dueToRest(a); if (a.pause > 0) return; }
     }
 
     if (a.onTwig){
