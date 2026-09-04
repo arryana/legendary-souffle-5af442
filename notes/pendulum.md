@@ -208,3 +208,36 @@ dock wraps, and the first attempt left the mark stranded a row above the slider 
 Measured after at 1200, 390 and 240: same row every time, 11px apart, the generated 33px thumb target
 on the slider intact, and no page taller than its window. The dock's height is unchanged (184px at
 390), so `#music` needs no adjustment.
+
+**THE SWEPT GROUND STOPPED GROWING — her catch, 4 Sep 2026, with a screenshot**: dark ground beyond
+the pale sector with only the bright stylus fans standing in it, and *"the black spots seem to happen
+when i have the browser minimized or closed."* Right about the fault and right about the trigger, and
+the cause is **older than the scouring that made it visible**: `sweepSand` had exactly ONE call site,
+the last line of `rebuildRealTrace`. So in real time the worked ground was a **snapshot taken the
+moment the clock was ticked**, and never grew. The plane went on turning off the clock and the bob
+went on drawing its thin live line, but the ground it crossed was never worked — so everything after
+that moment was a bright thread lying on bare floor. **Minimising makes it stark rather than causing
+it**: the frame loop stops, so not even the thread is laid for that while, and you come back to a
+clean dark band with fans either side of it. Confirmed present in the version live before this fix
+(`sweepSand` called once, from line 713 of that copy), so it predates the 4 Sep scouring.
+
+`sweptTo` now records how far the sector has actually been laid. The tick extends it whenever the
+plane has moved a whole sand bin — about four minutes at the true rate, so it costs nothing — and a
+long absence is caught up in a single arc on the way back. `rebuildRealTrace` sets it, and the
+pin-ring reset sets it to the plane's current angle so a wiped plate starts again from where the
+swing is rather than from the old edge. **Manual mode is deliberately untouched**: there the passes
+are far enough apart to read as separate lines, which is the fan and the rosette and the piece at its
+most legible.
+
+**Measured, driving the plane fast with a 0.75 rad jump five seconds in — which is what returning
+from a minimised window looks like to a clock-driven angle.** Of the 162 half-degree steps the bob
+had crossed: **live 139 bare, longest unbroken bare run 99 steps (about 50°); after the fix 0 bare.**
+The screenshots of the two are unmistakable — the live one is nearly all bare floor with four bright
+threads across it.
+
+**One caution for whoever writes the next test harness here**, because it cost two wrong runs:
+`realPlaneAngle` is a ONE-LINE function, so a regex ending `[\s\S]*?\n  \}` does not stop at its
+closing brace — it runs on to the next function's and deletes everything between. Both runs came back
+"0 of 0 steps bare", which looks like a pass and is really a harness that never drove the plane at
+all. Patch that function by exact string, and assert the plane actually moved before believing any
+result.
