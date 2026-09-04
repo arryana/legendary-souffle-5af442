@@ -20,7 +20,7 @@ visible, the four flags came apart:
 | `chladni` | was 36–101px under the bar on all four | **the trap. Fixed 21 Aug** — lays out to `innerHeight` now, and the plate is sized off the same figure or it stays scaled to a screen the visitor hasn't got. Desktop identical, measured. |
 | `storm` | fits on all four | **nothing to do** — it got the `innerHeight` fix earlier the same day. The sweep flagged its own blind spot, not a fault. |
 | `musebox` | fits, bar 24px on a Kindle sideways | **mild**: it already carries `min-height:100dvh` with a `100vh` fallback, and its page can scroll, so the tempo control is reachable. Left alone. |
-| `kaleidoscope` | 63–167px over on three of the four | **not the trap — the design debt its own row describes.** The content genuinely does not fit; a proper small-screen arrangement is still owed and is her call, not a repair. |
+| `kaleidoscope` | 63–167px over on three of the four | **not the trap — the design debt its own row described at the time.** The content genuinely did not fit at these widths. **No longer owed**: she took SCROLLING as the answer, which `notes/kaleidoscope.md` records as her ruling and not a placeholder for a better one. Corrected 4 Sep 2026, when this row was found still calling it owed. |
 
 `warmler`, `roller`, `gyre`, `chimes`, `birds`, `fireflies`, `moths`, `ant`, `lamp`, `rain`, `bowl`
 and `pendulum` are clear on all four.
