@@ -2158,7 +2158,26 @@ function tick(t) {
     // wind feeds the flame -> faster burn; locked to 0 in timer mode so
     // "burn rate locks to the candle's true, unaided speed at its set size"
     const rateMult = 1 + burnWind * 1.8;
-    state.waxFraction -= (dt / duration) * rateMult;
+    // Timer mode's burn rate IS wall-clock time (wind is locked to zero),
+    // and the wall clock is the one thing that keeps running while the
+    // window is minimised — so read the level off it rather than adding
+    // up animation frames. Adding them up double-counted: browsers stop
+    // giving a hidden window frames at all, so the first frame back
+    // carried the whole time away as a single dt, on top of the catch-up
+    // checkPinAlarms had already applied from the clock. The candle
+    // dropped to twice the elapsed time for the moment before the next
+    // check corrected it, which was long enough to ring pins early —
+    // measured at 2.5 minutes early after 5 minutes minimised on a
+    // 30-minute candle — and, past the half-way point, to put the candle
+    // out on the spot and fire every remaining pin at once. Passive mode
+    // has no such truth to read (its rate follows the wind slider), so it
+    // still accumulates, which is also what keeps it burning honestly
+    // through time the window was hidden.
+    if (state.timerMode) {
+      state.waxFraction = realTimerWaxFraction();
+    } else {
+      state.waxFraction -= (dt / duration) * rateMult;
+    }
 
     if (state.waxFraction <= 0) {
       state.waxFraction = 0;
